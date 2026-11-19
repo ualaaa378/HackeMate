@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧉 HackeMate
+#  HackeMate
 
 ### Equipo de la Hackathon UAL para el Desarrollo del Interior
 
@@ -63,6 +63,6 @@ El proyecto está **en sus primeras fases**. Iremos actualizando este README a m
 
 <div align="center">
 
-Hecho con 🧉 y ☕ en la **Universidad de Almería**
+Hecho en la **Universidad de Almería**
 
 </div>
