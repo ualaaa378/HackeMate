@@ -29,7 +29,7 @@
       "type": "object",
       "required": ["canal", "importado_auto"],
       "properties": {
-        "canal": { "enum": ["whatsapp", "web", "panel", "facebook", "instagram", "web_externa", "manual"] },
+        "canal": { "enum": ["whatsapp", "web", "panel", "facebook", "instagram", "web_externa", "manual", "telegram"] },
         "url": { "type": ["string", "null"] },
         "importado_auto": { "type": "boolean" }
       }

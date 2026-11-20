@@ -28,7 +28,7 @@ TIPOS_PUBLICADOR = ("asociacion", "ayuntamiento", "bar_restaurante", "comercio",
 ROLES = ("vecino", "publicador", "moderador")
 ROLES_AUTOR = ROLES + ("ia",)
 ESTADOS_INSCRIPCION = ("confirmada", "lista_espera", "cancelada", "asistio", "no_asistio")
-CANALES = ("whatsapp", "web", "panel", "facebook", "instagram", "web_externa", "manual")
+CANALES = ("whatsapp", "web", "panel", "facebook", "instagram", "web_externa", "manual", "telegram")
 TIPOS_NOTIFICACION = ("recomendacion", "cambio_evento", "anuncio", "respuesta", "moderacion", "confirmacion")
 FORMATOS_AVISO = ("texto", "audio")
 TIPOS_MENSAJE = ("pregunta", "respuesta", "anuncio", "comentario")
@@ -112,6 +112,7 @@ class Usuario(Base):
     whatsapp_verificado: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     email: Mapped[str | None] = mapped_column(String(254), unique=True)
     google_sub: Mapped[str | None] = mapped_column(String(64), unique=True)  # login con Google (H3)
+    telegram_id: Mapped[str | None] = mapped_column(String(32), unique=True, index=True)  # chat_id (app/canales.py)
     municipio: Mapped[str | None] = mapped_column(ForeignKey("municipios.nombre"))
     lat: Mapped[float | None] = mapped_column(Float)
     lon: Mapped[float | None] = mapped_column(Float)
@@ -135,6 +136,7 @@ class Publicador(Base):
     descripcion: Mapped[str | None] = mapped_column(Text)
     telefono: Mapped[str | None] = mapped_column(String(16), index=True)
     email: Mapped[str | None] = mapped_column(String(254))
+    telegram_id: Mapped[str | None] = mapped_column(String(32), unique=True, index=True)  # chat_id (app/canales.py)
     estado: Mapped[str] = mapped_column(
         _enum("estado_publicador", ESTADOS_PUBLICADOR), default="solicitado", nullable=False, index=True
     )

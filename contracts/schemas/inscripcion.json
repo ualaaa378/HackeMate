@@ -12,7 +12,7 @@
     "estado": { "enum": ["confirmada", "lista_espera", "cancelada", "asistio", "no_asistio"] },
     "posicion_espera": { "type": ["integer", "null"], "minimum": 1, "description": "Solo si estado = lista_espera" },
     "plazas": { "type": "integer", "minimum": 1, "default": 1 },
-    "canal": { "enum": ["whatsapp", "web", "panel", "facebook", "instagram", "web_externa", "manual"] },
+    "canal": { "enum": ["whatsapp", "web", "panel", "facebook", "instagram", "web_externa", "manual", "telegram"] },
     "creado_en": { "type": "string", "format": "date-time" },
     "actualizado_en": { "type": "string", "format": "date-time" }
   }

@@ -98,7 +98,7 @@ def eventos_a_dict(db: Session, eventos: list[Evento]) -> list[dict]:
 
 
 def publicador_a_dict(p: Publicador, con_contacto: bool = True) -> dict:
-    """`con_contacto=False` para el público: sin teléfono ni email (el schema no los exige)."""
+    """`con_contacto=False` para el público: sin teléfono, email ni telegram_id (el schema no los exige)."""
     datos = {
         "id": p.id,
         "nombre": p.nombre,
@@ -117,11 +117,12 @@ def publicador_a_dict(p: Publicador, con_contacto: bool = True) -> dict:
     if con_contacto:
         datos["telefono"] = p.telefono
         datos["email"] = p.email
+        datos["telegram_id"] = p.telegram_id
     return datos
 
 
 def usuario_a_dict(u: Usuario) -> dict:
-    """Completo, con teléfono: solo para el propio usuario y los servicios internos."""
+    """Completo, con teléfono y telegram_id: solo para el propio usuario y los servicios internos."""
     return {
         "id": u.id,
         "nombre": u.nombre,
@@ -129,6 +130,7 @@ def usuario_a_dict(u: Usuario) -> dict:
         "telefono": u.telefono,
         "whatsapp_verificado": u.whatsapp_verificado,
         "email": u.email,
+        "telegram_id": u.telegram_id,
         "municipio": u.municipio,
         "lat": u.lat,
         "lon": u.lon,

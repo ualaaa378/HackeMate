@@ -11,7 +11,7 @@ Valores permitidos en toda la plataforma. Minúsculas con guion bajo. Después d
 | `tipo_publicador` | `asociacion`, `ayuntamiento`, `bar_restaurante`, `comercio`, `otro` | `publicador.tipo` |
 | `nivel_confianza` | `0`, `1`, `2` (entero) | `publicador.nivel_confianza` |
 | `estado_inscripcion` | `confirmada`, `lista_espera`, `cancelada`, `asistio`, `no_asistio` | `inscripcion.estado` |
-| `canal` | `whatsapp`, `web`, `panel`, `facebook`, `instagram`, `web_externa`, `manual` | `evento.origen.canal`, `inscripcion.canal`, `fuente.canal` |
+| `canal` | `whatsapp`, `web`, `panel`, `facebook`, `instagram`, `web_externa`, `manual`, `telegram` | `evento.origen.canal`, `inscripcion.canal`, `fuente.canal` |
 | `tipo_notificacion` | `recomendacion`, `cambio_evento`, `anuncio`, `respuesta`, `moderacion`, `confirmacion` | `notificacion.tipo` |
 | `formato_aviso` | `texto`, `audio` | `usuario.formato_aviso`, `notificacion.formato` |
 | `tipo_mensaje` | `pregunta`, `respuesta`, `anuncio`, `comentario` | `mensaje_evento.tipo` |
@@ -20,6 +20,13 @@ Valores permitidos en toda la plataforma. Minúsculas con guion bajo. Después d
 | `tipo_lugar` | `ruta`, `sitio_interes`, `comercio`, `alojamiento`, `servicio` | `lugar.tipo` |
 | `modalidad_ruta` | `senderismo`, `btt`, `ciclismo`, `paseo` | `lugar.ruta.modalidad` |
 | `estado_envio` | `pendiente`, `enviada`, `fallida` | `notificacion.estado_envio` (cola de avisos) |
+
+## Canales de mensajería (contacto)
+
+El bot habla con la gente por WhatsApp y por Telegram. Cada persona se identifica en su canal con una dirección de contacto (`Contacto` en `openapi.yaml`):
+
+- WhatsApp: el teléfono E.164 (`+34600000000`), en `telefono`.
+- Telegram: `tg:<chat_id>` (Telegram no da el teléfono), con el `chat_id` en `telegram_id`. El bot pide «Compartir mi número» y lo vincula con `POST /api/v1/usuarios/vincular`.
 
 ## Significado de los estados de evento
 
