@@ -310,7 +310,7 @@ paths:
       tags: [chat]
       summary: Chat del evento. Anuncios fijados primero. Nunca expone teléfonos.
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       parameters:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/Size"
@@ -324,7 +324,7 @@ paths:
       tags: [chat]
       summary: Publicar mensaje. Pasa por `bot /ai/spam`; si es pregunta, `bot /ai/responder-ficha`.
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -351,7 +351,7 @@ paths:
     patch:
       tags: [chat]
       summary: Fijar u ocultar (organizador o moderador)
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:

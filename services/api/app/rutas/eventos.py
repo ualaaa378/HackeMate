@@ -15,6 +15,7 @@ from app.errores import ErrorApi
 from app.modelos import CATEGORIAS, ESTADOS_EVENTO, Evento, Municipio, Publicador
 from app.paginacion import Pagina, pagina, paginar, paginar_lista
 from app.rutas.publico import dentro_del_radio, en_caja, es_uuid, hay_radio
+from app.chat import anuncio_automatico
 from app.inscripciones import avisar_inscritos, promocionar, texto_cambio
 from app.notificaciones import enviar_en_segundo_plano
 from app.seguridad import Quien, es_servicio_interno, exigir_token_interno, puede_gestionar, quien_llama
@@ -243,7 +244,8 @@ def editar_evento(
     texto = texto_cambio(evento, fecha_anterior, lugar_anterior, cancelado)
     if texto:
         avisos += avisar_inscritos(db, evento, "cambio_evento", texto)
-        # H3.4: anuncio fijado automático en el chat del evento con este mismo texto.
+        # Anuncio fijado en el chat con el mismo texto, en la misma transacción que el cambio.
+        anuncio_automatico(db, evento, texto, quien.usuario)
 
     db.commit()
     enviar_en_segundo_plano(background_tasks, db, avisos)

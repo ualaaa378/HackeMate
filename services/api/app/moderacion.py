@@ -8,6 +8,7 @@ import logging
 import re
 import time
 import unicodedata
+from typing import Literal
 
 import httpx
 from sqlalchemy import func, select, update
@@ -103,7 +104,7 @@ def reiniciar_circuito_spam() -> None:
     _circuito_spam.clear()
 
 
-def _llamar_bot_spam(texto: str, publicador_id: str | None) -> tuple[float, str] | None:
+def _llamar_bot_spam(texto: str, publicador_id: str | None, contexto: str = "evento") -> tuple[float, str] | None:
     """POST {BOT_URL}/ai/spam. Devuelve (score, motivo) o None si el bot no está o responde mal."""
     ajustes = get_settings()
     if not ajustes.bot_url:
@@ -113,7 +114,7 @@ def _llamar_bot_spam(texto: str, publicador_id: str | None) -> tuple[float, str]
     try:
         r = httpx.post(
             ajustes.bot_url.rstrip("/") + "/ai/spam",
-            json={"texto": texto, "contexto": "evento", "publicador_id": publicador_id},
+            json={"texto": texto, "contexto": contexto, "publicador_id": publicador_id},
             headers={"X-Internal-Token": ajustes.internal_token},
             timeout=TIMEOUT_BOT_S,
         )
@@ -142,12 +143,15 @@ def _llamar_bot_spam(texto: str, publicador_id: str | None) -> tuple[float, str]
     return round(float(score), 2), f"{fuente}: {detalle}"
 
 
-def clasificar_spam(texto: str | None, publicador: Publicador | None = None) -> tuple[float, str]:
+def clasificar_spam(
+    texto: str | None, publicador: Publicador | None = None, contexto: Literal["evento", "mensaje"] = "evento"
+) -> tuple[float, str]:
     """Puntuación de spam con su motivo. Primero la IA del bot; si falla, reglas locales.
+    `contexto`: «evento» (una ficha) o «mensaje» (el chat de un evento); el bot no admite otros valores.
     El motivo empieza por la fuente («IA…» o «reglas»). Nunca lanza."""
     texto = texto or ""
     try:
-        resultado = _llamar_bot_spam(texto, publicador.id if publicador is not None else None)
+        resultado = _llamar_bot_spam(texto, publicador.id if publicador is not None else None, contexto)
         if resultado is not None:
             return resultado
     except Exception:  # noqa: BLE001

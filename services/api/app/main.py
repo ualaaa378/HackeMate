@@ -9,6 +9,7 @@ from app.rutas import (
     eventos,
     importar,
     inscripciones,
+    mensajes,
     moderacion,
     publicadores,
     publico,
@@ -29,6 +30,7 @@ app.include_router(publico.router)
 app.include_router(importar.router)
 app.include_router(eventos.router)
 app.include_router(inscripciones.router)
+app.include_router(mensajes.router)
 app.include_router(publicadores.router)
 app.include_router(usuarios.router)
 app.include_router(usuarios.router_me)
