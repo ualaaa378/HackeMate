@@ -140,6 +140,8 @@
 
 ## Flujo C · App Ionic, web/PWA y panel
 
+> Hitos (H0–H5) y criterios de aceptación en [`PLAN_FLUJO_C.md`](PLAN_FLUJO_C.md).
+
 **Bloque 1 (vie 18:30–23:30)**
 - [x] Proyecto Ionic React (`ionic start web tabs --type=react`) con pestañas Agenda · Mapa · Perfil
 - [x] Tipos generados desde `openapi.yaml` y `VITE_API_URL` configurable *(`src/api/openapi.d.ts` con openapi-typescript; se regenera con `npm run api:tipos`)*
