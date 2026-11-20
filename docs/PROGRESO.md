@@ -65,8 +65,8 @@
   - `npx openapi-typescript contracts/openapi.yaml -o apps/web/src/api/schema.d.ts` genera tipos sin errores.
   - Los fixtures de usuarios, publicadores, inscripciones, mensajes y notificaciones le bastan para las pantallas con mocks (los fixtures de moderación y antispam llegan en H2).
   - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
-- [ ] Cerrar la PR #1 (`contract/v1`) **sin merge**: la sustituyen los contratos de `Flujo-A` (mismo `evento.json`). Si tenía algo que falte en `Flujo-A`, se añade por PR `contract-change`.
-- [ ] PR `Flujo-A` → `develop` revisada y mergeada (orden A → B → C); `main` protegida en GitHub
+- [x] Cerrar la PR #1 (`contract/v1`) **sin merge**: la sustituyen los contratos de `Flujo-A` (mismo `evento.json`). Si tenía algo que falte en `Flujo-A`, se añade por PR `contract-change`.
+- [~] PR `Flujo-A` → `develop` revisada y mergeada (orden A → B → C); `main` protegida en GitHub *(Flujo-A en `develop` vía PR #3 y #4; falta proteger `main`)*
 - [ ] Preguntas enviadas a la organización por Telegram (PLAN §8)
 
 ---
