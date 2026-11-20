@@ -214,7 +214,7 @@ paths:
       tags: [ingesta]
       summary: El publicador completa lo que falta y confirma. Pasa a moderación (`en_revision` o `publicado` según nivel).
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
