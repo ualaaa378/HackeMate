@@ -15,7 +15,7 @@ from sqlalchemy import select
 from app import chat, moderacion
 from app.config import get_settings
 from app.inscripciones import fecha_corta
-from app.modelos import Evento, MensajeEvento, Notificacion
+from app.modelos import Evento, MensajeEvento, Notificacion, Silenciado
 from app.seed import sembrar
 from tests.test_importar import TOKEN, VIERNES, _error
 from tests.test_inscripciones import (
@@ -366,6 +366,75 @@ def test_patch_mensaje_404(api, db):
     _error(api.patch(_url(e.id, m["id"]), json={"oculto": True}, headers=_bearer(ANTONIO)), 404, "mensaje_no_encontrado")
     _error(api.patch(_url(e.id, INEXISTENTE), json={"oculto": True}, headers=_bearer(ANTONIO)), 404,
            "mensaje_no_encontrado")
+
+
+# --- Silenciar (H3.4) ------------------------------------------------------------------------------
+
+
+def _silenciar(api, evento_id: str, msg_id: str, headers: dict, valor: bool = True):
+    return api.patch(_url(evento_id, msg_id), json={"silenciar_autor": valor}, headers=headers)
+
+
+@pytest.mark.parametrize("gestor", [ANTONIO, LUCIA])
+def test_organizador_o_moderador_silencia_y_des_silencia(api, db, gestor):
+    e = _evento(db)
+    m = _publicar(api, e.id, CARMEN, texto="Comentario")["mensaje"]
+    r = _silenciar(api, e.id, m["id"], _bearer(gestor))
+    assert r.status_code == 200, r.text
+    _valida(MENSAJE, r.json())
+    assert db.get(Silenciado, (e.id, CARMEN)).por == gestor
+
+    _error(api.post(_url(e.id), json={"texto": "Otra vez"}, headers=_bearer(CARMEN)), 403, "usuario_silenciado")
+    r = api.post(_url(e.id), json={"texto": "Por el bot", "usuario_id": CARMEN}, headers=TOKEN)
+    _error(r, 403, "usuario_silenciado")
+    # Solo en ese evento: en otro sigue escribiendo; y silenciar dos veces no falla.
+    _publicar(api, _evento(db).id, CARMEN, texto="En otro evento sí")
+    assert _silenciar(api, e.id, m["id"], _bearer(gestor)).status_code == 200
+
+    assert _silenciar(api, e.id, m["id"], _bearer(gestor), False).status_code == 200
+    db.expire_all()
+    assert db.get(Silenciado, (e.id, CARMEN)) is None
+    _publicar(api, e.id, CARMEN, texto="Ya puedo")
+
+
+def test_bot_silencia_con_token(api, db):
+    e = _evento(db)
+    m = _publicar(api, e.id, JOSE, texto="Comentario")["mensaje"]
+    assert _silenciar(api, e.id, m["id"], TOKEN).status_code == 200
+    assert db.get(Silenciado, (e.id, JOSE)).por == "bot"
+
+
+def test_vecino_ni_autor_pueden_silenciar(api, db):
+    e = _evento(db)
+    m = _publicar(api, e.id, JOSE, texto="Comentario")["mensaje"]
+    _error(_silenciar(api, e.id, m["id"], _bearer(CARMEN)), 403, "prohibido")
+    _error(_silenciar(api, e.id, m["id"], _bearer(JOSE)), 403, "prohibido")
+    _error(_silenciar(api, e.id, m["id"], _bearer(PACO)), 403, "prohibido")
+    assert db.get(Silenciado, (e.id, JOSE)) is None
+
+
+@pytest.mark.parametrize("autor", [ANTONIO, LUCIA])
+def test_no_se_silencia_al_organizador_ni_a_un_moderador(api, db, autor):
+    e = _evento(db)
+    m = _publicar(api, e.id, autor, texto="Aviso", tipo="anuncio")["mensaje"]
+    otro = LUCIA if autor == ANTONIO else ANTONIO
+    _error(_silenciar(api, e.id, m["id"], _bearer(otro)), 409, "no_silenciable")
+    assert db.get(Silenciado, (e.id, autor)) is None
+
+
+def test_no_se_silencia_a_la_ia(api, db):
+    e = _evento(db)
+    respuesta = _publicar(api, e.id, CARMEN, texto="¿A qué hora empieza?", tipo="pregunta")["respuesta_ia"]
+    assert respuesta is not None
+    _error(_silenciar(api, e.id, respuesta["id"], _bearer(LUCIA)), 409, "no_silenciable")
+
+
+def test_silenciar_y_ocultar_a_la_vez(api, db):
+    e = _evento(db)
+    m = _publicar(api, e.id, CARMEN, texto="Comentario")["mensaje"]
+    r = api.patch(_url(e.id, m["id"]), json={"oculto": True, "silenciar_autor": True}, headers=_bearer(ANTONIO))
+    assert r.status_code == 200 and r.json()["oculto"] is True
+    assert db.get(Silenciado, (e.id, CARMEN)) is not None
 
 
 # --- Cambio de hora (H3.5) ------------------------------------------------------------------------

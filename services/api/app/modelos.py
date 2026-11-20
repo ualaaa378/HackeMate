@@ -240,6 +240,18 @@ class MensajeEvento(Base):
     creado_en: Mapped[datetime] = _creado()
 
 
+class Silenciado(Base):
+    """Usuario silenciado en el chat de un evento (PATCH .../mensajes/{msg_id} con `silenciar_autor`).
+    `por`: id del organizador o moderador que lo silencia (texto, sin FK: puede ser el bot)."""
+
+    __tablename__ = "silenciados"
+
+    evento_id: Mapped[str] = mapped_column(ForeignKey("eventos.id", ondelete="CASCADE"), primary_key=True)
+    usuario_id: Mapped[str] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True)
+    creado_en: Mapped[datetime] = _creado()
+    por: Mapped[str | None] = mapped_column(String(120))
+
+
 class Notificacion(Base):
     """Cola de avisos: la API los pide al bot con POST /notify; si el bot está caído quedan pendientes (H4.5).
     Ver app/notificaciones.py."""

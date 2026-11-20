@@ -245,3 +245,76 @@ def test_enviar_en_segundo_plano_programa_solo_pendientes(db, motor, bot):
     tarea.func(*tarea.args, **tarea.kwargs)
     db.expire_all()
     assert db.get(Notificacion, a.id).estado_envio == "enviada" and len(bot.recibidas) == 1
+
+
+# --- Tarea de fondo de reintentos (H4.5) ----------------------------------------------------------
+
+
+def test_ciclo_reintentos_envia_y_guarda_con_sesion_propia(db, motor, bot):
+    from sqlalchemy.orm import sessionmaker
+
+    from app.notificaciones import ciclo_reintentos
+
+    bot.modo = "caido"
+    n = notificar(db, tipo="anuncio", texto="Hola", telefono="+34600000201")
+    db.commit()
+    assert n.estado_envio == "pendiente"
+
+    bot.modo = "ok"
+    assert ciclo_reintentos(sessionmaker(bind=motor, expire_on_commit=False)) == 1
+    db.expire_all()
+    assert db.get(Notificacion, n.id).estado_envio == "enviada"  # el commit es del propio ciclo
+
+
+def test_ciclo_reintentos_no_lanza_si_falla_la_base(bot):
+    from app.notificaciones import ciclo_reintentos
+
+    def fabrica_rota():
+        raise RuntimeError("base caida")
+
+    assert ciclo_reintentos(fabrica_rota) == 0
+
+
+def test_bucle_de_fondo_llama_al_ciclo_y_se_cancela(monkeypatch):
+    import asyncio
+
+    from app import main
+
+    llamadas = []
+    monkeypatch.setattr(main, "ciclo_reintentos", lambda: llamadas.append(1) or 0)
+
+    async def probar():
+        tarea = asyncio.create_task(main.bucle_reintentos(0.01))
+        while len(llamadas) < 2:
+            await asyncio.sleep(0.01)
+        tarea.cancel()
+        try:
+            await tarea
+        except asyncio.CancelledError:
+            pass
+
+    asyncio.run(asyncio.wait_for(probar(), 5))
+    assert len(llamadas) >= 2
+
+
+def test_bucle_de_fondo_sobrevive_a_excepciones(monkeypatch):
+    import asyncio
+
+    from app import main
+
+    llamadas = []
+
+    def falla():
+        llamadas.append(1)
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(main, "ciclo_reintentos", falla)
+
+    async def probar():
+        tarea = asyncio.create_task(main.bucle_reintentos(0.01))
+        while len(llamadas) < 3:
+            await asyncio.sleep(0.01)
+        tarea.cancel()
+
+    asyncio.run(asyncio.wait_for(probar(), 5))
+    assert len(llamadas) >= 3

@@ -1,9 +1,12 @@
+import os
 import sys
 from pathlib import Path
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# Sin tarea de fondo de reintentos: tocaría la base real (DATABASE_URL), no la temporal de cada test.
+os.environ["NOTIFICACIONES_REINTENTO_S"] = "0"
 
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy.orm import Session, sessionmaker  # noqa: E402

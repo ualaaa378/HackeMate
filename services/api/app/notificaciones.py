@@ -23,7 +23,7 @@ import httpx
 from fastapi import BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.engine import Connection, Engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.canales import contacto_de, reconocer_contacto
 from app.config import get_settings
@@ -256,3 +256,20 @@ def enviar_en_segundo_plano(
     if ids:
         background_tasks.add_task(enviar_avisos, db.get_bind(), ids)
     return ids
+
+
+def ciclo_reintentos(fabrica: sessionmaker[Session] | None = None, limite: int = 50) -> int:
+    """Una vuelta de la tarea de fondo (app/main.py): sesión propia, `reintentar_pendientes` y commit.
+    No lanza nunca (ni con la base o el bot caídos). Devuelve cuántos avisos han salido."""
+    try:
+        if fabrica is None:
+            from app.db import _fabrica_sesiones
+
+            fabrica = _fabrica_sesiones()
+        with fabrica() as db:
+            enviadas = reintentar_pendientes(db, limite)
+            db.commit()
+            return enviadas
+    except Exception:  # noqa: BLE001 — la tarea de fondo nunca tumba la API
+        log.exception("fallo en el ciclo de reintento de avisos")
+        return 0

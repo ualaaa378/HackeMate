@@ -7,6 +7,9 @@ Permisos (diapositiva 17):
   publicados; el organizador y los moderadores, en cualquiera visible.
 - Anuncios (salen fijados): solo el organizador del evento o un moderador.
 - PATCH: fijar/desfijar y ocultar/mostrar, organizador o moderador (o el bot). El autor puede ocultar el suyo.
+- Silenciar (PATCH con `silenciar_autor`): organizador o moderador (o el bot). `true` impide al autor del mensaje
+  volver a escribir en el chat de ese evento (403 `usuario_silenciado`); `false` se lo vuelve a permitir. No se
+  puede silenciar al organizador ni a un moderador, ni a un mensaje sin autor (la IA): 409 `no_silenciable`.
 
 Spam: se puntúa antes de guardar (`bot /ai/spam`, contexto «mensaje», con reglas de respaldo). Si llega al
 umbral (MODERACION_UMBRAL_SPAM) se rechaza con 422 `mensaje_spam` y el motivo: así quien escribe sabe por qué
@@ -31,7 +34,7 @@ from app.chat import (
 from app.config import get_settings
 from app.db import get_db
 from app.errores import ErrorApi
-from app.modelos import Evento, MensajeEvento, Usuario
+from app.modelos import Evento, MensajeEvento, Silenciado, Usuario
 from app.moderacion import clasificar_spam
 from app.notificaciones import enviar_en_segundo_plano, notificar
 from app.paginacion import Pagina, pagina, paginar
@@ -59,6 +62,7 @@ class MensajeEditar(BaseModel):
 
     fijado: bool | None = None
     oculto: bool | None = None
+    silenciar_autor: bool | None = None
 
 
 def _prohibido(mensaje: str) -> ErrorApi:
@@ -126,6 +130,8 @@ def publicar_mensaje(
     if evento.estado != "publicado" and not gestor:
         raise ErrorApi(409, "chat_cerrado", f"El evento está {evento.estado}: el chat ya no admite mensajes",
                        {"estado": evento.estado})
+    if not gestor and db.get(Silenciado, (evento.id, usuario.id)) is not None:
+        raise ErrorApi(403, "usuario_silenciado", "El organizador o un moderador te ha silenciado en este chat")
     if datos.tipo == "anuncio" and not gestor:
         raise _prohibido("Solo el organizador del evento o un moderador pueden publicar anuncios")
     if datos.en_respuesta_a is not None:
@@ -196,11 +202,33 @@ def editar_mensaje(
     evento = _evento(db, id, quien.interno)
     mensaje = _mensaje(db, evento, msg_id)
     cambios = datos.model_dump(exclude_none=True)
+    silenciar = cambios.pop("silenciar_autor", None)
     if not puede_gestionar(quien, evento):
         es_autor = quien.usuario is not None and mensaje.autor_id == quien.usuario.id
-        if not es_autor or "fijado" in cambios:
-            raise _prohibido("Solo el organizador del evento o un moderador pueden fijar u ocultar mensajes")
+        if not es_autor or "fijado" in cambios or silenciar is not None:
+            raise _prohibido("Solo el organizador del evento o un moderador pueden fijar, ocultar o silenciar")
+    if silenciar is not None:
+        _silenciar(db, evento, mensaje, silenciar, quien)
     for campo, valor in cambios.items():
         setattr(mensaje, campo, valor)
     db.commit()
     return mensaje_a_dict(mensaje)
+
+
+def _silenciar(db: Session, evento: Evento, mensaje: MensajeEvento, silenciar: bool, quien: Quien) -> None:
+    """Silencia (o vuelve a dejar escribir) al autor de `mensaje` en el chat de `evento`. No hace commit."""
+    autor = db.get(Usuario, mensaje.autor_id) if mensaje.autor_id else None
+    if autor is None:
+        raise ErrorApi(409, "no_silenciable", "Este mensaje no tiene un autor al que silenciar",
+                       {"mensaje_id": mensaje.id})
+    actual = db.get(Silenciado, (evento.id, autor.id))
+    if not silenciar:
+        if actual is not None:
+            db.delete(actual)
+        return
+    if autor.rol == "moderador" or es_organizador(autor, evento):
+        raise ErrorApi(409, "no_silenciable", "No se puede silenciar al organizador del evento ni a un moderador",
+                       {"usuario_id": autor.id})
+    if actual is None:
+        por = quien.usuario.id if quien.usuario is not None else "bot"
+        db.add(Silenciado(evento_id=evento.id, usuario_id=autor.id, por=por))
