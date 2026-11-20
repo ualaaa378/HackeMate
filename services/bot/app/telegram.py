@@ -43,12 +43,28 @@ def a_html(texto: str) -> str:
 
 # ---------- Salida ----------
 
-def enviar(destino: str, texto: str, botones: list[tuple[str, str]] | None = None) -> None:
+BOTON_COMPARTIR = "📱 Compartir mi número"
+
+
+def enviar(destino: str, texto: str, botones: list[tuple[str, str]] | None = None,
+           pedir_contacto: bool = False, quitar_teclado: bool = False) -> None:
     cuerpo = {"chat_id": destino.removeprefix(PREFIJO), "text": a_html(texto)[:4096], "parse_mode": "HTML"}
     if botones:
         # Un botón por fila: más grandes y fáciles de pulsar para personas mayores
         cuerpo["reply_markup"] = {"inline_keyboard": [[{"text": t, "callback_data": i[:64]}] for i, t in botones]}
+    elif pedir_contacto:
+        # Telegram solo da el teléfono si el usuario pulsa este botón: así lo casamos con la API
+        cuerpo["reply_markup"] = {"keyboard": [[{"text": BOTON_COMPARTIR, "request_contact": True}]],
+                                  "resize_keyboard": True, "one_time_keyboard": True}
+    elif quitar_teclado:
+        cuerpo["reply_markup"] = {"remove_keyboard": True}
     _llamar("sendMessage", cuerpo)
+
+
+def normalizar_telefono(numero: str) -> str:
+    """Telegram manda el número sin «+» (34600…). La API lo quiere en E.164."""
+    digitos = "".join(c for c in numero if c.isdigit())
+    return f"+{digitos}"
 
 
 def responder_boton(callback_id: str) -> None:
@@ -115,4 +131,9 @@ def parsear(update: dict) -> tuple[MensajeEntrante | None, str | None]:
                                media_tipo="image/jpeg"), None
     if loc := m.get("location"):
         return MensajeEntrante(**base, lat=loc["latitude"], lon=loc["longitude"]), None
+    if contacto := m.get("contact"):
+        # Solo vale su propio número, no el de otra persona reenviado
+        if contacto.get("user_id") == m.get("from", {}).get("id") and contacto.get("phone_number"):
+            return MensajeEntrante(**base, telefono_compartido=normalizar_telefono(contacto["phone_number"])), None
+        return MensajeEntrante(**base, texto=""), None
     return None, None

@@ -128,6 +128,7 @@ class MensajeEntrante(BaseModel):
     id_mensaje: Optional[str] = None  # para no procesar dos veces un reenvío del webhook
     texto: str = ""
     boton_id: Optional[str] = None  # id del botón pulsado (mensajes interactivos)
+    telefono_compartido: Optional[str] = None  # Telegram: su propio número, con «Compartir mi número»
     media_url: Optional[str] = None  # Twilio: URL directa
     media_id: Optional[str] = None  # Meta: id que hay que descargar con el token
     media_tipo: Optional[str] = None

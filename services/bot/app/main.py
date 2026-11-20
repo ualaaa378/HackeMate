@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Literal, Optional
 
 import json
 from collections import OrderedDict
@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from xml.sax.saxutils import escape
 
 from app import __version__, api_cliente, canales, conversacion, meta, metrics, telegram
-from app.agentes import extractor
+from app.agentes import antispam, extractor
 from app.config import get_settings
 from app.schemas import ExtraccionEvento, MensajeEntrante
 
@@ -164,7 +164,7 @@ class MensajeDev(BaseModel):
 @app.post("/dev/mensaje")
 def dev_mensaje(m: MensajeDev):
     """Simulador de WhatsApp (plan C de la demo y pruebas sin Twilio)."""
-    respuestas = conversacion.procesar(MensajeEntrante(canal="console", de=m.de, texto=m.texto))
+    respuestas = conversacion.procesar(MensajeEntrante(canal="console", de=m.de, texto=m.texto), solo_consola=True)
     return {"respuestas": respuestas}
 
 
@@ -176,6 +176,18 @@ class PeticionExtraer(BaseModel):
 def ai_extraer(p: PeticionExtraer, x_internal_token: str | None = Header(None)):
     _comprobar_interno(x_internal_token)
     return extractor.extraer(p.texto)
+
+
+class PeticionSpam(BaseModel):
+    texto: str
+    contexto: Literal["evento", "mensaje"] = "evento"
+    publicador_id: Optional[str] = None
+
+
+@app.post("/ai/spam", response_model=antispam.ResultadoSpam)
+def ai_spam(p: PeticionSpam, x_internal_token: str | None = Header(None)):
+    _comprobar_interno(x_internal_token)
+    return antispam.puntuar(p.texto, p.contexto)
 
 
 class Notificacion(BaseModel):

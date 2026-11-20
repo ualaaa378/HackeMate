@@ -1,4 +1,5 @@
 import os
+import uuid
 
 import pytest
 
@@ -15,10 +16,72 @@ os.environ.update({
     "META_PHONE_NUMBER_ID": "",
     "META_APP_SECRET": "",
     "META_VERIFY_TOKEN": "",
-    "API_URL": "http://127.0.0.1:9",
+    "API_URL": "http://api.test",
     "INTERNAL_TOKEN": "test",
     "LLM_SIMULAR_CAIDA": "false",
 })
+
+
+class ApiFalsa:
+    """Imita las rutas de la api que usa el bot. Por defecto está caída (como en producción sin api)."""
+
+    def __init__(self):
+        self.caida = True
+        self.llamadas: list[tuple[str, str, dict | None]] = []
+        self.usuarios: dict[str, dict] = {}  # contacto -> usuario
+        self.eventos: dict[str, dict] = {}
+        self.confirmar_implementado = True
+        self.estado_tras_confirmar = "en_revision"
+        self.pendientes: list[dict] | None = None  # None = ruta sin implementar (404)
+
+    def __call__(self, metodo, ruta, json=None):
+        from app.api_cliente import ApiNoDisponible, ErrorApi
+
+        self.llamadas.append((metodo, ruta, json))
+        if self.caida:
+            raise ApiNoDisponible("api caída en los tests")
+        if metodo == "POST" and ruta == "/api/v1/eventos/importar":
+            faltan = [c for c, v in json["extraccion"]["campos"].items()
+                      if c in ("titulo", "categoria", "municipio", "fecha_inicio") and v["confianza"] == "falta"]
+            ev = {"id": str(uuid.uuid4()), "titulo": "x", "estado": "pendiente_confirmacion"}
+            self.eventos[ev["id"]] = ev
+            return {"evento": ev, "faltan": faltan, "duplicado": False}
+        if ruta.endswith("/confirmar"):
+            if not self.confirmar_implementado:
+                raise ErrorApi(404, "no_encontrado", "Not Found")
+            ev = self.eventos[ruta.split("/")[4]]
+            ev["estado"] = self.estado_tras_confirmar
+            return {"evento": ev, "faltan": [], "duplicado": False}
+        if metodo == "PATCH" and ruta.startswith("/api/v1/eventos/"):
+            return self.eventos[ruta.split("/")[4]]
+        if ruta.startswith("/api/v1/usuarios/by-contacto/"):
+            contacto = ruta.rsplit("/", 1)[1].replace("%2B", "+")
+            if contacto in self.usuarios:
+                return self.usuarios[contacto]
+            raise ErrorApi(404, "usuario_no_encontrado", "No hay ningún usuario con ese contacto")
+        if ruta == "/api/v1/usuarios/vincular":
+            usuario = {"id": str(uuid.uuid4()), "nombre": json.get("nombre") or "Vecino", "rol": "vecino",
+                       "telefono": json["telefono"]}
+            self.usuarios[json["contacto"]] = usuario
+            return usuario
+        if ruta.startswith("/api/v1/moderacion/pendientes"):
+            if self.pendientes is None:
+                raise ErrorApi(404, "no_encontrado", "Not Found")
+            return {"items": self.pendientes, "total": len(self.pendientes), "page": 1, "size": 5}
+        if ruta.startswith("/api/v1/moderacion/") and ruta.endswith("/decision"):
+            return {"id": ruta.split("/")[4], "titulo": "Fiesta", "estado": "publicado"}
+        raise ErrorApi(404, "no_encontrado", "Not Found")
+
+
+@pytest.fixture(autouse=True)
+def api(monkeypatch):
+    from app import api_cliente, metrics
+
+    falsa = ApiFalsa()
+    monkeypatch.setattr(api_cliente, "_peticion", falsa)
+    # El envío de métricas va en un hilo aparte: en los tests no sale a la red
+    monkeypatch.setattr(metrics, "_enviar_a_api", lambda registro: None)
+    return falsa
 
 
 @pytest.fixture(autouse=True)
@@ -28,6 +91,7 @@ def limpiar_estado():
 
     get_settings.cache_clear()
     conversacion.estados.clear()
+    conversacion._usuarios.clear()
     canales.bandeja_consola.clear()
     api_cliente.pendientes.clear()
     yield
