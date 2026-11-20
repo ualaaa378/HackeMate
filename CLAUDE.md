@@ -6,12 +6,13 @@ Prioridad absoluta: **una demo que funcione**. Entre una funcionalidad pulida y 
 Documentos que mandan (léelos antes de tocar nada):
 - `docs/PLAN.md`: plan general, arquitectura, contratos, ramas y cronograma.
 - `docs/PLAN_FLUJO_A.md`: hitos y criterios de aceptación del flujo A (backend, datos, infra).
+- `docs/PLAN_FLUJO_B.md`: bot, canales de mensajería e IA. Qué expone el bot, qué decisiones se tomaron y qué necesita de A y C.
 - `docs/PROGRESO.md`: checklist de avance. Se marca en el mismo commit que la tarea.
 
 ## Qué construimos
 
 Una plataforma con tres puertas sincronizadas para cinco pueblos de Almería (Lucainena de las Torres, Senés, Velefique, Uleila del Campo y Tahal):
-- **WhatsApp** (bot con IA): publicadores, vecinos y moderador pueden hacerlo todo por ahí.
+- **Bot de mensajería con IA**: publicadores, vecinos y moderador pueden hacerlo todo por ahí. **Canal activo: Telegram** (`@HackeMate_bot`, gratis y sin límites). WhatsApp Cloud API está programado pero Meta bloquea el envío hasta que una entidad verifique su negocio (ver `PLAN_FLUJO_B.md` §3). Donde el plan dice «por WhatsApp», hoy es «por Telegram».
 - **App Ionic React** (web/PWA + APK Android con Capacitor): agenda, mapa, ficha, inscripción, chat del evento.
 - **Panel** del moderador y de estadísticas.
 
@@ -22,7 +23,7 @@ Guion de la demo (lo que TIENE que funcionar): post/audio → ficha · el public
 | Servicio | Carpeta | Flujo | Stack | Puerto |
 |---|---|---|---|---|
 | `api` | `services/api/` | A · Benas (+ Juan Carlos) | FastAPI + SQLAlchemy + Alembic + PostgreSQL (pgvector) / SQLite en local | 8000 |
-| `bot` | `services/bot/` | B · Francisco | FastAPI, Twilio, `llm_router` (Gemini → FreeLLM → Claude → reglas), Whisper | 8001 |
+| `bot` | `services/bot/` | B · Francisco | FastAPI · Telegram Bot API (activo) · WhatsApp Cloud API de Meta y Twilio (alternativas) · `llm_router` (Gemini → FreeLLMAPI → Claude → reglas) | 8001 |
 | `web` | `apps/web/` | C · Adán | Ionic React + Vite + react-leaflet, Capacitor | 8080 |
 | `db` | — | A | `pgvector/pgvector:pg16` | 5432 |
 | `tunnel` | — | A | `cloudflare/cloudflared` (HTTPS público para el webhook) | — |
@@ -32,7 +33,8 @@ Guion de la demo (lo que TIENE que funcionar): post/audio → ficha · el public
 ## Reglas de arquitectura (nadie las rompe)
 
 - Solo `api` toca la base de datos. `bot` y `web` hablan con `api` por HTTP.
-- Solo `bot` habla con Twilio y con los proveedores de IA. Si `api` necesita IA, llama a `bot` en `POST /ai/...`.
+- Solo `bot` habla con los canales de mensajería (Telegram, WhatsApp/Meta, Twilio) y con los proveedores de IA. Si `api` necesita IA, llama a `bot` en `POST /ai/...`.
+- Coste 0 en desarrollo: no se añaden servicios de pago como predeterminados. No se inventan datos para verificaciones de cuentas (Meta u otras).
 - Solo `api` decide estados. La IA propone, la API valida, una persona decide lo importante.
 - Toda notificación saliente la pide `api` a `bot` con `POST /notify`. Si el bot está caído, se guarda en cola.
 - Entre servicios: cabecera `X-Internal-Token: ${INTERNAL_TOKEN}`. Usuarios: `Authorization: Bearer <jwt>`.
