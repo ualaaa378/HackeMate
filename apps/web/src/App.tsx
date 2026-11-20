@@ -16,6 +16,7 @@ import ProveedorAcceso from './admin/ProveedorAcceso';
 import { useAcceso } from './admin/acceso';
 import ProveedorSesion from './cuenta/ProveedorSesion';
 import Agenda from './pages/Agenda';
+import Creditos from './pages/Creditos';
 import Ficha from './pages/Ficha';
 import Mapa from './pages/Mapa';
 import Perfil from './pages/Perfil';
@@ -63,6 +64,7 @@ const Navegacion: React.FC = () => {
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/evento/:id" element={<Ficha />} />
         <Route path="/proponer" element={<Proponer />} />
+        <Route path="/creditos" element={<Creditos />} />
         <Route path="/admin/bandeja" element={<Bandeja />} />
         <Route path="/admin/eventos" element={<EventosAdmin />} />
         <Route path="/admin/publicadores" element={<Publicadores />} />

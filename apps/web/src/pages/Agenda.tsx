@@ -21,6 +21,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getEventos } from '../api/client';
 import type { Categoria, Evento } from '../api/types';
 import FiltrosEventos from '../components/FiltrosEventos';
+import { CabeceraPueblo, TarjetasPueblos } from '../components/FotosPueblo';
 import Marca from '../components/Marca';
 import TarjetaEvento from '../components/TarjetaEvento';
 import { agruparPorDia, fechaLarga } from '../utils/formato';
@@ -67,6 +68,12 @@ const Agenda: React.FC = () => {
         <IonRefresher slot="fixed" onIonRefresh={(ev) => void cargar().then(() => ev.detail.complete())}>
           <IonRefresherContent />
         </IonRefresher>
+
+        {municipio ? (
+          <CabeceraPueblo municipio={municipio} />
+        ) : (
+          <TarjetasPueblos municipio={municipio} onMunicipio={setMunicipio} />
+        )}
 
         <FiltrosEventos
           municipio={municipio}
