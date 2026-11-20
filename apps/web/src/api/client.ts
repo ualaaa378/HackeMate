@@ -7,7 +7,9 @@
 import eventosMock from '../mocks/eventos.json';
 import type {
   ApiError,
+  DatosAyuntamiento,
   Evento,
+  EventoCrear,
   FiltrosEventos,
   Inscripcion,
   MensajeCrear,
@@ -200,6 +202,43 @@ export function actualizarPerfil(cambios: UsuarioEditar): Promise<Usuario> {
       return esperar(usuarioMock);
     },
   );
+}
+
+// ---------- propuestas de planes ----------
+// Una propuesta es un evento que entra «en_revision» y le llega al moderador del ayuntamiento.
+// POST /eventos hoy solo acepta el token interno: hasta que acepte el JWT del vecino
+// (y el contrato tenga los datos para el ayuntamiento) se guarda en modo demo.
+export interface PropuestaEnviada {
+  evento: Evento;
+  ayuntamiento: DatosAyuntamiento;
+  demo: boolean;
+}
+
+export const propuestasMock: PropuestaEnviada[] = [];
+
+export async function proponerEvento(datos: EventoCrear, ayuntamiento: DatosAyuntamiento): Promise<PropuestaEnviada> {
+  const conSesionReal = !USAR_MOCKS && token && token !== 'demo';
+  if (conSesionReal) {
+    try {
+      const evento = await peticion<Evento>('/eventos', { method: 'POST', body: JSON.stringify(datos) });
+      return { evento, ayuntamiento, demo: false };
+    } catch (e) {
+      if (e instanceof ErrorApi && e.status !== 401 && e.status !== 403) throw e;
+    }
+  }
+  const evento: Evento = {
+    ...datos,
+    id: crypto.randomUUID(),
+    lat: datos.lat ?? 0,
+    lon: datos.lon ?? 0,
+    es_gratuito: datos.es_gratuito ?? !datos.precio_eur,
+    estado: 'en_revision',
+    origen: { canal: 'web', importado_auto: false },
+    inscritos: 0,
+  };
+  const p = { evento, ayuntamiento, demo: true };
+  propuestasMock.push(p);
+  return esperar(p);
 }
 
 // ---------- chat del evento ----------

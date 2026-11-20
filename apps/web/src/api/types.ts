@@ -17,6 +17,43 @@ export type Usuario = Esquemas['usuario'];
 export type Token = Esquemas['Token'];
 export type UsuarioEditar = Esquemas['UsuarioEditar'];
 export type MensajeCrear = Esquemas['MensajeCrear'];
+export type EventoCrear = Esquemas['EventoCrear'];
+
+export const PUBLICOS = {
+  todos: 'Todos los públicos',
+  infantil: 'Infantil y familias',
+  adultos: 'Solo mayores de 18',
+  mayores: 'Personas mayores',
+} as const;
+export type Publico = keyof typeof PUBLICOS;
+
+export const NECESIDADES = {
+  espacio: 'Usar un espacio municipal (plaza, salón, pabellón…)',
+  calle: 'Cortar una calle o el tráfico',
+  material: 'Mesas, sillas o escenario',
+  luz: 'Toma de luz o equipo de sonido',
+  musica: 'Música amplificada o fuegos',
+  comida: 'Vender o servir comida y bebida',
+  seguridad: 'Protección Civil, Policía o ambulancia',
+  limpieza: 'Limpieza y contenedores después',
+  difusion: 'Ayuda para anunciarlo (bando, redes, cartel)',
+} as const;
+export type Necesidad = keyof typeof NECESIDADES;
+
+/**
+ * Datos de la propuesta que solo ve el ayuntamiento. Aún NO están en el contrato:
+ * hasta que se añadan (contract-change), la API solo recibe la parte pública (EventoCrear).
+ */
+export interface DatosAyuntamiento {
+  responsable: string;
+  telefono: string;
+  entidad: 'particular' | 'asociacion' | 'comercio' | 'otra';
+  entidad_nombre?: string;
+  publico: Publico;
+  necesidades: Necesidad[];
+  seguro_rc: 'si' | 'no' | 'nose';
+  observaciones?: string;
+}
 
 export interface Pagina<T> {
   items: T[];

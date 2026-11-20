@@ -17,6 +17,7 @@ import Agenda from './pages/Agenda';
 import Ficha from './pages/Ficha';
 import Mapa from './pages/Mapa';
 import Perfil from './pages/Perfil';
+import Proponer from './pages/Proponer';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -52,6 +53,7 @@ const App: React.FC = () => (
             <Route path="/mapa" element={<Mapa />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/evento/:id" element={<Ficha />} />
+            <Route path="/proponer" element={<Proponer />} />
             <Route path="/" element={<Navigate to="/agenda" replace />} />
           </IonRouterOutlet>
           <IonTabBar slot="bottom">
