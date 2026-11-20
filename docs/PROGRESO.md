@@ -90,10 +90,10 @@
 ## Flujo B · WhatsApp, IA y automatizaciones
 
 **Bloque 1 (vie 18:30–23:30)**
-- [ ] Webhook de Twilio con acuse inmediato (<1 s) y trabajo en segundo plano
-- [ ] Adaptador de canal `console` para probar sin WhatsApp
-- [ ] `llm_router` con cadena Claude → Gemini → NIM → reglas, timeout y registro de tokens
-- [ ] Extractor de eventos desde texto → `ExtraccionEvento` validada
+- [x] Webhook de Twilio con acuse inmediato (<1 s) y trabajo en segundo plano
+- [x] Adaptador de canal `console` para probar sin WhatsApp
+- [~] `llm_router` con cadena Gemini → FreeLLMAPI → Claude (opcional) → reglas, timeout y registro de tokens (falta probar con claves reales)
+- [x] Extractor de eventos desde texto → `ExtraccionEvento` validada
 
 **Bloque 2 (sáb 08:00–13:00)**
 - [ ] Extractor desde imagen (cartel) y desde audio (Whisper)
