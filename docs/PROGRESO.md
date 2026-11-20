@@ -10,9 +10,9 @@
 
 | Flujo | Responsable | Rama actual | Estado | Última actualización |
 |---|---|---|---|---|
-| A · Backend, datos e infra | Dev A: ________ | `feat/api-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
-| B · WhatsApp e IA | Dev B: ________ | `feat/bot-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
-| C · App Ionic, web/PWA y panel | Dev C: ________ | `feat/web-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| A · Backend, datos e infra | Dev A: Benas | `feat/api-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| B · WhatsApp e IA | Dev B: Francisco | `Flujo-B` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
 
 🟢 en plazo · 🟡 riesgo de no llegar al próximo checkpoint · 🔴 bloqueado
 
@@ -44,7 +44,7 @@
 ## CP0 · Arranque (vie 17:00–18:30) · los 3
 
 - [ ] Enfoque decidido y firmado en `PLAN.md` §2
-- [ ] Nombres asignados a Dev A / B / C (tablero de arriba)
+- [x] Nombres asignados a Dev A / B / C (tablero de arriba)
 - [ ] Cuentas creadas: Twilio WhatsApp Sandbox, Google OAuth, clave de Claude, clave de Gemini (AI Studio)
 - [ ] Ramas `main` (protegida) y `develop` creadas
 - [ ] Estructura de carpetas del monorepo creada

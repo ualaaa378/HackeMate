@@ -1,7 +1,7 @@
 # PLAN.md · Reto 1 «Reactiva tu pueblo»
 
 > Hackathon UAL para el desarrollo del interior · 20–22 nov 2026
-> Equipo: 3 desarrolladores (**Dev A**, **Dev B**, **Dev C**: poned vuestros nombres aquí)
+> Equipo: **Dev A · Benas** (Flujo A), **Dev B · Francisco** (Flujo B), **Dev C · Adán** (Flujo C)
 > Entrega oficial: **domingo 22 nov, 11:00**. Objetivo interno: **todo acoplado y probado el domingo a las 07:00**.
 > Fuente: presentación oficial https://marcoslupion.github.io/hackathon-ual-retos/ (copia en `docs/Hackathon_UAL_Retos.pdf`).
 
