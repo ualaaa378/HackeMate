@@ -10,8 +10,8 @@
 
 | Flujo | Responsable | Rama actual | Estado | Última actualización |
 |---|---|---|---|---|
-| A · Backend, datos e infra | Dev A: ________ | `feat/api-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
-| B · WhatsApp e IA | Dev B: ________ | `feat/bot-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| A · Backend, datos e infra | Dev A: Benas | `Flujo-A` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| B · WhatsApp e IA | Dev B: Francisco | `Flujo-B` | 🟢 / 🟡 / 🔴 | vie __:__ |
 | C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
 
 🟢 en plazo · 🟡 riesgo de no llegar al próximo checkpoint · 🔴 bloqueado
@@ -43,16 +43,30 @@
 
 ## CP0 · Arranque (vie 17:00–18:30) · los 3
 
-- [ ] Enfoque decidido y firmado en `PLAN.md` §2
-- [ ] Nombres asignados a Dev A / B / C (tablero de arriba)
+- [x] Enfoque decidido y firmado en `PLAN.md` §2 (Opción 1; Juan Carlos en pareja con el flujo A)
+- [x] Nombres asignados a Dev A / B / C (tablero de arriba)
 - [ ] Cuentas creadas: Twilio WhatsApp Sandbox, Google OAuth, clave de Claude, clave de Gemini (AI Studio)
-- [ ] Ramas `main` (protegida) y `develop` creadas
-- [ ] Estructura de carpetas del monorepo creada
-- [ ] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo
-- [ ] `.env.example` con todas las variables
-- [ ] `contracts/openapi.yaml` v1
-- [ ] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion)
-- [ ] `contracts/enums.md` y `contracts/fixtures/*.json`
+- [~] Ramas `main` y `develop` creadas (falta activar la protección de `main` en GitHub)
+- [x] Estructura de carpetas del monorepo creada
+- [~] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo (escrito; falta validarlo con Docker en otra máquina: pasos y resultado esperado en `PLAN_FLUJO_A.md` H0, «Cómo probar H0»). **Responsable de la prueba: por asignar en la reunión** (alguien con Docker)
+- [x] `.env.example` con todas las variables
+- [x] `contracts/openapi.yaml` v1
+- [x] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion, lugar)
+- [x] `contracts/enums.md` y `contracts/fixtures/*.json`
+- [ ] **B (Francisco) confirma los contratos v1 de `Flujo-A`.** Revisar que:
+  - `services/bot/app/schemas.py` (`ExtraccionEvento`, `Campo`, `Tokens`) encaja con `contracts/schemas/extraccion_evento.json` y su fixture valida con el modelo Pydantic.
+  - El cuerpo que manda `api_cliente.importar_evento` (`extraccion`, `telefono_publicador`, `origen`) encaja con `ImportarEvento` de `openapi.yaml`.
+  - `POST /notify` acepta `contracts/schemas/notificacion.json` (lo mínimo: `telefono`, `tipo`, `texto`) y `metrics.registrar` envía lo que pide `MetricaTokens`.
+  - Los endpoints `/ai/*` de `openapi.yaml` son los que va a implementar.
+  - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
+- [ ] **C (Adán) confirma los contratos v1 de `Flujo-A`.** Revisar que:
+  - `contracts/schemas/evento.json` (con `inscritos`), `lugar.json` y los fixtures `eventos.json`, `eventos_demo.json`, `lugares.json`, `municipios.json` y `FUENTES.md` son los de su PR de datos reales, sin cambios. `openapi.yaml` ya incluye `GET /lugares` y `GET /lugares/{id}`.
+  - Su PR de datos reales se rebasa sobre `develop` cuando entre `Flujo-A` (los archivos de `contracts/` quedan idénticos y desaparecen del diff).
+  - `npx openapi-typescript contracts/openapi.yaml -o apps/web/src/api/schema.d.ts` genera tipos sin errores.
+  - Los fixtures de usuarios, publicadores, inscripciones, mensajes, notificaciones y `eventos_moderacion.json` le bastan para las pantallas con mocks.
+  - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
+- [ ] Cerrar la PR #1 (`contract/v1`) **sin merge**: la sustituyen los contratos de `Flujo-A` (mismo `evento.json`). Si tenía algo que falte en `Flujo-A`, se añade por PR `contract-change`.
+- [ ] PR `Flujo-A` → `develop` revisada y mergeada (orden A → B → C); `main` protegida en GitHub
 - [ ] Preguntas enviadas a la organización por Telegram (PLAN §8)
 
 ---

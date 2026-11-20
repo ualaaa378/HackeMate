@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "lugar.json",
+  "title": "Lugar",
+  "description": "Información permanente de un pueblo (rutas, sitios que ver, comercios, alojamientos y servicios). No tiene fecha: los planes con fecha son Evento.",
+  "type": "object",
+  "required": [
+    "id",
+    "nombre",
+    "tipo",
+    "municipio",
+    "lat",
+    "lon",
+    "fuentes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "nombre": {
+      "type": "string",
+      "minLength": 3
+    },
+    "tipo": {
+      "enum": [
+        "ruta",
+        "sitio_interes",
+        "comercio",
+        "alojamiento",
+        "servicio"
+      ]
+    },
+    "municipio": {
+      "type": "string"
+    },
+    "descripcion": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "direccion": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "telefono": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "web": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lat": {
+      "type": "number"
+    },
+    "lon": {
+      "type": "number"
+    },
+    "coordenadas_exactas": {
+      "type": "boolean",
+      "description": "false si se usan las coordenadas del pueblo"
+    },
+    "ruta": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "modalidad": {
+          "enum": [
+            "senderismo",
+            "btt",
+            "ciclismo",
+            "paseo"
+          ]
+        },
+        "distancia_km": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "desnivel_m": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "dificultad": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "duracion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "salida": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "fuentes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
