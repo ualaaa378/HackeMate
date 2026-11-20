@@ -11,7 +11,7 @@
 | Flujo | Responsable | Rama actual | Estado | Última actualización |
 |---|---|---|---|---|
 | A · Backend, datos e infra | Dev A: Benas | `Flujo-A` | 🟢 H1 hecho (E1.0–E1.6, 135 tests); PR a `develop` abierta; falta integración CP1 con B y C y Docker sin validar | vie 20:00 |
-| B · WhatsApp e IA | Dev B: Francisco | `Flujo-B` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| B · Bot (Telegram/WhatsApp) e IA | Dev B: Francisco | `Flujo-B` | 🟢 | vie 20/11 20:00 |
 | C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-docker` | 🟢 | vie 20/11 |
 
 🟢 en plazo · 🟡 riesgo de no llegar al próximo checkpoint · 🔴 bloqueado
@@ -103,29 +103,36 @@
 
 ---
 
-## Flujo B · WhatsApp, IA y automatizaciones
+## Flujo B · Bot (Telegram / WhatsApp), IA y automatizaciones
+
+> Plan y decisiones del flujo: [`PLAN_FLUJO_B.md`](PLAN_FLUJO_B.md). Canal activo: **Telegram** (@HackeMate_bot).
+> WhatsApp Cloud API (Meta) está programado pero bloqueado por Meta (verificación de negocio + método de pago).
 
 **Bloque 1 (vie 18:30–23:30)**
-- [ ] Webhook de Twilio con acuse inmediato (<1 s) y trabajo en segundo plano
-- [ ] Adaptador de canal `console` para probar sin WhatsApp
-- [ ] `llm_router` con cadena Claude → Gemini → NIM → reglas, timeout y registro de tokens
-- [ ] Extractor de eventos desde texto → `ExtraccionEvento` validada
+- [x] Webhooks con acuse inmediato y trabajo en segundo plano: Telegram, WhatsApp (Meta) y Twilio
+- [x] Canal Telegram funcionando de punta a punta (botones, voz, fotos, ubicación)
+- [x] Canal WhatsApp Cloud API (Meta) programado y probado contra la API real · [!] envío bloqueado por Meta
+- [x] Simulador `POST /dev/mensaje` y consola para probar sin mensajería
+- [x] `llm_router` Gemini → FreeLLMAPI → Claude (opcional) → reglas, con timeout y registro de tokens (probado con FreeLLMAPI real)
+- [x] Extractor de eventos desde texto → `ExtraccionEvento` validada
+- [ ] Integrar `services/bot` en `infra/docker-compose.yml` en lugar del stub (con Flujo A)
+- [ ] Ajustar al contrato el flujo importar → confirmar (`POST /eventos/importar` y luego `/eventos/{id}/confirmar`)
 
 **Bloque 2 (sáb 08:00–13:00)**
-- [ ] Extractor desde imagen (cartel) y desde audio (Whisper)
-- [ ] Conversación del publicador: pregunta lo que falta y confirma (botones)
-- [ ] Antispam: reglas baratas primero, IA solo si es dudoso
+- [ ] Extractor desde imagen (cartel) y desde audio (transcripción)
+- [~] Conversación del publicador: pregunta lo que falta y confirma (botones hechos; falta usar `/confirmar` de la API)
+- [ ] Antispam: reglas baratas primero, IA solo si es dudoso (`POST /ai/spam`)
 - [ ] Ingesta: «pega el enlace/texto del post» + scraper de una web pública
 - [ ] Conversación del moderador: «enséñame lo pendiente», aprobar/rechazar
 
 **Bloque 3 (sáb 14:00–19:00)**
-- [ ] Conversación del vecino: gustos, pueblo/ubicación, «¿qué hay este finde cerca?»
-- [ ] Inscripción desde WhatsApp con un botón
-- [ ] `POST /notify`: recomendaciones, cambios de hora y anuncios (respetando preferencias)
-- [ ] Asistente del evento: responde solo con la ficha, si no, deriva al organizador
+- [ ] Conversación del vecino: gustos, pueblo/ubicación, «¿qué hay este finde cerca?» (`POST /ai/preferencias`)
+- [ ] Inscripción desde el chat con un botón
+- [~] `POST /notify`: hecho el envío (texto, botones, plantillas de WhatsApp); faltan preferencias y destinos de Telegram en el contrato
+- [ ] Asistente del evento: responde solo con la ficha, si no, deriva al organizador (`POST /ai/responder-ficha`)
 
 **Bloque 4 (sáb 20:00–00:00)**
-- [ ] Botón/flag «simular caída del LLM» para enseñar el fallback
+- [~] «Simular caída del LLM»: la variable `LLM_SIMULAR_CAIDA` existe; falta el botón en el panel (Flujo C)
 - [ ] Respuesta en audio (TTS) para quien escribe con audios
 - [ ] Respuestas en otros idiomas para visitantes
 
@@ -200,13 +207,13 @@
 
 | Hora | Flujo | Problema | Quién ayuda | Resuelto |
 |---|---|---|---|---|
-| | | | | [ ] |
+| vie 19:00 | B | Meta bloquea el envío de WhatsApp Cloud API (errores 141010 verificación de negocio, 141006 método de pago, 131031). Decisión: canal activo **Telegram**; WhatsApp queda para producción con una entidad verificada | Organización (¿portfolio de Meta verificado de la Diputación/UAL?) | [~] |
 
 ## Cambios de contrato
 
 | Hora | PR | Cambio | Aprobado por |
 |---|---|---|---|
-| | | | |
+| vie 20:00 | (propuesta B) | Añadir `telegram` al enum `canal`; `telegram_id` opcional en `Usuario` (el bot pide el teléfono con el botón «Compartir mi número», así `telefono` E.164 sigue valiendo en `ImportarEvento` y `Notificacion`); `plantilla`/`parametros` opcionales en `Notificacion`; documentar `/webhook/telegram`, `/webhook/meta` y `/dev/mensaje` en `openapi.yaml`. Detalle en `PLAN_FLUJO_B.md` §5 | pendiente (A y C) |
 
 ## Registro de checkpoints
 
@@ -216,3 +223,14 @@
 | CP2 | | | | |
 | CP3 | | | | |
 | CP4 | | | | |
+
+## Avisos del flujo A para B y C (vie 20/11, 22:00)
+
+Estado de las ramas del flujo A y lo que cambia para los demás. Orden de merge previsto: **#10 → #12 → #11 (B) → C**.
+
+| PR | Rama | Qué trae | Qué tiene que hacer B / C |
+|---|---|---|---|
+| [#10](https://github.com/ualaaa378/HackeMate/pull/10) | `Flujo-A` | H1: la API lee de la base de datos (municipios, lugares, eventos con filtros y radio, ficha, POST/PATCH), publicadores, usuarios, `GET /usuarios/by-phone/{e164}` y `POST /eventos/importar` (crea en `pendiente_confirmacion`, devuelve `faltan`, no duplica por `origen.url`). El contenedor `api` carga el seed al arrancar. Ya lleva `develop` integrado y el `.env.example` y este archivo resueltos con `Flujo-B`, así que la #11 entra limpia después. | **C:** las lecturas públicas ya salen de la base (sin token solo eventos `publicado` y publicadores `aprobado`). Crear o editar eventos pide `X-Internal-Token` hasta el login (H3). **B:** `importar`, `by-phone`, `POST /usuarios` y `POST/PATCH /eventos` piden `X-Internal-Token`. |
+| [#12](https://github.com/ualaaa378/HackeMate/pull/12) `contract-change` | `feat/api-canales` (encima de #10) | Respuesta a la propuesta de B: canal `telegram`, `telegram_id` en usuario y publicador, componente `Contacto` (`+34…` o `tg:<chat_id>`), `contacto_publicador` en `ImportarEvento`, `contacto`/`plantilla`/`parametros` en `Notificacion`, rutas `GET /usuarios/by-contacto/{contacto}` y `POST /usuarios/vincular`, y las rutas del bot documentadas. Solo añadidos. Migración `0002_canal_telegram`. | **B:** funciona ya con lo que manda el bot (`tg:` en `telefono_publicador`); cuando podáis, usad `contacto_publicador` y llamad a `POST /usuarios/vincular` al «Compartir mi número». **C:** regenerar tipos (`npm run api:tipos`); solo se añade `telegram` a los enums. **Aprobación de B y C pendiente.** |
+
+Pendiente del flujo A tras el merge de #11: cambiar en `infra/docker-compose.yml` el stub del bot por `build: ../services/bot` y probar el compose en una máquina con Docker.
