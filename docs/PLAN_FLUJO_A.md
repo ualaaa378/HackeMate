@@ -166,8 +166,8 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 - [x] H2.1 `POST /eventos/importar`: recibe `ExtraccionEvento` + origen, la asocia al publicador (fuente → publicador → WhatsApp), crea el evento en `pendiente_confirmacion` y devuelve los campos que faltan.
 - [x] H2.2 Detección de duplicados: mismo `origen.url` → devuelve el existente; si no, similitud de título + fecha + municipio por encima de un umbral → se marca como posible duplicado.
 - [x] H2.3 `POST /eventos/{id}/confirmar` con los campos completados → pasa a moderación.
-- [ ] H2.4 Niveles de confianza: nivel 0 todo a `en_revision`; nivel 1 pasa si es «lo habitual» (misma categoría que publicaciones ya aprobadas y `score_spam` bajo); nivel 2 pasa salvo spam alto. Subida de nivel automática tras N aprobaciones (N configurable, p. ej. 3).
-- [ ] H2.5 `GET /moderacion/pendientes` (con `motivo`) y `POST /moderacion/{id}/decision` (aprobar, rechazar, retirar). Pausar publicador y pausar automatizaciones.
+- [x] H2.4 Niveles de confianza: nivel 0 todo a `en_revision`; nivel 1 pasa si es «lo habitual» (misma categoría que publicaciones ya aprobadas y `score_spam` bajo); nivel 2 pasa salvo spam alto. Subida de nivel automática tras N aprobaciones (N configurable, p. ej. 3).
+- [x] H2.5 `GET /moderacion/pendientes` (con `motivo`) y `POST /moderacion/{id}/decision` (aprobar, rechazar, retirar). Pausar publicador y pausar automatizaciones.
 - [ ] H2.6 Alta de publicador: `POST /publicadores` → `POST /auth/whatsapp/codigo` + `/verificar` → `POST /publicadores/{id}/aprobar` → `POST /publicadores/{id}/fuentes`. El moderador recibe aviso vía `/notify`.
 - [x] H2.7 Seed con un publicador de nivel 2 (Bar La Plaza, «Menú del domingo») y uno de nivel 0 para la demo del antispam.
 

@@ -427,7 +427,7 @@ paths:
       tags: [moderacion]
       summary: Bandeja del moderador (eventos en revisión y publicadores por aprobar), con motivo
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       parameters:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/Size"
@@ -446,7 +446,7 @@ paths:
       tags: [moderacion]
       summary: Aprobar, rechazar o retirar un evento
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -517,7 +517,7 @@ paths:
       tags: [publicadores]
       summary: El moderador aprueba (o rechaza) la entidad
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: false
         content:
@@ -544,7 +544,7 @@ paths:
       tags: [publicadores]
       summary: Pausar (o reactivar) un publicador o solo sus automatizaciones
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -570,7 +570,7 @@ paths:
       tags: [publicadores]
       summary: Conectar una fuente (Facebook, Instagram, web) que el bot vigila
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:

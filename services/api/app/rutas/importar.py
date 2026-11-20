@@ -20,6 +20,7 @@ from app.duplicados import buscar_posible_duplicado
 from app.errores import ErrorApi
 from app.modelos import CANALES, CATEGORIAS, Evento, Fuente, Municipio, Publicador, ahora
 from app.moderacion import clasificar_spam, decidir_estado
+from app.notificaciones import notificar_moderadores
 from app.rutas.eventos import (
     Categoria,
     EnteroNoNegativo,
@@ -387,8 +388,10 @@ def confirmar_evento(id: str, datos: ConfirmarEvento, db: Session = Depends(get_
     evento.motivo_moderacion = motivo
     # Solo pueden quedar opcionales (lugar, plazas…): no bloquean, pero el bot puede seguir pidiéndolos.
     evento.faltan = faltan
-    db.commit()
     if estado == "en_revision":
-        # E2.7: notificar_moderadores(...)
-        pass
+        quien = publicador.nombre if publicador is not None else "sin publicador"
+        notificar_moderadores(
+            db, "moderacion", f"Evento para revisar: «{evento.titulo}» ({quien}). Motivo: {motivo}", evento_id=evento.id
+        )
+    db.commit()
     return _resultado(db, evento, duplicado=False, status=200, posible_duplicado_de=parecido.id if parecido else None)

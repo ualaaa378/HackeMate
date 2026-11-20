@@ -1,4 +1,4 @@
-"""Publicadores: lista, ficha y alta (E1.5)."""
+"""Publicadores: lista, ficha y alta (E1.5); aprobar, pausar y fuentes (H2.5-H2.6)."""
 
 import json
 from datetime import datetime, timezone
@@ -6,10 +6,12 @@ from pathlib import Path
 
 import pytest
 from jsonschema import Draft202012Validator
+from sqlalchemy import select
 
 from app.config import get_settings
-from app.modelos import Publicador
+from app.modelos import Notificacion, Publicador, Usuario
 from app.seed import sembrar
+from tests.test_importar import _cuerpo
 
 SCHEMAS = Path(__file__).resolve().parents[3] / "contracts" / "schemas"
 VIERNES = datetime(2026, 11, 20, 18, 0, tzinfo=timezone.utc)
@@ -47,10 +49,14 @@ def _error(r, status: int, code: str) -> None:
 
 
 @pytest.fixture
-def api(cliente, db):
+def api(cliente, db, monkeypatch):
+    # Bot caído (sin BOT_URL): los avisos quedan en cola y nada espera a la red.
+    monkeypatch.setenv("BOT_URL", "")
+    get_settings.cache_clear()
     sembrar(db, ahora=VIERNES)
     db.commit()
-    return cliente
+    yield cliente
+    get_settings.cache_clear()
 
 
 def _cambiar_estado(db, id: str, estado: str) -> None:
@@ -201,3 +207,164 @@ def test_alta_sin_campos_obligatorios_422(api):
 def test_alta_municipio_desconocido_422(api):
     r = api.post("/api/v1/publicadores", json=NUEVO | {"municipio": "Madrid"}, headers=TOKEN)
     _error(r, 422, "municipio_no_encontrado")
+
+
+# --- Aviso a los moderadores en el alta ---------------------------------------------------------
+
+TEL_MODERADOR = "+34600000779"
+
+
+def _moderador(db) -> Usuario:
+    u = Usuario(nombre="Mod de prueba", rol="moderador", telefono=TEL_MODERADOR)
+    db.add(u)
+    db.commit()
+    return u
+
+
+def _avisos(db, telefono: str) -> list[Notificacion]:
+    db.expire_all()
+    return list(db.scalars(select(Notificacion).where(Notificacion.telefono == telefono)).all())
+
+
+def test_alta_avisa_a_los_moderadores_con_el_bot_caido(api, db):
+    _moderador(db)
+    r = api.post("/api/v1/publicadores", json=NUEVO, headers=TOKEN)
+    assert r.status_code == 201, r.text
+    avisos = _avisos(db, TEL_MODERADOR)
+    assert len(avisos) == 1 and avisos[0].tipo == "moderacion" and NUEVO["nombre"] in avisos[0].texto
+    assert avisos[0].estado_envio == "pendiente"
+
+
+# --- POST /publicadores/{id}/aprobar ------------------------------------------------------------
+
+
+def _alta(api) -> str:
+    r = api.post("/api/v1/publicadores", json=NUEVO, headers=TOKEN)
+    assert r.status_code == 201, r.text
+    return r.json()["id"]
+
+
+def _aprobar(api, id: str, cuerpo: dict | None = None, headers=TOKEN):
+    return api.post(f"/api/v1/publicadores/{id}/aprobar", json=cuerpo, headers=headers)
+
+
+def test_aprobar_publicador_con_nivel(api, db):
+    id = _alta(api)
+    r = _aprobar(api, id, {"aprobar": True, "nivel_confianza": 1})
+    assert r.status_code == 200, r.text
+    _valida(r.json())
+    assert r.json()["estado"] == "aprobado" and r.json()["nivel_confianza"] == 1
+    # Ya es público.
+    assert api.get(f"/api/v1/publicadores/{id}").status_code == 200
+    # Aviso al publicador (no es usuario: va a su teléfono).
+    assert any("ya puede publicar" in n.texto for n in _avisos(db, NUEVO["telefono"]))
+    # Ya no está pendiente: 409.
+    _error(_aprobar(api, id), 409, "estado_invalido")
+
+
+def test_aprobar_sin_cuerpo_desde_whatsapp_verificado(api, db):
+    id = _alta(api)
+    _cambiar_estado(db, id, "whatsapp_verificado")
+    r = api.post(f"/api/v1/publicadores/{id}/aprobar", headers=TOKEN)
+    assert r.status_code == 200, r.text
+    assert r.json()["estado"] == "aprobado" and r.json()["nivel_confianza"] == 0
+
+
+def test_rechazar_publicador(api, db):
+    id = _alta(api)
+    r = _aprobar(api, id, {"aprobar": False, "motivo": "No es de la zona"})
+    assert r.status_code == 200, r.text
+    _valida(r.json())
+    assert r.json()["estado"] == "rechazado"
+    assert "No es de la zona" in _avisos(db, NUEVO["telefono"])[-1].texto
+    _error(_aprobar(api, id), 409, "estado_invalido")
+
+
+def test_aprobar_errores(api):
+    id = _alta(api)
+    _error(_aprobar(api, id, headers={}), 401, "no_autenticado")
+    _error(_aprobar(api, INEXISTENTE), 404, "publicador_no_encontrado")
+    _error(_aprobar(api, id, {"nivel_confianza": 5}), 422, "validacion")
+    _error(_aprobar(api, AMIGOS_VELEFIQUE), 409, "estado_invalido")  # ya aprobado
+
+
+# --- POST /publicadores/{id}/pausar -------------------------------------------------------------
+
+URL_IMPORTAR = "/api/v1/eventos/importar"
+
+
+def _importar(api, **extra):
+    return api.post(URL_IMPORTAR, json=_cuerpo(**extra), headers=TOKEN)
+
+
+def _pausar(api, id: str, que: str, pausado: bool, headers=TOKEN):
+    return api.post(f"/api/v1/publicadores/{id}/pausar", json={"que": que, "pausado": pausado}, headers=headers)
+
+
+def test_pausar_y_reactivar_publicador(api, db):
+    id = _alta(api)
+    assert _aprobar(api, id, {"nivel_confianza": 2}).status_code == 200
+
+    r = _pausar(api, id, "publicador", True)
+    assert r.status_code == 200, r.text
+    _valida(r.json())
+    assert r.json()["estado"] == "pausado"
+    _error(_importar(api, url="https://example.org/pausa-1", telefono_publicador=NUEVO["telefono"]),
+           403, "publicador_pausado")
+    assert "en pausa" in _avisos(db, NUEVO["telefono"])[-1].texto
+
+    r = _pausar(api, id, "publicador", False)
+    assert r.status_code == 200 and r.json()["estado"] == "aprobado"
+    r = _importar(api, url="https://example.org/pausa-2", telefono_publicador=NUEVO["telefono"])
+    assert r.status_code == 201, r.text
+    assert r.json()["evento"]["publicador_id"] == id
+
+
+def test_pausar_automatizaciones(api, db):
+    r = _pausar(api, AMIGOS_VELEFIQUE, "automatizaciones", True)
+    assert r.status_code == 200, r.text
+    _valida(r.json())
+    assert r.json()["automatizaciones_pausadas"] is True and r.json()["estado"] == "aprobado"
+    r = _pausar(api, AMIGOS_VELEFIQUE, "automatizaciones", False)
+    assert r.json()["automatizaciones_pausadas"] is False
+
+
+def test_pausar_errores(api):
+    id = _alta(api)
+    _error(_pausar(api, id, "publicador", True, headers={}), 401, "no_autenticado")
+    _error(_pausar(api, INEXISTENTE, "publicador", True), 404, "publicador_no_encontrado")
+    _error(_pausar(api, id, "todo", True), 422, "validacion")
+    _error(_pausar(api, id, "publicador", True), 409, "estado_invalido")  # aún solicitado
+
+
+# --- POST /publicadores/{id}/fuentes ------------------------------------------------------------
+
+URL_FUENTE = "https://www.facebook.com/club-ciclista-tahal"
+
+
+def _fuente(api, id: str, canal: str = "facebook", url: str = URL_FUENTE, headers=TOKEN):
+    return api.post(f"/api/v1/publicadores/{id}/fuentes", json={"canal": canal, "url": url}, headers=headers)
+
+
+def test_fuente_asocia_lo_importado_al_publicador(api, db):
+    id = _alta(api)
+    assert _aprobar(api, id).status_code == 200
+    r = _fuente(api, id)
+    assert r.status_code == 201, r.text
+    _valida(r.json())
+    assert [(f["canal"], f["url"], f["activa"]) for f in r.json()["fuentes"]] == [("facebook", URL_FUENTE, True)]
+
+    # Un post de esa página, sin teléfono del remitente: se asocia por la fuente.
+    r = _importar(api, url=URL_FUENTE + "/posts/123")
+    assert r.status_code == 201, r.text
+    assert r.json()["evento"]["publicador_id"] == id
+
+
+def test_fuente_errores(api):
+    id = _alta(api)
+    _error(_fuente(api, id, headers={}), 401, "token_interno_invalido")
+    _error(_fuente(api, INEXISTENTE), 404, "publicador_no_encontrado")
+    _error(_fuente(api, id, canal="whatsapp"), 422, "validacion")
+    assert _fuente(api, id).status_code == 201
+    _error(_fuente(api, id), 409, "fuente_ya_existe")
+    _error(_fuente(api, AMIGOS_VELEFIQUE, url=URL_FUENTE + "/"), 409, "fuente_ya_existe")

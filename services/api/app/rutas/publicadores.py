@@ -1,4 +1,4 @@
-"""Publicadores: lista, ficha y solicitud de alta. Aprobar, pausar y fuentes llegan en H2."""
+"""Publicadores: lista, ficha, solicitud de alta (E1.5) y, del moderador, aprobar, pausar y fuentes (H2.5-H2.6)."""
 
 from typing import Annotated, Literal
 
@@ -9,10 +9,11 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
 from app.errores import ErrorApi
-from app.modelos import ESTADOS_PUBLICADOR, TIPOS_PUBLICADOR, Municipio, Publicador, Usuario
+from app.modelos import ESTADOS_PUBLICADOR, TIPOS_PUBLICADOR, Fuente, Municipio, Publicador, Usuario
+from app.notificaciones import notificar_moderadores, notificar_publicador
 from app.paginacion import Pagina, pagina, paginar
 from app.rutas.publico import es_uuid
-from app.seguridad import es_servicio_interno, exigir_token_interno
+from app.seguridad import es_servicio_interno, exigir_moderador, exigir_token_interno
 from app.serializar import publicador_a_dict
 from app.telefonos import validar_telefono
 
@@ -99,5 +100,127 @@ def crear_publicador(datos: PublicadorCrear, db: Session = Depends(get_db)):
         usuario_id=usuario.id if usuario else None,
     )
     db.add(publicador)
+    db.flush()
+    notificar_moderadores(
+        db, "moderacion", f"Nueva solicitud de publicador: {publicador.nombre} ({publicador.municipio}). "
+        "Revísala en la bandeja de moderación."
+    )
+    db.commit()
+    return publicador_a_dict(_buscar(db, publicador.id))
+
+
+# --- Moderador: aprobar y pausar (H2.5, H2.6) ---------------------------------------------------
+
+
+class AprobarPublicador(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    aprobar: bool = True
+    nivel_confianza: Literal[0, 1, 2] = 0
+    motivo: str | None = None
+
+
+class PausarPublicador(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    que: Literal["publicador", "automatizaciones"]
+    pausado: bool
+
+
+POR_APROBAR = ("solicitado", "whatsapp_verificado")
+
+
+@router.post("/publicadores/{id}/aprobar")
+def aprobar_publicador(
+    id: str,
+    datos: AprobarPublicador | None = None,
+    _: str = Depends(exigir_moderador),
+    db: Session = Depends(get_db),
+):
+    datos = datos or AprobarPublicador()
+    publicador = _buscar(db, id)
+    if publicador.estado not in POR_APROBAR:
+        raise ErrorApi(
+            409, "estado_invalido", "El publicador no está pendiente de aprobación", {"estado": publicador.estado}
+        )
+    # Se admite aprobar desde `solicitado` (sin verificar el WhatsApp): mientras no exista
+    # /auth/whatsapp/verificar (H3) es la única forma de completar el alta; el moderador asume la verificación.
+    motivo = (datos.motivo or "").strip() or None
+    if datos.aprobar:
+        publicador.estado = "aprobado"
+        publicador.nivel_confianza = datos.nivel_confianza
+        texto = (
+            f"¡Bienvenido! {publicador.nombre} ya puede publicar en HackeMate (nivel de confianza "
+            f"{datos.nivel_confianza}). Mándanos el cartel, el post o un audio y lo preparamos."
+        )
+    else:
+        publicador.estado = "rechazado"
+        texto = f"Tu solicitud para publicar como {publicador.nombre} no se ha aprobado." + (
+            f" Motivo: {motivo}" if motivo else ""
+        )
+    notificar_publicador(db, publicador, "moderacion", texto)
+    db.commit()
+    return publicador_a_dict(_buscar(db, publicador.id))
+
+
+@router.post("/publicadores/{id}/pausar")
+def pausar_publicador(
+    id: str, datos: PausarPublicador, _: str = Depends(exigir_moderador), db: Session = Depends(get_db)
+):
+    publicador = _buscar(db, id)
+    if datos.que == "automatizaciones":
+        # Lo que el bot importa solo (fuentes vigiladas) irá a revisión; lo que manda la persona, no.
+        publicador.automatizaciones_pausadas = datos.pausado
+        texto = (
+            "Hemos pausado la importación automática de tus fuentes: lo que publiquemos pasará por revisión."
+            if datos.pausado
+            else "Hemos reactivado la importación automática de tus fuentes."
+        )
+    else:
+        validos = ("aprobado", "pausado")
+        if publicador.estado not in validos:
+            raise ErrorApi(
+                409, "estado_invalido", "Solo se pausa o reactiva un publicador aprobado", {"estado": publicador.estado}
+            )
+        nuevo = "pausado" if datos.pausado else "aprobado"
+        if publicador.estado == nuevo:
+            return publicador_a_dict(publicador)
+        publicador.estado = nuevo
+        texto = (
+            f"{publicador.nombre} queda en pausa: de momento no puedes publicar eventos nuevos."
+            if datos.pausado
+            else f"{publicador.nombre} vuelve a estar activo: ya puedes publicar."
+        )
+    notificar_publicador(db, publicador, "moderacion", texto)
+    db.commit()
+    return publicador_a_dict(_buscar(db, publicador.id))
+
+
+# --- Fuentes que vigila el bot (H2.6) -----------------------------------------------------------
+
+
+class FuenteCrear(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    canal: Literal["facebook", "instagram", "web_externa"]
+    url: Annotated[str, Field(min_length=4, max_length=500, pattern=r"^\s*\S+\s*$")]
+
+
+@router.post("/publicadores/{id}/fuentes", status_code=201, dependencies=[Depends(exigir_token_interno)])
+def anadir_fuente(id: str, datos: FuenteCrear, db: Session = Depends(get_db)):
+    # Lo llama el bot cuando el publicador conecta su página. H3: también el moderador con su JWT.
+    publicador = _buscar(db, id)
+    if publicador.estado == "rechazado":
+        raise ErrorApi(409, "estado_invalido", "El publicador está rechazado", {"estado": publicador.estado})
+    url = datos.url.strip().rstrip("/")
+    if "://" not in url:
+        url = "https://" + url  # «facebook.com/pagina»: los posts importados llegan con la URL completa
+    existentes = db.scalars(select(Fuente)).all()
+    repetida = next((f for f in existentes if f.url.rstrip("/") == url), None)
+    if repetida is not None:
+        raise ErrorApi(
+            409, "fuente_ya_existe", "Esa fuente ya está conectada", {"publicador_id": repetida.publicador_id}
+        )
+    publicador.fuentes.append(Fuente(canal=datos.canal, url=url, activa=True))
     db.commit()
     return publicador_a_dict(_buscar(db, publicador.id))

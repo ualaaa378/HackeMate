@@ -84,7 +84,7 @@
 
 **Bloque 2 (sáb 08:00–13:00)**
 - [x] `POST /eventos/importar` y `POST /eventos/{id}/confirmar`
-- [~] Niveles de confianza 0/1/2 y bandeja de moderación con motivo *(lógica y antispam hechos: app/moderacion.py; falta la bandeja)*
+- [x] Niveles de confianza 0/1/2 y bandeja de moderación con motivo
 - [x] Detección de duplicados (origen_url + similitud)
 - [ ] Alta de publicador: verificación de WhatsApp con código + aprobación
 

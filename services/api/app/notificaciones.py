@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 from app.canales import contacto_de, reconocer_contacto
 from app.config import get_settings
-from app.modelos import FORMATOS_AVISO, TIPOS_NOTIFICACION, Notificacion, Usuario, ahora
+from app.modelos import FORMATOS_AVISO, TIPOS_NOTIFICACION, Notificacion, Publicador, Usuario, ahora
 from app.telefonos import normalizar_telefono
 
 log = logging.getLogger(__name__)
@@ -161,6 +161,27 @@ def notificar_moderadores(db: Session, tipo: str, texto: str, evento_id: str | N
     """Un aviso a cada usuario con rol `moderador`. `extra` se pasa a `notificar` (botones, plantilla…)."""
     moderadores = db.scalars(select(Usuario).where(Usuario.rol == "moderador").order_by(Usuario.creado_en)).all()
     return [notificar(db, tipo=tipo, texto=texto, usuario=m, evento_id=evento_id, **extra) for m in moderadores]
+
+
+def notificar_publicador(
+    db: Session, publicador: Publicador, tipo: str, texto: str, evento_id: str | None = None, **extra
+) -> Notificacion:
+    """Aviso al responsable del publicador: su usuario (por `usuario_id` o, si no, por el teléfono) y, si no
+    es usuario, el teléfono / Telegram del propio publicador. Mismas garantías que `notificar`."""
+    usuario = None
+    try:
+        if publicador.usuario_id:
+            usuario = db.get(Usuario, publicador.usuario_id)
+        if usuario is None and publicador.telefono:
+            usuario = db.scalar(select(Usuario).where(Usuario.telefono == publicador.telefono))
+    except Exception:  # noqa: BLE001
+        log.exception("no se pudo buscar el usuario del publicador %s", publicador.id)
+    if usuario is not None:
+        return notificar(db, tipo=tipo, texto=texto, usuario=usuario, evento_id=evento_id, **extra)
+    contacto = contacto_de("telegram", publicador.telegram_id) if publicador.telegram_id else None
+    return notificar(
+        db, tipo=tipo, texto=texto, telefono=publicador.telefono, contacto=contacto, evento_id=evento_id, **extra
+    )
 
 
 def reintentar_pendientes(db: Session, limite: int = 50) -> int:
