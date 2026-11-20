@@ -1,0 +1,941 @@
+openapi: 3.1.0
+info:
+  title: HackeMate · Reactiva tu pueblo
+  version: 1.0.0-draft
+  description: |
+    Contrato v1 entre `api` (Flujo A), `bot` (Flujo B) y `web` (Flujo C).
+    Reglas: snake_case, UUID v4, fechas ISO 8601 con zona, errores con `Error`.
+    Solo se AÑADEN campos opcionales tras CP0 (PLAN §5.3). Enums en `enums.md`.
+servers:
+  - url: http://localhost:8000
+    description: api
+  - url: http://localhost:8001
+    description: bot (solo /notify, /ai/*, /webhook)
+
+security:
+  - bearer: []
+
+tags:
+  - name: eventos
+  - name: inscripciones
+  - name: chat
+  - name: moderacion
+  - name: publicadores
+  - name: usuarios
+  - name: auth
+  - name: estadisticas
+  - name: bot
+  - name: salud
+
+paths:
+  /health:
+    get:
+      tags: [salud]
+      security: []
+      summary: Estado del servicio (api y bot)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, version]
+                properties:
+                  status: { const: ok }
+                  version: { type: string }
+
+  # ---------------- EVENTOS ----------------
+  /api/v1/eventos:
+    get:
+      tags: [eventos]
+      security: []
+      summary: Agenda y mapa. Por defecto solo `publicado`.
+      parameters:
+        - { in: query, name: municipio, schema: { type: string } }
+        - { in: query, name: categoria, schema: { $ref: '#/components/schemas/Categoria' } }
+        - { in: query, name: desde, schema: { type: string, format: date-time } }
+        - { in: query, name: hasta, schema: { type: string, format: date-time } }
+        - { in: query, name: lat, schema: { type: number } }
+        - { in: query, name: lon, schema: { type: number } }
+        - { in: query, name: radio_km, schema: { type: number } }
+        - { in: query, name: estado, description: 'Solo moderador/publicador; por defecto publicado', schema: { $ref: '#/components/schemas/EstadoEvento' } }
+        - { in: query, name: publicador_id, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+      responses:
+        '200':
+          description: Página de eventos ordenada por fecha_inicio
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginaEventos' }
+    post:
+      tags: [eventos]
+      summary: Crear evento a mano (publicador). Pasa por antispam/nivel de confianza.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventoEntrada' }
+      responses:
+        '201': { description: Creado, content: { application/json: { schema: { $ref: '#/components/schemas/Evento' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+
+  /api/v1/eventos/importar:
+    post:
+      tags: [eventos]
+      summary: El bot entrega una extracción de IA. Crea evento en `pendiente_confirmacion` (o devuelve el existente si es duplicado).
+      security: [{ interno: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [publicador_id, extraccion, origen]
+              properties:
+                publicador_id: { type: string, format: uuid }
+                extraccion: { $ref: '#/components/schemas/ExtraccionEvento' }
+                origen: { $ref: '#/components/schemas/Origen' }
+      responses:
+        '201': { description: Creado, content: { application/json: { schema: { $ref: '#/components/schemas/Evento' } } } }
+        '200': { description: 'Duplicado: devuelve el existente', content: { application/json: { schema: { $ref: '#/components/schemas/Evento' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+
+  /api/v1/eventos/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [eventos]
+      security: []
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Evento' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+    patch:
+      tags: [eventos]
+      summary: Editar (completar datos, cambiar hora, cancelar con estado=cancelado). Si cambia fecha/lugar o se cancela → /notify a inscritos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventoEntrada' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Evento' } } } }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /api/v1/eventos/{id}/confirmar:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [eventos]
+      summary: El publicador confirma (desde WhatsApp vía bot o desde la web), con los campos que faltaban.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventoEntrada' }
+      responses:
+        '200': { description: 'Estado resultante: publicado o en_revision', content: { application/json: { schema: { $ref: '#/components/schemas/Evento' } } } }
+
+  /api/v1/eventos/{id}/ics:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [eventos]
+      security: []
+      responses:
+        '200': { description: Archivo iCalendar, content: { text/calendar: { schema: { type: string } } } }
+
+  # ---------------- INSCRIPCIONES ----------------
+  /api/v1/eventos/{id}/inscripciones:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [inscripciones]
+      summary: Lista de inscritos (organizador o moderador)
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Inscripcion' } } } }
+    post:
+      tags: [inscripciones]
+      summary: Apuntarse. Si no hay plazas → lista_espera.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                usuario_id: { type: string, format: uuid, description: 'Solo llamadas internas del bot; la web usa el token' }
+      responses:
+        '201': { description: Creada, content: { application/json: { schema: { $ref: '#/components/schemas/Inscripcion' } } } }
+        '409': { $ref: '#/components/responses/Error' }
+
+  /api/v1/eventos/{id}/inscripciones/{insc_id}:
+    parameters:
+      - { $ref: '#/components/parameters/id' }
+      - { in: path, name: insc_id, required: true, schema: { type: string, format: uuid } }
+    delete:
+      tags: [inscripciones]
+      summary: Cancelar. La primera plaza en lista_espera pasa a confirmada y se le notifica.
+      responses:
+        '204': { description: Cancelada }
+    patch:
+      tags: [inscripciones]
+      summary: Marcar asistencia / valorar
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                estado: { enum: [asistio, no_asistio] }
+                valoracion: { type: integer, minimum: 1, maximum: 5 }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Inscripcion' } } } }
+
+  /api/v1/usuarios/me/inscripciones:
+    get:
+      tags: [inscripciones]
+      responses:
+        '200':
+          description: Mis planes
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Inscripcion' } } } }
+
+  /api/v1/usuarios/me/ics:
+    get:
+      tags: [inscripciones]
+      responses:
+        '200': { description: Todos mis planes en iCalendar, content: { text/calendar: { schema: { type: string } } } }
+
+  # ---------------- CHAT DEL EVENTO ----------------
+  /api/v1/eventos/{id}/mensajes:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [chat]
+      security: []
+      responses:
+        '200':
+          description: Mensajes visibles, fijados primero
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/MensajeEvento' } } } }
+    post:
+      tags: [chat]
+      summary: Pregunta, respuesta o anuncio. Si es pregunta, api pide a bot /ai/responder-ficha; si la IA no sabe, se notifica al organizador.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, texto]
+              properties:
+                tipo: { $ref: '#/components/schemas/TipoMensajeEvento' }
+                texto: { type: string, maxLength: 1000 }
+                responde_a: { type: [string, 'null'], format: uuid }
+                usuario_id: { type: string, format: uuid, description: Solo bot }
+      responses:
+        '201': { description: Creado, content: { application/json: { schema: { $ref: '#/components/schemas/MensajeEvento' } } } }
+
+  /api/v1/eventos/{id}/mensajes/{msg_id}:
+    parameters:
+      - { $ref: '#/components/parameters/id' }
+      - { in: path, name: msg_id, required: true, schema: { type: string, format: uuid } }
+    patch:
+      tags: [chat]
+      summary: Fijar u ocultar (organizador/moderador)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fijado: { type: boolean }
+                oculto: { type: boolean }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/MensajeEvento' } } } }
+
+  # ---------------- RECOMENDACIONES ----------------
+  /api/v1/recomendaciones:
+    get:
+      tags: [eventos]
+      parameters:
+        - { in: query, name: usuario_id, schema: { type: string, format: uuid } }
+        - { in: query, name: lat, schema: { type: number } }
+        - { in: query, name: lon, schema: { type: number } }
+        - { in: query, name: texto, description: 'Lo que pide con sus palabras («me gustan las rutas»)', schema: { type: string } }
+        - { in: query, name: limite, schema: { type: integer, default: 5 } }
+      responses:
+        '200':
+          description: Ordenadas por puntuación, con motivo legible
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Recomendacion' } } } }
+
+  # ---------------- MODERACIÓN ----------------
+  /api/v1/moderacion/pendientes:
+    get:
+      tags: [moderacion]
+      summary: Eventos en_revision y publicadores solicitados/verificados
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [eventos, publicadores]
+                properties:
+                  eventos: { type: array, items: { $ref: '#/components/schemas/Evento' } }
+                  publicadores: { type: array, items: { $ref: '#/components/schemas/Publicador' } }
+
+  /api/v1/moderacion/eventos/{id}/decision:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [moderacion]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Decision' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Evento' } } } }
+
+  /api/v1/moderacion/automatizaciones:
+    get:
+      tags: [moderacion]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Automatizaciones' } } } }
+    patch:
+      tags: [moderacion]
+      summary: Pausar/reanudar importación automática y aprobación automática
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Automatizaciones' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Automatizaciones' } } } }
+
+  # ---------------- PUBLICADORES ----------------
+  /api/v1/publicadores:
+    get:
+      tags: [publicadores]
+      parameters:
+        - { in: query, name: estado, schema: { $ref: '#/components/schemas/EstadoPublicador' } }
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Publicador' } } } }
+    post:
+      tags: [publicadores]
+      summary: Solicitud de alta («quiero publicar»)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, municipio]
+              properties:
+                nombre: { type: string }
+                tipo: { enum: [asociacion, ayuntamiento, comercio, alojamiento, otro] }
+                municipio: { type: string }
+                usuario_id: { type: string, format: uuid, description: Solo bot }
+      responses:
+        '201': { description: Creado, content: { application/json: { schema: { $ref: '#/components/schemas/Publicador' } } } }
+
+  /api/v1/publicadores/{id}:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    get:
+      tags: [publicadores]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Publicador' } } } }
+    patch:
+      tags: [publicadores]
+      summary: Moderador cambia nivel_confianza o pausa
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nivel_confianza: { $ref: '#/components/schemas/NivelConfianza' }
+                estado: { $ref: '#/components/schemas/EstadoPublicador' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Publicador' } } } }
+
+  /api/v1/publicadores/{id}/decision:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [publicadores]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/Decision' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Publicador' } } } }
+
+  /api/v1/publicadores/{id}/fuentes:
+    parameters: [{ $ref: '#/components/parameters/id' }]
+    post:
+      tags: [publicadores]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, url]
+              properties:
+                tipo: { $ref: '#/components/schemas/TipoFuente' }
+                url: { type: string }
+      responses:
+        '201': { description: Creada, content: { application/json: { schema: { $ref: '#/components/schemas/Fuente' } } } }
+
+  /api/v1/fuentes:
+    get:
+      tags: [publicadores]
+      summary: Fuentes activas que el bot debe vigilar
+      security: [{ interno: [] }]
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Fuente' } } } }
+
+  # ---------------- USUARIOS Y AUTH ----------------
+  /api/v1/auth/google:
+    post:
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [id_token], properties: { id_token: { type: string } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Sesion' } } } }
+
+  /api/v1/auth/whatsapp/codigo:
+    post:
+      tags: [auth]
+      security: []
+      summary: Envía un código de un solo uso por WhatsApp (api → bot /notify, tipo codigo_verificacion)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [telefono], properties: { telefono: { $ref: '#/components/schemas/Telefono' } } }
+      responses:
+        '204': { description: Enviado }
+
+  /api/v1/auth/whatsapp/verificar:
+    post:
+      tags: [auth]
+      security: []
+      summary: Verifica el código. Si hay sesión, vincula el teléfono a la cuenta.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [telefono, codigo]
+              properties:
+                telefono: { $ref: '#/components/schemas/Telefono' }
+                codigo: { type: string, pattern: '^[0-9]{6}$' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Sesion' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+
+  /api/v1/usuarios/me:
+    get:
+      tags: [usuarios]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Usuario' } } } }
+    patch:
+      tags: [usuarios]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PreferenciasEntrada' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Usuario' } } } }
+    delete:
+      tags: [usuarios]
+      summary: «Borra mis datos»
+      responses:
+        '204': { description: Borrado }
+
+  /api/v1/usuarios/by-phone/{telefono}:
+    get:
+      tags: [usuarios]
+      summary: El bot identifica a quien escribe. Crea usuario vecino si no existe.
+      security: [{ interno: [] }]
+      parameters:
+        - { in: path, name: telefono, required: true, schema: { $ref: '#/components/schemas/Telefono' } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Usuario' } } } }
+
+  /api/v1/usuarios/{id}:
+    patch:
+      tags: [usuarios]
+      summary: El bot actualiza preferencias de un usuario
+      security: [{ interno: [] }]
+      parameters: [{ $ref: '#/components/parameters/id' }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PreferenciasEntrada' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Usuario' } } } }
+
+  # ---------------- ESTADÍSTICAS Y MÉTRICAS ----------------
+  /api/v1/estadisticas:
+    get:
+      tags: [estadisticas]
+      parameters:
+        - { in: query, name: desde, schema: { type: string, format: date } }
+        - { in: query, name: hasta, schema: { type: string, format: date } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Estadisticas' } } } }
+
+  /api/v1/metrics/tokens:
+    post:
+      tags: [estadisticas]
+      security: [{ interno: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegistroTokens' }
+      responses:
+        '204': { description: Registrado }
+
+  # ---------------- BOT (servicio :8001) ----------------
+  /webhook/twilio:
+    post:
+      tags: [bot]
+      security: []
+      summary: Entrada de WhatsApp (form-urlencoded de Twilio). Responde en <1 s; el trabajo va en segundo plano.
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: TwiML vacío o acuse }
+
+  /notify:
+    post:
+      tags: [bot]
+      security: [{ interno: [] }]
+      summary: api pide enviar avisos por WhatsApp. El bot respeta formato (texto/audio).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Notificacion' }
+      responses:
+        '202': { description: Encolada }
+
+  /ai/extraer:
+    post:
+      tags: [bot]
+      security: [{ interno: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                texto: { type: [string, 'null'] }
+                imagen_url: { type: [string, 'null'] }
+                audio_url: { type: [string, 'null'] }
+                municipio_hint: { type: [string, 'null'] }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ExtraccionEvento' } } } }
+
+  /ai/spam:
+    post:
+      tags: [bot]
+      security: [{ interno: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [evento]
+              properties:
+                evento: { $ref: '#/components/schemas/Evento' }
+                historial_publicador: { type: array, items: { $ref: '#/components/schemas/Evento' } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [score_spam, motivo]
+                properties:
+                  score_spam: { type: number, minimum: 0, maximum: 1 }
+                  motivo: { type: string }
+                  parecido_a_aprobados: { type: boolean }
+
+  /ai/responder-ficha:
+    post:
+      tags: [bot]
+      security: [{ interno: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [evento, pregunta]
+              properties:
+                evento: { $ref: '#/components/schemas/Evento' }
+                pregunta: { type: string }
+      responses:
+        '200':
+          description: 'sabe=false → api deriva al organizador'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sabe]
+                properties:
+                  sabe: { type: boolean }
+                  respuesta: { type: [string, 'null'] }
+
+  /ai/preferencias:
+    post:
+      tags: [bot]
+      security: [{ interno: [] }]
+      summary: Convierte «me gustan las rutas y comer bien» en categorías y etiquetas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [texto], properties: { texto: { type: string } } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categorias: { type: array, items: { $ref: '#/components/schemas/Categoria' } }
+                  etiquetas: { type: array, items: { type: string } }
+                  fecha_desde: { type: [string, 'null'], format: date-time }
+                  fecha_hasta: { type: [string, 'null'], format: date-time }
+                  municipio: { type: [string, 'null'] }
+
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+    interno: { type: apiKey, in: header, name: X-Internal-Token }
+
+  parameters:
+    id: { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+    page: { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+    size: { in: query, name: size, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+
+  responses:
+    Error:
+      description: Error con formato común
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, examples: [evento_no_encontrado, sin_plazas, no_autorizado] }
+            message: { type: string }
+            details: { type: object }
+
+    Telefono: { type: string, pattern: '^\+[1-9][0-9]{7,14}$', description: E.164, examples: ['+34600111222'] }
+    Categoria: { enum: [deportiva, cultural, fiestas, gastronomia, ludica, comercio] }
+    EstadoEvento: { enum: [borrador, pendiente_confirmacion, en_revision, publicado, rechazado, cancelado, finalizado, archivado] }
+    EstadoPublicador: { enum: [solicitado, whatsapp_verificado, aprobado, rechazado, pausado] }
+    NivelConfianza: { type: integer, enum: [0, 1, 2] }
+    Rol: { enum: [vecino, publicador, moderador] }
+    Canal: { enum: [whatsapp, web, panel, facebook, instagram, web_externa, manual] }
+    TipoFuente: { enum: [facebook, instagram, web_externa, calendario] }
+    TipoMensajeEvento: { enum: [pregunta, respuesta, anuncio] }
+    FormatoAviso: { enum: [texto, audio] }
+
+    Evento: { $ref: './schemas/evento.json' }
+
+    Origen:
+      type: object
+      required: [canal, importado_auto]
+      properties:
+        canal: { $ref: '#/components/schemas/Canal' }
+        url: { type: [string, 'null'] }
+        importado_auto: { type: boolean }
+
+    EventoEntrada:
+      description: Campos editables de Evento (todos opcionales en PATCH)
+      type: object
+      properties:
+        titulo: { type: string }
+        descripcion: { type: string }
+        categoria: { $ref: '#/components/schemas/Categoria' }
+        etiquetas: { type: array, items: { type: string } }
+        municipio: { type: string }
+        lugar: { type: [string, 'null'] }
+        lat: { type: number }
+        lon: { type: number }
+        fecha_inicio: { type: string, format: date-time }
+        fecha_fin: { type: [string, 'null'], format: date-time }
+        precio_eur: { type: [number, 'null'] }
+        es_gratuito: { type: boolean }
+        plazas_totales: { type: [integer, 'null'] }
+        estado: { enum: [cancelado], description: Solo para cancelar }
+        motivo_cambio: { type: string, description: 'Se incluye en el aviso a inscritos («por la lluvia»)' }
+
+    PaginaEventos:
+      type: object
+      required: [items, total, page, size]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Evento' } }
+        total: { type: integer }
+        page: { type: integer }
+        size: { type: integer }
+
+    CampoExtraido:
+      type: object
+      required: [confianza]
+      properties:
+        valor: {}
+        confianza: { enum: [alta, media, baja, falta] }
+
+    ExtraccionEvento:
+      type: object
+      required: [campos, faltan, es_evento]
+      properties:
+        campos:
+          type: object
+          properties:
+            titulo: { $ref: '#/components/schemas/CampoExtraido' }
+            descripcion: { $ref: '#/components/schemas/CampoExtraido' }
+            categoria: { $ref: '#/components/schemas/CampoExtraido' }
+            municipio: { $ref: '#/components/schemas/CampoExtraido' }
+            lugar: { $ref: '#/components/schemas/CampoExtraido' }
+            fecha_inicio: { $ref: '#/components/schemas/CampoExtraido' }
+            fecha_fin: { $ref: '#/components/schemas/CampoExtraido' }
+            precio_eur: { $ref: '#/components/schemas/CampoExtraido' }
+            plazas_totales: { $ref: '#/components/schemas/CampoExtraido' }
+        faltan: { type: array, items: { type: string } }
+        es_evento: { type: boolean, description: 'false si no es una actividad (p. ej. publicidad)' }
+        transcripcion: { type: [string, 'null'], description: Texto del audio si lo hubo }
+        proveedor_ia: { type: string, examples: [claude, gemini-flash, nim, reglas] }
+        tokens: { $ref: '#/components/schemas/Tokens' }
+
+    Tokens:
+      type: object
+      properties:
+        entrada: { type: integer }
+        salida: { type: integer }
+
+    Inscripcion:
+      type: object
+      required: [id, evento_id, usuario_id, estado]
+      properties:
+        id: { type: string, format: uuid }
+        evento_id: { type: string, format: uuid }
+        usuario_id: { type: string, format: uuid }
+        estado: { enum: [confirmada, lista_espera, cancelada, asistio, no_asistio] }
+        posicion_espera: { type: [integer, 'null'] }
+        valoracion: { type: [integer, 'null'] }
+        canal: { $ref: '#/components/schemas/Canal' }
+        creada_en: { type: string, format: date-time }
+
+    MensajeEvento:
+      type: object
+      required: [id, evento_id, tipo, texto, autor, creado_en]
+      properties:
+        id: { type: string, format: uuid }
+        evento_id: { type: string, format: uuid }
+        tipo: { $ref: '#/components/schemas/TipoMensajeEvento' }
+        texto: { type: string }
+        autor: { enum: [vecino, organizador, moderador, asistente_ia] }
+        autor_nombre: { type: string, description: 'Nombre visible, nunca el teléfono' }
+        responde_a: { type: [string, 'null'], format: uuid }
+        fijado: { type: boolean }
+        oculto: { type: boolean }
+        creado_en: { type: string, format: date-time }
+
+    Recomendacion:
+      type: object
+      required: [evento, puntuacion, motivo]
+      properties:
+        evento: { $ref: '#/components/schemas/Evento' }
+        puntuacion: { type: number }
+        motivo: { type: string, examples: ['Te gusta el senderismo y quedan plazas'] }
+        distancia_km: { type: [number, 'null'] }
+
+    Publicador:
+      type: object
+      required: [id, nombre, municipio, estado, nivel_confianza]
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string }
+        tipo: { enum: [asociacion, ayuntamiento, comercio, alojamiento, otro] }
+        municipio: { type: string }
+        estado: { $ref: '#/components/schemas/EstadoPublicador' }
+        nivel_confianza: { $ref: '#/components/schemas/NivelConfianza' }
+        responsable_id: { type: string, format: uuid }
+        whatsapp_verificado: { type: boolean }
+        fuentes: { type: array, items: { $ref: '#/components/schemas/Fuente' } }
+        aprobados: { type: integer, description: Eventos aprobados (sube el nivel) }
+        creado_en: { type: string, format: date-time }
+
+    Fuente:
+      type: object
+      required: [id, publicador_id, tipo, url, activa]
+      properties:
+        id: { type: string, format: uuid }
+        publicador_id: { type: string, format: uuid }
+        tipo: { $ref: '#/components/schemas/TipoFuente' }
+        url: { type: string }
+        activa: { type: boolean }
+        ultima_revision: { type: [string, 'null'], format: date-time }
+
+    Decision:
+      type: object
+      required: [decision]
+      properties:
+        decision: { enum: [aprobar, rechazar] }
+        motivo: { type: [string, 'null'] }
+
+    Automatizaciones:
+      type: object
+      properties:
+        importacion_auto: { type: boolean }
+        aprobacion_auto: { type: boolean }
+        avisos_auto: { type: boolean }
+
+    Usuario:
+      type: object
+      required: [id, roles]
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: [string, 'null'] }
+        email: { type: [string, 'null'] }
+        telefono: { oneOf: [{ $ref: '#/components/schemas/Telefono' }, { type: 'null' }] }
+        roles: { type: array, items: { $ref: '#/components/schemas/Rol' } }
+        publicador_id: { type: [string, 'null'], format: uuid }
+        municipio: { type: [string, 'null'] }
+        lat: { type: [number, 'null'] }
+        lon: { type: [number, 'null'] }
+        gustos: { type: array, items: { $ref: '#/components/schemas/Categoria' } }
+        etiquetas: { type: array, items: { type: string } }
+        asociaciones_seguidas: { type: array, items: { type: string, format: uuid } }
+        formato_aviso: { $ref: '#/components/schemas/FormatoAviso' }
+        max_avisos_semana: { type: integer, default: 3 }
+        idioma: { type: string, default: es }
+
+    PreferenciasEntrada:
+      type: object
+      properties:
+        nombre: { type: string }
+        municipio: { type: string }
+        lat: { type: number }
+        lon: { type: number }
+        gustos: { type: array, items: { $ref: '#/components/schemas/Categoria' } }
+        etiquetas: { type: array, items: { type: string } }
+        asociaciones_seguidas: { type: array, items: { type: string, format: uuid } }
+        formato_aviso: { $ref: '#/components/schemas/FormatoAviso' }
+        max_avisos_semana: { type: integer }
+        idioma: { type: string }
+
+    Sesion:
+      type: object
+      required: [token, usuario]
+      properties:
+        token: { type: string }
+        usuario: { $ref: '#/components/schemas/Usuario' }
+
+    Notificacion:
+      type: object
+      required: [tipo, destinatarios, texto]
+      properties:
+        tipo: { enum: [recomendacion, cambio_evento, anuncio, respuesta, moderacion, confirmacion, codigo_verificacion] }
+        destinatarios:
+          type: array
+          items:
+            type: object
+            required: [usuario_id, telefono]
+            properties:
+              usuario_id: { type: string, format: uuid }
+              telefono: { $ref: '#/components/schemas/Telefono' }
+              formato: { $ref: '#/components/schemas/FormatoAviso' }
+              idioma: { type: string }
+        texto: { type: string, description: 'Texto base en español; el bot lo adapta (audio/idioma)' }
+        evento_id: { type: [string, 'null'], format: uuid }
+        botones:
+          type: array
+          maxItems: 3
+          items:
+            type: object
+            required: [id, texto]
+            properties:
+              id: { type: string, examples: ['inscribir:<evento_id>', 'confirmar:<evento_id>', 'aprobar:<evento_id>'] }
+              texto: { type: string, maxLength: 20 }
+
+    RegistroTokens:
+      type: object
+      required: [tarea, proveedor, modelo, entrada, salida, ms]
+      properties:
+        tarea: { enum: [extraer, spam, responder_ficha, preferencias, transcribir, tts, otro] }
+        proveedor: { type: string }
+        modelo: { type: string }
+        entrada: { type: integer }
+        salida: { type: integer }
+        ms: { type: integer }
+        fallback: { type: boolean, description: true si hubo que cambiar de proveedor }
+        coste_eur: { type: [number, 'null'] }
+
+    Estadisticas:
+      type: object
+      properties:
+        actividades: { type: integer }
+        importadas_auto_pct: { type: number }
+        inscripciones: { type: integer }
+        asistencia_pct: { type: number }
+        de_otro_pueblo_pct: { type: number }
+        ocupacion_por_categoria:
+          type: array
+          items:
+            type: object
+            properties:
+              categoria: { $ref: '#/components/schemas/Categoria' }
+              ocupacion_pct: { type: number }
+        top_actividades:
+          type: array
+          items:
+            type: object
+            properties:
+              evento_id: { type: string, format: uuid }
+              titulo: { type: string }
+              municipio: { type: string }
+              exito: { type: string }
+        solapamientos:
+          type: array
+          items:
+            type: object
+            properties:
+              evento_a: { type: string, format: uuid }
+              evento_b: { type: string, format: uuid }
+              motivo: { type: string }
+        tokens:
+          type: object
+          properties:
+            entrada: { type: integer }
+            salida: { type: integer }
+            coste_eur: { type: number }
+            llamadas: { type: integer }
+            fallbacks: { type: integer }
