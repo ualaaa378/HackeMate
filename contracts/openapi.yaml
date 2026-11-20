@@ -394,6 +394,7 @@ paths:
         "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
         "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo el organizador o un moderador fijan, ocultan o silencian; el autor solo puede ocultar su propio mensaje)" }
         "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado` o `mensaje_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `no_silenciable` (con `silenciar_autor: true`, el autor es el organizador del evento o un moderador, o el mensaje no tiene autor, como las respuestas de la IA)" }
         "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
 
   /api/v1/eventos/{id}/ics:
@@ -874,7 +875,8 @@ paths:
     get:
       tags: [estadisticas]
       summary: Datos del panel (actividades, importadas solas, asistencia, ocupación, solapamientos, tokens)
-      x-implementado: false
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: true
       parameters:
         - { name: desde, in: query, schema: { type: string, format: date-time } }
         - { name: hasta, in: query, schema: { type: string, format: date-time } }
@@ -885,13 +887,15 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Estadisticas" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión de moderador ni X-Internal-Token)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
 
   /api/v1/metrics/tokens:
     post:
       tags: [estadisticas]
       summary: El bot registra cada llamada a la IA (criterio «coste en tokens»)
       security: [{ interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -1461,13 +1465,14 @@ components:
             desde: { type: [string, "null"], format: date-time }
             hasta: { type: [string, "null"], format: date-time }
         actividades: { type: integer }
-        pct_importadas_auto: { type: number }
+        pct_importadas_auto: { type: number, description: "Porcentaje en escala 0-100" }
         inscripciones: { type: integer }
         asistencias: { type: integer }
         ocupacion_por_categoria:
           type: object
+          description: "Ocupación media por categoría, fracción en escala 0-1 (no porcentaje)"
           additionalProperties: { type: number, description: "0-1" }
-        pct_otro_pueblo: { type: number }
+        pct_otro_pueblo: { type: number, description: "Porcentaje en escala 0-100" }
         solapamientos:
           type: array
           items:
