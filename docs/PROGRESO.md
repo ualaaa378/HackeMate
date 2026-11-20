@@ -115,7 +115,7 @@
 - [x] Simulador `POST /dev/mensaje` y consola para probar sin mensajería
 - [x] `llm_router` Gemini → FreeLLMAPI → Claude (opcional) → reglas, con timeout y registro de tokens (probado con FreeLLMAPI real)
 - [x] Extractor de eventos desde texto → `ExtraccionEvento` validada
-- [ ] Integrar `services/bot` en `infra/docker-compose.yml` en lugar del stub (con Flujo A)
+- [~] Integrar `services/bot` en `infra/docker-compose.yml` en lugar del stub (con Flujo A) *(compose cambiado por A; falta probarlo con Docker)*
 - [ ] Ajustar al contrato el flujo importar → confirmar (`POST /eventos/importar` y luego `/eventos/{id}/confirmar`)
 
 **Bloque 2 (sáb 08:00–13:00)**
