@@ -133,7 +133,7 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 - [x] H1.1 Modelos SQLAlchemy y migración inicial con Alembic (eventos, publicadores, fuentes, usuarios, preferencias, inscripciones, mensajes, métricas).
 - [x] H1.2 Formato común de error y paginación (middleware/utilidades).
 - [x] H1.3 `GET /eventos` con filtros: `municipio`, `categoria`, `desde`, `hasta`, `lat`+`lon`+`radio_km` (haversine). `GET/POST/PATCH /eventos/{id}`.
-- [ ] H1.4 CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`. *(`GET/PATCH /usuarios/me` se mueve a H3.1, con el login.)*
+- [x] H1.4 CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`. *(`GET/PATCH /usuarios/me` se mueve a H3.1, con el login.)*
 - [x] H1.5 Protección entre servicios con `X-Internal-Token`.
 - [x] H1.6 `scripts/seed.py`: Lucainena de las Torres, Senés, Velefique, Uleila del Campo y Tahal con coordenadas; 3–4 publicadores (Amigos de Velefique, Bar La Plaza…); 15–25 eventos realistas de las 6 categorías repartidos en las próximas 2 semanas, incluida la **II Ruta Solidaria** del guion.
 - [ ] H1.7 Sync a las 21:00 con B y C (10 min).

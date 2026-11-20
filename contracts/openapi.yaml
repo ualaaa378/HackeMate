@@ -465,7 +465,7 @@ paths:
     get:
       tags: [publicadores]
       summary: Lista de publicadores
-      x-implementado: false
+      x-implementado: true
       parameters:
         - { name: estado, in: query, schema: { enum: [solicitado, whatsapp_verificado, aprobado, rechazado, pausado] } }
         - { name: municipio, in: query, schema: { type: string } }
@@ -481,7 +481,7 @@ paths:
       tags: [publicadores]
       summary: Solicitar ser publicador (queda en `solicitado` hasta verificar el WhatsApp)
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -501,7 +501,7 @@ paths:
     get:
       tags: [publicadores]
       summary: Ficha del publicador
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Publicador
@@ -669,7 +669,7 @@ paths:
       tags: [usuarios]
       summary: Alta de usuario (el bot la usa la primera vez que escribe un teléfono nuevo)
       security: [{ interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -690,7 +690,7 @@ paths:
       tags: [usuarios]
       summary: Identidad a partir del teléfono (solo servicios internos)
       security: [{ interno: [] }]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Usuario

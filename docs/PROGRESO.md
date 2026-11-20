@@ -78,7 +78,7 @@
 **Bloque 1 (vie 18:30–23:30)**
 - [x] Modelos SQLAlchemy + migración inicial (Alembic)
 - [x] CRUD de eventos con filtros (municipio, categoría, fechas, radio)
-- [ ] CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`
+- [x] CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`
 - [x] `seed.py` con los 5 pueblos y eventos de demo (fechas reales; omite y borra los ya terminados)
 - [x] Formato de error y paginación comunes
 

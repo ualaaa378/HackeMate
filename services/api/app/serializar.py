@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.modelos import Evento, Inscripcion, Lugar, Municipio
+from app.modelos import Evento, Inscripcion, Lugar, Municipio, Publicador, Usuario
 
 
 @lru_cache
@@ -95,3 +95,48 @@ def evento_a_dict(e: Evento, inscritos: int = 0) -> dict:
 def eventos_a_dict(db: Session, eventos: list[Evento]) -> list[dict]:
     inscritos = inscritos_por_evento(db, (e.id for e in eventos))
     return [evento_a_dict(e, inscritos.get(e.id, 0)) for e in eventos]
+
+
+def publicador_a_dict(p: Publicador, con_contacto: bool = True) -> dict:
+    """`con_contacto=False` para el público: sin teléfono ni email (el schema no los exige)."""
+    datos = {
+        "id": p.id,
+        "nombre": p.nombre,
+        "tipo": p.tipo,
+        "municipio": p.municipio,
+        "descripcion": p.descripcion,
+        "estado": p.estado,
+        "nivel_confianza": p.nivel_confianza,
+        "aprobaciones": p.aprobaciones,
+        "automatizaciones_pausadas": p.automatizaciones_pausadas,
+        "categorias_habituales": list(p.categorias_habituales or []),
+        "fuentes": [{"id": f.id, "canal": f.canal, "url": f.url, "activa": f.activa} for f in p.fuentes],
+        "usuario_id": p.usuario_id,
+        "creado_en": fecha_iso(p.creado_en),
+    }
+    if con_contacto:
+        datos["telefono"] = p.telefono
+        datos["email"] = p.email
+    return datos
+
+
+def usuario_a_dict(u: Usuario) -> dict:
+    """Completo, con teléfono: solo para el propio usuario y los servicios internos."""
+    return {
+        "id": u.id,
+        "nombre": u.nombre,
+        "rol": u.rol,
+        "telefono": u.telefono,
+        "whatsapp_verificado": u.whatsapp_verificado,
+        "email": u.email,
+        "municipio": u.municipio,
+        "lat": u.lat,
+        "lon": u.lon,
+        "gustos": list(u.gustos or []),
+        "etiquetas_interes": list(u.etiquetas_interes or []),
+        "formato_aviso": u.formato_aviso,
+        "acepta_avisos": u.acepta_avisos,
+        "radio_km": u.radio_km,
+        "publicador_id": u.publicador_id,
+        "creado_en": fecha_iso(u.creado_en),
+    }
