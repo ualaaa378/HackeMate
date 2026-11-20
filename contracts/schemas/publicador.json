@@ -13,6 +13,7 @@
     "descripcion": { "type": ["string", "null"] },
     "telefono": { "type": ["string", "null"], "pattern": "^\\+[1-9][0-9]{6,14}$" },
     "email": { "type": ["string", "null"], "format": "email" },
+    "telegram_id": { "type": ["string", "null"], "pattern": "^-?[0-9]{1,20}$", "description": "chat_id de Telegram (contacto tg:<chat_id>). Solo para servicios internos" },
     "estado": { "enum": ["solicitado", "whatsapp_verificado", "aprobado", "rechazado", "pausado"] },
     "nivel_confianza": { "enum": [0, 1, 2] },
     "aprobaciones": { "type": "integer", "minimum": 0, "description": "Eventos aprobados; al llegar al umbral sube de nivel" },
@@ -25,7 +26,7 @@
         "required": ["id", "canal", "url"],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
-          "canal": { "enum": ["whatsapp", "web", "panel", "facebook", "instagram", "web_externa", "manual"] },
+          "canal": { "enum": ["whatsapp", "web", "panel", "facebook", "instagram", "web_externa", "manual", "telegram"] },
           "url": { "type": "string" },
           "activa": { "type": "boolean" }
         }

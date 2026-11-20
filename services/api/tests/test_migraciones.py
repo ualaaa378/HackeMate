@@ -75,3 +75,37 @@ def test_la_base_rechaza_datos_fuera_del_contrato(url):
     with pytest.raises(IntegrityError), motor.begin() as c:
         c.execute(text(insertar), {"id": "b", "municipio": "Almería", "nivel": 0})
     motor.dispose()
+
+
+def test_canal_telegram_se_puede_deshacer_y_rehacer(url):
+    """0002: `telegram` en el CHECK del enum canal y columna telegram_id; downgrade -1 y upgrade head."""
+    cfg = _config(url)
+    command.upgrade(cfg, "head")
+    command.downgrade(cfg, "-1")
+    motor = crear_motor(url)
+    assert "telegram_id" not in {c["name"] for c in inspect(motor).get_columns("usuarios")}
+    motor.dispose()
+    command.upgrade(cfg, "head")
+    motor = crear_motor(url)
+    for tabla in ("usuarios", "publicadores"):
+        assert "telegram_id" in {c["name"] for c in inspect(motor).get_columns(tabla)}
+    insertar = (
+        "INSERT INTO eventos (id, titulo, categoria, etiquetas, municipio, lat, lon, fecha_inicio, es_gratuito, "
+        "estado, origen_canal, importado_auto, faltan, creado_en, actualizado_en) VALUES (:id, 'Prueba', "
+        "'cultural', '[]', 'Senés', 0, 0, '2026-11-20 10:00:00', 0, 'borrador', :canal, 0, '[]', "
+        "'2026-11-20 10:00:00', '2026-11-20 10:00:00')"
+    )
+    with motor.begin() as c:
+        c.execute(text("INSERT INTO municipios (nombre, lat, lon) VALUES ('Senés', 37.1983, -2.3447)"))
+        c.execute(text(insertar), {"id": "a", "canal": "telegram"})
+    with pytest.raises(IntegrityError), motor.begin() as c:
+        c.execute(text(insertar), {"id": "b", "canal": "sms"})
+    motor.dispose()
+    # Al deshacer, lo que entró por Telegram pasa a `manual` y el CHECK vuelve a rechazar `telegram`.
+    command.downgrade(cfg, "-1")
+    motor = crear_motor(url)
+    with motor.connect() as c:
+        assert c.execute(text("SELECT origen_canal FROM eventos WHERE id = 'a'")).scalar() == "manual"
+    with pytest.raises(IntegrityError), motor.begin() as c:
+        c.execute(text(insertar), {"id": "c", "canal": "telegram"})
+    motor.dispose()

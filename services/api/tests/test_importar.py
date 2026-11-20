@@ -186,9 +186,11 @@ def test_sin_token_401(api):
     [
         lambda c: c.pop("origen"),
         lambda c: c["extraccion"].pop("es_evento"),
-        lambda c: c["origen"].update(canal="telegram"),
+        lambda c: c["origen"].update(canal="sms"),
         lambda c: c["extraccion"]["campos"]["titulo"].update(confianza="mucha"),
         lambda c: c.update(telefono_publicador="600"),
+        lambda c: c.update(telefono_publicador="tg:abc"),
+        lambda c: c.update(contacto_publicador="hola"),
     ],
 )
 def test_cuerpo_invalido_422(api, romper):

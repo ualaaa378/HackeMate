@@ -14,13 +14,13 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.canales import buscar_publicador_por_contacto, validar_contacto
 from app.db import get_db
 from app.errores import ErrorApi
 from app.modelos import CANALES, CATEGORIAS, Evento, Fuente, Municipio, Publicador, ahora
 from app.rutas.eventos import _buscar, _con_zona, _ficha
 from app.rutas.publico import es_uuid
 from app.seguridad import exigir_token_interno
-from app.telefonos import validar_telefono
 
 router = APIRouter(prefix="/api/v1", tags=["ingesta"])
 
@@ -74,14 +74,21 @@ class ImportarEvento(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     extraccion: ExtraccionEvento
+    contacto_publicador: str | None = None
+    # Compatibilidad: además de E.164 admite `tg:<chat_id>` (lo que envía hoy el bot de Telegram).
     telefono_publicador: str | None = None
     publicador_id: str | None = None
     origen: Origen
 
-    @field_validator("telefono_publicador")
+    @field_validator("contacto_publicador", "telefono_publicador")
     @classmethod
-    def _telefono(cls, valor: str | None) -> str | None:
-        return None if valor is None else validar_telefono(valor)
+    def _contacto(cls, valor: str | None) -> str | None:
+        return None if valor is None else validar_contacto(valor)
+
+    @property
+    def contacto(self) -> str | None:
+        """Dirección del remitente en su canal (`+34…` o `tg:…`)."""
+        return self.contacto_publicador or self.telefono_publicador
 
 
 # --- Lectura defensiva de lo que propone la IA (un valor que no encaja es como si faltara) ------------
@@ -151,16 +158,15 @@ def _publicador_por_fuente(db: Session, url: str | None) -> Publicador | None:
 
 
 def _asociar_publicador(db: Session, datos: ImportarEvento) -> Publicador | None:
-    """Orden: fuente conocida (origen.url) -> publicador_id -> teléfono de WhatsApp del remitente."""
+    """Orden: fuente conocida (origen.url) -> publicador_id -> contacto del remitente en su canal
+    (teléfono o telegram_id; en Telegram, también el teléfono del usuario vinculado)."""
     publicador = _publicador_por_fuente(db, datos.origen.url)
     if publicador is None and datos.publicador_id is not None:
         publicador = db.get(Publicador, datos.publicador_id) if es_uuid(datos.publicador_id) else None
         if publicador is None:
             raise ErrorApi(422, "publicador_no_encontrado", "No existe ese publicador", {"campo": "publicador_id"})
-    if publicador is None and datos.telefono_publicador is not None:
-        publicador = db.scalar(
-            select(Publicador).where(Publicador.telefono == datos.telefono_publicador).order_by(Publicador.creado_en)
-        )
+    if publicador is None and datos.contacto is not None:
+        publicador = buscar_publicador_por_contacto(db, datos.contacto)
     if publicador is not None and publicador.estado == "pausado":
         raise ErrorApi(403, "publicador_pausado", "El publicador está pausado y no puede publicar")
     # H2.4: según el estado y el nivel de confianza del publicador se decidirá luego la moderación.

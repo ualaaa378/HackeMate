@@ -699,6 +699,59 @@ paths:
               schema: { $ref: "./schemas/usuario.json" }
         "404": { $ref: "#/components/responses/Error" }
 
+  /api/v1/usuarios/by-contacto/{contacto}:
+    parameters:
+      - name: contacto
+        in: path
+        required: true
+        description: "+34… (WhatsApp; el + puede ir como %2B) o tg:<chat_id> (Telegram)"
+        schema: { $ref: "#/components/schemas/Contacto" }
+    get:
+      tags: [usuarios]
+      summary: Identidad a partir del contacto en cualquier canal (solo servicios internos)
+      description: "`by-phone` sigue igual. Errores: 404 `usuario_no_encontrado`, 422 `contacto_invalido`."
+      security: [{ interno: [] }]
+      x-implementado: true
+      responses:
+        "200":
+          description: Usuario
+          content:
+            application/json:
+              schema: { $ref: "./schemas/usuario.json" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /api/v1/usuarios/vincular:
+    post:
+      tags: [usuarios]
+      summary: Vincula el contacto de un canal con el teléfono (crea el usuario si no existe)
+      description: |
+        Si no hay usuario con ese teléfono lo crea (201); si lo hay, le asigna el id del canal (200).
+        Si hay un publicador con ese teléfono, también se le asigna.
+        Errores: 409 `contacto_en_uso` (el contacto ya es de otra persona), 422 `contacto_invalido`.
+      security: [{ interno: [] }]
+      x-implementado: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UsuarioVincular" }
+      responses:
+        "200":
+          description: Usuario existente, ya vinculado
+          content:
+            application/json:
+              schema: { $ref: "./schemas/usuario.json" }
+        "201":
+          description: Usuario creado y vinculado
+          content:
+            application/json:
+              schema: { $ref: "./schemas/usuario.json" }
+        "401": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+
   /api/v1/usuarios/me:
     get:
       tags: [usuarios]
@@ -788,11 +841,92 @@ paths:
             application/xml:
               schema: { type: string }
 
+  /webhook/telegram:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: Entrada de Telegram (Update de la Bot API). El usuario es `tg:<chat_id>`.
+      description: Telegram envía la cabecera `X-Telegram-Bot-Api-Secret-Token` con el secreto registrado en setWebhook.
+      security: [{}]
+      x-implementado: true
+      parameters:
+        - { name: X-Telegram-Bot-Api-Secret-Token, in: header, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, description: Update de la Bot API de Telegram }
+      responses:
+        "200": { description: Recibido (se procesa en segundo plano) }
+
+  /webhook/meta:
+    servers: [{ url: http://localhost:8001 }]
+    get:
+      tags: [bot]
+      summary: Verificación del webhook de WhatsApp Cloud API (Meta) con `hub.challenge`
+      security: [{}]
+      x-implementado: true
+      parameters:
+        - { name: hub.mode, in: query, schema: { type: string } }
+        - { name: hub.verify_token, in: query, schema: { type: string } }
+        - { name: hub.challenge, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Devuelve `hub.challenge`
+          content:
+            text/plain:
+              schema: { type: string }
+    post:
+      tags: [bot]
+      summary: Entrada de WhatsApp Cloud API (Meta). Firma en la cabecera `X-Hub-Signature-256`.
+      security: [{}]
+      x-implementado: true
+      parameters:
+        - { name: X-Hub-Signature-256, in: header, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, description: Notificación de webhook de WhatsApp Cloud API }
+      responses:
+        "200": { description: Recibido (se procesa en segundo plano) }
+
+  /dev/mensaje:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: Simulador de chat (web o tests). Devuelve lo que contestaría el bot.
+      security: [{}]
+      x-implementado: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [de, texto]
+              properties:
+                de: { type: string, description: "Contacto del remitente: +34… o tg:<chat_id>" }
+                texto: { type: string }
+      responses:
+        "200":
+          description: Respuestas del bot
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [respuestas]
+                properties:
+                  respuestas: { type: array }
+
   /notify:
     servers: [{ url: http://localhost:8001 }]
     post:
       tags: [bot]
       summary: La api pide enviar un aviso
+      description: |
+        Va a `contacto` si viene (p. ej. `tg:<chat_id>`) y si no a `telefono`. En WhatsApp, fuera de la ventana
+        de 24 h, se usa `plantilla` + `parametros`; los demás canales envían `texto`.
       security: [{ interno: [] }]
       requestBody:
         required: true
@@ -978,6 +1112,14 @@ components:
       pattern: "^\\+[1-9][0-9]{6,14}$"
       description: E.164, p. ej. +34600000000
 
+    Contacto:
+      type: string
+      pattern: "^(\\+[1-9][0-9]{6,14}|tg:-?[0-9]{1,20})$"
+      description: |
+        Dirección de contacto de un canal de mensajería: E.164 (+34600000000) = WhatsApp; `tg:<chat_id>` = Telegram.
+        En la API, services/api/app/canales.py: añadir un canal es una entrada en su registro y una columna.
+      examples: ["+34600000201", "tg:123456789"]
+
     Categoria:
       enum: [deportiva, cultural, fiestas, gastronomia, ludica, comercio]
 
@@ -1084,17 +1226,25 @@ components:
       type: object
       required: [canal, importado_auto]
       properties:
-        canal: { enum: [whatsapp, web, panel, facebook, instagram, web_externa, manual] }
+        canal: { enum: [whatsapp, web, panel, facebook, instagram, web_externa, manual, telegram] }
         url: { type: [string, "null"] }
         importado_auto: { type: boolean }
 
     ImportarEvento:
       type: object
       required: [extraccion, origen]
-      description: Hace falta `telefono_publicador` o `publicador_id` (o un origen.url de una fuente conocida).
+      description: |
+        Hace falta `contacto_publicador`, `telefono_publicador` o `publicador_id` (o un origen.url de una fuente conocida).
+        El publicador se busca por la fuente (origen.url), luego por `publicador_id` y luego por el contacto del remitente
+        en su canal (teléfono o `telegram_id`; en Telegram, también por el teléfono del usuario vinculado).
       properties:
         extraccion: { $ref: "./schemas/extraccion_evento.json" }
-        telefono_publicador: { $ref: "#/components/schemas/Telefono" }
+        contacto_publicador: { $ref: "#/components/schemas/Contacto" }
+        telefono_publicador:
+          $ref: "#/components/schemas/Telefono"
+          description: |
+            E.164. Compatibilidad: la API también acepta aquí `tg:<chat_id>` (lo que envía hoy el bot de Telegram);
+            lo nuevo debe ir en `contacto_publicador`.
         publicador_id: { type: [string, "null"], format: uuid }
         origen: { $ref: "#/components/schemas/Origen" }
 
@@ -1114,14 +1264,14 @@ components:
           type: object
           description: Valores que faltaban o que el publicador corrige (mismos nombres que EventoCrear)
           additionalProperties: true
-        confirmado_por: { enum: [whatsapp, web] }
+        confirmado_por: { enum: [whatsapp, web, telegram] }
 
     InscripcionCrear:
       type: object
       properties:
         usuario_id: { type: string, format: uuid, description: Solo con X-Internal-Token (el bot inscribe en nombre del vecino) }
         plazas: { type: integer, minimum: 1, default: 1 }
-        canal: { enum: [whatsapp, web] }
+        canal: { enum: [whatsapp, web, telegram] }
 
     MensajeCrear:
       type: object
@@ -1166,6 +1316,16 @@ components:
         telefono: { $ref: "#/components/schemas/Telefono" }
         nombre: { type: string }
         municipio: { type: [string, "null"] }
+
+    UsuarioVincular:
+      type: object
+      required: [telefono, contacto]
+      description: Vincula el contacto de un canal (p. ej. Telegram tras «Compartir mi número») con el teléfono.
+      properties:
+        telefono: { $ref: "#/components/schemas/Telefono" }
+        contacto: { $ref: "#/components/schemas/Contacto" }
+        nombre: { type: string, description: Solo se usa si se crea el usuario }
+        municipio: { type: [string, "null"], description: Solo se usa si se crea el usuario }
 
     UsuarioEditar:
       type: object

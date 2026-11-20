@@ -8,12 +8,15 @@
   "properties": {
     "id": { "type": "string", "format": "uuid" },
     "telefono": { "type": "string", "pattern": "^\\+[1-9][0-9]{6,14}$" },
+    "contacto": { "type": "string", "pattern": "^(\\+[1-9][0-9]{6,14}|tg:-?[0-9]{1,20})$", "description": "Contacto en su canal (E.164 = WhatsApp, tg:<chat_id> = Telegram). Si viene, el bot envía ahí en vez de a `telefono`" },
     "tipo": { "enum": ["recomendacion", "cambio_evento", "anuncio", "respuesta", "moderacion", "confirmacion"] },
     "texto": { "type": "string", "minLength": 1 },
     "formato": { "enum": ["texto", "audio"], "default": "texto" },
     "usuario_id": { "type": ["string", "null"], "format": "uuid" },
     "evento_id": { "type": ["string", "null"], "format": "uuid" },
     "botones": { "type": "array", "items": { "type": "string" }, "maxItems": 3, "description": "Respuestas rápidas sugeridas" },
+    "plantilla": { "type": "string", "description": "Plantilla aprobada de WhatsApp para avisos fuera de la ventana de 24 h. Los demás canales la ignoran y envían `texto`" },
+    "parametros": { "type": "array", "items": { "type": "string" }, "description": "Parámetros de la plantilla, en orden" },
     "estado_envio": { "enum": ["pendiente", "enviada", "fallida"] },
     "intentos": { "type": "integer", "minimum": 0 },
     "creado_en": { "type": "string", "format": "date-time" }
