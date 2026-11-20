@@ -9,7 +9,7 @@
 
 ## 0. Resumen en 30 segundos
 
-- Construimos **una plataforma con 3 puertas de entrada sincronizadas**: chatbot de **WhatsApp**, **web/PWA** (instalable en Android/iOS) y **panel de gestión**.
+- Construimos **una plataforma con 3 puertas de entrada sincronizadas**: chatbot de **WhatsApp**, **app Ionic React** (web/PWA + APK Android con Capacitor) y **panel de gestión**.
 - Todo se levanta con **`docker compose up`** (API + bot/IA + web + base de datos + túnel HTTPS para el webhook de WhatsApp). Las mismas imágenes se pueden desplegar después en Render/Railway sin cambios.
 - Tres flujos de trabajo independientes: **A · Backend y datos**, **B · WhatsApp e IA**, **C · Web, PWA y panel**.
 - Se trabaja **contra contratos congelados** (`contracts/`) y **datos de ejemplo** (`contracts/fixtures/`), así nadie espera a nadie.
@@ -70,7 +70,7 @@
 
 - **API**: FastAPI + SQLAlchemy + **PostgreSQL con pgvector** (embeddings para recomendación y para que el asistente busque en la ficha).
 - **Bot/IA**: servicio FastAPI aparte que recibe el webhook de Twilio, transcribe audio (Whisper vía API o `faster-whisper`), llama a la IA con salida JSON validada (Pydantic) y habla con la API.
-- **Web**: React + Vite + **react-leaflet** como **PWA** (instalable en Android/iOS → cumple «multiplataforma»). Capacitor es un extra si sobra tiempo.
+- **App y web**: **Ionic React** (React + Vite por debajo) + **react-leaflet**. Un solo código para la web/PWA (servida en Docker con nginx) y, con **Capacitor**, un **APK de Android** → cumple «multiplataforma». Componentes táctiles y accesibles de serie. iOS solo si alguien tiene Mac.
 - **Pros**: el equipo ya domina Python (curso GenAI: embeddings, SBERT, RAG); un solo lenguaje en back e IA; Docker sencillo.
 - **Contras**: dos lenguajes en total (Python + TS); la web hay que hacerla desde cero.
 
@@ -155,7 +155,9 @@ Cada flujo tiene su carpeta. **Nadie edita la carpeta de otro** sin avisar (y en
 7. `POST /notify`: envío de avisos (recomendación, cambio de hora, anuncios) respetando preferencias.
 8. Adaptador de canal (`channels/twilio.py`, `channels/console.py`) para probar sin WhatsApp.
 
-### Flujo C · Web, PWA y panel (Dev C) → `apps/web/`
+### Flujo C · App Ionic, web/PWA y panel (Dev C) → `apps/web/`
+
+> Stack: **Ionic React** (`ionic start web tabs --type=react`, Vite), `react-leaflet`, tipos desde `openapi.yaml`. Se desarrolla y se hace la demo en el navegador; el APK con Capacitor es tarea del bloque 4 y, si se complica, no bloquea nada.
 
 1. Vecino (sin registro para mirar): **agenda**, **mapa Leaflet** con filtros y «cerca de mí», **ficha del evento** (inscribirse, `.ics`, chat del evento).
 2. Perfil: login con Google, gustos, pueblo, tipo de avisos (texto/audio), vincular WhatsApp.
@@ -163,7 +165,8 @@ Cada flujo tiene su carpeta. **Nadie edita la carpeta de otro** sin avisar (y en
 4. Moderador: bandeja de pendientes con **motivo de la IA**, aprobar/rechazar publicadores y eventos, niveles de confianza, **pausar automatizaciones**.
 5. Panel de estadísticas: actividades, % importadas solas, inscripciones vs asistencia, ocupación por categoría, solapamientos, **tokens y coste**.
 6. Accesibilidad: letra grande, contraste AA, botones grandes, navegación por teclado, `aria-label`, textos alternativos.
-7. PWA: `manifest.json`, service worker, icono. (Extra: Capacitor para APK.)
+7. PWA: `manifest.json`, service worker, icono.
+9. **Capacitor → APK de Android** (bloque 4). Instalar Android Studio + JDK **el viernes por la noche o el sábado por la mañana** (tarda 1–2 h) para no perder tiempo después. La URL de la API se configura por variable de entorno (`VITE_API_URL`) para que el APK apunte a la URL pública del túnel.
 8. Trabaja desde el minuto 1 con **mocks** (`contracts/fixtures/` servidos por MSW o un `json-server`).
 
 ### Reparto de carga (aprox.)
@@ -201,7 +204,7 @@ Cada flujo tiene su carpeta. **Nadie edita la carpeta de otro** sin avisar (y en
 │   ├── api/   (Flujo A)  Dockerfile, app/, tests/
 │   └── bot/   (Flujo B)  Dockerfile, app/, tests/
 ├── apps/
-│   └── web/   (Flujo C)  Dockerfile, src/, public/
+│   └── web/   (Flujo C)  Ionic React: Dockerfile, src/, public/, capacitor.config.ts, android/ (generado)
 ├── infra/
 │   ├── docker-compose.yml
 │   └── docker-compose.override.example.yml
@@ -345,7 +348,7 @@ Cada flujo tiene su carpeta. **Nadie edita la carpeta de otro** sin avisar (y en
 |---|---|---|---|
 | **Vie 17:00–17:30** | Kickoff | Leer este plan, decidir enfoque (§2), asignar Dev A/B/C, crear cuentas: Twilio sandbox, Google OAuth, claves IA (Claude, Gemini AI Studio). | — |
 | **Vie 17:30–18:30** | **CP0 · Contratos congelados** | A: esqueleto del repo, compose con `/health` de los 4 servicios. Los 3 juntos: `openapi.yaml`, schemas, enums y fixtures v1. | `chore: esqueleto` · `contract: v1` → `develop` |
-| Vie 18:30–23:30 | Bloque 1 | **A:** modelos + CRUD eventos/publicadores/usuarios + seed. **B:** webhook Twilio + acuse + `llm_router` + extractor de eventos (texto). **C:** agenda, mapa y ficha con mocks. | commits cada hora en `feat/*` |
+| Vie 18:30–23:30 | Bloque 1 | **A:** modelos + CRUD eventos/publicadores/usuarios + seed. **B:** webhook Twilio + acuse + `llm_router` + extractor de eventos (texto). **C:** proyecto Ionic React (pestañas Agenda · Mapa · Perfil), agenda, mapa y ficha con mocks; dejar instalando Android Studio. | commits cada hora en `feat/*` |
 | Vie 21:00 | Sync 10 min | ¿Bloqueos? ¿Cambio de contrato necesario? | — |
 | **Vie 23:30–00:30** | **CP1 · Primera integración** | Merge de las 3 ramas a `develop`. `docker compose up` limpio. Prueba: la web lista eventos reales de la API; WhatsApp → bot → crea evento en la API. | tag `v0.1` |
 | Sáb 00:30–07:30 | Dormir | Todos. Móviles cargando. | — |
@@ -353,11 +356,11 @@ Cada flujo tiene su carpeta. **Nadie edita la carpeta de otro** sin avisar (y en
 | **Sáb 13:00–14:00** | **CP2 · Demo pasos 1–3** | Post/audio → ficha → confirma por WhatsApp → moderación (uno aprobado, otro parado). | tag `v0.2` |
 | Sáb 14:00–19:00 | Bloque 3 · Flujo «vecina» | **A:** recomendador con motivo, inscripciones + lista de espera, `.ics`, chat del evento, cambio de hora → `/notify`. **B:** conversación del vecino (gustos, «qué hay cerca»), avisos, asistente del evento. **C:** perfil + login Google, inscribirse, chat del evento, PWA. | commits cada hora |
 | **Sáb 19:00–20:00** | **CP3 · Demo pasos 4–7 + CONGELACIÓN DE CONTRATOS v2** | Recorrido completo de la demo. A partir de aquí **no se cambian contratos**. | tag `v0.3` |
-| Sáb 20:00–00:00 | Bloque 4 · Criterios del jurado y extras | **A:** estadísticas, métricas de tokens, despliegue alternativo (opcional). **B:** fallback entre proveedores + botón «simular caída», respuesta en audio, idiomas. **C:** panel de estadísticas y coste, accesibilidad AA, modo letra grande. | commits cada hora |
+| Sáb 20:00–00:00 | Bloque 4 · Criterios del jurado y extras | **A:** estadísticas, métricas de tokens, despliegue alternativo (opcional). **B:** fallback entre proveedores + botón «simular caída», respuesta en audio, idiomas. **C:** panel de estadísticas y coste, accesibilidad AA, modo letra grande, **APK con Capacitor** apuntando a la URL pública. | commits cada hora |
 | **Dom 00:00–00:30** | **CP4 · Feature freeze** | Merge a `develop`. A partir de aquí **solo arreglos** (`fix/*`). | tag `v0.9` |
 | Dom 00:30–03:00 | Estabilización (turnos) | Turno 1 (dos personas): bugs del smoke test y de la demo. La tercera duerme 2 h. | `fix/*` |
 | Dom 03:00–05:00 | **Prueba E2E en limpio** | Clonar el repo en **otro portátil**, `docker compose up --build` desde cero, ejecutar el guion de la demo 2 veces. Turno de sueño rota. | `fix/*` |
-| Dom 05:00–06:30 | Revisión final | README (arranque en 3 comandos), capturas, **vídeo de respaldo de la demo** (por si falla la red), guion de presentación de 3 min. | `docs: …` |
+| Dom 05:00–06:30 | Revisión final | README (arranque en 3 comandos), capturas, **APK final instalado en un móvil**, **vídeo de respaldo de la demo** (por si falla la red), guion de presentación de 3 min. | `docs: …` |
 | **Dom 06:30–07:00** | **RELEASE** | Merge `develop` → `main`, etiqueta `v1.0`. Última prueba de humo sobre `main`. | tag `v1.0` ✅ |
 | Dom 07:00–11:00 | Margen | Descansar, ensayar la demo, arreglos críticos solo si algo se rompe (en `hotfix/*` sobre `main`). | — |
 

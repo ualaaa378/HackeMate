@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | A · Backend, datos e infra | Dev A: ________ | `feat/api-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
 | B · WhatsApp e IA | Dev B: ________ | `feat/bot-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
-| C · Web, PWA y panel | Dev C: ________ | `feat/web-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| C · App Ionic, web/PWA y panel | Dev C: ________ | `feat/web-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
 
 🟢 en plazo · 🟡 riesgo de no llegar al próximo checkpoint · 🔴 bloqueado
 
@@ -115,10 +115,12 @@
 
 ---
 
-## Flujo C · Web, PWA y panel
+## Flujo C · App Ionic, web/PWA y panel
 
 **Bloque 1 (vie 18:30–23:30)**
-- [ ] Proyecto React + Vite, tipos generados desde `openapi.yaml`
+- [ ] Proyecto Ionic React (`ionic start web tabs --type=react`) con pestañas Agenda · Mapa · Perfil
+- [ ] Tipos generados desde `openapi.yaml` y `VITE_API_URL` configurable
+- [ ] Android Studio + JDK instalados (dejarlo descargando en segundo plano)
 - [ ] Mocks con `contracts/fixtures` (MSW o json-server)
 - [ ] Agenda (lista por fecha con filtros)
 - [ ] Mapa Leaflet con pines por categoría y «cerca de mí»
@@ -138,7 +140,8 @@
 **Bloque 4 (sáb 20:00–00:00)**
 - [ ] Panel de estadísticas y coste en tokens
 - [ ] Accesibilidad WCAG 2.1 AA: contraste, teclado, `aria-label`, modo letra grande
-- [ ] Capacitor para APK (opcional)
+- [ ] Capacitor: `npx cap add android`, APK de debug generado
+- [ ] APK apunta a la URL pública del túnel y funciona en un móvil real
 
 ---
 
@@ -158,7 +161,7 @@
 - [ ] Funcionalidad extra (al menos 2 ideas del PLAN §2)
 - [ ] Usabilidad y accesibilidad
 - [ ] Utilidad para los pueblos (recorrido completo)
-- [ ] Multiplataforma (web + PWA móvil + WhatsApp sincronizados)
+- [ ] Multiplataforma (web + APK Android/PWA + WhatsApp sincronizados)
 - [ ] Coste en tokens medido y visible
 - [ ] Robustez (fallback demostrable)
 - [ ] Tiempo de respuesta (acuse inmediato)
@@ -168,6 +171,7 @@
 ## Entrega (dom 05:00–07:00)
 
 - [ ] README: arranque en 3 comandos, capturas, arquitectura
+- [ ] APK final instalado en un móvil para la demo
 - [ ] Vídeo de respaldo de la demo
 - [ ] Guion de presentación de 3 minutos
 - [ ] `main` etiquetado `v1.0` y probado
