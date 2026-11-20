@@ -151,6 +151,7 @@
 - [x] Mapa Leaflet con pines por categoría y «cerca de mí»
 - [x] Ficha del evento
 - [x] App en Docker: `apps/web/Dockerfile` (node → nginx en 8080) y `web` del compose apuntando a `apps/web` *(validado con `docker compose up --build`: web en :8080 carga eventos de la API)*
+- [x] **H1 cerrado** (vie 22:20): compose completo con PostgreSQL y la API de #10, la agenda y el mapa leen los 18 eventos de la base; las rutas aún sin implementar caen a mocks (ver `PLAN_FLUJO_C.md` H1)
 
 **Bloque 2 (sáb 08:00–13:00)**
 - [ ] Panel del moderador: bandeja con motivo de la IA, aprobar/rechazar

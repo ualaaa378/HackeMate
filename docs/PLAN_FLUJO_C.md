@@ -4,7 +4,7 @@
 > Responsable del flujo C: **Adán** (Dev C) · Ramas: `feat/web-<tarea>` → `develop` · Carpeta: `apps/web/`
 > Complementa a `docs/PLAN.md` (plan general, §Flujo C) y `docs/PROGRESO.md` (checklist). Si algo choca, manda `PLAN.md`.
 > Escrito para que las personas **y sus Claudes** sepan qué hace la app, en qué hito está y qué necesita de A y B.
-> Última actualización: viernes 20 nov, 22:15.
+> Última actualización: viernes 20 nov, 22:20.
 
 ---
 
@@ -53,7 +53,7 @@
 - ✅ `npm run dev` arranca y muestra la agenda con mocks.
 - ✅ Ninguna pantalla hace `fetch` fuera de `client.ts`.
 
-### H1 · Ver la agenda real (vie 18:30 → 23:30 · CP1 · `v0.1`) 🟢 casi
+### H1 · Ver la agenda real (vie 18:30 → 23:30 · CP1 · `v0.1`) ✅
 
 - [x] H1.1 Agenda por fecha con filtros de pueblo y categoría.
 - [x] H1.2 Mapa Leaflet con pines por categoría y «cerca de mí».
@@ -62,13 +62,16 @@
 - [x] H1.5 Tipos generados desde `openapi.yaml` (`npm run api:tipos`), regenerados con el contrato de Telegram (#12).
 - [x] H1.6 Imagen Docker (node → nginx :8080) y servicio `web` del compose.
 - [x] H1.7 Tema visual de la plantilla y base de accesibilidad (español, zoom permitido).
-- [ ] H1.8 Prueba del compose completo con la API con base de datos (#10) y etiqueta `v0.1` con A y B.
+- [x] H1.8 Prueba del compose completo (`db` PostgreSQL + `api` con seed + `web` + stub del bot) con la API con base de datos (#10). *(vie 22:20: agenda y mapa con los 18 eventos de la base, ficha, 404 y «Apuntarme» cayendo a mocks porque la inscripción es de H3)*
+- [x] H1.9 La vuelta a mocks también cubre las rutas que la API aún no implementa (responde `no_encontrado`), con tests en `src/api/client.test.ts`.
+- [ ] H1.10 Etiqueta `v0.1` en `develop`, junto con A y B en el CP1.
 
 **Criterios de aceptación**
 - ✅ Con la API arrancada y el seed cargado, la agenda lista los eventos de la base de datos (18 en el seed del 20/11).
 - ✅ Con la API parada, la agenda sale igual desde los mocks y la consola avisa `[api] usando mocks`.
 - ✅ La ficha de un id inexistente muestra un mensaje de error, no una pantalla en blanco.
-- ⏳ `docker compose up --build` → `http://localhost:8080` muestra eventos de la API.
+- ✅ `docker compose up --build` → `http://localhost:8080` muestra eventos de la API.
+- ✅ Un botón cuya ruta aún no existe en la API (p. ej. «Apuntarme» antes de H3) funciona con mocks en lugar de dar error.
 
 ### H2 · Moderador y publicador (sáb 08:00 → 13:00 · CP2 · `v0.2`)
 

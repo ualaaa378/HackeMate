@@ -12,6 +12,7 @@ import { IonReactRouter } from '@ionic/react-router';
 import { calendar, map, person } from 'ionicons/icons';
 import { Navigate, Route } from 'react-router-dom';
 
+import ProveedorSesion from './cuenta/ProveedorSesion';
 import Agenda from './pages/Agenda';
 import Ficha from './pages/Ficha';
 import Mapa from './pages/Mapa';
@@ -43,31 +44,33 @@ setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
-    <IonReactRouter>
-      <IonTabs>
-        <IonRouterOutlet>
-          <Route path="/agenda" element={<Agenda />} />
-          <Route path="/mapa" element={<Mapa />} />
-          <Route path="/perfil" element={<Perfil />} />
-          <Route path="/evento/:id" element={<Ficha />} />
-          <Route path="/" element={<Navigate to="/agenda" replace />} />
-        </IonRouterOutlet>
-        <IonTabBar slot="bottom">
-          <IonTabButton tab="agenda" href="/agenda">
-            <IonIcon aria-hidden="true" icon={calendar} />
-            <IonLabel>Agenda</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="mapa" href="/mapa">
-            <IonIcon aria-hidden="true" icon={map} />
-            <IonLabel>Mapa</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="perfil" href="/perfil">
-            <IonIcon aria-hidden="true" icon={person} />
-            <IonLabel>Perfil</IonLabel>
-          </IonTabButton>
-        </IonTabBar>
-      </IonTabs>
-    </IonReactRouter>
+    <ProveedorSesion>
+      <IonReactRouter>
+        <IonTabs>
+          <IonRouterOutlet>
+            <Route path="/agenda" element={<Agenda />} />
+            <Route path="/mapa" element={<Mapa />} />
+            <Route path="/perfil" element={<Perfil />} />
+            <Route path="/evento/:id" element={<Ficha />} />
+            <Route path="/" element={<Navigate to="/agenda" replace />} />
+          </IonRouterOutlet>
+          <IonTabBar slot="bottom">
+            <IonTabButton tab="agenda" href="/agenda">
+              <IonIcon aria-hidden="true" icon={calendar} />
+              <IonLabel>Agenda</IonLabel>
+            </IonTabButton>
+            <IonTabButton tab="mapa" href="/mapa">
+              <IonIcon aria-hidden="true" icon={map} />
+              <IonLabel>Mapa</IonLabel>
+            </IonTabButton>
+            <IonTabButton tab="perfil" href="/perfil">
+              <IonIcon aria-hidden="true" icon={person} />
+              <IonLabel>Perfil</IonLabel>
+            </IonTabButton>
+          </IonTabBar>
+        </IonTabs>
+      </IonReactRouter>
+    </ProveedorSesion>
   </IonApp>
 );
 
