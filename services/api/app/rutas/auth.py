@@ -15,7 +15,7 @@ from datetime import timedelta
 from typing import Annotated, Literal
 
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -25,7 +25,7 @@ from app.config import get_settings
 from app.db import get_db
 from app.errores import ErrorApi
 from app.modelos import ROLES, CodigoVerificacion, Publicador, Usuario, ahora
-from app.notificaciones import notificar
+from app.notificaciones import enviar_en_segundo_plano, notificar
 from app.rutas.publico import es_uuid
 from app.rutas.usuarios import NOMBRE_POR_DEFECTO, _nuevo_usuario
 from app.seguridad import respuesta_token
@@ -79,7 +79,10 @@ class VerificarCodigo(BaseModel):
 
 
 @router.post("/whatsapp/codigo")
-def pedir_codigo(datos: PedirCodigo, db: Session = Depends(get_db)):
+def pedir_codigo(datos: PedirCodigo, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """El aviso con el código se guarda en la misma transacción y sale hacia el bot después de responder.
+    `enviado` = el aviso tiene destino y está en camino (en cola si el bot está caído); false si no hay a dónde
+    mandarlo."""
     momento = ahora()
     recientes = db.scalar(
         select(func.count())
@@ -117,16 +120,19 @@ def pedir_codigo(datos: PedirCodigo, db: Session = Depends(get_db)):
     )
     usuario = _por_telefono(db, datos.telefono)
     if usuario is not None:
-        aviso = notificar(db, tipo="confirmacion", texto=texto, usuario=usuario, formato="texto")
+        aviso = notificar(db, tipo="confirmacion", texto=texto, usuario=usuario, formato="texto", enviar=False)
     else:
         # Un publicador que pidió el alta y ya habla con el bot por Telegram recibe el código por ahí.
         publicador = db.scalar(
             select(Publicador).where(Publicador.telefono == datos.telefono).order_by(Publicador.creado_en)
         )
         contacto = f"tg:{publicador.telegram_id}" if publicador is not None and publicador.telegram_id else None
-        aviso = notificar(db, tipo="confirmacion", texto=texto, telefono=datos.telefono, contacto=contacto)
+        aviso = notificar(
+            db, tipo="confirmacion", texto=texto, telefono=datos.telefono, contacto=contacto, enviar=False
+        )
     db.commit()
-    return {"enviado": aviso.estado_envio == "enviada", "expira_en": fecha_iso(registro.expira_en)}
+    enviar_en_segundo_plano(background_tasks, db, [aviso])
+    return {"enviado": aviso.estado_envio != "fallida", "expira_en": fecha_iso(registro.expira_en)}
 
 
 def _codigo_invalido() -> ErrorApi:

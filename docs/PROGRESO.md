@@ -90,11 +90,11 @@
 
 **Bloque 3 (sáb 14:00–19:00)**
 - [x] Login con Google (OAuth → JWT) y roles *(JWT propio, código por el bot, Google y login demo con DEMO_MODE)*
-- [ ] Inscripciones con plazas y lista de espera
-- [ ] Exportación `.ics` (evento y usuario)
+- [x] Inscripciones con plazas y lista de espera
+- [x] Exportación `.ics` (evento y usuario)
 - [ ] Chat del evento (mensajes, anuncios fijados, permisos por rol)
-- [ ] Cambio de hora → `POST /notify` a todos los inscritos
-- [ ] Recomendador con motivo legible (gustos + distancia + fecha/plazas + historial + embeddings)
+- [x] Cambio de hora → `POST /notify` a todos los inscritos
+- [x] Recomendador con motivo legible (gustos + distancia + fecha/plazas + historial) *(sin embeddings)*
 
 **Bloque 4 (sáb 20:00–00:00)**
 - [ ] `GET /estadisticas` (actividades, % importadas, inscripciones vs asistencia, ocupación, solapamientos)

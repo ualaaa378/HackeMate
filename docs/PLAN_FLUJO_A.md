@@ -185,11 +185,11 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 
 **Tareas**
 - [x] H3.1 Login con Google: `POST /auth/google` valida el `id_token` y devuelve un JWT propio con `rol`. Login por WhatsApp con código (reutiliza H2.6). Dependencias de FastAPI para exigir rol. `GET/PATCH /usuarios/me` (viene de H1.4).
-- [ ] H3.2 Inscripciones: `POST /eventos/{id}/inscripciones` y `DELETE …/{insc_id}`. Si no hay plazas → `lista_espera`. Al cancelar, el primero de la lista sube a `confirmada` y se le avisa vía `/notify`. Control de concurrencia (transacción con bloqueo de fila) para no vender la misma plaza dos veces.
-- [ ] H3.3 `.ics`: `GET /eventos/{id}/ics` y `GET /usuarios/me/ics` (librería `ics` o generación a mano, zona `Europe/Madrid`).
+- [x] H3.2 Inscripciones: `POST /eventos/{id}/inscripciones` y `DELETE …/{insc_id}`. Si no hay plazas → `lista_espera`. Al cancelar, el primero de la lista sube a `confirmada` y se le avisa vía `/notify`. Control de concurrencia (transacción con bloqueo de fila) para no vender la misma plaza dos veces.
+- [x] H3.3 `.ics`: `GET /eventos/{id}/ics` y `GET /usuarios/me/ics` (librería `ics` o generación a mano, zona `Europe/Madrid`).
 - [ ] H3.4 Chat del evento: `GET/POST /eventos/{id}/mensajes`, anuncios fijados, ocultar, silenciar, con los permisos de la tabla de la diapositiva 17. Sin teléfonos en las respuestas. Antes de publicar un mensaje, llamada a `bot /ai/spam`; si es una pregunta, `bot /ai/responder-ficha`.
-- [ ] H3.5 `PATCH /eventos/{id}` con cambio de `fecha_inicio` → `/notify` a **todos** los inscritos (tipo `cambio_evento`) + anuncio fijado automático en el chat.
-- [ ] H3.6 Recomendador `GET /recomendaciones?usuario_id=`: puntuación = gustos + distancia (haversine) + fecha y plazas libres + historial (+ embeddings si da tiempo). Cada resultado lleva un `motivo` legible («te gusta el senderismo y quedan plazas»).
+- [~] H3.5 `PATCH /eventos/{id}` con cambio de `fecha_inicio` → `/notify` a **todos** los inscritos (tipo `cambio_evento`) + anuncio fijado automático en el chat.
+- [x] H3.6 Recomendador `GET /recomendaciones?usuario_id=`: puntuación = gustos + distancia (haversine) + fecha y plazas libres + historial (+ embeddings si da tiempo). Cada resultado lleva un `motivo` legible («te gusta el senderismo y quedan plazas»).
 - [ ] H3.7 Congelar contratos v2 con B y C.
 
 **Criterios de aceptación**

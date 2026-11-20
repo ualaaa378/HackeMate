@@ -236,7 +236,7 @@ paths:
     get:
       tags: [inscripciones]
       summary: Lista de inscritos (solo organizador y moderador)
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Inscripciones
@@ -250,7 +250,7 @@ paths:
       tags: [inscripciones]
       summary: Apuntarse. Si no hay plazas, queda en `lista_espera`.
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: false
         content:
@@ -274,7 +274,7 @@ paths:
       tags: [inscripciones]
       summary: Cancelar. El primero de la lista de espera sube a `confirmada` y se le avisa.
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Inscripción cancelada
@@ -286,7 +286,7 @@ paths:
     patch:
       tags: [inscripciones]
       summary: Marcar asistencia (organizador o moderador)
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -376,7 +376,7 @@ paths:
       tags: [calendario]
       summary: Evento en formato iCalendar (zona Europe/Madrid)
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Archivo .ics
@@ -390,7 +390,7 @@ paths:
       tags: [calendario]
       summary: Todos los eventos en los que el usuario está confirmado
       security: [{ bearer: [] }]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Archivo .ics
@@ -404,7 +404,7 @@ paths:
       tags: [recomendaciones]
       summary: Eventos recomendados con motivo legible
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       parameters:
         - { name: usuario_id, in: query, required: true, schema: { type: string, format: uuid } }
         - { name: limite, in: query, schema: { type: integer, default: 5, minimum: 1, maximum: 20 } }

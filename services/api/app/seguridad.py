@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db import get_db
 from app.errores import ErrorApi
-from app.modelos import ROLES, Usuario
+from app.modelos import ROLES, Evento, Usuario
 from app.serializar import usuario_a_dict
 
 ALGORITMO = "HS256"
@@ -193,3 +193,40 @@ def exigir_moderador(
     if usuario.rol != "moderador":
         raise _rol_insuficiente(("moderador",))
     return usuario.nombre
+
+
+# --- Usuario o servicio interno, y organizador de un evento -----------------------------------------
+
+
+class Quien:
+    """Quien llama: el bot (`interno`, con X-Internal-Token) y/o un usuario con sesión."""
+
+    def __init__(self, interno: bool, usuario: Usuario | None):
+        self.interno, self.usuario = interno, usuario
+
+
+def quien_llama(
+    x_internal_token: str | None = Header(None), usuario: Usuario | None = Depends(usuario_actual)
+) -> Quien:
+    """Dependencia: X-Internal-Token o Bearer. 401 `no_autenticado` si no hay ninguno."""
+    interno = es_servicio_interno(x_internal_token)
+    if not interno and usuario is None:
+        raise _no_autenticado()
+    return Quien(interno, usuario)
+
+
+def es_organizador(usuario: Usuario | None, evento: Evento) -> bool:
+    """El usuario es el del publicador del evento (por `usuario.publicador_id` o `publicador.usuario_id`)."""
+    if usuario is None or evento.publicador_id is None:
+        return False
+    if usuario.publicador_id == evento.publicador_id:
+        return True
+    return evento.publicador is not None and evento.publicador.usuario_id == usuario.id
+
+
+def puede_gestionar(quien: Quien, evento: Evento) -> bool:
+    """Organizador del evento, moderador o servicio interno."""
+    if quien.interno:
+        return True
+    u = quien.usuario
+    return u is not None and (u.rol == "moderador" or es_organizador(u, evento))

@@ -150,11 +150,12 @@ def codigo_fijo(monkeypatch):
 def test_pedir_codigo_guarda_el_aviso_y_solo_el_hash(api, db, codigo_fijo):
     r = api.post(CODIGO, json={"telefono": TEL_CARMEN})
     assert r.status_code == 200, r.text
-    assert r.json()["enviado"] is False  # bot caído: queda en cola
+    assert r.json()["enviado"] is True  # en camino: con el bot caído queda en la cola
     assert r.json()["expira_en"].endswith("+01:00")
     db.expire_all()
     aviso = db.scalar(select(Notificacion).where(Notificacion.telefono == TEL_CARMEN, Notificacion.tipo == "confirmacion"))
     assert aviso.tipo == "confirmacion" and "123456" in aviso.texto and aviso.usuario_id == CARMEN
+    assert aviso.estado_envio == "pendiente" and aviso.intentos == 1  # se intentó tras responder
     registro = db.scalar(select(CodigoVerificacion).where(CodigoVerificacion.telefono == TEL_CARMEN))
     assert registro.codigo_hash != "123456" and len(registro.codigo_hash) == 64
 

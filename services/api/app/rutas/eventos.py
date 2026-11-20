@@ -4,7 +4,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
@@ -15,7 +15,9 @@ from app.errores import ErrorApi
 from app.modelos import CATEGORIAS, ESTADOS_EVENTO, Evento, Municipio, Publicador
 from app.paginacion import Pagina, pagina, paginar, paginar_lista
 from app.rutas.publico import dentro_del_radio, en_caja, es_uuid, hay_radio
-from app.seguridad import es_servicio_interno, exigir_token_interno
+from app.inscripciones import avisar_inscritos, promocionar, texto_cambio
+from app.notificaciones import enviar_en_segundo_plano
+from app.seguridad import Quien, es_servicio_interno, exigir_token_interno, puede_gestionar, quien_llama
 from app.serializar import evento_a_dict, eventos_a_dict, inscritos_por_evento
 
 router = APIRouter(prefix="/api/v1", tags=["eventos"])
@@ -201,15 +203,24 @@ def crear_evento(datos: EventoCrear, db: Session = Depends(get_db)):
     return _ficha(db, _buscar(db, evento.id))
 
 
-@router.patch("/eventos/{id}", dependencies=[Depends(exigir_token_interno)])
-def editar_evento(id: str, datos: EventoEditar, db: Session = Depends(get_db)):
-    # H3: con el JWT, solo el publicador del evento o el moderador.
+@router.patch("/eventos/{id}")
+def editar_evento(
+    id: str,
+    datos: EventoEditar,
+    background_tasks: BackgroundTasks,
+    quien: Quien = Depends(quien_llama),
+    db: Session = Depends(get_db),
+):
+    """Servicio interno, organizador del evento o moderador. Si cambia la fecha, el lugar o se cancela, se avisa
+    a los inscritos (confirmados y en lista de espera) después del commit."""
     evento = _buscar(db, id)
+    if not puede_gestionar(quien, evento):
+        raise ErrorApi(403, "prohibido", "Solo el organizador del evento o un moderador pueden editarlo")
     cambios = datos.model_dump(exclude_unset=True)
     for campo in ("fecha_inicio", "fecha_fin"):
         if campo in cambios:
             cambios[campo] = _con_zona(cambios[campo])
-    fecha_anterior = evento.fecha_inicio
+    fecha_anterior, lugar_anterior, estado_anterior = evento.fecha_inicio, evento.lugar, evento.estado
 
     for campo, valor in cambios.items():
         setattr(evento, campo, valor)
@@ -218,13 +229,22 @@ def editar_evento(id: str, datos: EventoEditar, db: Session = Depends(get_db)):
         municipio = db.get(Municipio, evento.municipio)
         evento.lat = evento.lat if evento.lat is not None else municipio.lat
         evento.lon = evento.lon if evento.lon is not None else municipio.lon
+    _comprobar_fechas(evento)
+
+    avisos = []
     if "plazas_totales" in cambios:
         total = cambios["plazas_totales"]
         evento.plazas_libres = None if total is None else max(0, total - _ocupadas(db, evento.id))
-    _comprobar_fechas(evento)
+        db.flush()
+        if evento.estado == "publicado":
+            avisos += promocionar(db, evento)  # con más plazas, sube la lista de espera
+
+    cancelado = evento.estado == "cancelado" and estado_anterior != "cancelado"
+    texto = texto_cambio(evento, fecha_anterior, lugar_anterior, cancelado)
+    if texto:
+        avisos += avisar_inscritos(db, evento, "cambio_evento", texto)
+        # H3.4: anuncio fijado automático en el chat del evento con este mismo texto.
 
     db.commit()
-    if "fecha_inicio" in cambios and evento.fecha_inicio != fecha_anterior:
-        # H3: cambio de hora -> /notify a todos los inscritos (cambio_evento) y anuncio fijado en el chat.
-        pass
+    enviar_en_segundo_plano(background_tasks, db, avisos)
     return _ficha(db, _buscar(db, evento.id))
