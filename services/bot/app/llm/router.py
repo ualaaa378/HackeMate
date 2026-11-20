@@ -14,6 +14,18 @@ from app.llm.proveedores import ErrorProveedor, construir
 log = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 
+# Interruptor en caliente para la demo de robustez (POST /admin/simular-caida). None = lo que diga .env
+_caida_forzada: bool | None = None
+
+
+def caida_simulada() -> bool:
+    return get_settings().llm_simular_caida if _caida_forzada is None else _caida_forzada
+
+
+def forzar_caida(activa: bool | None) -> None:
+    global _caida_forzada
+    _caida_forzada = activa
+
 
 class Resultado(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
@@ -41,7 +53,7 @@ def estructurado(
         if proveedor is None or not proveedor.disponible():
             intentos.append(f"{nombre}: sin configurar")
             continue
-        if s.llm_simular_caida:
+        if caida_simulada():
             intentos.append(f"{nombre}: caída simulada")
             metrics.registrar(nombre, proveedor.modelo, tarea, 0, 0, 0, ok=False)
             continue

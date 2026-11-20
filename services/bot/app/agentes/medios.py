@@ -10,6 +10,7 @@ import httpx
 
 from app import metrics
 from app.config import get_settings
+from app.llm import router
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ def transcribir(audio: bytes, mime: str = "audio/ogg") -> str | None:
     s = get_settings()
     extension = {"audio/ogg": "ogg", "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/wav": "wav",
                  "audio/x-wav": "wav", "audio/webm": "webm", "audio/amr": "amr"}.get(mime.split(";")[0], "ogg")
-    if s.freellm_api_key and not s.llm_simular_caida:
+    if s.freellm_api_key and not router.caida_simulada():
         inicio = time.monotonic()
         try:
             r = httpx.post(f"{s.freellm_url.rstrip('/')}/audio/transcriptions", headers=_cabeceras(),
@@ -50,7 +51,7 @@ def transcribir(audio: bytes, mime: str = "audio/ogg") -> str | None:
 
 def leer_imagen(imagen: bytes, mime: str = "image/jpeg") -> str | None:
     s = get_settings()
-    if s.freellm_api_key and not s.llm_simular_caida:
+    if s.freellm_api_key and not router.caida_simulada():
         url = f"data:{mime};base64,{base64.b64encode(imagen).decode()}"
         for modelo in [m.strip() for m in s.freellm_modelos_vision.split(",") if m.strip()]:
             inicio = time.monotonic()
@@ -80,7 +81,7 @@ def leer_imagen(imagen: bytes, mime: str = "image/jpeg") -> str | None:
 
 def _gemini(datos: bytes, mime: str, prompt: str, tarea: str) -> str | None:
     s = get_settings()
-    if not s.gemini_api_key or s.llm_simular_caida:
+    if not s.gemini_api_key or router.caida_simulada():
         return None
     inicio = time.monotonic()
     try:

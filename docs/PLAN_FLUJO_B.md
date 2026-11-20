@@ -4,7 +4,7 @@
 > Responsable del flujo B: **Francisco Sánchez** (Dev B) · Rama: `Flujo-B` · Carpeta: `services/bot/`
 > Complementa a `docs/PLAN.md` (plan general) y `docs/PROGRESO.md` (checklist). Si algo choca, manda `PLAN.md`.
 > Escrito para que las personas **y sus Claudes** sepan qué hace el bot, qué se ha decidido y cómo integrarse.
-> Última actualización: viernes 20 nov, 23:45 (Hito 3).
+> Última actualización: sábado 21 nov, 00:15 (Hito 4).
 
 ---
 
@@ -74,6 +74,8 @@ api ──▶ POST /notify ──▶ canales.py ──▶ telegram.py / Graph AP
 | Ficha y primera pregunta en un solo mensaje | Menos mensajes (coste en WhatsApp) y más fácil de leer |
 | Botones nativos para confirmar (uno por fila en Telegram) | Accesibilidad para personas mayores |
 | Voz y carteles → texto → el extractor de siempre | Transcripción (Whisper) y visión (`gemini-flash-lite`) gratis por FreeLLMAPI, ~1–3 s. El bot repite lo que ha entendido («🎙️ He entendido: …») para que la persona lo compruebe. Tolerante a errores de la voz: «Belefique» → Velefique |
+| Respuestas en nota de voz para quien habla con audios | Paso 7 de la demo (persona mayor). TTS gratis (FreeLLMAPI, voz `auto`) y conversión a OGG/Opus con el ffmpeg de `imageio-ffmpeg`, sin instalar nada más (también en Docker) |
+| Otros idiomas sin coste para el español | Se detecta el idioma con palabras frecuentes; solo se gasta IA si escriben en otro idioma (una llamada para la pregunta y otra para toda la respuesta) |
 | Identidad en Telegram con «Compartir mi número» | Telegram no da el teléfono; con el botón, la API asocia el chat al vecino o al publicador (`/usuarios/vincular`) |
 
 ---
@@ -92,7 +94,8 @@ api ──▶ POST /notify ──▶ canales.py ──▶ telegram.py / Graph AP
 | `POST /ai/responder-ficha` | `api` → `{puede_responder, respuesta, proveedor_ia}`. Solo con la ficha; reglas para hora/precio/lugar/plazas, IA para lo demás | ✅ |
 | `POST /ai/preferencias` | `api` → `{gustos, etiquetas_interes, municipio, formato_aviso}` | ✅ |
 | `POST /dev/mensaje` | web o tests: `{"de": "+34…", "texto": "…"}` → `{"respuestas": […]}` | ✅ simulador de chat |
-| `GET /metrics` | panel (Flujo C) | ✅ tokens, fallos y eventos en cola |
+| `GET /metrics` | panel (Flujo C) | ✅ tokens, fallos, eventos en cola y `caida_simulada` |
+| `GET/POST /admin/simular-caida` | panel, vía la `api` (`X-Internal-Token`): `{"activa": true}` hace «caer» todas las IAs y el bot sigue con reglas | ✅ demo de robustez |
 
 ### Lo que el bot envía a la `api` (cumple el contrato v1)
 
@@ -139,7 +142,7 @@ api ──▶ POST /notify ──▶ canales.py ──▶ telegram.py / Graph AP
 | H1 · El bot entiende un post | CP1 (vie noche) | Webhooks, IA gratis con fallback, extractor, conversación del publicador, Telegram de punta a punta | 🟢 hecho (falta el bot en el compose, A) |
 | H2 · Carteles, audios y moderación | CP2 (sáb 13:00) | Foto del cartel y nota de voz → ficha; antispam (`/ai/spam`); flujo importar → confirmar según contrato; el moderador por chat | 🟢 hecho en el bot y probado con la API real · espera `/confirmar` y `/moderacion/*` de A |
 | H3 · La vecina | CP3 (sáb 19:00) | Gustos (`/ai/preferencias`), «qué hay cerca», inscribirse con botón, avisos de `/notify`, asistente con la ficha (`/ai/responder-ficha`), uso solo con audios | 🟢 hecho en el bot y probado con la API real · espera inscripciones, chat y recomendador de A |
-| H4 · Extras para el jurado | CP4 (sáb noche) | Botón de caída del LLM en el panel, respuesta en audio (TTS), idiomas | ⏳ |
+| H4 · Extras para el jurado | CP4 (sáb noche) | Botón de caída del LLM en el panel, respuesta en audio (TTS), idiomas | 🟢 hecho en el bot (falta el botón en el panel de C) |
 
 Checklist detallado: `docs/PROGRESO.md` → «Flujo B».
 
@@ -154,7 +157,7 @@ py -3.13 -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env            # rellenar TELEGRAM_TOKEN, FREELLM_API_KEY… (claves por privado)
 uvicorn app.main:app --port 8001
-python -m pytest -q               # 81 tests, sin red ni claves (la api se simula en tests/conftest.py)
+python -m pytest -q               # 97 tests, sin red ni claves (la api se simula en tests/conftest.py)
 python -m app.consola             # chat por terminal, sin Telegram
 ```
 

@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     freellm_modelos_vision: str = "gemini-flash-lite,auto"
     freellm_modelo_audio: str = "whisper-large-v3"
     medios_timeout_s: float = 30.0
+    # Respuestas en audio (TTS del proxy; «auto» elige proveedor gratuito)
+    freellm_modelo_voz: str = "auto"
+    freellm_voz: str = "alloy"
     anthropic_api_key: str = ""
     claude_model: str = "claude-opus-5-5"
     claude_effort: str = "low"

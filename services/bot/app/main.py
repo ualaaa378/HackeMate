@@ -10,7 +10,8 @@ from pydantic import BaseModel
 from xml.sax.saxutils import escape
 
 from app import __version__, api_cliente, canales, conversacion, meta, metrics, telegram
-from app.agentes import antispam, asistente, extractor, preferencias
+from app.agentes import antispam, asistente, extractor, preferencias, voz
+from app.llm import router
 from app.config import get_settings
 from app.schemas import ExtraccionEvento, MensajeEntrante
 
@@ -219,6 +220,7 @@ class Notificacion(BaseModel):
     tipo: str = "anuncio"
     texto: str
     evento_id: Optional[str] = None
+    formato: Literal["texto", "audio"] = "texto"
     botones: list[str] = []
     # Los avisos que inicia el bot (cambio de hora, recomendación) fuera de la ventana
     # de 24 h solo los acepta WhatsApp con una plantilla aprobada por Meta
@@ -240,9 +242,33 @@ def notify(n: Notificacion, x_internal_token: str | None = Header(None)):
         canales.enviar_plantilla(destino, n.plantilla, n.parametros, texto_alternativo=n.texto)
     else:
         canales.enviar(destino, n.texto, botones)
+    if n.formato == "audio":  # personas mayores: el aviso también en nota de voz
+        ogg = voz.sintetizar(voz.texto_para_voz([n.texto]))
+        if ogg:
+            canales.enviar_voz(destino, ogg)
     return {"enviado": True}
+
+
+class CaidaSimulada(BaseModel):
+    activa: bool
+
+
+@app.get("/admin/simular-caida")
+def ver_caida(x_internal_token: str | None = Header(None)):
+    _comprobar_interno(x_internal_token)
+    return {"activa": router.caida_simulada()}
+
+
+@app.post("/admin/simular-caida")
+def simular_caida(c: CaidaSimulada, x_internal_token: str | None = Header(None)):
+    """Demo de robustez: con la caída activa, todas las IAs «fallan» y el bot sigue con reglas."""
+    _comprobar_interno(x_internal_token)
+    router.forzar_caida(c.activa)
+    log.warning("Caída simulada de la IA: %s", "ACTIVADA" if c.activa else "desactivada")
+    return {"activa": router.caida_simulada()}
 
 
 @app.get("/metrics")
 def ver_metricas():
-    return {**metrics.resumen(), "eventos_en_cola": len(api_cliente.pendientes)}
+    return {**metrics.resumen(), "eventos_en_cola": len(api_cliente.pendientes),
+            "caida_simulada": router.caida_simulada()}
