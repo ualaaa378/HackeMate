@@ -16,23 +16,5 @@
     "es_evento": true,
     "proveedor_ia": "gemini-2.5-flash",
     "tokens": { "entrada": 812, "salida": 143 }
-  },
-  {
-    "campos": {
-      "titulo": { "valor": "Noche de apuestas deportivas con premios", "confianza": "alta" },
-      "descripcion": { "valor": "Apuesta en el bar y gana. Bono de bienvenida en la web.", "confianza": "alta" },
-      "categoria": { "valor": "ludica", "confianza": "media" },
-      "municipio": { "valor": "Senés", "confianza": "alta" },
-      "lugar": { "valor": "Bar La Plaza", "confianza": "alta" },
-      "fecha_inicio": { "valor": "2026-11-28T21:00:00+01:00", "confianza": "alta" },
-      "fecha_fin": { "valor": null, "confianza": "falta" },
-      "precio_eur": { "valor": null, "confianza": "falta" },
-      "es_gratuito": { "valor": true, "confianza": "baja" },
-      "plazas_totales": { "valor": null, "confianza": "falta" }
-    },
-    "faltan": [],
-    "es_evento": true,
-    "proveedor_ia": "reglas",
-    "tokens": { "entrada": 0, "salida": 0 }
   }
 ]

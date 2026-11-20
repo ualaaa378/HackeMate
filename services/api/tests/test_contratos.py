@@ -24,7 +24,6 @@ SCHEMAS_V1 = [
 # fixture → schema de cada elemento (None = sin schema de entidad propio)
 FIXTURE_SCHEMA = {
     "eventos.json": "evento",
-    "eventos_moderacion.json": "evento",
     "extraccion_evento.json": "extraccion_evento",
     "usuarios.json": "usuario",
     "publicadores.json": "publicador",
@@ -122,7 +121,7 @@ def test_municipios():
 def test_fixtures_coherentes_entre_si():
     publicadores = {p["id"] for p in _json(FIXTURES / "publicadores.json")}
     usuarios = {u["id"] for u in _json(FIXTURES / "usuarios.json")}
-    eventos = _json(FIXTURES / "eventos.json") + _json(FIXTURES / "eventos_moderacion.json")
+    eventos = _json(FIXTURES / "eventos.json")
     ids_eventos = {e["id"] for e in eventos}
     municipios = {m["nombre"] for m in _json(FIXTURES / "municipios.json")}
 

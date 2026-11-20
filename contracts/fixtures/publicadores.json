@@ -106,22 +106,5 @@
     "fuentes": [],
     "usuario_id": null,
     "creado_en": "2026-10-25T10:00:00+02:00"
-  },
-  {
-    "id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a07",
-    "nombre": "Ofertas Almería Express",
-    "tipo": "comercio",
-    "municipio": "Uleila del Campo",
-    "descripcion": "Recién dado de alta: todo va a revisión (demo del antispam).",
-    "telefono": "+34600000107",
-    "email": null,
-    "estado": "whatsapp_verificado",
-    "nivel_confianza": 0,
-    "aprobaciones": 0,
-    "automatizaciones_pausadas": false,
-    "categorias_habituales": [],
-    "fuentes": [],
-    "usuario_id": null,
-    "creado_en": "2026-11-20T12:00:00+01:00"
   }
 ]

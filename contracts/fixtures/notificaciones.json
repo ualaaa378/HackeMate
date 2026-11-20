@@ -24,18 +24,5 @@
     "estado_envio": "pendiente",
     "intentos": 0,
     "creado_en": "2026-11-21T18:00:00+01:00"
-  },
-  {
-    "id": "2b7f0000-0000-4000-8000-000000000003",
-    "telefono": "+34600000202",
-    "tipo": "moderacion",
-    "texto": "Hay 1 publicación en revisión de Bar La Plaza (spam alto: apuestas).",
-    "formato": "texto",
-    "usuario_id": "5a5e0000-0000-4000-8000-000000000002",
-    "evento_id": "1e5d0000-0000-4000-8000-000000000101",
-    "botones": ["Ver", "Rechazar"],
-    "estado_envio": "enviada",
-    "intentos": 1,
-    "creado_en": "2026-11-20T19:10:05+01:00"
   }
 ]
