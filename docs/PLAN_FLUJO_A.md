@@ -133,7 +133,7 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 - [ ] H1.1 Modelos SQLAlchemy y migración inicial con Alembic (eventos, publicadores, fuentes, usuarios, preferencias, inscripciones, mensajes, métricas).
 - [ ] H1.2 Formato común de error y paginación (middleware/utilidades).
 - [ ] H1.3 `GET /eventos` con filtros: `municipio`, `categoria`, `desde`, `hasta`, `lat`+`lon`+`radio_km` (haversine). `GET/POST/PATCH /eventos/{id}`.
-- [ ] H1.4 CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`, `PATCH /usuarios/me`.
+- [ ] H1.4 CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`. *(`GET/PATCH /usuarios/me` se mueve a H3.1, con el login.)*
 - [ ] H1.5 Protección entre servicios con `X-Internal-Token`.
 - [ ] H1.6 `scripts/seed.py`: Lucainena de las Torres, Senés, Velefique, Uleila del Campo y Tahal con coordenadas; 3–4 publicadores (Amigos de Velefique, Bar La Plaza…); 15–25 eventos realistas de las 6 categorías repartidos en las próximas 2 semanas, incluida la **II Ruta Solidaria** del guion.
 - [ ] H1.7 Sync a las 21:00 con B y C (10 min).
@@ -147,7 +147,7 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 | E1.2 | **Piezas comunes.** Conexión a la base de datos por petición, paginación `{items,total,page,size}` reutilizable y protección `X-Internal-Token` para las rutas internas. | H1.2, H1.5 | Tests: sin token → 401 con el formato de error; con token → pasa |
 | E1.3 | **Datos de la demo (`scripts/seed.py`).** Carga los 5 pueblos, los lugares, los publicadores, los usuarios (Carmen de Senés incluida) y los eventos reales + de demo, con la II Ruta Solidaria. Se puede ejecutar varias veces sin duplicar. | H1.6 | Test: base vacía → seed → conteos esperados; repetir no duplica |
 | E1.4 | **Eventos desde la base de datos.** `GET /eventos` (filtros por pueblo, categoría, fechas, texto y radio), ficha, `POST` y `PATCH`. Municipios y lugares también salen de la base. Se retira la lectura provisional desde fixtures. | H1.3 | Tests: filtro por radio desde Senés, 404 con formato, respuestas que validan contra `evento.json` |
-| E1.5 | **Publicadores y usuarios.** Listar, ver y crear publicadores; alta de usuario; `GET /usuarios/by-phone/{e164}` para el bot; `GET/PATCH /usuarios/me` con verificación de JWT (el login que lo emite llega en H3). | H1.4 | Tests de cada ruta, incluidos 401/404/409 |
+| E1.5 | **Publicadores y usuarios.** Listar, ver y crear publicadores; alta de usuario; `GET /usuarios/by-phone/{e164}` para el bot. (`GET/PATCH /usuarios/me` pasa entero a H3, junto con el login y el JWT.) | H1.4 | Tests de cada ruta, incluidos 401/404/409 |
 | E1.6 | **Importación mínima para el CP1.** `POST /eventos/importar` crea el evento en `pendiente_confirmacion` desde lo que envía el bot (adelanto de H2.1, sin duplicados ni moderación). | (H2.1) | Test con el fixture de la Ruta Solidaria: crea el evento y devuelve `faltan` |
 | E1.7 | **Cierre de H1.** `PROGRESO.md` al día, `x-implementado: true` en `openapi.yaml`, compose revisado, PR `Flujo-A` → `develop` y etiqueta `v0.1` (con permiso). | — | Criterios de aceptación de abajo |
 
@@ -184,7 +184,7 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 ### H3 · La vecina: participación (sáb 14:00 → 19:00 · CP3 · `v0.3` + contratos v2 congelados)
 
 **Tareas**
-- [ ] H3.1 Login con Google: `POST /auth/google` valida el `id_token` y devuelve un JWT propio con `rol`. Login por WhatsApp con código (reutiliza H2.6). Dependencias de FastAPI para exigir rol.
+- [ ] H3.1 Login con Google: `POST /auth/google` valida el `id_token` y devuelve un JWT propio con `rol`. Login por WhatsApp con código (reutiliza H2.6). Dependencias de FastAPI para exigir rol. `GET/PATCH /usuarios/me` (viene de H1.4).
 - [ ] H3.2 Inscripciones: `POST /eventos/{id}/inscripciones` y `DELETE …/{insc_id}`. Si no hay plazas → `lista_espera`. Al cancelar, el primero de la lista sube a `confirmada` y se le avisa vía `/notify`. Control de concurrencia (transacción con bloqueo de fila) para no vender la misma plaza dos veces.
 - [ ] H3.3 `.ics`: `GET /eventos/{id}/ics` y `GET /usuarios/me/ics` (librería `ics` o generación a mano, zona `Europe/Madrid`).
 - [ ] H3.4 Chat del evento: `GET/POST /eventos/{id}/mensajes`, anuncios fijados, ocultar, silenciar, con los permisos de la tabla de la diapositiva 17. Sin teléfonos en las respuestas. Antes de publicar un mensaje, llamada a `bot /ai/spam`; si es una pregunta, `bot /ai/responder-ficha`.
