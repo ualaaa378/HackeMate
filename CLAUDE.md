@@ -58,11 +58,20 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements-dev.txt
 copy ..\..\.env.example ..\..\.env     # y ajustar DATABASE_URL
+python ..\..\scripts\seed.py            # crea las tablas y carga los datos de la demo (repetible; --reset la vacía antes)
 uvicorn app.main:app --reload --port 8000
 python -m pytest -q
 ```
 
+- Sin `.env`, la API usa SQLite en `services/api/hackemate.db` (da igual desde qué carpeta se lance).
+- El seed carga los eventos con sus fechas reales y **omite los que ya han terminado**; si ya estaban en la base, los borra con sus inscripciones y mensajes. Volver a sembrar cada día deja la agenda al día. Solo toca los datos de `contracts/fixtures`, nunca lo creado por los usuarios (salvo con `--reset`).
+
 - Base de datos local: `DATABASE_URL=sqlite:///./hackemate.db`, o una PostgreSQL externa (Neon/Supabase) en `.env`. El código no debe depender de nada exclusivo de PostgreSQL sin un camino alternativo para SQLite (p. ej. pgvector es opcional).
+- **SQLAlchemy en este portátil:** el Control de aplicaciones de Windows bloquea sus extensiones compiladas (`DLL load failed while importing _util_cy`). Después de `pip install -r requirements-dev.txt`, reinstalarla en Python puro:
+  ```powershell
+  $env:DISABLE_SQLALCHEMY_CEXT='1'; python -m pip install --force-reinstall --no-deps --no-binary sqlalchemy sqlalchemy==2.1.9
+  ```
+  No cambia el código: SQLAlchemy funciona igual, solo algo más lento. En Docker (Linux) se usa el wheel normal.
 - Python local: 3.15. PyYAML no tiene wheel para 3.15: para leer YAML se usa `ruamel.yaml`, y `uvicorn` va **sin** el extra `[standard]` (lo arrastraría). No añadas dependencias que necesiten PyYAML.
 
 ### Con Docker (otras máquinas, demo y E2E)

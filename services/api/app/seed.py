@@ -1,0 +1,196 @@
+"""Datos de la demo: carga contracts/fixtures en la base de datos.
+
+- Crea o actualiza las tablas (alembic upgrade head) antes de cargar.
+- Se puede ejecutar las veces que haga falta: actualiza por id, no duplica.
+- Los eventos con fechas reales que ya han terminado no se cargan, y si ya estaban en la base
+  (de un seed anterior) se borran, junto con sus inscripciones y mensajes. Así la agenda solo
+  enseña lo que aún va a pasar y, llegado el día, cada evento desaparece solo al volver a sembrar.
+- Solo toca los datos de los fixtures; lo que creen los usuarios no se borra (salvo con --reset).
+
+Uso:  python scripts/seed.py [--reset]        (desde la raíz del repo)
+      python -m app.seed [--reset]            (desde services/api o dentro del contenedor api)
+"""
+
+import argparse
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import delete, select
+from sqlalchemy.orm import Session
+
+from app.config import get_settings
+from app.db import API_DIR, crear_motor
+from app.modelos import (
+    Base,
+    Evento,
+    Fuente,
+    Inscripcion,
+    Lugar,
+    MensajeEvento,
+    Municipio,
+    Notificacion,
+    Publicador,
+    Usuario,
+)
+
+FICHEROS_EVENTOS = ("eventos.json", "eventos_demo.json")
+
+
+def directorio_fixtures() -> Path:
+    configurado = get_settings().fixtures_dir
+    if configurado:
+        return Path(configurado)
+    # Monorepo: services/api/app/seed.py -> raiz/contracts/fixtures
+    return Path(__file__).resolve().parents[3] / "contracts" / "fixtures"
+
+
+def _leer(nombre: str, directorio: Path) -> list[dict]:
+    with open(directorio / nombre, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _fecha(valor: str | None) -> datetime | None:
+    return datetime.fromisoformat(valor.replace("Z", "+00:00")) if valor else None
+
+
+def _columnas(modelo, datos: dict, fechas: tuple[str, ...] = ()) -> dict:
+    """Quita los campos que no son columnas (p. ej. inscritos, publicador_nombre, usuario_nombre)."""
+    cols = {c.key for c in modelo.__table__.columns}
+    fila = {k: v for k, v in datos.items() if k in cols}
+    for f in fechas:
+        if f in fila:
+            fila[f] = _fecha(fila[f])
+    return fila
+
+
+def ha_terminado(evento: dict, ahora: datetime) -> bool:
+    fin = _fecha(evento.get("fecha_fin")) or _fecha(evento["fecha_inicio"])
+    return fin < ahora
+
+
+def _fila_evento(e: dict) -> dict:
+    fila = _columnas(Evento, e, ("fecha_inicio", "fecha_fin", "creado_en", "actualizado_en"))
+    origen = e.get("origen") or {}
+    moderacion = e.get("moderacion") or {}
+    fila |= {
+        "origen_canal": origen.get("canal", "manual"),
+        "origen_url": origen.get("url"),
+        "importado_auto": origen.get("importado_auto", False),
+        "motivo_moderacion": moderacion.get("motivo"),
+        "score_spam": moderacion.get("score_spam"),
+        "revisado_por": moderacion.get("revisado_por"),
+    }
+    return fila
+
+
+def migrar(url: str | None = None) -> None:
+    cfg = Config(str(API_DIR / "alembic.ini"))
+    cfg.attributes["configurar_logs"] = False
+    if url:
+        cfg.attributes["url"] = url
+    command.upgrade(cfg, "head")
+
+
+def vaciar(db: Session) -> None:
+    """--reset: deja la base vacía (en orden inverso a las dependencias)."""
+    db.execute(Usuario.__table__.update().values(publicador_id=None))
+    for tabla in reversed(Base.metadata.sorted_tables):
+        if tabla.name != "alembic_version":
+            db.execute(delete(tabla))
+
+
+def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None = None) -> dict:
+    """Carga los fixtures y devuelve un resumen. No hace commit: lo hace quien llama."""
+    directorio = directorio or directorio_fixtures()
+    ahora = ahora or datetime.now(timezone.utc)
+    resumen: dict[str, int] = {}
+
+    for m in _leer("municipios.json", directorio):
+        db.merge(Municipio(**m))
+    resumen["municipios"] = len(_leer("municipios.json", directorio))
+
+    lugares = _leer("lugares.json", directorio)
+    for lugar in lugares:
+        db.merge(Lugar(**_columnas(Lugar, lugar)))
+    resumen["lugares"] = len(lugares)
+
+    # usuarios <-> publicadores se apuntan entre sí: primero sin el enlace, luego se completa.
+    usuarios = _leer("usuarios.json", directorio)
+    for u in usuarios:
+        db.merge(Usuario(**(_columnas(Usuario, u, ("creado_en",)) | {"publicador_id": None})))
+    db.flush()
+
+    publicadores = _leer("publicadores.json", directorio)
+    fuentes = 0
+    for p in publicadores:
+        db.merge(Publicador(**_columnas(Publicador, p, ("creado_en",))))
+        db.flush()
+        for f in p.get("fuentes", []):
+            db.merge(Fuente(**_columnas(Fuente, f), publicador_id=p["id"]))
+            fuentes += 1
+    db.flush()
+    for u in usuarios:
+        if u.get("publicador_id"):
+            db.get(Usuario, u["id"]).publicador_id = u["publicador_id"]
+    resumen |= {"usuarios": len(usuarios), "publicadores": len(publicadores), "fuentes": fuentes}
+
+    cargados, terminados = set(), set()
+    for nombre in FICHEROS_EVENTOS:
+        for e in _leer(nombre, directorio):
+            if ha_terminado(e, ahora):
+                terminados.add(e["id"])
+            else:
+                db.merge(Evento(**_fila_evento(e)))
+                cargados.add(e["id"])
+    db.flush()
+    borrados = 0
+    for id_evento in terminados:
+        evento = db.get(Evento, id_evento)
+        if evento is not None:
+            db.delete(evento)  # la base borra en cascada sus inscripciones y mensajes
+            borrados += 1
+    db.flush()
+    resumen |= {"eventos": len(cargados), "eventos_terminados_omitidos": len(terminados), "eventos_terminados_borrados": borrados}
+
+    # Lo que cuelga de un evento solo se carga si el evento sigue en la agenda.
+    for clave, modelo, fichero, fechas in (
+        ("inscripciones", Inscripcion, "inscripciones.json", ("creado_en", "actualizado_en")),
+        ("mensajes", MensajeEvento, "mensajes_evento.json", ("creado_en",)),
+        ("notificaciones", Notificacion, "notificaciones.json", ("creado_en", "enviada_en")),
+    ):
+        n = 0
+        for fila in _leer(fichero, directorio):
+            if fila.get("evento_id") and fila["evento_id"] not in cargados:
+                continue
+            db.merge(modelo(**_columnas(modelo, fila, fechas)))
+            db.flush()  # respuestas que apuntan a mensajes anteriores del mismo fichero
+            n += 1
+        resumen[clave] = n
+
+    return resumen
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Carga los datos de la demo en la base de datos")
+    parser.add_argument("--reset", action="store_true", help="vacía todas las tablas antes de cargar")
+    args = parser.parse_args(argv)
+
+    migrar()
+    motor = crear_motor()
+    with Session(motor) as db, db.begin():
+        if args.reset:
+            vaciar(db)
+        resumen = sembrar(db)
+    motor.dispose()
+
+    destino = motor.url.database if motor.url.get_backend_name() == "sqlite" else motor.url.render_as_string(True)
+    print(f"Base de datos: {destino}")
+    for clave, valor in resumen.items():
+        print(f"  {clave:28} {valor}")
+
+
+if __name__ == "__main__":
+    main()

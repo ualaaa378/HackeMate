@@ -11,7 +11,7 @@
 | Flujo | Responsable | Rama actual | Estado | Última actualización |
 |---|---|---|---|---|
 | A · Backend, datos e infra | Dev A: Benas | `Flujo-A` | 🟢 / 🟡 / 🔴 | vie __:__ |
-| B · WhatsApp e IA | Dev B: Francisco | `Flujo-B` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| B · Bot (Telegram/WhatsApp) e IA | Dev B: Francisco | `Flujo-B` | 🟢 | vie 20/11 20:00 |
 | C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-docker` | 🟢 | vie 20/11 |
 
 🟢 en plazo · 🟡 riesgo de no llegar al próximo checkpoint · 🔴 bloqueado
@@ -49,7 +49,7 @@
 - [~] Ramas `main` y `develop` creadas (falta activar la protección de `main` en GitHub)
 - [x] Estructura de carpetas del monorepo creada
 - [~] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo (escrito; falta validarlo con Docker en otra máquina: pasos y resultado esperado en `PLAN_FLUJO_A.md` H0, «Cómo probar H0»). **Responsable de la prueba: por asignar en la reunión** (alguien con Docker)
-- [x] `.env.example` con todas las variables
+- [x] `.env.example` con todas las variables (incluidas las `META_*` del canal WhatsApp Cloud API de `Flujo-B`)
 - [x] `contracts/openapi.yaml` v1
 - [x] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion, lugar)
 - [x] `contracts/enums.md` y `contracts/fixtures/*.json`
@@ -59,12 +59,14 @@
   - `POST /notify` acepta `contracts/schemas/notificacion.json` (lo mínimo: `telefono`, `tipo`, `texto`) y `metrics.registrar` envía lo que pide `MetricaTokens`.
   - Los endpoints `/ai/*` de `openapi.yaml` son los que va a implementar.
   - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
+  - *Revisión previa del flujo A (vie 19:10, contra `origin/Flujo-B`):* el cuerpo de `importar`, `MetricaTokens` y la forma de `ExtraccionEvento` encajan. Por decidir con B: `POST /webhook/meta` (y `GET`) no está en `openapi.yaml` → añadirlo por PR `contract-change`; `/ai/spam`, `/ai/responder-ficha` y `/ai/preferencias` aún no existen en el bot (los necesita A en H2/H3).
 - [ ] **C (Adán) confirma los contratos v1 de `Flujo-A`.** Revisar que:
   - `contracts/schemas/evento.json` (con `inscritos`), `lugar.json` y los fixtures `eventos.json`, `eventos_demo.json`, `lugares.json`, `municipios.json` y `FUENTES.md` son los de su PR de datos reales, sin cambios. `openapi.yaml` ya incluye `GET /lugares` y `GET /lugares/{id}`.
   - Su PR de datos reales se rebasa sobre `develop` cuando entre `Flujo-A` (los archivos de `contracts/` quedan idénticos y desaparecen del diff).
   - `npx openapi-typescript contracts/openapi.yaml -o apps/web/src/api/schema.d.ts` genera tipos sin errores.
   - Los fixtures de usuarios, publicadores, inscripciones, mensajes y notificaciones le bastan para las pantallas con mocks (los fixtures de moderación y antispam llegan en H2).
   - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
+  - *Nota del flujo A (vie 19:10):* la web ya lee `GET /eventos`, `/lugares` y `/municipios` de la API en `develop` (PR #4), así que en la práctica los contratos le sirven; falta solo su confirmación explícita.
 - [x] Cerrar la PR #1 (`contract/v1`) **sin merge**: la sustituyen los contratos de `Flujo-A` (mismo `evento.json`). Si tenía algo que falte en `Flujo-A`, se añade por PR `contract-change`.
 - [~] PR `Flujo-A` → `develop` revisada y mergeada (orden A → B → C); `main` protegida en GitHub *(Flujo-A en `develop` vía PR #3 y #4; falta proteger `main`)*
 - [ ] Preguntas enviadas a la organización por Telegram (PLAN §8)
@@ -74,14 +76,14 @@
 ## Flujo A · Backend, datos e infraestructura
 
 **Bloque 1 (vie 18:30–23:30)**
-- [ ] Modelos SQLAlchemy + migración inicial (Alembic)
-- [ ] CRUD de eventos con filtros (municipio, categoría, fechas, radio)
-- [ ] CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`
-- [ ] `seed.py` con los 5 pueblos y eventos de demo
-- [ ] Formato de error y paginación comunes
+- [x] Modelos SQLAlchemy + migración inicial (Alembic)
+- [x] CRUD de eventos con filtros (municipio, categoría, fechas, radio)
+- [x] CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`
+- [x] `seed.py` con los 5 pueblos y eventos de demo (fechas reales; omite y borra los ya terminados)
+- [x] Formato de error y paginación comunes
 
 **Bloque 2 (sáb 08:00–13:00)**
-- [ ] `POST /eventos/importar` y `POST /eventos/{id}/confirmar`
+- [~] `POST /eventos/importar` y `POST /eventos/{id}/confirmar` *(importar mínimo hecho en E1.6: pendiente_confirmacion, `faltan`, duplicado por origen.url; falta confirmar)*
 - [ ] Niveles de confianza 0/1/2 y bandeja de moderación con motivo
 - [ ] Detección de duplicados (origen_url + similitud)
 - [ ] Alta de publicador: verificación de WhatsApp con código + aprobación
@@ -101,29 +103,36 @@
 
 ---
 
-## Flujo B · WhatsApp, IA y automatizaciones
+## Flujo B · Bot (Telegram / WhatsApp), IA y automatizaciones
+
+> Plan y decisiones del flujo: [`PLAN_FLUJO_B.md`](PLAN_FLUJO_B.md). Canal activo: **Telegram** (@HackeMate_bot).
+> WhatsApp Cloud API (Meta) está programado pero bloqueado por Meta (verificación de negocio + método de pago).
 
 **Bloque 1 (vie 18:30–23:30)**
-- [ ] Webhook de Twilio con acuse inmediato (<1 s) y trabajo en segundo plano
-- [ ] Adaptador de canal `console` para probar sin WhatsApp
-- [ ] `llm_router` con cadena Claude → Gemini → NIM → reglas, timeout y registro de tokens
-- [ ] Extractor de eventos desde texto → `ExtraccionEvento` validada
+- [x] Webhooks con acuse inmediato y trabajo en segundo plano: Telegram, WhatsApp (Meta) y Twilio
+- [x] Canal Telegram funcionando de punta a punta (botones, voz, fotos, ubicación)
+- [x] Canal WhatsApp Cloud API (Meta) programado y probado contra la API real · [!] envío bloqueado por Meta
+- [x] Simulador `POST /dev/mensaje` y consola para probar sin mensajería
+- [x] `llm_router` Gemini → FreeLLMAPI → Claude (opcional) → reglas, con timeout y registro de tokens (probado con FreeLLMAPI real)
+- [x] Extractor de eventos desde texto → `ExtraccionEvento` validada
+- [ ] Integrar `services/bot` en `infra/docker-compose.yml` en lugar del stub (con Flujo A)
+- [ ] Ajustar al contrato el flujo importar → confirmar (`POST /eventos/importar` y luego `/eventos/{id}/confirmar`)
 
 **Bloque 2 (sáb 08:00–13:00)**
-- [ ] Extractor desde imagen (cartel) y desde audio (Whisper)
-- [ ] Conversación del publicador: pregunta lo que falta y confirma (botones)
-- [ ] Antispam: reglas baratas primero, IA solo si es dudoso
+- [ ] Extractor desde imagen (cartel) y desde audio (transcripción)
+- [~] Conversación del publicador: pregunta lo que falta y confirma (botones hechos; falta usar `/confirmar` de la API)
+- [ ] Antispam: reglas baratas primero, IA solo si es dudoso (`POST /ai/spam`)
 - [ ] Ingesta: «pega el enlace/texto del post» + scraper de una web pública
 - [ ] Conversación del moderador: «enséñame lo pendiente», aprobar/rechazar
 
 **Bloque 3 (sáb 14:00–19:00)**
-- [ ] Conversación del vecino: gustos, pueblo/ubicación, «¿qué hay este finde cerca?»
-- [ ] Inscripción desde WhatsApp con un botón
-- [ ] `POST /notify`: recomendaciones, cambios de hora y anuncios (respetando preferencias)
-- [ ] Asistente del evento: responde solo con la ficha, si no, deriva al organizador
+- [ ] Conversación del vecino: gustos, pueblo/ubicación, «¿qué hay este finde cerca?» (`POST /ai/preferencias`)
+- [ ] Inscripción desde el chat con un botón
+- [~] `POST /notify`: hecho el envío (texto, botones, plantillas de WhatsApp); faltan preferencias y destinos de Telegram en el contrato
+- [ ] Asistente del evento: responde solo con la ficha, si no, deriva al organizador (`POST /ai/responder-ficha`)
 
 **Bloque 4 (sáb 20:00–00:00)**
-- [ ] Botón/flag «simular caída del LLM» para enseñar el fallback
+- [~] «Simular caída del LLM»: la variable `LLM_SIMULAR_CAIDA` existe; falta el botón en el panel (Flujo C)
 - [ ] Respuesta en audio (TTS) para quien escribe con audios
 - [ ] Respuestas en otros idiomas para visitantes
 
@@ -198,13 +207,13 @@
 
 | Hora | Flujo | Problema | Quién ayuda | Resuelto |
 |---|---|---|---|---|
-| | | | | [ ] |
+| vie 19:00 | B | Meta bloquea el envío de WhatsApp Cloud API (errores 141010 verificación de negocio, 141006 método de pago, 131031). Decisión: canal activo **Telegram**; WhatsApp queda para producción con una entidad verificada | Organización (¿portfolio de Meta verificado de la Diputación/UAL?) | [~] |
 
 ## Cambios de contrato
 
 | Hora | PR | Cambio | Aprobado por |
 |---|---|---|---|
-| | | | |
+| vie 20:00 | (propuesta B) | Añadir `telegram` al enum `canal`; `telegram_id` opcional en `Usuario` (el bot pide el teléfono con el botón «Compartir mi número», así `telefono` E.164 sigue valiendo en `ImportarEvento` y `Notificacion`); `plantilla`/`parametros` opcionales en `Notificacion`; documentar `/webhook/telegram`, `/webhook/meta` y `/dev/mensaje` en `openapi.yaml`. Detalle en `PLAN_FLUJO_B.md` §5 | pendiente (A y C) |
 
 ## Registro de checkpoints
 
@@ -214,3 +223,14 @@
 | CP2 | | | | |
 | CP3 | | | | |
 | CP4 | | | | |
+
+## Avisos del flujo A para B y C (vie 20/11, 22:00)
+
+Estado de las ramas del flujo A y lo que cambia para los demás. Orden de merge previsto: **#10 → #12 → #11 (B) → C**.
+
+| PR | Rama | Qué trae | Qué tiene que hacer B / C |
+|---|---|---|---|
+| [#10](https://github.com/ualaaa378/HackeMate/pull/10) | `Flujo-A` | H1: la API lee de la base de datos (municipios, lugares, eventos con filtros y radio, ficha, POST/PATCH), publicadores, usuarios, `GET /usuarios/by-phone/{e164}` y `POST /eventos/importar` (crea en `pendiente_confirmacion`, devuelve `faltan`, no duplica por `origen.url`). El contenedor `api` carga el seed al arrancar. Ya lleva `develop` integrado y el `.env.example` y este archivo resueltos con `Flujo-B`, así que la #11 entra limpia después. | **C:** las lecturas públicas ya salen de la base (sin token solo eventos `publicado` y publicadores `aprobado`). Crear o editar eventos pide `X-Internal-Token` hasta el login (H3). **B:** `importar`, `by-phone`, `POST /usuarios` y `POST/PATCH /eventos` piden `X-Internal-Token`. |
+| [#12](https://github.com/ualaaa378/HackeMate/pull/12) `contract-change` | `feat/api-canales` (encima de #10) | Respuesta a la propuesta de B: canal `telegram`, `telegram_id` en usuario y publicador, componente `Contacto` (`+34…` o `tg:<chat_id>`), `contacto_publicador` en `ImportarEvento`, `contacto`/`plantilla`/`parametros` en `Notificacion`, rutas `GET /usuarios/by-contacto/{contacto}` y `POST /usuarios/vincular`, y las rutas del bot documentadas. Solo añadidos. Migración `0002_canal_telegram`. | **B:** funciona ya con lo que manda el bot (`tg:` en `telefono_publicador`); cuando podáis, usad `contacto_publicador` y llamad a `POST /usuarios/vincular` al «Compartir mi número». **C:** regenerar tipos (`npm run api:tipos`); solo se añade `telegram` a los enums. **Aprobación de B y C pendiente.** |
+
+Pendiente del flujo A tras el merge de #11: cambiar en `infra/docker-compose.yml` el stub del bot por `build: ../services/bot` y probar el compose en una máquina con Docker.
