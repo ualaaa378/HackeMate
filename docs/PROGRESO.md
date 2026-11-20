@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | A · Backend, datos e infra | Dev A: ________ | `feat/api-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
 | B · WhatsApp e IA | Dev B: ________ | `feat/bot-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
-| C · App Ionic, web/PWA y panel | Dev C: ________ | `feat/web-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
 
 🟢 en plazo · 🟡 riesgo de no llegar al próximo checkpoint · 🔴 bloqueado
 
