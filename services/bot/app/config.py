@@ -59,6 +59,13 @@ class Settings(BaseSettings):
     # Enlaces a la ficha en la web/PWA (Flujo C): {web_url}/evento/{id}
     web_url: str = "http://localhost:8080"
 
+    # Cola de peticiones a la api cuando está caída: se guarda en disco y se reintenta sola
+    cola_path: str = "data/cola_pendiente.json"  # vacío = solo en memoria
+    cola_reintento_s: float = 30.0
+
+    # URL pública (túnel) del bot. Si está, al arrancar registra el webhook de Telegram él solo
+    public_url: str = ""
+
     @property
     def proveedores(self) -> list[str]:
         return [p.strip() for p in self.llm_cadena.split(",") if p.strip()]

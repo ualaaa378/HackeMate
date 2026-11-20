@@ -111,7 +111,8 @@ def configurar_webhook(url: str) -> dict | None:
         "url": url,
         "secret_token": s.telegram_secret,
         "allowed_updates": ["message", "callback_query"],
-        "drop_pending_updates": True,
+        # False: lo que escriban mientras el bot se reinicia llega igual al volver
+        "drop_pending_updates": False,
     })
 
 

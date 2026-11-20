@@ -318,9 +318,11 @@ def _entregar(msg: MensajeEntrante, est: Estado) -> str:
     estados[msg.de] = Estado()
     if est.evento_id is None:
         # La api no estaba al empezar: se importa ahora con todo completado (o queda en cola)
-        res = api_cliente.importar_evento(est.borrador, contacto=msg.de, canal=_canal(msg))
+        res = api_cliente.importar_evento(
+            est.borrador, contacto=msg.de, canal=_canal(msg),
+            confirmar_despues={"campos": est.campos_corregidos, "canal": _canal(msg)})
         if res is None:
-            return "✅ Guardado. Lo enviaré a revisión en cuanto el sistema esté disponible."
+            return "✅ Guardado. Lo enviaré a revisión en cuanto el sistema esté disponible y te aviso."
         est.evento_id = res["evento"]["id"]
     try:
         evento, confirmado = api_cliente.confirmar_evento(est.evento_id, est.campos_corregidos, _canal(msg))
