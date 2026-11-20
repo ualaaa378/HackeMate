@@ -1,11 +1,15 @@
 """Cliente HTTP del servicio api (Flujo A), según contracts/openapi.yaml.
 
-Si la api no responde (red caída), importar y confirmar se guardan en una cola en memoria y se
-reintentan con reintentar_pendientes(). Los errores de negocio (4xx) se devuelven como ErrorApi
-para que la conversación pueda explicarlos."""
+Si la api no responde (red caída), importar y confirmar se guardan en una cola que se escribe en
+disco (COLA_PATH), así un reinicio del bot no pierde nada, y se reintentan solos cada pocos segundos
+(ver main.py). Los errores de negocio (4xx) se devuelven como ErrorApi para que la conversación
+pueda explicarlos."""
 
+import json as jsonlib
 import logging
+import threading
 from dataclasses import dataclass
+from pathlib import Path
 from urllib.parse import quote, urlencode
 
 import httpx
@@ -15,7 +19,47 @@ from app.schemas import ExtraccionEvento
 
 log = logging.getLogger(__name__)
 
-pendientes: list[dict] = []  # {"metodo", "ruta", "json"}
+# {"metodo", "ruta", "json"} y, opcional, "al_reintentar": {"confirmar": {...}, "evento_ruta"…}
+pendientes: list[dict] = []
+_cerrojo = threading.Lock()
+
+
+def _ruta_cola() -> Path | None:
+    ruta = get_settings().cola_path
+    return Path(ruta) if ruta else None
+
+
+def guardar_cola() -> None:
+    ruta = _ruta_cola()
+    if ruta is None:
+        return
+    try:
+        ruta.parent.mkdir(parents=True, exist_ok=True)
+        tmp = ruta.with_suffix(".tmp")
+        tmp.write_text(jsonlib.dumps(pendientes, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(ruta)  # escritura atómica: nunca queda un archivo a medias
+    except OSError as e:
+        log.error("No se pudo guardar la cola en %s: %s", ruta, e)
+
+
+def cargar_cola() -> int:
+    ruta = _ruta_cola()
+    if ruta is None or not ruta.exists():
+        return 0
+    try:
+        items = jsonlib.loads(ruta.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        log.error("Cola ilegible en %s, se ignora: %s", ruta, e)
+        return 0
+    with _cerrojo:
+        pendientes[:] = [i for i in items if isinstance(i, dict) and "ruta" in i]
+    return len(pendientes)
+
+
+def _encolar(item: dict) -> None:
+    with _cerrojo:
+        pendientes.append(item)
+        guardar_cola()
 
 
 @dataclass
@@ -47,28 +91,35 @@ def _peticion(metodo: str, ruta: str, json: dict | None = None) -> dict | None:
     return r.json() if r.content else None
 
 
-def _o_en_cola(metodo: str, ruta: str, json: dict) -> dict | None:
+def _o_en_cola(metodo: str, ruta: str, json: dict, al_reintentar: dict | None = None) -> dict | None:
     try:
         return _peticion(metodo, ruta, json)
     except ApiNoDisponible as e:
         log.warning("api no disponible, %s %s en cola: %s", metodo, ruta, e)
-        pendientes.append({"metodo": metodo, "ruta": ruta, "json": json})
+        item = {"metodo": metodo, "ruta": ruta, "json": json}
+        if al_reintentar:
+            item["al_reintentar"] = al_reintentar
+        _encolar(item)
         return None
 
 
 # ---------- Ingesta ----------
 
 def importar_evento(extraccion: ExtraccionEvento, contacto: str, canal: str = "telegram",
-                    url_origen: str | None = None, en_cola: bool = True) -> dict | None:
+                    url_origen: str | None = None, en_cola: bool = True,
+                    confirmar_despues: dict | None = None) -> dict | None:
     """ResultadoImportacion {evento, faltan, duplicado}. Si la api no está: con en_cola=True queda en
-    cola y devuelve None; con en_cola=False lanza ApiNoDisponible."""
+    cola y devuelve None; con en_cola=False lanza ApiNoDisponible.
+    confirmar_despues = {"campos": …, "canal": …}: el publicador ya dijo SÍ; al reintentar desde la
+    cola se importa, se confirma y se le avisa."""
     cuerpo = {
         "extraccion": extraccion.model_dump(),
         "contacto_publicador": contacto,
         "origen": {"canal": canal, "url": url_origen, "importado_auto": canal in ("facebook", "instagram", "web_externa")},
     }
     if en_cola:
-        return _o_en_cola("POST", "/api/v1/eventos/importar", cuerpo)
+        extra = {"confirmar": confirmar_despues, "avisar": contacto} if confirmar_despues is not None else None
+        return _o_en_cola("POST", "/api/v1/eventos/importar", cuerpo, al_reintentar=extra)
     return _peticion("POST", "/api/v1/eventos/importar", cuerpo)
 
 
@@ -83,7 +134,7 @@ def confirmar_evento(evento_id: str, campos: dict, canal: str) -> tuple[dict | N
         if e.status not in (404, 405, 501) or e.code not in ("no_encontrado", "metodo_no_permitido", "error", "no_implementado"):
             raise
     except ApiNoDisponible:
-        pendientes.append({"metodo": "POST", "ruta": f"/api/v1/eventos/{evento_id}/confirmar", "json": cuerpo})
+        _encolar({"metodo": "POST", "ruta": f"/api/v1/eventos/{evento_id}/confirmar", "json": cuerpo})
         return None, False
     evento = _o_en_cola("PATCH", f"/api/v1/eventos/{evento_id}", campos) if campos else None
     return evento, False
@@ -172,14 +223,43 @@ def decidir(evento_id: str, decision: str, motivo: str | None = None) -> dict | 
 # ---------- Cola ----------
 
 def reintentar_pendientes() -> int:
+    """Manda la cola en orden. Para en cuanto la api vuelve a fallar (se reintentará luego).
+    Lo que la api rechaza (4xx) se descarta: reintentarlo daría el mismo error."""
     enviados = 0
     for item in list(pendientes):
         try:
-            _peticion(item["metodo"], item["ruta"], item["json"])
+            res = _peticion(item["metodo"], item["ruta"], item["json"])
         except ApiNoDisponible:
             break
         except ErrorApi as e:
             log.error("La api rechazó %s %s de la cola: %s %s", item["metodo"], item["ruta"], e.code, e.message)
-        pendientes.remove(item)
+            res = None
+        else:
+            _despues_de_reintentar(item, res)
+        with _cerrojo:
+            if item in pendientes:
+                pendientes.remove(item)
+            guardar_cola()
         enviados += 1
+    if enviados:
+        log.info("Cola: %s petición(es) entregada(s) a la api, quedan %s", enviados, len(pendientes))
     return enviados
+
+
+def _despues_de_reintentar(item: dict, res: dict | None) -> None:
+    """Un evento que el publicador ya había confirmado sin api: ahora se confirma y se le avisa."""
+    extra = item.get("al_reintentar")
+    if not extra or not res or "evento" not in res:
+        return
+    from app import canales  # aquí para no crear un import circular
+
+    titulo = res["evento"].get("titulo") or "tu evento"
+    try:
+        _, confirmado = confirmar_evento(res["evento"]["id"], extra["confirmar"].get("campos") or {},
+                                         extra["confirmar"].get("canal", "web"))
+    except ErrorApi as e:
+        log.error("No se pudo confirmar desde la cola: %s", e.message)
+        confirmado = False
+    estado = "ya está enviado a revisión" if confirmado else "ya está guardado y el ayuntamiento lo revisará"
+    if extra.get("avisar"):
+        canales.enviar(extra["avisar"], f"✅ Ya hay conexión: *{titulo}* {estado}.")

@@ -76,6 +76,7 @@ api ──▶ POST /notify ──▶ canales.py ──▶ telegram.py / Graph AP
 | Voz y carteles → texto → el extractor de siempre | Transcripción (Whisper) y visión (`gemini-flash-lite`) gratis por FreeLLMAPI, ~1–3 s. El bot repite lo que ha entendido («🎙️ He entendido: …») para que la persona lo compruebe. Tolerante a errores de la voz: «Belefique» → Velefique |
 | Respuestas en nota de voz para quien habla con audios | Paso 7 de la demo (persona mayor). TTS gratis (FreeLLMAPI, voz `auto`) y conversión a OGG/Opus con el ffmpeg de `imageio-ffmpeg`, sin instalar nada más (también en Docker) |
 | Otros idiomas sin coste para el español | Se detecta el idioma con palabras frecuentes; solo se gasta IA si escriben en otro idioma (una llamada para la pregunta y otra para toda la respuesta) |
+| La cola de la api se guarda en disco y se reintenta sola | Si la api se cae o el bot se reinicia, no se pierde nada. Al volver, el evento que el publicador ya confirmó se importa, se confirma y se le avisa por el chat |
 | Identidad en Telegram con «Compartir mi número» | Telegram no da el teléfono; con el botón, la API asocia el chat al vecino o al publicador (`/usuarios/vincular`) |
 
 ---
@@ -95,6 +96,8 @@ api ──▶ POST /notify ──▶ canales.py ──▶ telegram.py / Graph AP
 | `POST /ai/preferencias` | `api` → `{gustos, etiquetas_interes, municipio, formato_aviso}` | ✅ |
 | `POST /dev/mensaje` | web o tests: `{"de": "+34…", "texto": "…"}` → `{"respuestas": […]}` | ✅ simulador de chat |
 | `GET /metrics` | panel (Flujo C) | ✅ tokens, fallos, eventos en cola y `caida_simulada` |
+| `POST /admin/webhook-telegram` | nosotros, si cambia la URL del túnel: `{"public_url": "https://…"}` (`X-Internal-Token`). Con `PUBLIC_URL` en el `.env` se hace solo al arrancar | ✅ |
+| `POST /admin/reintentar-cola` | nosotros: manda ya lo que esperaba a la api (`X-Internal-Token`). También se hace solo cada `COLA_REINTENTO_S` | ✅ |
 | `GET/POST /admin/simular-caida` | panel, vía la `api` (`X-Internal-Token`): `{"activa": true}` hace «caer» todas las IAs y el bot sigue con reglas | ✅ demo de robustez |
 
 ### Lo que el bot envía a la `api` (cumple el contrato v1)
@@ -119,6 +122,9 @@ api ──▶ POST /notify ──▶ canales.py ──▶ telegram.py / Graph AP
 4. **Documentar en `openapi.yaml`** `POST /webhook/telegram`, `GET/POST /webhook/meta` y `POST /dev/mensaje` (contract-first).
 
 ### Del Flujo A: integración
+
+Detalle completo, con los cuerpos exactos y el cambio propuesto del compose: [`services/bot/PARA_FLUJO_A.md`](../services/bot/PARA_FLUJO_A.md).
+
 
 - `infra/docker-compose.yml`: cambiar el stub por `build: ../services/bot` (ya tiene Dockerfile y `/health`).
 - El túnel debe apuntar al bot. Con túnel rápido, la URL cambia en cada arranque y hay que volver a registrar el webhook de Telegram (§7). Con `CLOUDFLARE_TUNNEL_TOKEN` la URL es fija.
@@ -157,7 +163,7 @@ py -3.13 -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env            # rellenar TELEGRAM_TOKEN, FREELLM_API_KEY… (claves por privado)
 uvicorn app.main:app --port 8001
-python -m pytest -q               # 97 tests, sin red ni claves (la api se simula en tests/conftest.py)
+python -m pytest -q               # 104 tests, sin red ni claves (la api se simula en tests/conftest.py)
 python -m app.consola             # chat por terminal, sin Telegram
 ```
 

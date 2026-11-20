@@ -1,24 +1,60 @@
-import logging
-from typing import Literal, Optional
-
+import asyncio
 import json
+import logging
 from collections import OrderedDict
+from contextlib import asynccontextmanager
+from typing import Literal, Optional
+from xml.sax.saxutils import escape
 
 from fastapi import BackgroundTasks, FastAPI, Form, Header, HTTPException, Query, Request, Response
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
-from xml.sax.saxutils import escape
 
 from app import __version__, api_cliente, canales, conversacion, meta, metrics, telegram
 from app.agentes import antispam, asistente, extractor, preferencias, voz
-from app.llm import router
 from app.config import get_settings
+from app.llm import router
 from app.schemas import ExtraccionEvento, MensajeEntrante
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("bot")
 
-app = FastAPI(title="HackeMate bot", version=__version__)
+
+def registrar_webhook_telegram() -> dict | None:
+    """Con PUBLIC_URL (la del túnel), el bot se da de alta él solo en Telegram al arrancar."""
+    s = get_settings()
+    if not (s.public_url and s.telegram_token):
+        return None
+    url = f"{s.public_url.rstrip('/')}/webhook/telegram"
+    ok = telegram.configurar_webhook(url)
+    if ok:
+        log.info("Webhook de Telegram registrado en %s", url)
+    else:
+        log.error("No se pudo registrar el webhook de Telegram en %s", url)
+    return {"url": url, "ok": bool(ok)}
+
+
+async def _reintentar_cola_siempre() -> None:
+    while True:
+        await asyncio.sleep(get_settings().cola_reintento_s)
+        if api_cliente.pendientes:
+            try:
+                await asyncio.to_thread(api_cliente.reintentar_pendientes)
+            except Exception:
+                log.exception("Fallo al reintentar la cola")
+
+
+@asynccontextmanager
+async def ciclo_de_vida(_app: FastAPI):
+    if n := api_cliente.cargar_cola():
+        log.warning("Cola recuperada del disco: %s petición(es) pendiente(s) para la api", n)
+    await asyncio.to_thread(registrar_webhook_telegram)
+    tarea = asyncio.create_task(_reintentar_cola_siempre())
+    yield
+    tarea.cancel()
+
+
+app = FastAPI(title="HackeMate bot", version=__version__, lifespan=ciclo_de_vida)
 
 ACUSE = "Recibido 👍 Dame un momento que lo leo…"
 
@@ -272,3 +308,27 @@ def simular_caida(c: CaidaSimulada, x_internal_token: str | None = Header(None))
 def ver_metricas():
     return {**metrics.resumen(), "eventos_en_cola": len(api_cliente.pendientes),
             "caida_simulada": router.caida_simulada()}
+
+
+class UrlPublica(BaseModel):
+    public_url: Optional[str] = None
+
+
+@app.post("/admin/webhook-telegram")
+def webhook_telegram_admin(u: UrlPublica, x_internal_token: str | None = Header(None)):
+    """Si cambia la URL del túnel: se vuelve a registrar sin reiniciar el bot."""
+    _comprobar_interno(x_internal_token)
+    s = get_settings()
+    if u.public_url:
+        s.public_url = u.public_url
+    if not (s.public_url and s.telegram_token):
+        raise HTTPException(422, detail={"code": "falta_configuracion",
+                                         "message": "Hace falta TELEGRAM_TOKEN y una public_url"})
+    return registrar_webhook_telegram()
+
+
+@app.post("/admin/reintentar-cola")
+def reintentar_cola(x_internal_token: str | None = Header(None)):
+    _comprobar_interno(x_internal_token)
+    enviados = api_cliente.reintentar_pendientes()
+    return {"enviados": enviados, "quedan": len(api_cliente.pendientes)}

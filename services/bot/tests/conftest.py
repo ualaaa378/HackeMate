@@ -19,6 +19,8 @@ os.environ.update({
     "API_URL": "http://api.test",
     "INTERNAL_TOKEN": "test",
     "LLM_SIMULAR_CAIDA": "false",
+    "COLA_PATH": "",
+    "PUBLIC_URL": "",
 })
 
 
