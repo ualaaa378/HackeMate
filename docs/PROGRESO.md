@@ -10,7 +10,7 @@
 
 | Flujo | Responsable | Rama actual | Estado | Última actualización |
 |---|---|---|---|---|
-| A · Backend, datos e infra | Dev A: Benas | `Flujo-A` | 🟢 H1 hecho (E1.0–E1.6, 135 tests); PR a `develop` abierta; falta integración CP1 con B y C y Docker sin validar | vie 20:00 |
+| A · Backend, datos e infra | Dev A: Benas | `Flujo-A` | 🟢 / 🟡 / 🔴 | vie __:__ |
 | B · Bot (Telegram/WhatsApp) e IA | Dev B: Francisco | `Flujo-B` | 🟢 | vie 20/11 20:00 |
 | C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-docker` | 🟢 | vie 20/11 |
 
