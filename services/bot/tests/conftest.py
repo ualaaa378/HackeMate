@@ -10,6 +10,8 @@ os.environ.update({
     "FREELLM_URL": "http://freellm.test/v1",
     "CANAL": "console",
     "META_TOKEN": "",
+    "TELEGRAM_TOKEN": "",
+    "TELEGRAM_SECRET": "",
     "META_PHONE_NUMBER_ID": "",
     "META_APP_SECRET": "",
     "META_VERIFY_TOKEN": "",

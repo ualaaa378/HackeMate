@@ -21,6 +21,7 @@ uvicorn app.main:app --port 8001 --reload
 | Ruta | Para qué |
 |---|---|
 | `GET /health` | `{"status":"ok","version":…}` |
+| `POST /webhook/telegram` | Entrada de Telegram (canal activo en desarrollo y demo). Comprueba `X-Telegram-Bot-Api-Secret-Token` |
 | `GET /webhook/meta` | Verificación del webhook de WhatsApp Cloud API (`hub.challenge`) |
 | `POST /webhook/meta` | Entrada de WhatsApp (Meta). Comprueba la firma, contesta 200 al momento y procesa en segundo plano |
 | `POST /webhook/twilio` | Entrada alternativa por Twilio (TwiML) |
@@ -45,7 +46,21 @@ uvicorn app.main:app --port 8001 --reload
 - `app/meta.py`: firma `X-Hub-Signature-256` y conversión del JSON de Meta (texto, botones, audio, imagen,
   ubicación). Los reenvíos del webhook se descartan por id de mensaje.
 
+## Telegram
+
+Canal activo hoy: gratis, sin límite de mensajes y sin verificar negocio. Botones en línea, notas de voz,
+fotos y ubicación. El usuario se identifica como `tg:<chat_id>` (Telegram no da el teléfono).
+
+1. Crear el bot con @BotFather (`/newbot`) y poner el token en `TELEGRAM_TOKEN`.
+2. Registrar el webhook (una vez por URL del túnel):
+   `python -c "from app import telegram; print(telegram.configurar_webhook('https://<túnel>/webhook/telegram'))"`
+
+Los destinos `tg:` siempre salen por Telegram, así que Telegram y WhatsApp pueden convivir.
+
 ## WhatsApp en producción
+
+Bloqueado durante la hackathon: Meta exige verificación de negocio y método de pago (errores 141010, 141006
+y 131031). El adaptador está hecho y probado contra la API real.
 
 - Número propio del ayuntamiento o la Diputación registrado en WhatsApp Cloud API (requiere verificar el negocio en Meta).
 - Responder a quien escribe al bot (ventana de 24 h) es gratis. Los avisos que inicia el bot fuera de esa

@@ -22,7 +22,7 @@ def importar_evento(extraccion: ExtraccionEvento, telefono: str, canal: str = "w
     cuerpo = {
         "extraccion": extraccion.model_dump(),
         "telefono_publicador": telefono,
-        "origen": {"canal": canal, "url": url_origen, "importado_auto": canal != "whatsapp"},
+        "origen": {"canal": canal, "url": url_origen, "importado_auto": canal in ("facebook", "instagram", "web_externa")},
     }
     try:
         r = httpx.post(f"{get_settings().api_url}/api/v1/eventos/importar", json=cuerpo, headers=_cabeceras(),

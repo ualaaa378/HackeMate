@@ -157,7 +157,8 @@ def ficha_texto(ex: ExtraccionEvento) -> str:
 
 
 def _entregar(msg: MensajeEntrante, est: Estado) -> str:
-    resultado = api_cliente.importar_evento(est.borrador, telefono=msg.de)
+    canal = msg.canal if msg.canal != "console" else "manual"
+    resultado = api_cliente.importar_evento(est.borrador, telefono=msg.de, canal=canal)
     estados[msg.de] = Estado()
     if resultado is None:
         return "✅ Guardado. Lo enviaré a revisión en cuanto el sistema esté disponible."

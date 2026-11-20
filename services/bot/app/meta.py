@@ -29,6 +29,24 @@ def parsear(payload: dict) -> list[MensajeEntrante]:
     return mensajes
 
 
+def fallos_de_entrega(payload: dict) -> list[dict]:
+    """Mensajes nuestros que WhatsApp no pudo entregar, con el código de error de Meta
+    (p. ej. 131047: ventana de 24 h cerrada; 131030: número no autorizado en pruebas)."""
+    fallos = []
+    for entrada in payload.get("entry", []):
+        for cambio in entrada.get("changes", []):
+            for st in cambio.get("value", {}).get("statuses", []):
+                if st.get("status") == "failed":
+                    for err in st.get("errors") or [{}]:
+                        fallos.append({
+                            "para": st.get("recipient_id"),
+                            "codigo": err.get("code"),
+                            "motivo": err.get("title"),
+                            "detalle": (err.get("error_data") or {}).get("details") or err.get("message"),
+                        })
+    return fallos
+
+
 def _convertir(m: dict, nombre: str | None) -> MensajeEntrante | None:
     tipo = m.get("type")
     base = {"canal": "whatsapp", "de": "+" + m.get("from", ""), "nombre": nombre, "id_mensaje": m.get("id")}

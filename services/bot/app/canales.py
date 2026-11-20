@@ -19,8 +19,12 @@ Boton = tuple[str, str]  # (id que nos devuelve WhatsApp al pulsarlo, texto visi
 
 def enviar(telefono: str, texto: str, botones: list[Boton] | None = None) -> None:
     """Mensaje de sesión: respuesta a alguien que nos ha escrito en las últimas 24 h."""
+    from app import telegram
+
     canal = get_settings().canal
-    if canal == "meta":
+    if telegram.es_telegram(telefono) and get_settings().telegram_token:
+        telegram.enviar(telefono, texto, botones)
+    elif canal == "meta":
         _enviar_meta(telefono, texto, botones)
     elif canal == "twilio":
         _enviar_twilio(telefono, texto)
@@ -31,7 +35,10 @@ def enviar(telefono: str, texto: str, botones: list[Boton] | None = None) -> Non
 def enviar_plantilla(telefono: str, plantilla: str, parametros: list[str], texto_alternativo: str) -> None:
     """Mensaje que inicia el bot (avisos). WhatsApp solo lo permite fuera de la ventana
     de 24 h con una plantilla aprobada por Meta. En los otros canales se manda el texto."""
-    if get_settings().canal == "meta":
+    from app import telegram
+
+    # Telegram no tiene ventana de 24 h ni plantillas: el aviso va como texto normal
+    if get_settings().canal == "meta" and not telegram.es_telegram(telefono):
         _enviar_plantilla_meta(telefono, plantilla, parametros)
     else:
         enviar(telefono, texto_alternativo)

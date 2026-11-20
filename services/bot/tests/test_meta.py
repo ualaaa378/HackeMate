@@ -123,3 +123,15 @@ def test_envio_meta_con_botones_y_plantilla(monkeypatch):
     plantilla = enviados[1][1]["template"]
     assert plantilla["name"] == "cambio_hora" and plantilla["language"] == {"code": "es"}
     assert [p["text"] for p in plantilla["components"][0]["parameters"]] == ["Ruta", "10:00"]
+
+
+def test_fallos_de_entrega_con_codigo_de_error():
+    payload = {"entry": [{"changes": [{"value": {"statuses": [
+        {"id": "w", "status": "delivered", "recipient_id": "34600"},
+        {"id": "w2", "status": "failed", "recipient_id": "34600", "errors": [
+            {"code": 131047, "title": "Re-engagement message",
+             "error_data": {"details": "More than 24 hours have passed"}}]},
+    ]}}]}]}
+    assert meta.fallos_de_entrega(payload) == [
+        {"para": "34600", "codigo": 131047, "motivo": "Re-engagement message",
+         "detalle": "More than 24 hours have passed"}]

@@ -9,7 +9,7 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from xml.sax.saxutils import escape
 
-from app import __version__, api_cliente, canales, conversacion, meta, metrics
+from app import __version__, api_cliente, canales, conversacion, meta, metrics, telegram
 from app.agentes import extractor
 from app.config import get_settings
 from app.schemas import ExtraccionEvento, MensajeEntrante
@@ -69,6 +69,23 @@ def _procesar_con_acuse(msg: MensajeEntrante) -> None:
     _procesar_seguro(msg)
 
 
+@app.post("/webhook/telegram")
+async def webhook_telegram(request: Request, tareas: BackgroundTasks):
+    s = get_settings()
+    if s.telegram_secret and request.headers.get("X-Telegram-Bot-Api-Secret-Token") != s.telegram_secret:
+        raise HTTPException(403, detail={"code": "secreto_telegram_invalido", "message": "Secreto no válido"})
+    try:
+        update = await request.json()
+    except ValueError:
+        raise HTTPException(400, detail={"code": "json_invalido", "message": "Cuerpo no es JSON"})
+    msg, callback_id = telegram.parsear(update)
+    if callback_id:
+        tareas.add_task(telegram.responder_boton, callback_id)
+    if msg and not _ya_visto(msg.id_mensaje):
+        tareas.add_task(_procesar_con_acuse, msg)
+    return {"ok": True}
+
+
 @app.get("/webhook/meta")
 def webhook_meta_verificar(
     modo: str = Query("", alias="hub.mode"),
@@ -93,6 +110,9 @@ async def webhook_meta(request: Request, tareas: BackgroundTasks):
         payload = json.loads(cuerpo)
     except ValueError:
         raise HTTPException(400, detail={"code": "json_invalido", "message": "Cuerpo no es JSON"})
+    for fallo in meta.fallos_de_entrega(payload):
+        log.warning("WhatsApp no entregó un mensaje a %s: error %s (%s) %s",
+                    fallo["para"], fallo["codigo"], fallo["motivo"], fallo["detalle"])
     for msg in meta.parsear(payload):
         if not _ya_visto(msg.id_mensaje):
             tareas.add_task(_procesar_con_acuse, msg)

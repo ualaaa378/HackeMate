@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     # (alternativa) o "console" (solo imprime, para desarrollar y tests)
     canal: str = "console"
 
+    # Telegram: activo en cuanto hay token. Los destinos «tg:…» siempre van por aquí,
+    # así Telegram y WhatsApp pueden funcionar a la vez
+    telegram_token: str = ""
+    telegram_secret: str = ""  # cabecera X-Telegram-Bot-Api-Secret-Token del webhook
+
     # WhatsApp Cloud API (Meta)
     meta_token: str = ""  # token permanente de un usuario del sistema
     meta_phone_number_id: str = ""

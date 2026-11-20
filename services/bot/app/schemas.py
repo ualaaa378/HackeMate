@@ -122,8 +122,8 @@ class ExtraccionEvento(BaseModel):
 class MensajeEntrante(BaseModel):
     """Mensaje normalizado, venga de Twilio o de la consola."""
 
-    canal: Literal["whatsapp", "console"]
-    de: str  # teléfono E.164 con «+», p. ej. +34600000000
+    canal: Literal["whatsapp", "telegram", "console"]
+    de: str  # WhatsApp: teléfono E.164 con «+» (+34600000000) · Telegram: «tg:<chat_id>»
     nombre: Optional[str] = None  # nombre de perfil de WhatsApp, si lo da
     id_mensaje: Optional[str] = None  # para no procesar dos veces un reenvío del webhook
     texto: str = ""
