@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     cors_origenes: str = "http://localhost:8080,http://localhost:5173,http://localhost:8100"
     # Vacío = contracts/fixtures del monorepo. En Docker se monta en /srv/contracts/fixtures.
     fixtures_dir: str = ""
+    # Moderación (app/moderacion.py)
+    moderacion_aprobaciones_subir_nivel: int = 3
+    moderacion_umbral_spam: float = 0.7
 
     @property
     def lista_cors(self) -> list[str]:
