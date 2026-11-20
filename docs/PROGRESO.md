@@ -134,7 +134,7 @@
 **Bloque 1 (vie 18:30–23:30)**
 - [ ] Proyecto Ionic React (`ionic start web tabs --type=react`) con pestañas Agenda · Mapa · Perfil
 - [ ] Tipos generados desde `openapi.yaml` y `VITE_API_URL` configurable
-- [ ] Android Studio + JDK instalados (dejarlo descargando en segundo plano)
+- [x] Android Studio + JDK instalados *(el JDK va incluido en Android Studio)*
 - [ ] Mocks con `contracts/fixtures` (MSW o json-server)
 - [ ] Agenda (lista por fecha con filtros)
 - [ ] Mapa Leaflet con pines por categoría y «cerca de mí»
