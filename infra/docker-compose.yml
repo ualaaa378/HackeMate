@@ -44,10 +44,14 @@ services:
 
   bot:
     <<: *env
-    # Stub hasta que services/bot (Flujo B) esté en develop. Al integrarlo: build: ../services/bot
-    build: ./stubs/bot
+    build: ../services/bot
     environment:
       API_URL: http://api:8000
+      # El proxy FreeLLM corre en el equipo anfitrión: 127.0.0.1 del .env no sirve dentro del contenedor
+      FREELLM_URL: ${FREELLM_URL_DOCKER:-http://host.docker.internal:31415/v1}
+      WEB_URL: ${WEB_URL:-http://localhost:8080}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8001:8001"
 
