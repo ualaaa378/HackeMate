@@ -123,9 +123,13 @@ class MensajeEntrante(BaseModel):
     """Mensaje normalizado, venga de Twilio o de la consola."""
 
     canal: Literal["whatsapp", "console"]
-    de: str  # teléfono E.164 sin el prefijo "whatsapp:"
+    de: str  # teléfono E.164 con «+», p. ej. +34600000000
+    nombre: Optional[str] = None  # nombre de perfil de WhatsApp, si lo da
+    id_mensaje: Optional[str] = None  # para no procesar dos veces un reenvío del webhook
     texto: str = ""
-    media_url: Optional[str] = None
+    boton_id: Optional[str] = None  # id del botón pulsado (mensajes interactivos)
+    media_url: Optional[str] = None  # Twilio: URL directa
+    media_id: Optional[str] = None  # Meta: id que hay que descargar con el token
     media_tipo: Optional[str] = None
     lat: Optional[float] = None
     lon: Optional[float] = None

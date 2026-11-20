@@ -45,20 +45,30 @@ def necesita_ia(msg: MensajeEntrante) -> bool:
     est = estados.get(msg.de)
     if est and (est.preguntando or est.esperando_confirmacion):
         return False
-    return len(msg.texto) > 40 or bool(msg.media_url)
+    return len(msg.texto) > 40 or bool(msg.media_url or msg.media_id)
+
+
+BOTONES_CONFIRMAR = [("si", "Sí, publicar"), ("no", "No")]
+
+
+@dataclass
+class Respuesta:
+    texto: str
+    botones: list[canales.Boton] | None = None
 
 
 def procesar(msg: MensajeEntrante) -> list[str]:
     """Procesa un mensaje y envía las respuestas. Devuelve los textos enviados."""
-    respuestas = _responder(msg)
+    respuestas = [r if isinstance(r, Respuesta) else Respuesta(r) for r in _responder(msg)]
     for r in respuestas:
-        canales.enviar(msg.de, r)
-    return respuestas
+        canales.enviar(msg.de, r.texto, r.botones)
+    return [r.texto for r in respuestas]
 
 
-def _responder(msg: MensajeEntrante) -> list[str]:
+def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
     texto = msg.texto.strip()
-    t = texto.lower()
+    # Si pulsó un botón, usamos su id (p. ej. "si"): no depende de tildes ni mayúsculas
+    t = (msg.boton_id or texto).lower()
     est = estados.setdefault(msg.de, Estado())
 
     if t in ("cancelar", "salir", "reset"):
@@ -71,13 +81,13 @@ def _responder(msg: MensajeEntrante) -> list[str]:
         if re.match(r"^no\b", t):
             estados[msg.de] = Estado()
             return ["De acuerdo, no lo publico."]
-        return ["Responde *SÍ* para publicarlo o *NO* para descartarlo."]
+        return [Respuesta("Responde *SÍ* para publicarlo o *NO* para descartarlo.", BOTONES_CONFIRMAR)]
 
     if est.preguntando and est.borrador:
         _rellenar(est.borrador, est.preguntando, texto)
         return _siguiente_paso(est)
 
-    if msg.media_url and not texto:
+    if (msg.media_url or msg.media_id) and not texto:
         return ["He recibido el archivo 📎. De momento solo entiendo texto: pégame el texto del cartel o del post."]
 
     if len(texto) <= 40 and not re.search(r"\d", texto):
@@ -91,16 +101,19 @@ def _responder(msg: MensajeEntrante) -> list[str]:
     return _siguiente_paso(est)
 
 
-def _siguiente_paso(est: Estado) -> list[str]:
+def _siguiente_paso(est: Estado) -> list[str | Respuesta]:
     faltan = est.borrador.faltan_obligatorios()
     if faltan:
         est.preguntando = faltan[0]
-        cabecera = [] if len(est.historial) > 1 else [ficha_texto(est.borrador)]
+        primera_vez = len(est.historial) <= 1
         est.historial.append(f"pregunta:{faltan[0]}")
-        return cabecera + [PREGUNTAS[faltan[0]]]
+        # Ficha y pregunta en un solo mensaje: menos mensajes y más fácil de leer
+        if primera_vez:
+            return [ficha_texto(est.borrador) + "\n\n" + PREGUNTAS[faltan[0]]]
+        return [PREGUNTAS[faltan[0]]]
     est.preguntando = None
     est.esperando_confirmacion = True
-    return [ficha_texto(est.borrador) + "\n\n¿Lo publico así? Responde *SÍ* o *NO*."]
+    return [Respuesta(ficha_texto(est.borrador) + "\n\n¿Lo publico así? Responde *SÍ* o *NO*.", BOTONES_CONFIRMAR)]
 
 
 def _rellenar(ex: ExtraccionEvento, campo: str, respuesta: str) -> None:

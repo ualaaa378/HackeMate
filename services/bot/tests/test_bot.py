@@ -19,8 +19,9 @@ def test_saludo_responde_ayuda():
 
 def test_flujo_publicador_pregunta_lo_que_falta_y_confirma():
     r = _di("Torneo de fútbol sala el 12 de diciembre a las 17:00, inscripción 10 euros")
+    assert len(r) == 1  # ficha y pregunta van juntas
     assert "Esto es lo que he entendido" in r[0]
-    assert "pueblo" in r[1]  # falta el municipio
+    assert "pueblo" in r[0]  # falta el municipio
 
     r = _di("En Uleila")
     assert "Uleila del Campo" in r[0]

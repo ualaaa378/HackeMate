@@ -10,8 +10,18 @@ class Settings(BaseSettings):
     api_url: str = "http://api:8000"
     internal_token: str = "cambia-esto"
 
-    # Canal de salida: "twilio" envía WhatsApp de verdad; "console" solo imprime
+    # Canal de WhatsApp: "meta" (WhatsApp Cloud API, el de producción), "twilio"
+    # (alternativa) o "console" (solo imprime, para desarrollar y tests)
     canal: str = "console"
+
+    # WhatsApp Cloud API (Meta)
+    meta_token: str = ""  # token permanente de un usuario del sistema
+    meta_phone_number_id: str = ""
+    meta_app_secret: str = ""  # para comprobar la firma X-Hub-Signature-256
+    meta_verify_token: str = ""  # lo inventamos nosotros y se pega en la config del webhook
+    meta_graph_version: str = "v26.0"
+    meta_idioma_plantillas: str = "es"
+
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_whatsapp_from: str = "whatsapp:+14155238886"  # número del sandbox

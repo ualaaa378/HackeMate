@@ -21,10 +21,12 @@ uvicorn app.main:app --port 8001 --reload
 | Ruta | Para qué |
 |---|---|
 | `GET /health` | `{"status":"ok","version":…}` |
-| `POST /webhook/twilio` | Entrada de WhatsApp. Responde al momento con TwiML (acuse) y procesa en segundo plano |
-| `POST /dev/mensaje` | Simulador: `{"de":"+34…","texto":"…"}` → `{"respuestas":[…]}` (plan C de la demo) |
+| `GET /webhook/meta` | Verificación del webhook de WhatsApp Cloud API (`hub.challenge`) |
+| `POST /webhook/meta` | Entrada de WhatsApp (Meta). Comprueba la firma, contesta 200 al momento y procesa en segundo plano |
+| `POST /webhook/twilio` | Entrada alternativa por Twilio (TwiML) |
+| `POST /dev/mensaje` | Simulador para desarrollar y probar: `{"de":"+34…","texto":"…"}` → `{"respuestas":[…]}` |
 | `POST /ai/extraer` | Texto → `ExtraccionEvento` (requiere `X-Internal-Token`) |
-| `POST /notify` | La api pide enviar un aviso (requiere `X-Internal-Token`) |
+| `POST /notify` | La api pide enviar un aviso. Con `plantilla` + `parametros` usa una plantilla aprobada de WhatsApp (requiere `X-Internal-Token`) |
 | `GET /metrics` | Tokens y llamadas por proveedor, eventos en cola |
 
 ## Cómo funciona
@@ -38,7 +40,17 @@ uvicorn app.main:app --port 8001 --reload
 - `app/agentes/extractor.py`: post → `ExtraccionEvento` (PLAN.md §5.2). Las reglas sin IA son el último recurso.
 - `app/conversacion.py`: el publicador manda un post, el bot pregunta lo que falta, confirma con SÍ/NO
   y lo entrega a `POST /api/v1/eventos/importar`. Si la api está caída, lo guarda en cola.
-- `app/canales.py`: `CANAL=console` imprime; `CANAL=twilio` envía WhatsApp de verdad.
+- `app/canales.py`: `CANAL=meta` (WhatsApp Cloud API, el canal de producción, con botones nativos y
+  plantillas), `CANAL=twilio` (alternativa) o `CANAL=console` (imprime, para desarrollar y tests).
+- `app/meta.py`: firma `X-Hub-Signature-256` y conversión del JSON de Meta (texto, botones, audio, imagen,
+  ubicación). Los reenvíos del webhook se descartan por id de mensaje.
+
+## WhatsApp en producción
+
+- Número propio del ayuntamiento o la Diputación registrado en WhatsApp Cloud API (requiere verificar el negocio en Meta).
+- Responder a quien escribe al bot (ventana de 24 h) es gratis. Los avisos que inicia el bot fuera de esa
+  ventana necesitan **plantillas aprobadas** por Meta y se cobran por mensaje según la tarifa de Meta para España.
+- En desarrollo usamos el número de prueba de Meta (gratis, hasta 5 teléfonos verificados).
 
 ## Pendiente de acordar con Flujo A (contratos)
 
