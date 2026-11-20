@@ -346,3 +346,79 @@ ion-card-content {
 .chat-form ion-input {
   flex: 1;
 }
+
+/* ---------- Proponer un plan ---------- */
+.form-propuesta {
+  display: grid;
+  gap: 18px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.form-propuesta fieldset {
+  margin: 0;
+  padding: 16px;
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid var(--hm-gris-cabecera);
+  border-radius: var(--hm-radio);
+}
+
+.form-propuesta legend {
+  padding: 0 6px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--hm-azul-oscuro);
+}
+
+.form-propuesta ion-input,
+.form-propuesta ion-select,
+.form-propuesta ion-textarea {
+  --background: #fff;
+}
+
+.form-propuesta ion-checkbox {
+  --size: 26px;
+  min-height: 44px;
+}
+
+.form-propuesta ion-segment-button {
+  min-height: 48px;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.form-propuesta .etq {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.fila-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.boton-proponer {
+  --color: #fff;
+  --border-color: rgba(255, 255, 255, 0.7);
+  min-height: 44px;
+  margin-right: 8px;
+}
+
+.nota {
+  color: var(--hm-texto-suave);
+}
+
+@media (max-width: 480px) {
+  .boton-proponer .texto-boton {
+    display: none;
+  }
+
+  .boton-proponer ion-icon {
+    margin: 0;
+    font-size: 26px;
+  }
+}

@@ -1,6 +1,9 @@
 import {
+  IonButton,
+  IonButtons,
   IonContent,
   IonHeader,
+  IonIcon,
   IonItemDivider,
   IonLabel,
   IonList,
@@ -12,6 +15,7 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
+import { addCircleOutline } from 'ionicons/icons';
 import { useCallback, useEffect, useState } from 'react';
 
 import { getEventos } from '../api/client';
@@ -51,6 +55,12 @@ const Agenda: React.FC = () => {
           <IonTitle>
             <Marca />
           </IonTitle>
+          <IonButtons slot="end">
+            <IonButton routerLink="/proponer" fill="outline" className="boton-proponer" aria-label="Proponer un plan">
+              <IonIcon slot="start" icon={addCircleOutline} aria-hidden="true" />
+              <span className="texto-boton">Proponer</span>
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent>

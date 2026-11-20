@@ -41,6 +41,15 @@ const Perfil: React.FC = () => {
             </IonCardContent>
           </IonCard>
         )}
+        <IonCard>
+          <IonCardContent>
+            <h2 className="titulo-caja">¿Tienes una idea para tu pueblo?</h2>
+            <p>Propón un plan: el ayuntamiento lo revisa y, si lo aprueba, sale en la agenda.</p>
+            <IonButton expand="block" fill="outline" routerLink="/proponer">
+              Proponer un plan
+            </IonButton>
+          </IonCardContent>
+        </IonCard>
       </IonContent>
     </IonPage>
   );
