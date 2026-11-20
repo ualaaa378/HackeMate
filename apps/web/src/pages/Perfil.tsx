@@ -4,7 +4,7 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/rea
 const Perfil: React.FC = () => (
   <IonPage>
     <IonHeader>
-      <IonToolbar color="primary">
+      <IonToolbar color="secondary">
         <IonTitle>👤 Mi perfil</IonTitle>
       </IonToolbar>
     </IonHeader>
