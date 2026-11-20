@@ -65,7 +65,7 @@ const Ficha: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar color="primary">
+        <IonToolbar color="secondary">
           <IonButtons slot="start">
             <IonBackButton defaultHref="/agenda" text="Volver" />
           </IonButtons>

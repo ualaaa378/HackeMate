@@ -1,46 +1,18 @@
-// Tipos alineados con contracts/schemas/evento.json.
-// Cuando exista contracts/openapi.yaml, se sustituyen por los generados con openapi-typescript.
+// Tipos de la API sacados de contracts/openapi.yaml. No se escriben a mano:
+// si cambia el contrato, se regenera src/api/openapi.d.ts con `npm run api:tipos`.
 
-export type Categoria = 'deportiva' | 'cultural' | 'fiestas' | 'gastronomia' | 'ludica' | 'comercio';
+import type { components, paths } from './openapi';
 
-export type EstadoEvento =
-  | 'borrador'
-  | 'pendiente_confirmacion'
-  | 'en_revision'
-  | 'publicado'
-  | 'rechazado'
-  | 'cancelado'
-  | 'finalizado'
-  | 'archivado';
+type Esquemas = components['schemas'];
 
-export type Canal = 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual';
-
-export interface Evento {
-  id: string;
-  titulo: string;
-  descripcion?: string;
-  categoria: Categoria;
-  etiquetas?: string[];
-  municipio: string;
-  lugar?: string | null;
-  lat: number;
-  lon: number;
-  fecha_inicio: string;
-  fecha_fin?: string | null;
-  precio_eur?: number | null;
-  es_gratuito: boolean;
-  plazas_totales?: number | null;
-  plazas_libres?: number | null;
-  inscritos?: number;
-  estado: EstadoEvento;
-  publicador_id?: string | null;
-  publicador_nombre?: string | null;
-  imagen_url?: string | null;
-  origen: { canal: Canal; url?: string | null; importado_auto: boolean };
-  moderacion?: { motivo?: string | null; score_spam?: number | null; revisado_por?: string | null };
-  creado_en?: string;
-  actualizado_en?: string;
-}
+export type Evento = Esquemas['evento'];
+export type Inscripcion = Esquemas['inscripcion'];
+export type Lugar = Esquemas['lugar'];
+export type MensajeEvento = Esquemas['mensaje_evento'];
+export type Categoria = Esquemas['Categoria'];
+export type EstadoEvento = Esquemas['EstadoEvento'];
+export type Canal = Evento['origen']['canal'];
+export type ApiError = Esquemas['Error'];
 
 export interface Pagina<T> {
   items: T[];
@@ -49,27 +21,7 @@ export interface Pagina<T> {
   size: number;
 }
 
-export interface FiltrosEventos {
-  municipio?: string;
-  categoria?: Categoria;
-  desde?: string;
-  hasta?: string;
-  lat?: number;
-  lon?: number;
-  radio_km?: number;
-  page?: number;
-  size?: number;
-}
-
-export interface Inscripcion {
-  id: string;
-  evento_id: string;
-  estado: 'confirmada' | 'lista_espera' | 'cancelada' | 'asistio' | 'no_asistio';
-}
-
-export interface ApiError {
-  error: { code: string; message: string; details?: Record<string, unknown> };
-}
+export type FiltrosEventos = NonNullable<paths['/api/v1/eventos']['get']['parameters']['query']>;
 
 export const CATEGORIAS: Record<Categoria, { etiqueta: string; emoji: string; color: string }> = {
   deportiva: { etiqueta: 'Deportiva', emoji: '🥾', color: '#2e7d32' },
