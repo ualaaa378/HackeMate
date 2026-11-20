@@ -47,7 +47,7 @@ export function enModoRespaldo(): boolean {
   return USAR_MOCKS || usandoRespaldo;
 }
 
-async function peticion<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
+export async function peticion<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
   const cabeceras: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) cabeceras.Authorization = `Bearer ${token}`;
   let resp: Response;
@@ -68,7 +68,7 @@ async function peticion<T>(ruta: string, opciones: RequestInit = {}): Promise<T>
   return resp.status === 204 ? (undefined as T) : ((await resp.json()) as T);
 }
 
-async function conRespaldo<T>(real: () => Promise<T>, mock: () => Promise<T>): Promise<T> {
+export async function conRespaldo<T>(real: () => Promise<T>, mock: () => Promise<T>): Promise<T> {
   if (USAR_MOCKS) return mock();
   try {
     const r = await real();
@@ -82,7 +82,7 @@ async function conRespaldo<T>(real: () => Promise<T>, mock: () => Promise<T>): P
   }
 }
 
-function query(filtros: object): string {
+export function query(filtros: object): string {
   const p = new URLSearchParams();
   Object.entries(filtros).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') p.set(k, String(v));
@@ -101,8 +101,9 @@ export function distanciaKm(lat1: number, lon1: number, lat2: number, lon2: numb
 
 // ---------- mocks ----------
 const USUARIO_MOCK_ID = '00000000-0000-4000-8000-000000000001';
-const mockEventos = eventosMock as Evento[];
-const esperar = <T>(valor: T, ms = 250) => new Promise<T>((r) => setTimeout(() => r(valor), ms));
+// Exportados solo para src/api/admin.ts: aprobar en la bandeja publica el evento en la agenda de mocks.
+export const mockEventos = eventosMock as Evento[];
+export const esperar = <T>(valor: T, ms = 250) => new Promise<T>((r) => setTimeout(() => r(valor), ms));
 
 function filtrarMock(f: FiltrosEventos): Pagina<Evento> {
   let items = mockEventos.filter((e) => e.estado === 'publicado');

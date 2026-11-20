@@ -75,10 +75,10 @@
 
 ### H2 · Moderador y publicador (sáb 08:00 → 13:00 · CP2 · `v0.2`)
 
-- [ ] H2.1 Rol en la app: selector de rol en modo demo (vecino, publicador, moderador) hasta que llegue el login en H3.
-- [ ] H2.2 **Bandeja del moderador** (`GET /moderacion/pendientes`): cada evento con su **motivo** y `score_spam`; aprobar o rechazar (`POST /moderacion/{id}/decision`).
-- [ ] H2.3 Publicadores: lista con nivel de confianza y estado, aprobar y **pausar** (`/publicadores/{id}/aprobar`, `/pausar`).
-- [ ] H2.4 Vista del publicador: sus eventos por estado, crear y editar evento (`POST/PATCH /eventos`).
+- [x] H2.1 Rol en la app: selector de rol en modo demo (vecino, publicador, moderador) hasta que llegue el login en H3. *(vie 23:15: zona `/admin` dentro de la misma app, con su propia barra; se entra desde Perfil. Sin sesión de moderador o publicador real todo va con mocks: `src/api/admin.ts`.)*
+- [~] H2.2 **Bandeja del moderador** (`GET /moderacion/pendientes`): cada evento con su **motivo** y `score_spam`; aprobar o rechazar (`POST /moderacion/{id}/decision`). *(Con mocks: caso «apuestas» de Bar La Plaza, evento por WhatsApp, propuesta vecinal con sus datos para el ayuntamiento y asociación por aprobar. Lo aprobado sale en la agenda de mocks.)*
+- [~] H2.3 Publicadores: lista con nivel de confianza y estado, aprobar y **pausar** (`/publicadores/{id}/aprobar`, `/pausar`).
+- [~] H2.4 Vista del publicador: sus eventos por estado, crear y editar evento (`POST/PATCH /eventos`).
 - [ ] H2.5 Ficha de un evento `pendiente_confirmacion` o `en_revision` visible solo para el publicador y el moderador.
 
 **Criterios de aceptación**
@@ -87,7 +87,7 @@
 - ✅ Un publicador pausado sale marcado y la app no le deja publicar (muestra el error de la API).
 - ✅ **Demo pasos 1–3** vistos desde la web: el evento que entra por el bot aparece en la bandeja y, aprobado, en la agenda.
 
-**Depende de A (H2):** moderación, confirmar y publicadores. Mientras no estén, la bandeja usa `contracts/fixtures` (`eventos_moderacion`).
+**Depende de A (H2):** moderación, confirmar y publicadores. Mientras no estén, la bandeja usa los mocks de `src/mocks/admin.ts`. Además, `POST/PATCH /eventos` tienen que aceptar `Authorization: Bearer` de moderador o publicador (hoy solo `X-Internal-Token`), y la propuesta vecinal necesita en el contrato un objeto `propuesta` opcional y privado (hoy `DatosAyuntamiento` en `types.ts`).
 
 ### H3 · La vecina (sáb 14:00 → 19:00 · CP3 · `v0.3`)
 
@@ -110,8 +110,8 @@
 
 ### H4 · Panel y criterios del jurado (sáb 20:00 → dom 00:00 · CP4 · `v0.9` feature freeze)
 
-- [ ] H4.1 **Panel de estadísticas** (`GET /estadisticas`): actividades, % importadas solas, inscripciones vs asistencia, ocupación por categoría y **solapamientos**.
-- [ ] H4.2 **Coste en tokens** por proveedor (de la API o de `GET /metrics` del bot).
+- [~] H4.1 **Panel de estadísticas** (`GET /estadisticas`): actividades, % importadas solas, inscripciones vs asistencia, ocupación por categoría y **solapamientos**.
+- [~] H4.2 **Coste en tokens** por proveedor (de la API o de `GET /metrics` del bot).
 - [ ] H4.3 Interruptor «Simular caída de la IA» (`LLM_SIMULAR_CAIDA` de B) para enseñar el fallback.
 - [ ] H4.4 Accesibilidad WCAG 2.1 AA: contraste, teclado, `aria-label`, **modo letra grande**.
 - [ ] H4.5 Capacitor: `npx cap add android` y APK de debug que apunta a la URL pública del túnel.
