@@ -422,3 +422,236 @@ ion-card-content {
     font-size: 26px;
   }
 }
+
+/* ---------- Zona del ayuntamiento (/admin) ---------- */
+.franja-admin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px 4px 16px;
+  background: #dbe9f5;
+  color: var(--hm-azul-oscuro);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.contenido-admin > * {
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.intro-admin,
+.nota-demo {
+  color: var(--hm-texto-suave);
+}
+
+.vacio-admin {
+  padding: 24px 8px;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.puerta-admin ion-button {
+  margin-top: 10px;
+}
+
+.pendiente {
+  border-left: 6px solid var(--hm-azul);
+}
+
+.pendiente--spam {
+  border-left-color: #b3261e;
+}
+
+.chips-pendiente {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.chips-pendiente ion-chip {
+  margin: 0;
+  font-weight: 600;
+}
+
+.datos-pendiente {
+  font-weight: 600;
+}
+
+.motivo-ia {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: var(--hm-radio);
+  background: #fff8e1;
+  border: 1px solid #f0d58c;
+}
+
+.motivo-ia p {
+  margin: 4px 0 8px;
+}
+
+.spam {
+  font-size: 0.85rem;
+  padding: 6px 10px;
+}
+
+.spam--alto {
+  --background: #b3261e;
+  --color: #fff;
+}
+
+.spam--medio {
+  --background: #8a5300;
+  --color: #fff;
+}
+
+.spam--bajo {
+  --background: #2e7d32;
+  --color: #fff;
+}
+
+.propuesta {
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--hm-radio);
+  background: var(--hm-fondo);
+}
+
+.propuesta summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--hm-azul-oscuro);
+  min-height: 32px;
+}
+
+.propuesta dt {
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--hm-texto-suave);
+}
+
+.propuesta dd {
+  margin: 0;
+}
+
+.botones-decision {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.controles-publicador {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fuentes {
+  font-size: 0.9rem;
+  color: var(--hm-texto-suave);
+  word-break: break-word;
+}
+
+.fila-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.aviso-cambio {
+  margin: 0;
+  font-weight: 600;
+  color: #7a4a00;
+}
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.cifra {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  border-radius: var(--hm-radio);
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.cifra__valor {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--hm-azul-oscuro);
+}
+
+.cifra__texto {
+  font-size: 0.9rem;
+  color: var(--hm-texto-suave);
+}
+
+.barra {
+  display: grid;
+  grid-template-columns: minmax(120px, 34%) 1fr 48px;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.barra__pista {
+  height: 14px;
+  border-radius: 999px;
+  background: var(--hm-gris-cabecera);
+  overflow: hidden;
+}
+
+.barra__relleno {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.barra__valor {
+  text-align: right;
+  font-weight: 600;
+}
+
+.solapamientos {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.tabla-scroll {
+  overflow-x: auto;
+}
+
+.tabla-tokens {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.tabla-tokens th,
+.tabla-tokens td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--hm-gris-cabecera);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tabla-tokens th[scope='row'],
+.tabla-tokens thead th:first-child {
+  text-align: left;
+}
+
+.tabla-tokens tfoot {
+  font-weight: 700;
+}

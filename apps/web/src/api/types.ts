@@ -54,6 +54,14 @@ export interface DatosAyuntamiento {
   seguro_rc: 'si' | 'no' | 'nose';
   observaciones?: string;
 }
+export type Publicador = Esquemas['publicador'];
+export type Pendiente = Esquemas['Pendiente'];
+/** Elemento de la bandeja. `propuesta` son los datos privados de un plan vecinal (aún fuera del contrato). */
+export type PendienteBandeja = Pendiente & { propuesta?: DatosAyuntamiento };
+export type Decision = Esquemas['Decision'];
+export type Estadisticas = Esquemas['Estadisticas'];
+export type EventoEditar = Esquemas['EventoEditar'];
+export type Rol = Usuario['rol'];
 
 export interface Pagina<T> {
   items: T[];
