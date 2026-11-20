@@ -368,3 +368,43 @@ def test_fuente_errores(api):
     assert _fuente(api, id).status_code == 201
     _error(_fuente(api, id), 409, "fuente_ya_existe")
     _error(_fuente(api, AMIGOS_VELEFIQUE, url=URL_FUENTE + "/"), 409, "fuente_ya_existe")
+
+
+# --- Concurrencia (revisión H2) -------------------------------------------------------------------
+
+
+def test_aprobar_a_la_vez_solo_uno_cambia_y_avisa(api, db, motor):
+    """El segundo moderador tenía cargado el publicador aún `solicitado`: el UPDATE condicionado no cambia
+    nada, recibe 409 y no sale un segundo aviso."""
+    from fastapi import BackgroundTasks
+    from sqlalchemy.orm import Session
+
+    from app.errores import ErrorApi
+    from app.rutas.publicadores import AprobarPublicador, aprobar_publicador
+
+    id = _alta(api)
+    with Session(bind=motor, expire_on_commit=False) as segundo:
+        assert segundo.get(Publicador, id).estado == "solicitado"
+        assert _aprobar(api, id, {"nivel_confianza": 1}).status_code == 200
+        with pytest.raises(ErrorApi) as error:
+            aprobar_publicador(id, BackgroundTasks(), AprobarPublicador(aprobar=False), "otro", segundo)
+        assert error.value.status == 409 and error.value.code == "estado_invalido"
+    db.expire_all()
+    assert db.get(Publicador, id).estado == "aprobado"
+    assert len(_avisos(db, NUEVO["telefono"])) == 1
+
+
+def test_pausar_dos_veces_un_solo_aviso(api, db):
+    tel = db.get(Publicador, AMIGOS_VELEFIQUE).telefono
+    antes = len(_avisos(db, tel))
+    for _ in range(2):
+        assert _pausar(api, AMIGOS_VELEFIQUE, "automatizaciones", True).status_code == 200
+        assert _pausar(api, AMIGOS_VELEFIQUE, "publicador", True).json()["estado"] == "pausado"
+    assert len(_avisos(db, tel)) - antes == 2
+
+
+def test_publicador_rechazado_no_importa(api, db):
+    id = _alta(api)
+    assert _aprobar(api, id, {"aprobar": False}).status_code == 200
+    _error(_importar(api, url="https://example.org/rechazado", telefono_publicador=NUEVO["telefono"]),
+           403, "publicador_rechazado")

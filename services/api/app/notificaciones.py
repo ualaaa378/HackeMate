@@ -5,8 +5,11 @@
   NOTIFICACIONES_MAX_INTENTOS fallos pasa a `fallida`.
 - Ninguna función de este módulo lanza excepciones: un aviso que no sale nunca hace fallar la ruta que lo pide.
 - Hacen `db.flush()`, pero el commit es de quien llama (así el aviso entra en la misma transacción que el cambio
-  que lo provoca). Ojo: el bot recibe el aviso antes del commit, así que conviene llamar a `notificar` cuando el
-  cambio ya está decidido y validado.
+  que lo provoca).
+- Las rutas usan `enviar=False`: dentro de la transacción solo se crea la fila `pendiente` (sin HTTP) y, tras el
+  `db.commit()`, `enviar_en_segundo_plano(background_tasks, db, avisos)` la manda al bot cuando ya se ha
+  respondido. Así el bot nunca recibe un aviso de un cambio que luego se deshace, y un bot caído no hace esperar
+  a quien llama. Con `enviar=True` (por defecto) se intenta en el acto, antes del commit.
 
 Destino (contracts/schemas/notificacion.json): `telefono` E.164 es obligatorio y `contacto` (`tg:<chat_id>`) va
 aparte; si viene, el bot envía ahí. Un usuario solo de Telegram (sin telefono) no se puede avisar con el contrato
@@ -14,9 +17,12 @@ actual: su aviso se guarda como `fallida` con `ultimo_error = "sin telefono"`.
 """
 
 import logging
+from collections.abc import Iterable
 
 import httpx
+from fastapi import BackgroundTasks
 from sqlalchemy import select
+from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.orm import Session
 
 from app.canales import contacto_de, reconocer_contacto
@@ -115,8 +121,10 @@ def notificar(
     plantilla: str | None = None,
     parametros: list[str] | None = None,
     formato: str | None = None,
+    enviar: bool = True,
 ) -> Notificacion:
-    """Guarda el aviso y lo intenta enviar ya. `telefono`/`contacto` explícitos mandan sobre los del usuario.
+    """Guarda el aviso y, con `enviar=True`, lo intenta enviar ya; con `enviar=False` queda `pendiente` para
+    `enviar_en_segundo_plano`. `telefono`/`contacto` explícitos mandan sobre los del usuario.
     `formato` por defecto: el `formato_aviso` del usuario (texto/audio). No lanza; no hace commit."""
     tel_usuario, contacto_usuario = destino_de(usuario) if usuario is not None else (None, None)
     telefono = normalizar_telefono(telefono) if telefono else tel_usuario
@@ -150,8 +158,12 @@ def notificar(
     try:
         db.add(n)
         db.flush()
-        _intentar(n)
-        db.flush()
+        if enviar:
+            _intentar(n)
+            db.flush()
+        elif not n.telefono:
+            n.estado_envio, n.ultimo_error = "fallida", SIN_TELEFONO
+            db.flush()
     except Exception:  # noqa: BLE001 — el aviso nunca tumba la ruta que lo pide
         log.exception("no se pudo guardar el aviso %s", n.id)
     return n
@@ -197,12 +209,50 @@ def reintentar_pendientes(db: Session, limite: int = 50) -> int:
             .order_by(Notificacion.creado_en)
             .limit(limite)
         ).all()
-        for n in pendientes:
-            enviada, bot_caido = _intentar(n)
-            enviadas += enviada
-            if bot_caido:
-                break
-        db.flush()
+        enviadas = _enviar_lote(db, pendientes)
     except Exception:  # noqa: BLE001
         log.exception("fallo al reintentar los avisos pendientes")
     return enviadas
+
+
+def _enviar_lote(db: Session, avisos: Iterable[Notificacion]) -> int:
+    """Intenta los avisos `pendiente` en orden; para en cuanto el bot no responde (caído, timeout o 5xx): los
+    demás fallarían igual y cada uno esperaría el timeout. Devuelve cuántos han salido. No hace commit."""
+    enviadas = 0
+    for n in avisos:
+        if n.estado_envio != "pendiente":
+            continue
+        enviada, bot_caido = _intentar(n)
+        enviadas += enviada
+        if bot_caido:
+            break
+    db.flush()
+    return enviadas
+
+
+def enviar_avisos(bind: Engine | Connection, ids: list[str]) -> int:
+    """Envía los avisos `ids` (en ese orden) con una sesión propia y guarda el resultado. Pensada para
+    BackgroundTasks: se ejecuta después de responder, cuando la sesión de la petición ya está cerrada.
+    No lanza. Devuelve cuántos han salido."""
+    if not ids:
+        return 0
+    try:
+        with Session(bind=bind, expire_on_commit=False) as db:
+            por_id = {n.id: n for n in db.scalars(select(Notificacion).where(Notificacion.id.in_(ids))).all()}
+            enviadas = _enviar_lote(db, [por_id[i] for i in ids if i in por_id])
+            db.commit()
+            return enviadas
+    except Exception:  # noqa: BLE001 — quedan pendientes; reintentar_pendientes los recogerá
+        log.exception("fallo al enviar los avisos %s", ids)
+        return 0
+
+
+def enviar_en_segundo_plano(
+    background_tasks: BackgroundTasks, db: Session, avisos: Iterable[Notificacion | None]
+) -> list[str]:
+    """Programa el envío de `avisos` (creados con `enviar=False`) para después de la respuesta. Llamar tras el
+    `db.commit()` que los guarda. Devuelve los ids programados."""
+    ids = [n.id for n in avisos if n is not None and n.id and n.estado_envio == "pendiente"]
+    if ids:
+        background_tasks.add_task(enviar_avisos, db.get_bind(), ids)
+    return ids

@@ -1,5 +1,8 @@
 """POST /eventos/{id}/confirmar (H2.3 + H2.4): el publicador completa lo que falta y pasa a moderación."""
 
+import json
+from pathlib import Path
+
 import pytest
 from sqlalchemy import select
 
@@ -12,6 +15,7 @@ AMIGOS_VELEFIQUE_TEL = "+34600000101"
 BAR_LA_PLAZA_TEL = "+34600000103"
 NUEVO_TEL = "+34600000999"
 RUTA_SOLIDARIA_SEED = "1e5d0000-0000-4000-8000-000000000001"
+APUESTAS_SEED = "1e5d0000-0000-4000-8000-000000000010"
 OTRO_TITULO = "Marcha nocturna por la Sierra de Velefique"
 
 
@@ -201,3 +205,108 @@ def test_campos_invalidos_422(api):
     assert _confirmar(api, id, {"plazas_totales": -1}).status_code == 422
     assert _confirmar(api, id, {"titulo": None}).status_code == 422
     _error(_confirmar(api, id, {"fecha_fin": "2026-11-01T09:00:00+01:00"}), 422, "fechas_invalidas")
+
+
+# --- Revisión H2 (ronda 1) --------------------------------------------------------------------------
+
+def _fixture_demo(id: str) -> dict:
+    ruta = Path(__file__).resolve().parents[3] / "contracts" / "fixtures" / "eventos_demo.json"
+    return next(e for e in json.loads(ruta.read_text(encoding="utf-8")) if e["id"] == id)
+
+
+def test_apuestas_de_la_demo_sin_bot_se_queda_en_revision(api):
+    """El texto exacto del fixture de apuestas, de Bar La Plaza (nivel 2) y sin bot: deciden las reglas."""
+    spam = _fixture_demo(APUESTAS_SEED)
+    importado = _importar(api, url="https://example.org/posts/apuestas", titulo=spam["titulo"],
+                          descripcion=spam["descripcion"], categoria="gastronomia")
+    id = importado["evento"]["id"]
+    assert importado["evento"]["publicador_id"] == BAR_LA_PLAZA
+    r = _confirmar(api, id, {"lugar": "Bar La Plaza", "plazas_totales": 50})
+    assert r.status_code == 200, r.text
+    _valida(r.json())
+    evento = r.json()["evento"]
+    assert evento["estado"] == "en_revision"
+    assert evento["moderacion"]["motivo"].startswith("Posible spam")
+    assert "apuesta" in evento["moderacion"]["motivo"]
+    assert evento["moderacion"]["score_spam"] >= get_settings().moderacion_umbral_spam
+    assert id not in _publicados(api)
+
+
+def test_publicador_rechazado_403_al_importar_y_al_confirmar(api, db):
+    id = _importar(api)["evento"]["id"]
+    bar = db.get(Publicador, BAR_LA_PLAZA)
+    bar.estado = "rechazado"
+    db.commit()
+    _error(_confirmar(api, id), 403, "publicador_rechazado")
+    cuerpo = _cuerpo(url="https://example.org/posts/otro", telefono_publicador=BAR_LA_PLAZA_TEL)
+    _error(api.post(URL, json=cuerpo, headers=TOKEN), 403, "publicador_rechazado")
+
+
+def test_mismo_origen_url_a_la_vez_devuelve_el_existente(api, db, monkeypatch):
+    """Simula la carrera: la primera comprobación no ve el otro evento (aún no estaba guardado), la de justo
+    antes del commit sí. Responde 200 con el que ya existía y no crea otro."""
+    from app.rutas import importar
+
+    url = "https://example.org/posts/carrera"
+    primero = _importar(api, url=url)["evento"]["id"]
+    real = importar._primero_con_url
+    llamadas = []
+
+    def primero_con_url(db, u, excluir_id=None):
+        llamadas.append(excluir_id)
+        return None if len(llamadas) == 1 else real(db, u, excluir_id)
+
+    monkeypatch.setattr(importar, "_primero_con_url", primero_con_url)
+    r = api.post(URL, json=_cuerpo(url=url, telefono_publicador=BAR_LA_PLAZA_TEL), headers=TOKEN)
+    assert r.status_code == 200, r.text
+    assert r.json()["duplicado"] is True and r.json()["evento"]["id"] == primero
+    assert len(llamadas) == 2
+    db.expire_all()
+    assert db.scalars(select(Evento.id).where(Evento.origen_url == url)).all() == [primero]
+
+
+def test_aviso_a_moderadores_tras_confirmar_sale_en_segundo_plano(api, db, monkeypatch):
+    """Confirmar crea el aviso `pendiente` y lo envía una BackgroundTask tras el commit."""
+    import httpx
+
+    from app import notificaciones
+    from app.modelos import Notificacion, Usuario
+
+    db.add(Usuario(nombre="Moderadora", rol="moderador", telefono="+34600000888"))
+    db.commit()
+    id = _importar(api, telefono=NUEVO_TEL, titulo=OTRO_TITULO)["evento"]["id"]  # sin publicador: a revisión
+    recibidas = []
+    monkeypatch.setattr(notificaciones, "_transporte", httpx.MockTransport(
+        lambda p: recibidas.append(json.loads(p.content)) or httpx.Response(200, json={"enviado": True})))
+    monkeypatch.setenv("BOT_URL", "http://bot-falso:8001")
+    get_settings.cache_clear()
+    from app import moderacion
+    monkeypatch.setattr(moderacion, "_llamar_bot_spam", lambda *a: None)  # sin red para /ai/spam
+    r = _confirmar(api, id, {"lugar": "Plaza", "plazas_totales": 10})
+    assert r.status_code == 200 and r.json()["evento"]["estado"] == "en_revision"
+    assert "+34600000888" in [c["telefono"] for c in recibidas]
+    db.expire_all()
+    avisos = db.scalars(select(Notificacion).where(Notificacion.evento_id == id)).all()
+    assert len(avisos) == len(recibidas) and all(a.estado_envio == "enviada" for a in avisos)
+
+
+def test_mismo_origen_url_guardados_a_la_vez_se_queda_el_mas_antiguo(api, db, monkeypatch):
+    """Si ni la comprobación previa ni la de antes del commit ven al otro (dos commits casi simultáneos), al
+    volver a mirar ya guardado se queda el más antiguo y el nuevo se borra."""
+    from app.rutas import importar
+
+    url = "https://example.org/posts/carrera-2"
+    primero = _importar(api, url=url)["evento"]["id"]
+    real = importar._primero_con_url
+    llamadas = []
+
+    def primero_con_url(db, u, excluir_id=None):
+        llamadas.append(excluir_id)
+        return None if len(llamadas) <= 2 else real(db, u, excluir_id)
+
+    monkeypatch.setattr(importar, "_primero_con_url", primero_con_url)
+    r = api.post(URL, json=_cuerpo(url=url, telefono_publicador=BAR_LA_PLAZA_TEL), headers=TOKEN)
+    assert r.status_code == 200, r.text
+    assert r.json()["duplicado"] is True and r.json()["evento"]["id"] == primero
+    db.expire_all()
+    assert db.scalars(select(Evento.id).where(Evento.origen_url == url)).all() == [primero]

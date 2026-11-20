@@ -8,10 +8,11 @@ la moderación automática (H2.4) decide si pasa a `publicado` o a `en_revision`
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.canales import buscar_publicador_por_contacto, validar_contacto
@@ -20,7 +21,7 @@ from app.duplicados import buscar_posible_duplicado
 from app.errores import ErrorApi
 from app.modelos import CANALES, CATEGORIAS, Evento, Fuente, Municipio, Publicador, ahora
 from app.moderacion import clasificar_spam, decidir_estado
-from app.notificaciones import notificar_moderadores
+from app.notificaciones import enviar_en_segundo_plano, notificar_moderadores
 from app.rutas.eventos import (
     Categoria,
     EnteroNoNegativo,
@@ -165,6 +166,24 @@ def _publicador_por_fuente(db: Session, url: str | None) -> Publicador | None:
     return mejor.publicador if mejor else None
 
 
+def _comprobar_puede_publicar(publicador: Publicador | None) -> None:
+    """403 si el publicador está pausado o su solicitud fue rechazada."""
+    if publicador is None:
+        return
+    if publicador.estado == "pausado":
+        raise ErrorApi(403, "publicador_pausado", "El publicador está pausado y no puede publicar")
+    if publicador.estado == "rechazado":
+        raise ErrorApi(403, "publicador_rechazado", "La solicitud del publicador fue rechazada: no puede publicar")
+
+
+def _primero_con_url(db: Session, url: str, excluir_id: str | None = None) -> Evento | None:
+    """El evento más antiguo con ese origen_url (desempate por id: dos peticiones a la vez eligen el mismo)."""
+    consulta = select(Evento).where(Evento.origen_url == url)
+    if excluir_id is not None:
+        consulta = consulta.where(Evento.id != excluir_id)
+    return db.scalar(consulta.order_by(Evento.creado_en, Evento.id).limit(1))
+
+
 def _asociar_publicador(db: Session, datos: ImportarEvento) -> Publicador | None:
     """Orden: fuente conocida (origen.url) -> publicador_id -> contacto del remitente en su canal
     (teléfono o telegram_id; en Telegram, también el teléfono del usuario vinculado)."""
@@ -175,8 +194,7 @@ def _asociar_publicador(db: Session, datos: ImportarEvento) -> Publicador | None
             raise ErrorApi(422, "publicador_no_encontrado", "No existe ese publicador", {"campo": "publicador_id"})
     if publicador is None and datos.contacto is not None:
         publicador = buscar_publicador_por_contacto(db, datos.contacto)
-    if publicador is not None and publicador.estado == "pausado":
-        raise ErrorApi(403, "publicador_pausado", "El publicador está pausado y no puede publicar")
+    _comprobar_puede_publicar(publicador)
     # H2.4: según el estado y el nivel de confianza del publicador se decidirá luego la moderación.
     return publicador
 
@@ -208,7 +226,7 @@ def importar_evento(datos: ImportarEvento, db: Session = Depends(get_db)):
 
     url = (datos.origen.url or "").strip() or None
     if url is not None:
-        existente = db.scalar(select(Evento).where(Evento.origen_url == url).order_by(Evento.creado_en))
+        existente = _primero_con_url(db, url)
         if existente is not None:
             return _resultado(db, existente, duplicado=True, status=200)
 
@@ -277,7 +295,30 @@ def importar_evento(datos: ImportarEvento, db: Session = Depends(get_db)):
     )
     # H2.4: moderación y niveles de confianza (score_spam, en_revision/publicado) al confirmar (H2.3).
     db.add(evento)
-    db.commit()
+    if url is not None:
+        # El mismo post puede llegar dos veces casi a la vez (reintento del bot, dos webhooks). No hay índice
+        # único en origen_url: se vuelve a mirar justo antes del commit y, ya guardado, se queda solo el más
+        # antiguo; el que pierde se borra y responde como duplicado.
+        try:
+            db.flush()
+            otro = _primero_con_url(db, url, excluir_id=evento.id)
+            if otro is not None:
+                db.rollback()
+                return _resultado(db, otro, duplicado=True, status=200)
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            otro = _primero_con_url(db, url)
+            if otro is None:
+                raise
+            return _resultado(db, otro, duplicado=True, status=200)
+        primero = _primero_con_url(db, url)
+        if primero is not None and primero.id != evento.id:
+            db.delete(evento)
+            db.commit()
+            return _resultado(db, primero, duplicado=True, status=200)
+    else:
+        db.commit()
     return _resultado(db, evento, duplicado=False, status=201, posible_duplicado_de=parecido.id if parecido else None)
 
 
@@ -353,7 +394,9 @@ def _aplicar_campos(db: Session, evento: Evento, campos: CamposConfirmar) -> set
 
 
 @router.post("/eventos/{id}/confirmar", dependencies=[Depends(exigir_token_interno)])
-def confirmar_evento(id: str, datos: ConfirmarEvento, db: Session = Depends(get_db)):
+def confirmar_evento(
+    id: str, datos: ConfirmarEvento, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+):
     # H3: JWT del publicador (solo sus eventos). Hasta entonces solo servicios internos (el bot).
     evento = _buscar(db, id)
     if evento.estado != "pendiente_confirmacion":
@@ -361,8 +404,7 @@ def confirmar_evento(id: str, datos: ConfirmarEvento, db: Session = Depends(get_
             409, "estado_invalido", "El evento no está pendiente de confirmación", {"estado": evento.estado}
         )
     publicador = evento.publicador
-    if publicador is not None and publicador.estado == "pausado":
-        raise ErrorApi(403, "publicador_pausado", "El publicador está pausado y no puede publicar")
+    _comprobar_puede_publicar(publicador)
 
     try:
         rellenos = _aplicar_campos(db, evento, datos.campos)
@@ -388,10 +430,13 @@ def confirmar_evento(id: str, datos: ConfirmarEvento, db: Session = Depends(get_
     evento.motivo_moderacion = motivo
     # Solo pueden quedar opcionales (lugar, plazas…): no bloquean, pero el bot puede seguir pidiéndolos.
     evento.faltan = faltan
+    avisos = []
     if estado == "en_revision":
         quien = publicador.nombre if publicador is not None else "sin publicador"
-        notificar_moderadores(
-            db, "moderacion", f"Evento para revisar: «{evento.titulo}» ({quien}). Motivo: {motivo}", evento_id=evento.id
+        avisos = notificar_moderadores(
+            db, "moderacion", f"Evento para revisar: «{evento.titulo}» ({quien}). Motivo: {motivo}",
+            evento_id=evento.id, enviar=False,
         )
     db.commit()
+    enviar_en_segundo_plano(background_tasks, db, avisos)
     return _resultado(db, evento, duplicado=False, status=200, posible_duplicado_de=parecido.id if parecido else None)

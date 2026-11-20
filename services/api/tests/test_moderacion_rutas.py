@@ -239,7 +239,6 @@ def test_retirar_un_publicado_lo_quita_de_la_agenda(api, db):
     assert _decidir(api, evento["id"], "aprobar").status_code == 200
     assert evento["id"] in _publicados(api)
 
-    _error(_decidir(api, evento["id"], "retirar"), 422, "validacion")  # sin motivo
     r = _decidir(api, evento["id"], "retirar", "Información falsa")
     assert r.status_code == 200, r.text
     _valida(EVENTO, r.json())
@@ -247,6 +246,18 @@ def test_retirar_un_publicado_lo_quita_de_la_agenda(api, db):
     assert r.json()["moderacion"]["motivo"] == "Información falsa"
     assert evento["id"] not in _publicados(api)
     assert api.get(f"/api/v1/eventos/{evento['id']}").status_code == 404
+
+
+def test_retirar_sin_motivo_usa_el_de_por_defecto(api, db):
+    # En el contrato Decision.motivo es opcional.
+    _publicador(db, TEL_NIVEL0, nivel=0)
+    evento = _evento_confirmado(api, TEL_NIVEL0)
+    assert _decidir(api, evento["id"], "aprobar").status_code == 200
+    r = _decidir(api, evento["id"], "retirar")
+    assert r.status_code == 200, r.text
+    assert r.json()["estado"] == "archivado"
+    assert r.json()["moderacion"]["motivo"] == "Retirado por moderación"
+    assert "se ha retirado" in _avisos(db, TEL_NIVEL0)[-1].texto
 
 
 def test_decision_en_estado_incorrecto_409(api, db):
@@ -276,3 +287,51 @@ def test_decision_no_falla_con_bot_caido(api, db, monkeypatch):
     db.expire_all()
     assert db.scalar(select(Evento.estado).where(Evento.id == evento["id"])) == "publicado"
     assert all(n.estado_envio == "pendiente" for n in _avisos(db, TEL_NIVEL0))
+
+
+def test_decision_concurrente_solo_una_gana(api, db, motor):
+    """Dos moderadores aprueban a la vez: el segundo tenía el evento cargado aún `en_revision`, pero el UPDATE
+    condicionado no cambia nada, recibe 409 y no suma otra aprobación ni deja otro aviso."""
+    from fastapi import BackgroundTasks
+    from sqlalchemy.orm import Session
+
+    from app.errores import ErrorApi
+    from app.rutas.moderacion import Decision, decidir
+
+    p = _publicador(db, TEL_NIVEL0, nivel=0)
+    evento = _evento_confirmado(api, TEL_NIVEL0)
+    with Session(bind=motor, expire_on_commit=False) as segundo:
+        assert segundo.get(Evento, evento["id"]).estado == "en_revision"  # lo carga antes que gane el primero
+        assert _decidir(api, evento["id"], "aprobar").status_code == 200
+        with pytest.raises(ErrorApi) as error:
+            decidir(evento["id"], Decision(decision="aprobar"), BackgroundTasks(), "otro moderador", segundo)
+        assert error.value.status == 409 and error.value.code == "estado_invalido"
+    db.expire_all()
+    assert db.get(Publicador, p.id).aprobaciones == 1
+    assert len([n for n in _avisos(db, TEL_NIVEL0) if n.evento_id == evento["id"]]) == 1
+
+
+def test_aviso_sale_tras_el_commit_en_segundo_plano(api, db, motor, monkeypatch):
+    """El aviso se crea `pendiente` en la transacción y lo envía una BackgroundTask cuando la decisión ya está
+    guardada (el TestClient ejecuta las tareas al terminar la respuesta)."""
+    import httpx
+    from sqlalchemy.orm import Session
+
+    from app import notificaciones
+
+    _publicador(db, TEL_NIVEL0, nivel=0)
+    evento = _evento_confirmado(api, TEL_NIVEL0)
+    vistos = []
+
+    def bot(peticion: httpx.Request) -> httpx.Response:
+        with Session(bind=motor) as otra:  # lo que ve otra conexión: ya está confirmado
+            vistos.append(otra.scalar(select(Evento.estado).where(Evento.id == evento["id"])))
+        return httpx.Response(200, json={"enviado": True})
+
+    monkeypatch.setenv("BOT_URL", "http://bot-falso:8001")
+    get_settings.cache_clear()
+    monkeypatch.setattr(notificaciones, "_transporte", httpx.MockTransport(bot))
+    assert _decidir(api, evento["id"], "aprobar").status_code == 200
+    assert vistos == ["publicado"]
+    avisos = [n for n in _avisos(db, TEL_NIVEL0) if n.evento_id == evento["id"]]
+    assert len(avisos) == 1 and avisos[0].estado_envio == "enviada" and avisos[0].intentos == 1

@@ -1,7 +1,9 @@
 """Núcleo de moderación (H2.4): antispam, niveles de confianza y decisión de estado."""
 
+import json
 import socket
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import httpx
 import pytest
@@ -12,6 +14,16 @@ from app.modelos import Evento, Municipio, Publicador
 
 TEXTO_APUESTAS = "¡¡GANA DINERO con nuestras APUESTAS deportivas!! Entra en bit.ly/xxx"
 TEXTO_NORMAL = "Ruta solidaria por la Sierra de los Filabres, salida a las 9 desde la plaza"
+
+
+FIXTURES = Path(__file__).resolve().parents[3] / "contracts" / "fixtures"
+
+
+@pytest.fixture(autouse=True)
+def _circuito_limpio():
+    moderacion.reiniciar_circuito_spam()
+    yield
+    moderacion.reiniciar_circuito_spam()
 
 
 @pytest.fixture
@@ -72,6 +84,42 @@ def test_reglas_evento_normal_no_es_spam():
     assert score < 0.3 and razones == []
 
 
+def _texto(evento: dict) -> str:
+    # Igual que confirmar_evento: título y descripción.
+    return "\n".join(t for t in (evento["titulo"], evento.get("descripcion")) if t)
+
+
+def _eventos_fixture() -> list[dict]:
+    return [e for f in ("eventos.json", "eventos_demo.json")
+            for e in json.loads((FIXTURES / f).read_text(encoding="utf-8"))]
+
+
+def test_reglas_apuestas_de_la_demo_es_spam():
+    spam = next(e for e in _eventos_fixture() if e["id"] == "1e5d0000-0000-4000-8000-000000000010")
+    score, razones = moderacion.puntuar_spam_reglas(_texto(spam))
+    assert score >= 0.7, razones
+    assert "apuesta" in " ".join(razones)
+
+
+def test_reglas_publicados_de_los_fixtures_no_son_spam():
+    publicados = [e for e in _eventos_fixture() if e["estado"] == "publicado"]
+    assert any(e["titulo"] == "II Ruta Solidaria Sierra de Velefique" for e in publicados)
+    altos = {e["titulo"]: moderacion.puntuar_spam_reglas(_texto(e)) for e in publicados}
+    altos = {t: r for t, r in altos.items() if r[0] >= 0.3}
+    assert not altos
+
+
+@pytest.mark.parametrize("texto, minimo", [
+    ("Apuestas del partido en el bar", 0.5),
+    ("Gana 500 € esta noche", 0.4),
+    ("Te damos 100 euros garantizados", 0.7),
+    ("Cuotas altísimas y código promocional", 0.7),
+    ("Duplica tu dinero con nuestras ganancias", 0.7),
+])
+def test_reglas_reforzadas(texto, minimo):
+    assert moderacion.puntuar_spam_reglas(texto)[0] >= minimo
+
+
 def test_reglas_texto_vacio():
     assert moderacion.puntuar_spam_reglas("") == (0.0, [])
     assert moderacion.puntuar_spam_reglas(None) == (0.0, [])
@@ -85,6 +133,23 @@ def test_clasificar_con_bot_caido_usa_reglas(ajustes):
     assert score >= 0.7 and motivo.startswith("reglas")
     score, motivo = moderacion.clasificar_spam(TEXTO_NORMAL)
     assert score < 0.3 and motivo == "reglas: sin indicios"
+
+
+def test_circuito_tras_un_fallo_no_vuelve_a_llamar(ajustes, monkeypatch):
+    ajustes(BOT_URL="http://bot-falso:8001")
+    llamadas = []
+
+    def caido(*a, **k):
+        llamadas.append(1)
+        raise httpx.ConnectError("conexion rechazada")
+
+    monkeypatch.setattr(moderacion.httpx, "post", caido)
+    assert moderacion.clasificar_spam(TEXTO_NORMAL)[1].startswith("reglas")
+    assert moderacion.clasificar_spam(TEXTO_APUESTAS)[1].startswith("reglas")
+    assert len(llamadas) == 1  # el segundo ni lo intenta
+    moderacion.reiniciar_circuito_spam()
+    moderacion.clasificar_spam(TEXTO_NORMAL)
+    assert len(llamadas) == 2
 
 
 def test_clasificar_sin_bot_url_usa_reglas(ajustes):
@@ -110,7 +175,7 @@ def test_clasificar_con_bot_simulado_usa_ia(ajustes, monkeypatch):
     assert url == "http://bot-falso:8001/ai/spam"
     assert cuerpo["texto"] == TEXTO_NORMAL and cuerpo["contexto"] == "evento"
     assert cabeceras["X-Internal-Token"] == "secreto"
-    assert timeout <= 2
+    assert timeout <= 1.5
 
 
 @pytest.mark.parametrize("respuesta", [

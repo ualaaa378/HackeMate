@@ -187,3 +187,61 @@ def test_notificar_moderadores_una_por_moderador(db, bot):
     assert {a.usuario_id for a in avisos} == {m.id for m in moderadores}
     assert all(a.estado_envio == "enviada" and a.tipo == "moderacion" for a in avisos)
     assert {c.get("contacto") for c in bot.cuerpos()} >= {"tg:777"}
+
+
+# --- Envío después del commit (enviar=False + BackgroundTasks) ------------------------------------
+
+
+def test_enviar_false_no_llama_al_bot(db, bot):
+    n = notificar(db, tipo="anuncio", texto="Hola", telefono="+34600000201", enviar=False)
+    db.commit()
+    assert n.estado_envio == "pendiente" and n.intentos == 0 and not bot.recibidas
+    sin_tel = notificar(db, tipo="anuncio", texto="Hola", usuario=_usuario(db, telegram_id="98"), enviar=False)
+    assert sin_tel.estado_envio == "fallida" and sin_tel.ultimo_error == "sin telefono"
+
+
+@pytest.mark.parametrize("modo, estado, intentos", [("ok", "enviada", 1), ("caido", "pendiente", 1)])
+def test_enviar_avisos_con_sesion_propia(db, motor, bot, modo, estado, intentos):
+    bot.modo = modo
+    n = notificar(db, tipo="anuncio", texto="Hola", telefono="+34600000201", enviar=False)
+    db.commit()
+    assert notificaciones.enviar_avisos(motor, [n.id]) == (1 if modo == "ok" else 0)
+    db.expire_all()
+    guardada = db.get(Notificacion, n.id)
+    assert guardada.estado_envio == estado and guardada.intentos == intentos
+
+
+def test_enviar_avisos_tras_n_fallos_fallida(db, motor, bot):
+    bot.modo = "lento"
+    n = notificar(db, tipo="anuncio", texto="Hola", telefono="+34600000201", enviar=False)
+    db.commit()
+    for _ in range(3):
+        notificaciones.enviar_avisos(motor, [n.id])
+    db.expire_all()
+    assert db.get(Notificacion, n.id).estado_envio == "fallida"
+
+
+@pytest.mark.parametrize("modo, esperadas", [("caido", 1), ("lento", 1), ("error", 1), ("rechaza", 3)])
+def test_lote_para_en_cuanto_el_bot_no_responde(db, motor, bot, modo, esperadas):
+    bot.modo = modo
+    ids = [notificar(db, tipo="anuncio", texto=f"Aviso {i}", telefono="+34600000201", enviar=False).id
+           for i in range(3)]
+    db.commit()
+    notificaciones.enviar_avisos(motor, ids)
+    assert len(bot.recibidas) == esperadas
+
+
+def test_enviar_en_segundo_plano_programa_solo_pendientes(db, motor, bot):
+    from fastapi import BackgroundTasks
+
+    tareas = BackgroundTasks()
+    a = notificar(db, tipo="anuncio", texto="Uno", telefono="+34600000201", enviar=False)
+    b = notificar(db, tipo="anuncio", texto="Dos", usuario=_usuario(db, telegram_id="97"), enviar=False)
+    db.commit()
+    assert notificaciones.enviar_en_segundo_plano(tareas, db, [a, b, None]) == [a.id]
+    assert not bot.recibidas  # aún no: corre después de la respuesta
+    assert len(tareas.tasks) == 1
+    tarea = tareas.tasks[0]
+    tarea.func(*tarea.args, **tarea.kwargs)
+    db.expire_all()
+    assert db.get(Notificacion, a.id).estado_envio == "enviada" and len(bot.recibidas) == 1

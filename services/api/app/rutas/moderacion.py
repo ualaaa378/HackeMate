@@ -7,16 +7,16 @@ los publicadores se aprueban en `POST /publicadores/{id}/aprobar`.
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
 from app.errores import ErrorApi
 from app.modelos import Evento, Publicador
-from app.moderacion import registrar_aprobacion
-from app.notificaciones import notificar_publicador
+from app.moderacion import registrar_aprobacion_en_bd
+from app.notificaciones import enviar_en_segundo_plano, notificar_publicador
 from app.paginacion import Pagina, pagina, paginar_lista
 from app.rutas.eventos import _buscar, _ficha
 from app.seguridad import exigir_moderador
@@ -93,33 +93,55 @@ def _texto_aviso(evento: Evento, decision: str, motivo: str | None, subio_nivel:
     return f"Tu evento «{evento.titulo}» {accion}." + (f" Motivo: {motivo}" if motivo else "")
 
 
+MOTIVO_POR_DEFECTO = {
+    "aprobar": "Aprobado por el moderador",
+    "rechazar": "Rechazado por el moderador",
+    "retirar": "Retirado por moderación",
+}
+
+
 @router.post("/moderacion/{id}/decision")
-def decidir(id: str, datos: Decision, revisor: str = Depends(exigir_moderador), db: Session = Depends(get_db)):
+def decidir(
+    id: str,
+    datos: Decision,
+    background_tasks: BackgroundTasks,
+    revisor: str = Depends(exigir_moderador),
+    db: Session = Depends(get_db),
+):
     evento = _buscar(db, id)
     origenes, destino = TRANSICIONES[datos.decision]
-    if evento.estado not in origenes:
+    motivo = (datos.motivo or "").strip() or None
+
+    # Transición atómica: si otro moderador ha decidido a la vez, solo una de las dos peticiones cambia la
+    # fila; la otra recibe 409 y no suma otra aprobación ni manda otro aviso.
+    cambiadas = db.execute(
+        update(Evento)
+        .where(Evento.id == evento.id, Evento.estado.in_(origenes))
+        .values(estado=destino, revisado_por=revisor, motivo_moderacion=motivo or MOTIVO_POR_DEFECTO[datos.decision])
+        .execution_options(synchronize_session=False)
+    ).rowcount
+    if cambiadas == 0:
+        db.rollback()
+        db.refresh(evento)
         raise ErrorApi(
             409,
             "estado_invalido",
             f"No se puede {datos.decision} un evento en estado {evento.estado}",
             {"estado": evento.estado, "decision": datos.decision},
         )
-    motivo = (datos.motivo or "").strip() or None
-    if datos.decision == "retirar" and motivo is None:
-        raise ErrorApi(422, "validacion", "Para retirar un evento hace falta el motivo", {"campo": "motivo"})
+    db.refresh(evento)
 
-    evento.estado = destino
-    evento.revisado_por = revisor
-    evento.motivo_moderacion = motivo or ("Aprobado por el moderador" if datos.decision == "aprobar" else
-                                          "Rechazado por el moderador")
     subio_nivel = False
     publicador = evento.publicador
     if datos.decision == "aprobar" and publicador is not None:
         # Al quedar publicado, su categoría cuenta ya como «lo habitual» para el nivel 1 (decidir_estado).
-        subio_nivel = registrar_aprobacion(publicador)
+        subio_nivel = registrar_aprobacion_en_bd(db, publicador.id)
+    aviso = None
     if publicador is not None:
-        notificar_publicador(
-            db, publicador, "moderacion", _texto_aviso(evento, datos.decision, motivo, subio_nivel), evento_id=evento.id
+        aviso = notificar_publicador(
+            db, publicador, "moderacion", _texto_aviso(evento, datos.decision, motivo, subio_nivel),
+            evento_id=evento.id, enviar=False,
         )
     db.commit()
+    enviar_en_segundo_plano(background_tasks, db, [aviso])
     return _ficha(db, _buscar(db, evento.id))

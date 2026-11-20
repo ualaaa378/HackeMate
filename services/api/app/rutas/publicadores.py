@@ -2,15 +2,15 @@
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, BackgroundTasks, Depends, Header
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
 from app.errores import ErrorApi
 from app.modelos import ESTADOS_PUBLICADOR, TIPOS_PUBLICADOR, Fuente, Municipio, Publicador, Usuario
-from app.notificaciones import notificar_moderadores, notificar_publicador
+from app.notificaciones import enviar_en_segundo_plano, notificar_moderadores, notificar_publicador
 from app.paginacion import Pagina, pagina, paginar
 from app.rutas.publico import es_uuid
 from app.seguridad import es_servicio_interno, exigir_moderador, exigir_token_interno
@@ -80,7 +80,7 @@ def ver_publicador(id: str, x_internal_token: str | None = Header(None), db: Ses
 
 
 @router.post("/publicadores", status_code=201, dependencies=[Depends(exigir_token_interno)])
-def crear_publicador(datos: PublicadorCrear, db: Session = Depends(get_db)):
+def crear_publicador(datos: PublicadorCrear, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # H3: con el JWT también podrá solicitarlo el propio usuario desde la app.
     if db.get(Municipio, datos.municipio) is None:
         raise ErrorApi(
@@ -101,11 +101,12 @@ def crear_publicador(datos: PublicadorCrear, db: Session = Depends(get_db)):
     )
     db.add(publicador)
     db.flush()
-    notificar_moderadores(
+    avisos = notificar_moderadores(
         db, "moderacion", f"Nueva solicitud de publicador: {publicador.nombre} ({publicador.municipio}). "
-        "Revísala en la bandeja de moderación."
+        "Revísala en la bandeja de moderación.", enviar=False,
     )
     db.commit()
+    enviar_en_segundo_plano(background_tasks, db, avisos)
     return publicador_a_dict(_buscar(db, publicador.id))
 
 
@@ -133,6 +134,7 @@ POR_APROBAR = ("solicitado", "whatsapp_verificado")
 @router.post("/publicadores/{id}/aprobar")
 def aprobar_publicador(
     id: str,
+    background_tasks: BackgroundTasks,
     datos: AprobarPublicador | None = None,
     _: str = Depends(exigir_moderador),
     db: Session = Depends(get_db),
@@ -143,34 +145,64 @@ def aprobar_publicador(
         raise ErrorApi(
             409, "estado_invalido", "El publicador no está pendiente de aprobación", {"estado": publicador.estado}
         )
-    # Se admite aprobar desde `solicitado` (sin verificar el WhatsApp): mientras no exista
-    # /auth/whatsapp/verificar (H3) es la única forma de completar el alta; el moderador asume la verificación.
+    # Se admite aprobar desde `solicitado` (sin pasar por /auth/whatsapp/verificar): si el publicador habla
+    # con el bot por Telegram o el código no le llega, el moderador asume la verificación.
     motivo = (datos.motivo or "").strip() or None
+    cambios = {"estado": "aprobado", "nivel_confianza": datos.nivel_confianza} if datos.aprobar else {"estado": "rechazado"}
+    # Atómico: si dos moderadores deciden a la vez, solo uno cambia la fila y avisa; el otro recibe 409.
+    _transicion(db, publicador, POR_APROBAR, cambios, "El publicador no está pendiente de aprobación")
     if datos.aprobar:
-        publicador.estado = "aprobado"
-        publicador.nivel_confianza = datos.nivel_confianza
         texto = (
             f"¡Bienvenido! {publicador.nombre} ya puede publicar en HackeMate (nivel de confianza "
             f"{datos.nivel_confianza}). Mándanos el cartel, el post o un audio y lo preparamos."
         )
     else:
-        publicador.estado = "rechazado"
         texto = f"Tu solicitud para publicar como {publicador.nombre} no se ha aprobado." + (
             f" Motivo: {motivo}" if motivo else ""
         )
-    notificar_publicador(db, publicador, "moderacion", texto)
+    aviso = notificar_publicador(db, publicador, "moderacion", texto, enviar=False)
     db.commit()
+    enviar_en_segundo_plano(background_tasks, db, [aviso])
     return publicador_a_dict(_buscar(db, publicador.id))
+
+
+def _transicion(db: Session, publicador: Publicador, origenes: tuple[str, ...], cambios: dict, mensaje: str) -> None:
+    """UPDATE … WHERE id AND estado IN origenes. Si no cambia ninguna fila (otro llegó antes), 409."""
+    cambiadas = db.execute(
+        update(Publicador)
+        .where(Publicador.id == publicador.id, Publicador.estado.in_(origenes))
+        .values(**cambios)
+        .execution_options(synchronize_session=False)
+    ).rowcount
+    if cambiadas == 0:
+        db.rollback()
+        db.refresh(publicador)
+        raise ErrorApi(409, "estado_invalido", mensaje, {"estado": publicador.estado})
+    db.refresh(publicador)
 
 
 @router.post("/publicadores/{id}/pausar")
 def pausar_publicador(
-    id: str, datos: PausarPublicador, _: str = Depends(exigir_moderador), db: Session = Depends(get_db)
+    id: str,
+    datos: PausarPublicador,
+    background_tasks: BackgroundTasks,
+    _: str = Depends(exigir_moderador),
+    db: Session = Depends(get_db),
 ):
     publicador = _buscar(db, id)
     if datos.que == "automatizaciones":
         # Lo que el bot importa solo (fuentes vigiladas) irá a revisión; lo que manda la persona, no.
-        publicador.automatizaciones_pausadas = datos.pausado
+        # Solo cambia (y avisa) si el valor es otro: dos peticiones iguales a la vez no mandan dos avisos.
+        cambiadas = db.execute(
+            update(Publicador)
+            .where(Publicador.id == publicador.id, Publicador.automatizaciones_pausadas.isnot(datos.pausado))
+            .values(automatizaciones_pausadas=datos.pausado)
+            .execution_options(synchronize_session=False)
+        ).rowcount
+        db.refresh(publicador)
+        if cambiadas == 0:
+            db.rollback()
+            return publicador_a_dict(publicador)
         texto = (
             "Hemos pausado la importación automática de tus fuentes: lo que publiquemos pasará por revisión."
             if datos.pausado
@@ -185,14 +217,22 @@ def pausar_publicador(
         nuevo = "pausado" if datos.pausado else "aprobado"
         if publicador.estado == nuevo:
             return publicador_a_dict(publicador)
-        publicador.estado = nuevo
+        anterior = "aprobado" if datos.pausado else "pausado"
+        try:
+            _transicion(db, publicador, (anterior,), {"estado": nuevo},
+                        "Solo se pausa o reactiva un publicador aprobado")
+        except ErrorApi:
+            if publicador.estado == nuevo:  # otra petición igual se ha adelantado: mismo resultado, sin aviso
+                return publicador_a_dict(publicador)
+            raise
         texto = (
             f"{publicador.nombre} queda en pausa: de momento no puedes publicar eventos nuevos."
             if datos.pausado
             else f"{publicador.nombre} vuelve a estar activo: ya puedes publicar."
         )
-    notificar_publicador(db, publicador, "moderacion", texto)
+    aviso = notificar_publicador(db, publicador, "moderacion", texto, enviar=False)
     db.commit()
+    enviar_en_segundo_plano(background_tasks, db, [aviso])
     return publicador_a_dict(_buscar(db, publicador.id))
 
 
