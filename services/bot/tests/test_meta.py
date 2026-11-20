@@ -79,7 +79,7 @@ def test_webhook_procesa_y_no_repite_reenvios(meta_cfg):
     assert cliente.post("/webhook/meta", content=cuerpo, headers=cab).status_code == 200
     assert cliente.post("/webhook/meta", content=cuerpo, headers=cab).status_code == 200  # reenvío de Meta
     respuestas = [m for m in canales.bandeja_consola if m["para"] == "+34611111111"]
-    assert len(respuestas) == 1 and "mándame el texto" in respuestas[0]["texto"]
+    assert len(respuestas) == 1 and "Buscas planes" in respuestas[0]["texto"]
 
 
 def test_confirmacion_lleva_botones():

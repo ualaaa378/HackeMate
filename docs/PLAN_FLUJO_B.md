@@ -4,7 +4,7 @@
 > Responsable del flujo B: **Francisco Sánchez** (Dev B) · Rama: `Flujo-B` · Carpeta: `services/bot/`
 > Complementa a `docs/PLAN.md` (plan general) y `docs/PROGRESO.md` (checklist). Si algo choca, manda `PLAN.md`.
 > Escrito para que las personas **y sus Claudes** sepan qué hace el bot, qué se ha decidido y cómo integrarse.
-> Última actualización: viernes 20 nov, 23:00 (Hito 2).
+> Última actualización: viernes 20 nov, 23:45 (Hito 3).
 
 ---
 
@@ -47,7 +47,9 @@ api ──▶ POST /notify ──▶ canales.py ──▶ telegram.py / Graph AP
 | Archivo | Para qué |
 |---|---|
 | `app/main.py` | Endpoints, webhooks y comprobación de firmas o secretos |
-| `app/conversacion.py` | Máquina de estados de la conversación (por ahora, la del publicador) |
+| `app/conversacion.py` | Entrada de todos los mensajes: publicador, moderador e identidad; decide la intención y deriva |
+| `app/vecino.py` | Vecino: buscar planes, gustos, [Apuntarme], [Más info] y preguntas sobre un evento |
+| `app/agentes/intencion.py`, `busqueda.py`, `preferencias.py`, `asistente.py` | Intención (reglas), filtros de búsqueda, gustos y asistente con la ficha |
 | `app/agentes/extractor.py` | Post → `ExtraccionEvento`. Incluye las reglas sin IA (plan C) |
 | `app/llm/router.py`, `app/llm/proveedores.py` | Cadena de proveedores de IA con timeout, fallback y registro de tokens |
 | `app/canales.py` | Salida: decide si el mensaje va por Telegram, Meta, Twilio o consola |
@@ -87,7 +89,8 @@ api ──▶ POST /notify ──▶ canales.py ──▶ telegram.py / Graph AP
 | `POST /notify` | `api` (`X-Internal-Token`). Cuerpo: `Notificacion` (`contacto` `+34…`/`tg:…`, `plantilla`, `parametros`) | ✅ envío · ⏳ usar `contacto` (H3) |
 | `POST /ai/extraer` | `api` (`X-Internal-Token`) → `ExtraccionEvento` | ✅ |
 | `POST /ai/spam` | `api` (`X-Internal-Token`) → `{score_spam, es_spam, motivo, proveedor_ia}`. Reglas primero; IA solo si duda (0,3–0,7) | ✅ |
-| `POST /ai/responder-ficha`, `/ai/preferencias` | `api` | ⏳ H3 |
+| `POST /ai/responder-ficha` | `api` → `{puede_responder, respuesta, proveedor_ia}`. Solo con la ficha; reglas para hora/precio/lugar/plazas, IA para lo demás | ✅ |
+| `POST /ai/preferencias` | `api` → `{gustos, etiquetas_interes, municipio, formato_aviso}` | ✅ |
 | `POST /dev/mensaje` | web o tests: `{"de": "+34…", "texto": "…"}` → `{"respuestas": […]}` | ✅ simulador de chat |
 | `GET /metrics` | panel (Flujo C) | ✅ tokens, fallos y eventos en cola |
 
@@ -119,6 +122,8 @@ api ──▶ POST /notify ──▶ canales.py ──▶ telegram.py / Graph AP
 - ✅ `POST /eventos/importar`, `by-contacto` y `vincular` implementados y probados con el bot.
 - ⏳ **Pendiente para H2 de la demo:** `POST /eventos/{id}/confirmar` (con la moderación automática que llame a `bot POST /ai/spam`), `GET /moderacion/pendientes` y `POST /moderacion/{id}/decision`. El bot ya los llama; en cuanto existan, funcionan sin tocar nada.
 - ⏳ `POST /api/v1/metrics/tokens` (ahora 404): el bot ya envía cada llamada a la IA.
+- ⏳ **Para H3 de la demo** (el bot ya los llama): `POST /eventos/{id}/inscripciones` (con `usuario_id` y `X-Internal-Token`), `POST /eventos/{id}/mensajes` y `GET /recomendaciones`. Mientras no existan, el bot enlaza a la ficha de la web.
+- 🆕 **Propuesta de contrato:** `PATCH /api/v1/usuarios/{id}` con `X-Internal-Token` (mismo cuerpo que `UsuarioEditar`) para que el bot guarde gustos, pueblo y formato de aviso. Hoy solo existe `PATCH /usuarios/me` con login de usuario.
 
 ### Del Flujo C (Adán)
 
@@ -133,7 +138,7 @@ api ──▶ POST /notify ──▶ canales.py ──▶ telegram.py / Graph AP
 |---|---|---|---|
 | H1 · El bot entiende un post | CP1 (vie noche) | Webhooks, IA gratis con fallback, extractor, conversación del publicador, Telegram de punta a punta | 🟢 hecho (falta el bot en el compose, A) |
 | H2 · Carteles, audios y moderación | CP2 (sáb 13:00) | Foto del cartel y nota de voz → ficha; antispam (`/ai/spam`); flujo importar → confirmar según contrato; el moderador por chat | 🟢 hecho en el bot y probado con la API real · espera `/confirmar` y `/moderacion/*` de A |
-| H3 · La vecina | CP3 (sáb 19:00) | Gustos (`/ai/preferencias`), «qué hay cerca», inscribirse con botón, avisos de `/notify`, asistente con la ficha (`/ai/responder-ficha`), uso solo con audios | ⏳ |
+| H3 · La vecina | CP3 (sáb 19:00) | Gustos (`/ai/preferencias`), «qué hay cerca», inscribirse con botón, avisos de `/notify`, asistente con la ficha (`/ai/responder-ficha`), uso solo con audios | 🟢 hecho en el bot y probado con la API real · espera inscripciones, chat y recomendador de A |
 | H4 · Extras para el jurado | CP4 (sáb noche) | Botón de caída del LLM en el panel, respuesta en audio (TTS), idiomas | ⏳ |
 
 Checklist detallado: `docs/PROGRESO.md` → «Flujo B».
@@ -149,7 +154,7 @@ py -3.13 -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env            # rellenar TELEGRAM_TOKEN, FREELLM_API_KEY… (claves por privado)
 uvicorn app.main:app --port 8001
-python -m pytest -q               # 56 tests, sin red ni claves (la api se simula en tests/conftest.py)
+python -m pytest -q               # 81 tests, sin red ni claves (la api se simula en tests/conftest.py)
 python -m app.consola             # chat por terminal, sin Telegram
 ```
 

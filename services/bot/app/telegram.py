@@ -47,15 +47,19 @@ BOTON_COMPARTIR = "📱 Compartir mi número"
 
 
 def enviar(destino: str, texto: str, botones: list[tuple[str, str]] | None = None,
-           pedir_contacto: bool = False, quitar_teclado: bool = False) -> None:
+           pedir_contacto: bool = False, quitar_teclado: bool = False, pedir_ubicacion: bool = False) -> None:
     cuerpo = {"chat_id": destino.removeprefix(PREFIJO), "text": a_html(texto)[:4096], "parse_mode": "HTML"}
     if botones:
         # Un botón por fila: más grandes y fáciles de pulsar para personas mayores
         cuerpo["reply_markup"] = {"inline_keyboard": [[{"text": t, "callback_data": i[:64]}] for i, t in botones]}
     elif pedir_contacto:
         # Telegram solo da el teléfono si el usuario pulsa este botón: así lo casamos con la API
+        # is_persistent: que no se esconda detrás del icono del teclado
         cuerpo["reply_markup"] = {"keyboard": [[{"text": BOTON_COMPARTIR, "request_contact": True}]],
-                                  "resize_keyboard": True, "one_time_keyboard": True}
+                                  "resize_keyboard": True, "one_time_keyboard": True, "is_persistent": True}
+    elif pedir_ubicacion:
+        cuerpo["reply_markup"] = {"keyboard": [[{"text": "📍 Enviar mi ubicación", "request_location": True}]],
+                                  "resize_keyboard": True, "one_time_keyboard": True, "is_persistent": True}
     elif quitar_teclado:
         cuerpo["reply_markup"] = {"remove_keyboard": True}
     _llamar("sendMessage", cuerpo)

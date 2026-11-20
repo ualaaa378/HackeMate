@@ -8,24 +8,24 @@ from functools import lru_cache
 import httpx
 
 from app.config import get_settings
+from app.respuestas import Boton
 
 log = logging.getLogger(__name__)
 
 # Últimos mensajes enviados por la consola: los usan los tests y /dev/mensaje
 bandeja_consola: list[dict] = []
 
-Boton = tuple[str, str]  # (id que nos devuelve WhatsApp al pulsarlo, texto visible)
-
 
 def enviar(telefono: str, texto: str, botones: list[Boton] | None = None,
-           pedir_contacto: bool = False, quitar_teclado: bool = False) -> None:
+           pedir_contacto: bool = False, quitar_teclado: bool = False, pedir_ubicacion: bool = False) -> None:
     """Mensaje de sesión: respuesta a alguien que nos ha escrito en las últimas 24 h.
     pedir_contacto / quitar_teclado solo tienen efecto en Telegram."""
     from app import telegram
 
     canal = get_settings().canal
     if telegram.es_telegram(telefono) and get_settings().telegram_token:
-        telegram.enviar(telefono, texto, botones, pedir_contacto=pedir_contacto, quitar_teclado=quitar_teclado)
+        telegram.enviar(telefono, texto, botones, pedir_contacto=pedir_contacto, quitar_teclado=quitar_teclado,
+                        pedir_ubicacion=pedir_ubicacion)
     elif canal == "meta":
         _enviar_meta(telefono, texto, botones)
     elif canal == "twilio":

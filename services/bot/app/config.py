@@ -53,6 +53,8 @@ class Settings(BaseSettings):
     claude_effort: str = "low"
 
     zona_horaria: str = "Europe/Madrid"
+    # Enlaces a la ficha en la web/PWA (Flujo C): {web_url}/evento/{id}
+    web_url: str = "http://localhost:8080"
 
     @property
     def proveedores(self) -> list[str]:
