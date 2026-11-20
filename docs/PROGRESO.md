@@ -126,10 +126,12 @@
 - [~] Conversación del moderador: «pendientes» → bandeja con motivo y botones Aprobar/Rechazar. Hecho en el bot; espera `GET /moderacion/pendientes` y `POST /moderacion/{id}/decision` (A)
 
 **Bloque 3 (sáb 14:00–19:00)**
-- [ ] Conversación del vecino: gustos, pueblo/ubicación, «¿qué hay este finde cerca?» (`POST /ai/preferencias`)
-- [ ] Inscripción desde el chat con un botón
-- [~] `POST /notify`: hecho el envío (texto, botones, plantillas de WhatsApp); faltan preferencias y destinos de Telegram en el contrato
-- [ ] Asistente del evento: responde solo con la ficha, si no, deriva al organizador (`POST /ai/responder-ficha`)
+- [x] Conversación del vecino: «¿qué hay este finde (cerca / en Senés)?» → tarjetas con [Apuntarme] [Más info]; ubicación con «Enviar mi ubicación»; gustos («me gustan las rutas») y `POST /ai/preferencias`. Probado con la API real
+- [x] Detección de intención sin tokens: publicar / buscar / gustos / apuntarse / preguntar. Las notas de voz de la vecina también buscan planes
+- [~] Inscripción desde el chat con un botón (hecho en el bot; espera `POST /eventos/{id}/inscripciones` de A; mientras, enlace a la web)
+- [x] `POST /notify` con `contacto` (`tg:`/`+34`) y botón [Apuntarme] en las recomendaciones
+- [x] Asistente del evento: responde solo con la ficha (reglas o IA) y si no lo sabe lo pasa al organizador (`POST /ai/responder-ficha`; el chat del evento espera `/eventos/{id}/mensajes` de A)
+- [!] Guardar los gustos en la API: `PATCH /usuarios/me` solo admite login de usuario. Propuesta a A: `PATCH /usuarios/{id}` con `X-Internal-Token`. Mientras, el bot los guarda en memoria
 
 **Bloque 4 (sáb 20:00–00:00)**
 - [~] «Simular caída del LLM»: la variable `LLM_SIMULAR_CAIDA` existe; falta el botón en el panel (Flujo C)

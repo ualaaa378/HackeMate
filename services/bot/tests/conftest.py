@@ -33,6 +33,11 @@ class ApiFalsa:
         self.confirmar_implementado = True
         self.estado_tras_confirmar = "en_revision"
         self.pendientes: list[dict] | None = None  # None = ruta sin implementar (404)
+        self.agenda: list[dict] = []  # eventos publicados que devuelve GET /eventos
+        self.inscripciones_implementadas = True
+        self.lleno = False
+        self.recomendaciones: list[dict] | None = None
+        self.chat_implementado = False
 
     def __call__(self, metodo, ruta, json=None):
         from app.api_cliente import ApiNoDisponible, ErrorApi
@@ -70,6 +75,34 @@ class ApiFalsa:
             return {"items": self.pendientes, "total": len(self.pendientes), "page": 1, "size": 5}
         if ruta.startswith("/api/v1/moderacion/") and ruta.endswith("/decision"):
             return {"id": ruta.split("/")[4], "titulo": "Fiesta", "estado": "publicado"}
+        if metodo == "GET" and ruta.startswith("/api/v1/eventos?"):
+            from urllib.parse import parse_qs, urlparse
+            q = {k: v[0] for k, v in parse_qs(urlparse(ruta).query).items()}
+            items = [e for e in self.agenda
+                     if (not q.get("municipio") or e["municipio"] == q["municipio"])
+                     and (not q.get("categoria") or e["categoria"] == q["categoria"])
+                     and (not q.get("desde") or e["fecha_inicio"] >= q["desde"])
+                     and (not q.get("hasta") or e["fecha_inicio"] <= q["hasta"])]
+            return {"items": items, "total": len(items), "page": 1, "size": 10}
+        if metodo == "GET" and ruta.startswith("/api/v1/eventos/"):
+            ev = next((e for e in self.agenda if e["id"] == ruta.split("/")[4]), None)
+            if ev is None:
+                raise ErrorApi(404, "evento_no_encontrado", "No existe")
+            return ev
+        if ruta.startswith("/api/v1/recomendaciones"):
+            if self.recomendaciones is None:
+                raise ErrorApi(404, "no_encontrado", "Not Found")
+            return {"items": self.recomendaciones}
+        if ruta.endswith("/inscripciones"):
+            if not self.inscripciones_implementadas:
+                raise ErrorApi(404, "no_encontrado", "Not Found")
+            estado = "lista_espera" if self.lleno else "confirmada"
+            return {"id": "i1", "evento_id": ruta.split("/")[4], "usuario_id": json["usuario_id"], "estado": estado,
+                    "posicion_espera": 2 if self.lleno else None}
+        if ruta.endswith("/mensajes"):
+            if not self.chat_implementado:
+                raise ErrorApi(404, "no_encontrado", "Not Found")
+            return {"mensaje": {"id": "m1"}, "respuesta_ia": None}
         raise ErrorApi(404, "no_encontrado", "Not Found")
 
 
@@ -86,11 +119,14 @@ def api(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def limpiar_estado():
-    from app import api_cliente, canales, conversacion
+    from app import api_cliente, canales, conversacion, vecino
     from app.config import get_settings
 
     get_settings.cache_clear()
     conversacion.estados.clear()
+    vecino.vecinos.clear()
+    vecino.preferencias_locales.clear()
+    vecino.ubicaciones.clear()
     conversacion._usuarios.clear()
     canales.bandeja_consola.clear()
     api_cliente.pendientes.clear()

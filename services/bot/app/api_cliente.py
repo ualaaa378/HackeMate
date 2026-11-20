@@ -6,7 +6,7 @@ para que la conversación pueda explicarlos."""
 
 import logging
 from dataclasses import dataclass
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 import httpx
 
@@ -105,6 +105,57 @@ def vincular(telefono: str, contacto: str, nombre: str | None = None) -> dict | 
     if nombre:
         cuerpo["nombre"] = nombre
     return _peticion("POST", "/api/v1/usuarios/vincular", cuerpo)
+
+
+# ---------- Vecino ----------
+
+def buscar_eventos(parametros: dict) -> list[dict]:
+    """GET /eventos (solo publicados). Lanza ApiNoDisponible si la api no está."""
+    res = _peticion("GET", "/api/v1/eventos?" + urlencode(parametros))
+    return (res or {}).get("items", [])
+
+
+def evento(evento_id: str) -> dict | None:
+    try:
+        return _peticion("GET", f"/api/v1/eventos/{evento_id}")
+    except ErrorApi as e:
+        if e.status == 404:
+            return None
+        raise
+
+
+def recomendaciones(usuario_id: str, limite: int = 3) -> list[dict] | None:
+    """Lista de Recomendacion, o None si la api aún no tiene el recomendador."""
+    try:
+        res = _peticion("GET", f"/api/v1/recomendaciones?usuario_id={usuario_id}&limite={limite}")
+    except ErrorApi as e:
+        if e.status in (404, 405, 501) and e.code in ("no_encontrado", "metodo_no_permitido", "no_implementado"):
+            return None
+        raise
+    return (res or {}).get("items", [])
+
+
+def inscribir(evento_id: str, usuario_id: str, canal: str, plazas: int = 1) -> dict | None:
+    canal = canal if canal in ("whatsapp", "web", "telegram") else "web"
+    return _peticion("POST", f"/api/v1/eventos/{evento_id}/inscripciones",
+                     {"usuario_id": usuario_id, "plazas": plazas, "canal": canal})
+
+
+def preguntar_en_chat(evento_id: str, usuario_id: str, texto: str) -> dict | None:
+    return _peticion("POST", f"/api/v1/eventos/{evento_id}/mensajes",
+                     {"texto": texto[:1000], "tipo": "pregunta", "usuario_id": usuario_id})
+
+
+def guardar_preferencias(usuario_id: str, cambios: dict) -> bool:
+    """El contrato solo tiene PATCH /usuarios/me (login de usuario). Se prueba PATCH /usuarios/{id}
+    con el token interno (propuesto a A); si no existe, el bot las guarda solo en memoria."""
+    try:
+        _peticion("PATCH", f"/api/v1/usuarios/{usuario_id}", cambios)
+        return True
+    except ErrorApi as e:
+        if e.status in (404, 405, 501):
+            return False
+        raise
 
 
 # ---------- Moderación ----------

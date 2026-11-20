@@ -5,6 +5,7 @@ Publicador (contrato: importar → completar → confirmar):
   → el bot pregunta lo que falta → botones [Sí, publicar] [No] → POST /eventos/{id}/confirmar.
   La API decide si queda publicado o en revisión; el bot solo lo cuenta.
 Moderador: «pendientes» → bandeja con motivo y botones [Aprobar] [Rechazar].
+Vecino (app/vecino.py): «¿qué hay este finde?», «me gustan las rutas», [Apuntarme], preguntas sobre un evento.
 Telegram: «Compartir mi número» → POST /usuarios/vincular, para que la API sepa quién es."""
 
 import logging
@@ -14,10 +15,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from app import api_cliente, canales, telegram
-from app.agentes import extractor, medios
+from app import api_cliente, canales, telegram, vecino
+from app.agentes import extractor, intencion, medios
 from app.api_cliente import ApiNoDisponible, ErrorApi
 from app.config import get_settings
+from app.respuestas import Respuesta
 from app.schemas import CAMPOS_OBLIGATORIOS, MUNICIPIOS, Campo, ExtraccionEvento, MensajeEntrante
 
 log = logging.getLogger(__name__)
@@ -34,7 +36,9 @@ NOMBRES = {
 }
 AYUDA = (
     "¡Hola! Soy el asistente de HackeMate 👋\n"
-    "Si organizas algo, mándame el texto del post, *una foto del cartel* o *una nota de voz* y preparo la ficha.\n"
+    "🔎 ¿Buscas planes? Pregúntame «¿qué hay este finde?» o «¿qué hay en Senés?». También vale una nota de voz.\n"
+    "❤️ Dime qué te gusta («me gustan las rutas») y te aviso cuando haya algo.\n"
+    "📣 ¿Organizas algo? Mándame el texto, *una foto del cartel* o *una nota de voz* y preparo la ficha.\n"
     "Escribe *cancelar* en cualquier momento para empezar de nuevo."
 )
 AYUDA_MODERADOR = "Eres moderador/a: escribe *pendientes* para ver lo que espera revisión."
@@ -43,14 +47,6 @@ PEDIR_TELEFONO = ("Para saber quién eres (y si publicas por una asociación, ba
 COMANDOS_MODERACION = ("pendientes", "moderar", "moderacion", "moderación", "revisar", "bandeja")
 
 BOTONES_CONFIRMAR = [("si", "Sí, publicar"), ("no", "No")]
-
-
-@dataclass
-class Respuesta:
-    texto: str
-    botones: list[canales.Boton] | None = None
-    pedir_contacto: bool = False
-    quitar_teclado: bool = False
 
 
 @dataclass
@@ -83,7 +79,8 @@ def procesar(msg: MensajeEntrante, solo_consola: bool = False) -> list[str]:
         if solo_consola:
             canales.enviar_consola(msg.de, r.texto, r.botones, r.pedir_contacto)
         else:
-            canales.enviar(msg.de, r.texto, r.botones, pedir_contacto=r.pedir_contacto, quitar_teclado=r.quitar_teclado)
+            canales.enviar(msg.de, r.texto, r.botones, pedir_contacto=r.pedir_contacto,
+                           quitar_teclado=r.quitar_teclado, pedir_ubicacion=r.pedir_ubicacion)
     return [r.texto for r in respuestas]
 
 
@@ -118,6 +115,12 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
 
     if t.startswith("mod:"):
         return _decidir(msg, t)
+    if t.startswith("insc:"):
+        return vecino.inscribir(msg, msg.boton_id.split(":", 1)[1], _usuario(msg.de))
+    if t.startswith("info:"):
+        return vecino.info(msg, msg.boton_id.split(":", 1)[1])
+    if msg.lat is not None and msg.lon is not None and not texto:
+        return vecino.ubicacion_recibida(msg, _usuario(msg.de))
 
     if est.esperando_confirmacion and est.borrador:
         if re.match(r"^(s[ií]|vale|ok|confirmo|publica)", t):
@@ -132,6 +135,7 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
         return _siguiente_paso(est)
 
     eco: list[str | Respuesta] = []
+    es_cartel = (msg.media_tipo or "").startswith("image")
     if msg.media_url or msg.media_id:
         leido = _leer_medio(msg)
         if leido is None:
@@ -144,6 +148,18 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
 
     if t in COMANDOS_MODERACION:
         return _bandeja(msg)
+
+    # Un cartel siempre es para publicar; texto y notas de voz pueden ser de un vecino que busca planes
+    if not es_cartel:
+        tipo = intencion.detectar(texto, vecino.mirando_evento(msg.de)).tipo
+        if tipo == "buscar":
+            return eco + vecino.buscar(msg, texto, _usuario(msg.de))
+        if tipo == "gustos":
+            return eco + vecino.gustos(msg, texto, _usuario(msg.de))
+        if tipo == "inscribir":
+            return eco + vecino.inscribir(msg, None, _usuario(msg.de))
+        if tipo == "pregunta_evento":
+            return eco + vecino.pregunta(msg, texto, _usuario(msg.de))
 
     if len(texto) <= 40 and not re.search(r"\d", texto):
         return _saludo(msg)
@@ -306,7 +322,8 @@ def _vincular(msg: MensajeEntrante) -> list[str | Respuesta]:
         extra = "\n" + AYUDA_MODERADOR
     elif (usuario or {}).get("publicador_id"):
         extra = "\nPublicas en nombre de tu entidad: lo que me mandes irá con su nombre."
-    return [Respuesta(f"¡Gracias, {nombre}! Ya te tengo identificado ✅{extra}", quitar_teclado=True)]
+    return [Respuesta(f"¡Gracias, {nombre}! Ya te tengo identificado ✅{extra}", quitar_teclado=True)] + \
+        vecino.tras_vincular(msg, usuario)
 
 
 # ---------- Moderador ----------

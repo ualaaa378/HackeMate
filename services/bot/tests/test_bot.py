@@ -14,7 +14,7 @@ def test_health():
 
 
 def test_saludo_responde_ayuda():
-    assert "mándame el texto" in _di("hola")[0]
+    assert "Buscas planes" in _di("hola")[0]
 
 
 def test_flujo_publicador_pregunta_lo_que_falta_y_confirma():

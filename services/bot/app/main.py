@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from xml.sax.saxutils import escape
 
 from app import __version__, api_cliente, canales, conversacion, meta, metrics, telegram
-from app.agentes import antispam, extractor
+from app.agentes import antispam, asistente, extractor, preferencias
 from app.config import get_settings
 from app.schemas import ExtraccionEvento, MensajeEntrante
 
@@ -190,10 +190,36 @@ def ai_spam(p: PeticionSpam, x_internal_token: str | None = Header(None)):
     return antispam.puntuar(p.texto, p.contexto)
 
 
+class PeticionFicha(BaseModel):
+    evento: dict
+    pregunta: str
+
+
+@app.post("/ai/responder-ficha", response_model=asistente.RespuestaFicha)
+def ai_responder_ficha(p: PeticionFicha, x_internal_token: str | None = Header(None)):
+    _comprobar_interno(x_internal_token)
+    return asistente.responder(p.evento, p.pregunta)
+
+
+class PeticionPreferencias(BaseModel):
+    texto: str
+
+
+@app.post("/ai/preferencias", response_model=preferencias.Preferencias)
+def ai_preferencias(p: PeticionPreferencias, x_internal_token: str | None = Header(None)):
+    _comprobar_interno(x_internal_token)
+    return preferencias.interpretar(p.texto)
+
+
 class Notificacion(BaseModel):
+    """contracts/schemas/notificacion.json"""
+
     telefono: str
+    contacto: Optional[str] = None  # +34… (WhatsApp) o tg:<chat_id> (Telegram); si viene, manda sobre telefono
     tipo: str = "anuncio"
     texto: str
+    evento_id: Optional[str] = None
+    botones: list[str] = []
     # Los avisos que inicia el bot (cambio de hora, recomendación) fuera de la ventana
     # de 24 h solo los acepta WhatsApp con una plantilla aprobada por Meta
     plantilla: Optional[str] = None
@@ -203,10 +229,17 @@ class Notificacion(BaseModel):
 @app.post("/notify")
 def notify(n: Notificacion, x_internal_token: str | None = Header(None)):
     _comprobar_interno(x_internal_token)
+    destino = n.contacto or n.telefono
+    botones = None
+    if n.evento_id and n.tipo in ("recomendacion", "anuncio"):
+        # Recomendación → la vecina se apunta con un botón (paso 4 de la demo)
+        botones = [(f"insc:{n.evento_id}", "✋ Apuntarme"), (f"info:{n.evento_id}", "ℹ️ Más info")]
+    elif n.botones:
+        botones = [(b, b) for b in n.botones[:3]]
     if n.plantilla:
-        canales.enviar_plantilla(n.telefono, n.plantilla, n.parametros, texto_alternativo=n.texto)
+        canales.enviar_plantilla(destino, n.plantilla, n.parametros, texto_alternativo=n.texto)
     else:
-        canales.enviar(n.telefono, n.texto)
+        canales.enviar(destino, n.texto, botones)
     return {"enviado": True}
 
 
