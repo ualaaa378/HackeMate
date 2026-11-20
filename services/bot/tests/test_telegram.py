@@ -79,7 +79,7 @@ def test_flujo_completo_por_telegram_con_botones(tg):
     assert ("answerCallbackQuery", {"callback_query_id": "CB9"}) in tg
     assert "Guardado" in [c for c in tg if c[0] == "sendMessage"][-1][1]["text"]
     from app import api_cliente
-    assert api_cliente.pendientes[-1]["origen"] == {"canal": "telegram", "url": None, "importado_auto": False}
+    assert api_cliente.pendientes[-1]["json"]["origen"] == {"canal": "telegram", "url": None, "importado_auto": False}
 
 
 def test_update_repetido_no_se_procesa_dos_veces(tg):

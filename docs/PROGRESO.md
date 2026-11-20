@@ -116,14 +116,14 @@
 - [x] `llm_router` Gemini → FreeLLMAPI → Claude (opcional) → reglas, con timeout y registro de tokens (probado con FreeLLMAPI real)
 - [x] Extractor de eventos desde texto → `ExtraccionEvento` validada
 - [ ] Integrar `services/bot` en `infra/docker-compose.yml` en lugar del stub (con Flujo A)
-- [ ] Ajustar al contrato el flujo importar → confirmar (`POST /eventos/importar` y luego `/eventos/{id}/confirmar`)
+- [x] Flujo importar → confirmar según contrato: importa al recibir el post (`contacto_publicador`), pregunta lo que la API dice que falta y confirma (si `/confirmar` aún no existe, guarda con `PATCH`)
 
 **Bloque 2 (sáb 08:00–13:00)**
-- [ ] Extractor desde imagen (cartel) y desde audio (transcripción)
-- [~] Conversación del publicador: pregunta lo que falta y confirma (botones hechos; falta usar `/confirmar` de la API)
-- [ ] Antispam: reglas baratas primero, IA solo si es dudoso (`POST /ai/spam`)
+- [x] Extractor desde imagen (cartel, visión de FreeLLMAPI/Gemini) y desde audio (Whisper vía FreeLLMAPI). Probado con la API real
+- [x] Conversación del publicador: pregunta lo que falta y confirma con botones; identidad con «Compartir mi número» → `POST /usuarios/vincular`
+- [x] Antispam `POST /ai/spam`: reglas baratas primero, IA solo si es dudoso (0,3–0,7). Falta que la API lo llame al confirmar (A, H2.4)
 - [ ] Ingesta: «pega el enlace/texto del post» + scraper de una web pública
-- [ ] Conversación del moderador: «enséñame lo pendiente», aprobar/rechazar
+- [~] Conversación del moderador: «pendientes» → bandeja con motivo y botones Aprobar/Rechazar. Hecho en el bot; espera `GET /moderacion/pendientes` y `POST /moderacion/{id}/decision` (A)
 
 **Bloque 3 (sáb 14:00–19:00)**
 - [ ] Conversación del vecino: gustos, pueblo/ubicación, «¿qué hay este finde cerca?» (`POST /ai/preferencias`)

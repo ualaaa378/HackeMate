@@ -31,7 +31,7 @@ def test_flujo_publicador_pregunta_lo_que_falta_y_confirma():
     # La api no está levantada en los tests: el evento queda en cola
     assert "Guardado" in r[0]
     from app import api_cliente
-    assert api_cliente.pendientes[0]["extraccion"]["campos"]["municipio"]["valor"] == "Uleila del Campo"
+    assert api_cliente.pendientes[0]["json"]["extraccion"]["campos"]["municipio"]["valor"] == "Uleila del Campo"
 
 
 def test_cancelar_borra_el_borrador():

@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     # Se prueban en orden; "auto" deja elegir al proxy. Ver GET /v1/models del proxy
     freellm_modelos: str = "qwen3.8-27b,gemini-flash-lite,auto"
     freellm_timeout_intento_s: float = 8.0
+    # Carteles (visión) y notas de voz (transcripción, endpoint /audio/transcriptions del proxy)
+    freellm_modelos_vision: str = "gemini-flash-lite,auto"
+    freellm_modelo_audio: str = "whisper-large-v3"
+    medios_timeout_s: float = 30.0
     anthropic_api_key: str = ""
     claude_model: str = "claude-opus-5-5"
     claude_effort: str = "low"
