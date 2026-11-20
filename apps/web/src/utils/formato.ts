@@ -27,6 +27,13 @@ export function fechaEstimada(e: Evento): boolean {
   return e.etiquetas?.includes('fecha_estimada') ?? false;
 }
 
+/** El plan ya ha terminado. Sin hora de fin, dura hasta el final de su día. */
+export function yaPaso(e: Pick<Evento, 'estado' | 'fecha_inicio' | 'fecha_fin'>, ahora = new Date()): boolean {
+  if (e.estado === 'finalizado') return true;
+  if (e.fecha_fin) return new Date(e.fecha_fin) < ahora;
+  return claveDia(e.fecha_inicio) < claveDia(ahora.toISOString());
+}
+
 export function horaEvento(e: Evento): string {
   return sinHora(e) ? 'Hora por confirmar' : hora(e.fecha_inicio);
 }

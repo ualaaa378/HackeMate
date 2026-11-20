@@ -1030,3 +1030,86 @@ ion-card-content {
   font-size: 1.25rem;
   color: var(--hm-azul-oscuro);
 }
+
+/* Plan pasado: aviso, galería de fotos de quienes fueron y comentarios */
+.aviso-pasado {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff4d6;
+  color: #5c4100;
+  font-weight: 600;
+}
+.recuerdo-plan h2 {
+  font-size: 1.15rem;
+  color: var(--ion-color-secondary);
+  margin: 20px 0 8px;
+}
+.galeria-plan {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.galeria-plan li {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--ion-color-medium-shade);
+}
+.galeria-plan button {
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+.galeria-plan img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+.recuerdo-plan__form .chat-form {
+  align-items: center;
+}
+.recuerdo-plan__previa {
+  position: relative;
+  margin-bottom: 8px;
+}
+.recuerdo-plan__previa img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.recuerdo-plan__previa ion-button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  --background: rgba(255, 255, 255, 0.9);
+}
+.foto-ampliada {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.92);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: 16px;
+  color: #fff;
+}
+.foto-ampliada img {
+  max-width: 100%;
+  max-height: 75dvh;
+  object-fit: contain;
+}
+.foto-ampliada p {
+  margin: 0;
+}

@@ -5,6 +5,7 @@
 // para que la demo no se caiga. Los errores de negocio de la API sí llegan a la pantalla.
 
 import eventosMock from '../mocks/eventos.json';
+import { yaPaso } from '../utils/formato';
 
 import type {
   ApiError,
@@ -133,7 +134,7 @@ export function getEventos(filtros: FiltrosEventos = {}): Promise<Pagina<Evento>
 export async function getEventosPasados(ahora = new Date()): Promise<Evento[]> {
   const fin = (e: Evento) => e.fecha_fin ?? e.fecha_inicio;
   const pasados = (lista: Evento[]) =>
-    lista.filter((e) => new Date(fin(e)) < ahora).sort((a, b) => fin(b).localeCompare(fin(a)));
+    lista.filter((e) => yaPaso(e, ahora)).sort((a, b) => fin(b).localeCompare(fin(a)));
   const deMocks = () => pasados(mockEventos.filter((e) => e.estado === 'publicado' || e.estado === 'finalizado'));
   try {
     const reales = pasados((await getEventos({ hasta: ahora.toISOString() })).items);
@@ -153,11 +154,40 @@ export function getEvento(id: string): Promise<Evento> {
   );
 }
 
-export function inscribirse(eventoId: string): Promise<Inscripcion> {
+// Planes a los que se ha apuntado este usuario en este dispositivo. Sirve para saber si puede subir fotos
+// cuando el plan termine; la API lo comprueba igualmente.
+const CLAVE_MIS_PLANES = 'hm-mis-planes';
+function misPlanes(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(CLAVE_MIS_PLANES) ?? '[]') as string[]);
+  } catch {
+    return new Set();
+  }
+}
+export const meApunte = (eventoId: string): boolean => misPlanes().has(eventoId);
+function apuntarEnDispositivo(eventoId: string): void {
+  try {
+    localStorage.setItem(CLAVE_MIS_PLANES, JSON.stringify([...misPlanes().add(eventoId)]));
+  } catch {
+    /* sin almacenamiento: solo se pierde el recordatorio local */
+  }
+}
+
+const errorFinalizado = () =>
+  new ErrorApi('evento_finalizado', 'Este plan ya ha terminado. Solo se pueden ver las fotos y comentar.', 409);
+
+export async function inscribirse(eventoId: string): Promise<Inscripcion> {
+  const insc = await inscribirseEnApi(eventoId);
+  apuntarEnDispositivo(eventoId);
+  return insc;
+}
+
+function inscribirseEnApi(eventoId: string): Promise<Inscripcion> {
   return conRespaldo(
     () => peticion(`/eventos/${eventoId}/inscripciones`, { method: 'POST' }),
     () => {
       const e = mockEventos.find((x) => x.id === eventoId);
+      if (e && yaPaso(e)) return Promise.reject(errorFinalizado());
       const hayPlaza = e?.plazas_libres == null || e.plazas_libres > 0;
       if (e && e.plazas_libres != null && e.plazas_libres > 0) e.plazas_libres -= 1;
       if (e && hayPlaza) e.inscritos = (e.inscritos ?? 0) + 1;
@@ -291,8 +321,11 @@ export function enviarMensaje(
   return conRespaldo(
     () => peticion(`/eventos/${eventoId}/mensajes`, { method: 'POST', body: JSON.stringify(mensaje) }),
     () => {
+      const e = mockEventos.find((x) => x.id === eventoId);
+      if (e && yaPaso(e) && mensaje.tipo !== 'comentario') return Promise.reject(errorFinalizado());
       const nuevo = mensajeMock(eventoId, {
         texto: mensaje.texto,
+        imagen_url: mensaje.imagen_url ?? null,
         tipo: mensaje.tipo ?? 'pregunta',
         autor_id: autor.id,
         autor_nombre: autor.nombre,
