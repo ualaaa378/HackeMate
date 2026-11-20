@@ -1362,6 +1362,111 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/usuarios/by-contacto/{contacto}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description +34… (WhatsApp; el + puede ir como %2B) o tg:<chat_id> (Telegram) */
+        contacto: components['schemas']['Contacto'];
+      };
+      cookie?: never;
+    };
+    /**
+     * Identidad a partir del contacto en cualquier canal (solo servicios internos)
+     * @description `by-phone` sigue igual. Errores: 404 `usuario_no_encontrado`, 422 `contacto_invalido`.
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description +34… (WhatsApp; el + puede ir como %2B) o tg:<chat_id> (Telegram) */
+          contacto: components['schemas']['Contacto'];
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Usuario */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['usuario'];
+          };
+        };
+        401: components['responses']['Error'];
+        404: components['responses']['Error'];
+        422: components['responses']['Error'];
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/usuarios/vincular': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Vincula el contacto de un canal con el teléfono (crea el usuario si no existe)
+     * @description Si no hay usuario con ese teléfono lo crea (201); si lo hay, le asigna el id del canal (200).
+     *     Si hay un publicador con ese teléfono, también se le asigna.
+     *     Errores: 409 `contacto_en_uso` (el contacto ya es de otra persona), 422 `contacto_invalido`.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['UsuarioVincular'];
+        };
+      };
+      responses: {
+        /** @description Usuario existente, ya vinculado */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['usuario'];
+          };
+        };
+        /** @description Usuario creado y vinculado */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['usuario'];
+          };
+        };
+        401: components['responses']['Error'];
+        409: components['responses']['Error'];
+        422: components['responses']['Error'];
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/usuarios/me': {
     parameters: {
       query?: never;
@@ -1550,6 +1655,159 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/webhook/telegram': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Entrada de Telegram (Update de la Bot API). El usuario es `tg:<chat_id>`.
+     * @description Telegram envía la cabecera `X-Telegram-Bot-Api-Secret-Token` con el secreto registrado en setWebhook.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: {
+          'X-Telegram-Bot-Api-Secret-Token'?: string;
+        };
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': Record<string, never>;
+        };
+      };
+      responses: {
+        /** @description Recibido (se procesa en segundo plano) */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/webhook/meta': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Verificación del webhook de WhatsApp Cloud API (Meta) con `hub.challenge` */
+    get: {
+      parameters: {
+        query?: {
+          'hub.mode'?: string;
+          'hub.verify_token'?: string;
+          'hub.challenge'?: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Devuelve `hub.challenge` */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'text/plain': string;
+          };
+        };
+      };
+    };
+    put?: never;
+    /** Entrada de WhatsApp Cloud API (Meta). Firma en la cabecera `X-Hub-Signature-256`. */
+    post: {
+      parameters: {
+        query?: never;
+        header?: {
+          'X-Hub-Signature-256'?: string;
+        };
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': Record<string, never>;
+        };
+      };
+      responses: {
+        /** @description Recibido (se procesa en segundo plano) */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/dev/mensaje': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Simulador de chat (web o tests). Devuelve lo que contestaría el bot. */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            /** @description Contacto del remitente: +34… o tg:<chat_id> */
+            de: string;
+            texto: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Respuestas del bot */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              respuestas: unknown[];
+            };
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/notify': {
     parameters: {
       query?: never;
@@ -1559,7 +1817,11 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** La api pide enviar un aviso */
+    /**
+     * La api pide enviar un aviso
+     * @description Va a `contacto` si viene (p. ej. `tg:<chat_id>`) y si no a `telefono`. En WhatsApp, fuera de la ventana
+     *     de 24 h, se usa `plantilla` + `parametros`; los demás canales envían `texto`.
+     */
     post: {
       parameters: {
         query?: never;
@@ -1805,6 +2067,13 @@ export interface components {
     };
     /** @description E.164, p. ej. +34600000000 */
     Telefono: string;
+    /**
+     * @description Dirección de contacto de un canal de mensajería: E.164 (+34600000000) = WhatsApp; `tg:<chat_id>` = Telegram.
+     *     En la API, services/api/app/canales.py: añadir un canal es una entrada en su registro y una columna.
+     * @example +34600000201
+     * @example tg:123456789
+     */
+    Contacto: string;
     /** @enum {unknown} */
     Categoria: 'deportiva' | 'cultural' | 'fiestas' | 'gastronomia' | 'ludica' | 'comercio';
     /** @enum {unknown} */
@@ -1894,13 +2163,22 @@ export interface components {
     };
     Origen: {
       /** @enum {unknown} */
-      canal: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual';
+      canal: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual' | 'telegram';
       url?: string | null;
       importado_auto: boolean;
     };
-    /** @description Hace falta `telefono_publicador` o `publicador_id` (o un origen.url de una fuente conocida). */
+    /**
+     * @description Hace falta `contacto_publicador`, `telefono_publicador` o `publicador_id` (o un origen.url de una fuente conocida).
+     *     El publicador se busca por la fuente (origen.url), luego por `publicador_id` y luego por el contacto del remitente
+     *     en su canal (teléfono o `telegram_id`; en Telegram, también por el teléfono del usuario vinculado).
+     */
     ImportarEvento: {
       extraccion: components['schemas']['extraccion_evento'];
+      contacto_publicador?: components['schemas']['Contacto'];
+      /**
+       * @description E.164. Compatibilidad: la API también acepta aquí `tg:<chat_id>` (lo que envía hoy el bot de Telegram);
+       *     lo nuevo debe ir en `contacto_publicador`.
+       */
       telefono_publicador?: components['schemas']['Telefono'];
       /** Format: uuid */
       publicador_id?: string | null;
@@ -1923,7 +2201,7 @@ export interface components {
         [key: string]: unknown;
       };
       /** @enum {unknown} */
-      confirmado_por?: 'whatsapp' | 'web';
+      confirmado_por?: 'whatsapp' | 'web' | 'telegram';
     };
     InscripcionCrear: {
       /**
@@ -1934,7 +2212,7 @@ export interface components {
       /** @default 1 */
       plazas: number;
       /** @enum {unknown} */
-      canal?: 'whatsapp' | 'web';
+      canal?: 'whatsapp' | 'web' | 'telegram';
     };
     MensajeCrear: {
       texto: string;
@@ -1976,6 +2254,15 @@ export interface components {
     UsuarioCrear: {
       telefono: components['schemas']['Telefono'];
       nombre?: string;
+      municipio?: string | null;
+    };
+    /** @description Vincula el contacto de un canal (p. ej. Telegram tras «Compartir mi número») con el teléfono. */
+    UsuarioVincular: {
+      telefono: components['schemas']['Telefono'];
+      contacto: components['schemas']['Contacto'];
+      /** @description Solo se usa si se crea el usuario */
+      nombre?: string;
+      /** @description Solo se usa si se crea el usuario */
       municipio?: string | null;
     };
     UsuarioEditar: {
@@ -2115,7 +2402,7 @@ export interface components {
       imagen_url?: string | null;
       origen: {
         /** @enum {unknown} */
-        canal: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual';
+        canal: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual' | 'telegram';
         url?: string | null;
         importado_auto: boolean;
       };
@@ -2167,7 +2454,7 @@ export interface components {
       /** @default 1 */
       plazas: number;
       /** @enum {unknown} */
-      canal?: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual';
+      canal?: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual' | 'telegram';
       /** Format: date-time */
       creado_en?: string;
       /** Format: date-time */
@@ -2217,6 +2504,8 @@ export interface components {
       telefono?: string | null;
       /** Format: email */
       email?: string | null;
+      /** @description chat_id de Telegram (contacto tg:<chat_id>). Solo para servicios internos */
+      telegram_id?: string | null;
       /** @enum {unknown} */
       estado: 'solicitado' | 'whatsapp_verificado' | 'aprobado' | 'rechazado' | 'pausado';
       /** @enum {unknown} */
@@ -2229,7 +2518,7 @@ export interface components {
         /** Format: uuid */
         id: string;
         /** @enum {unknown} */
-        canal: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual';
+        canal: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual' | 'telegram';
         url: string;
         activa?: boolean;
       }[];
@@ -2256,6 +2545,8 @@ export interface components {
       whatsapp_verificado?: boolean;
       /** Format: email */
       email?: string | null;
+      /** @description chat_id de Telegram (contacto tg:<chat_id>). Solo para servicios internos */
+      telegram_id?: string | null;
       municipio?: string | null;
       lat?: number | null;
       lon?: number | null;
@@ -2279,6 +2570,8 @@ export interface components {
       /** Format: uuid */
       id?: string;
       telefono: string;
+      /** @description Contacto en su canal (E.164 = WhatsApp, tg:<chat_id> = Telegram). Si viene, el bot envía ahí en vez de a `telefono` */
+      contacto?: string;
       /** @enum {unknown} */
       tipo: 'recomendacion' | 'cambio_evento' | 'anuncio' | 'respuesta' | 'moderacion' | 'confirmacion';
       texto: string;
@@ -2293,6 +2586,10 @@ export interface components {
       evento_id?: string | null;
       /** @description Respuestas rápidas sugeridas */
       botones?: string[];
+      /** @description Plantilla aprobada de WhatsApp para avisos fuera de la ventana de 24 h. Los demás canales la ignoran y envían `texto` */
+      plantilla?: string;
+      /** @description Parámetros de la plantilla, en orden */
+      parametros?: string[];
       /** @enum {unknown} */
       estado_envio?: 'pendiente' | 'enviada' | 'fallida';
       intentos?: number;

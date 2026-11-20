@@ -7,6 +7,7 @@ Documentos que mandan (léelos antes de tocar nada):
 - `docs/PLAN.md`: plan general, arquitectura, contratos, ramas y cronograma.
 - `docs/PLAN_FLUJO_A.md`: hitos y criterios de aceptación del flujo A (backend, datos, infra).
 - `docs/PLAN_FLUJO_B.md`: bot, canales de mensajería e IA. Qué expone el bot, qué decisiones se tomaron y qué necesita de A y C.
+- `docs/PLAN_FLUJO_C.md`: hitos y criterios de aceptación de la app web/PWA y el panel (flujo C).
 - `docs/PROGRESO.md`: checklist de avance. Se marca en el mismo commit que la tarea.
 
 ## Qué construimos
