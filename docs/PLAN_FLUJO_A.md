@@ -70,17 +70,52 @@ Cada hito termina en un checkpoint de equipo (CP) de `PLAN.md`. Al terminar un h
 - [x] H0.5 Con B y C: `contracts/openapi.yaml` v1, `schemas/*.json` (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion), `enums.md`, `fixtures/*.json`.
 - [~] H0.6 Commit `chore: esqueleto` y `contract: v1` en `develop`. *(Commits hechos en `Flujo-A`; falta push y PR a `develop`.)*
 
-**Validación de Docker (la hace otra persona del equipo con Docker; el portátil de Benas no puede ejecutarlo):**
-Requisito: Docker Compose 2.24 o superior (el compose usa `env_file` con `path`/`required`).
+#### Cómo probar H0 (lo hace otra persona del equipo con Docker; el portátil de Benas no puede ejecutarlo)
+
+**Requisitos:** Git, Docker con Compose **2.24 o superior** (`docker compose version`; el compose usa `env_file` con `path`/`required`), Python 3.11+ y `curl`.
+
+**1. Descargar la rama del flujo A** (hasta que esté en `develop`):
 ```bash
-cp .env.example .env
-docker compose -f infra/docker-compose.yml up --build
-curl localhost:8000/health   # api  → {"status":"ok","version":"0.0.1"}
+git clone https://github.com/ualaaa378/HackeMate.git && cd HackeMate   # o: git fetch origin
+git checkout Flujo-A && git pull
+```
+
+**2. Tests de contratos y de `/health`** (sin Docker):
+```bash
+cd services/api
+python -m venv .venv
+source .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+python -m pytest -q                # esperado: 23 passed
+deactivate && cd ../..
+```
+
+**3. Arrancar todo con Docker en limpio:**
+```bash
+cp .env.example .env               # Windows: copy .env.example .env  (no hace falta rellenar claves para H0)
+docker compose -f infra/docker-compose.yml down -v
+docker compose -f infra/docker-compose.yml up --build -d
+docker compose -f infra/docker-compose.yml ps   # db "healthy"; api, bot, web y tunnel "running"
+```
+
+**4. Comprobar cada servicio:**
+```bash
+curl localhost:8000/health   # api        → {"status":"ok","version":"0.0.1"}
 curl localhost:8001/health   # bot (stub) → {"status":"ok","version":"0.0.0-stub"}
 curl localhost:8080/health   # web (stub) → {"status":"ok","version":"0.0.0-stub"}
-docker compose -f infra/docker-compose.yml logs tunnel   # debe aparecer una URL https://…trycloudflare.com
+docker compose -f infra/docker-compose.yml logs tunnel | grep trycloudflare   # una URL https://…trycloudflare.com
 ```
-Resultado: marcar en `docs/PROGRESO.md` (CP0, línea del compose) y, si falla, apuntarlo en «Bloqueos» con el error.
+
+**5. Comprobar que no hay claves en el repositorio:**
+```bash
+git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esperado: sin resultados
+```
+
+**6. Apagar:** `docker compose -f infra/docker-compose.yml down -v`
+
+**7. Informar del resultado:**
+- Todo bien → en `docs/PROGRESO.md`, CP0, cambiar la línea del compose de `[~]` a `[x]` y avisar a Benas.
+- Algo falla → apuntarlo en «Bloqueos» de `docs/PROGRESO.md` con el paso, el comando y el error (por ejemplo, `docker compose -f infra/docker-compose.yml logs api`), y avisar a Benas.
 
 **Alcance de los fixtures en H0:** solo datos base válidos contra los schemas (5 municipios, publicadores, usuarios, eventos publicados, la extracción de la Ruta Solidaria, inscripciones, mensajes y notificaciones). Los escenarios de moderación y antispam no entran en H0: se definen en H2 junto con su lógica.
 
