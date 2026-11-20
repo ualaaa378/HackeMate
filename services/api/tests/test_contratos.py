@@ -19,11 +19,14 @@ SCHEMAS_V1 = [
     "inscripcion",
     "mensaje_evento",
     "notificacion",
+    "lugar",
 ]
 
 # fixture → schema de cada elemento (None = sin schema de entidad propio)
 FIXTURE_SCHEMA = {
     "eventos.json": "evento",
+    "eventos_demo.json": "evento",
+    "lugares.json": "lugar",
     "extraccion_evento.json": "extraccion_evento",
     "usuarios.json": "usuario",
     "publicadores.json": "publicador",
@@ -121,13 +124,17 @@ def test_municipios():
 def test_fixtures_coherentes_entre_si():
     publicadores = {p["id"] for p in _json(FIXTURES / "publicadores.json")}
     usuarios = {u["id"] for u in _json(FIXTURES / "usuarios.json")}
-    eventos = _json(FIXTURES / "eventos.json")
+    eventos = _json(FIXTURES / "eventos.json") + _json(FIXTURES / "eventos_demo.json")
     ids_eventos = {e["id"] for e in eventos}
+    assert len(ids_eventos) == len(eventos), "IDs de evento repetidos entre eventos.json y eventos_demo.json"
     municipios = {m["nombre"] for m in _json(FIXTURES / "municipios.json")}
 
+    # Los eventos reales aún no tienen publicador dado de alta (publicador_id = null)
     for e in eventos:
-        assert e["publicador_id"] in publicadores, e["titulo"]
+        assert e["publicador_id"] is None or e["publicador_id"] in publicadores, e["titulo"]
         assert e["municipio"] in municipios, e["titulo"]
+    for lugar in _json(FIXTURES / "lugares.json"):
+        assert lugar["municipio"] in municipios, lugar["nombre"]
     for i in _json(FIXTURES / "inscripciones.json"):
         assert i["evento_id"] in ids_eventos and i["usuario_id"] in usuarios
     for m in _json(FIXTURES / "mensajes_evento.json"):

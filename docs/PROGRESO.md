@@ -51,7 +51,7 @@
 - [~] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo (escrito; falta validarlo con Docker en otra máquina: pasos y resultado esperado en `PLAN_FLUJO_A.md` H0, «Cómo probar H0»). **Responsable de la prueba: por asignar en la reunión** (alguien con Docker)
 - [x] `.env.example` con todas las variables
 - [x] `contracts/openapi.yaml` v1
-- [x] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion)
+- [x] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion, lugar)
 - [x] `contracts/enums.md` y `contracts/fixtures/*.json`
 - [ ] **B (Francisco) confirma los contratos v1 de `Flujo-A`.** Revisar que:
   - `services/bot/app/schemas.py` (`ExtraccionEvento`, `Campo`, `Tokens`) encaja con `contracts/schemas/extraccion_evento.json` y su fixture valida con el modelo Pydantic.
@@ -60,7 +60,8 @@
   - Los endpoints `/ai/*` de `openapi.yaml` son los que va a implementar.
   - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
 - [ ] **C (Adán) confirma los contratos v1 de `Flujo-A`.** Revisar que:
-  - `contracts/schemas/evento.json`, `fixtures/eventos.json` y `fixtures/municipios.json` son los suyos sin cambios.
+  - `contracts/schemas/evento.json` (con `inscritos`), `lugar.json` y los fixtures `eventos.json`, `eventos_demo.json`, `lugares.json`, `municipios.json` y `FUENTES.md` son los de su PR de datos reales, sin cambios. `openapi.yaml` ya incluye `GET /lugares` y `GET /lugares/{id}`.
+  - Su PR de datos reales se rebasa sobre `develop` cuando entre `Flujo-A` (los archivos de `contracts/` quedan idénticos y desaparecen del diff).
   - `npx openapi-typescript contracts/openapi.yaml -o apps/web/src/api/schema.d.ts` genera tipos sin errores.
   - Los fixtures de usuarios, publicadores, inscripciones, mensajes, notificaciones y `eventos_moderacion.json` le bastan para las pantallas con mocks.
   - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
