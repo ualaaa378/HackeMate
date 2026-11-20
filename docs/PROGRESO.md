@@ -76,7 +76,7 @@
 ## Flujo A · Backend, datos e infraestructura
 
 **Bloque 1 (vie 18:30–23:30)**
-- [ ] Modelos SQLAlchemy + migración inicial (Alembic)
+- [x] Modelos SQLAlchemy + migración inicial (Alembic)
 - [ ] CRUD de eventos con filtros (municipio, categoría, fechas, radio)
 - [ ] CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`
 - [ ] `seed.py` con los 5 pueblos y eventos de demo

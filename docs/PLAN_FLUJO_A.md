@@ -130,7 +130,7 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 ### H1 · Datos y CRUD básico (vie 18:30 → 23:30 · CP1 · `v0.1`)
 
 **Tareas**
-- [ ] H1.1 Modelos SQLAlchemy y migración inicial con Alembic (eventos, publicadores, fuentes, usuarios, preferencias, inscripciones, mensajes, métricas).
+- [x] H1.1 Modelos SQLAlchemy y migración inicial con Alembic (eventos, publicadores, fuentes, usuarios, preferencias, inscripciones, mensajes, métricas).
 - [ ] H1.2 Formato común de error y paginación (middleware/utilidades).
 - [ ] H1.3 `GET /eventos` con filtros: `municipio`, `categoria`, `desde`, `hasta`, `lat`+`lon`+`radio_km` (haversine). `GET/POST/PATCH /eventos/{id}`.
 - [ ] H1.4 CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`. *(`GET/PATCH /usuarios/me` se mueve a H3.1, con el login.)*
