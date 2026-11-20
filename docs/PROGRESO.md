@@ -86,10 +86,10 @@
 - [x] `POST /eventos/importar` y `POST /eventos/{id}/confirmar`
 - [x] Niveles de confianza 0/1/2 y bandeja de moderación con motivo
 - [x] Detección de duplicados (origen_url + similitud)
-- [ ] Alta de publicador: verificación de WhatsApp con código + aprobación
+- [x] Alta de publicador: verificación de WhatsApp con código + aprobación
 
 **Bloque 3 (sáb 14:00–19:00)**
-- [ ] Login con Google (OAuth → JWT) y roles
+- [x] Login con Google (OAuth → JWT) y roles *(JWT propio, código por el bot, Google y login demo con DEMO_MODE)*
 - [ ] Inscripciones con plazas y lista de espera
 - [ ] Exportación `.ics` (evento y usuario)
 - [ ] Chat del evento (mensajes, anuncios fijados, permisos por rol)

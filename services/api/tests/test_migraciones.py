@@ -17,7 +17,7 @@ API = Path(__file__).resolve().parents[1]
 
 TABLAS = {
     "municipios", "lugares", "usuarios", "publicadores", "fuentes", "eventos",
-    "inscripciones", "mensajes_evento", "notificaciones", "metricas_tokens",
+    "inscripciones", "mensajes_evento", "notificaciones", "metricas_tokens", "codigos_verificacion",
 }
 
 

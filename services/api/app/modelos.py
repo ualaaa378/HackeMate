@@ -268,6 +268,21 @@ class Notificacion(Base):
     enviada_en: Mapped[datetime | None] = mapped_column(FechaUTC())
 
 
+class CodigoVerificacion(Base):
+    """Código de un solo uso para verificar un teléfono (POST /auth/whatsapp/codigo y /verificar).
+    Solo se guarda el HMAC del código (app/rutas/auth.py), nunca el código."""
+
+    __tablename__ = "codigos_verificacion"
+
+    id: Mapped[str] = _id()
+    telefono: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    codigo_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    expira_en: Mapped[datetime] = mapped_column(FechaUTC(), nullable=False)
+    intentos: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    usado: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    creado_en: Mapped[datetime] = _creado()
+
+
 class MetricaTokens(Base):
     """Una llamada a la IA registrada por el bot (POST /metrics/tokens)."""
 

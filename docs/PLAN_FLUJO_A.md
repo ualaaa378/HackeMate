@@ -168,7 +168,7 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 - [x] H2.3 `POST /eventos/{id}/confirmar` con los campos completados → pasa a moderación.
 - [x] H2.4 Niveles de confianza: nivel 0 todo a `en_revision`; nivel 1 pasa si es «lo habitual» (misma categoría que publicaciones ya aprobadas y `score_spam` bajo); nivel 2 pasa salvo spam alto. Subida de nivel automática tras N aprobaciones (N configurable, p. ej. 3).
 - [x] H2.5 `GET /moderacion/pendientes` (con `motivo`) y `POST /moderacion/{id}/decision` (aprobar, rechazar, retirar). Pausar publicador y pausar automatizaciones.
-- [ ] H2.6 Alta de publicador: `POST /publicadores` → `POST /auth/whatsapp/codigo` + `/verificar` → `POST /publicadores/{id}/aprobar` → `POST /publicadores/{id}/fuentes`. El moderador recibe aviso vía `/notify`.
+- [x] H2.6 Alta de publicador: `POST /publicadores` → `POST /auth/whatsapp/codigo` + `/verificar` → `POST /publicadores/{id}/aprobar` → `POST /publicadores/{id}/fuentes`. El moderador recibe aviso vía `/notify`.
 - [x] H2.7 Seed con un publicador de nivel 2 (Bar La Plaza, «Menú del domingo») y uno de nivel 0 para la demo del antispam.
 
 **Criterios de aceptación**
@@ -184,7 +184,7 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 ### H3 · La vecina: participación (sáb 14:00 → 19:00 · CP3 · `v0.3` + contratos v2 congelados)
 
 **Tareas**
-- [ ] H3.1 Login con Google: `POST /auth/google` valida el `id_token` y devuelve un JWT propio con `rol`. Login por WhatsApp con código (reutiliza H2.6). Dependencias de FastAPI para exigir rol. `GET/PATCH /usuarios/me` (viene de H1.4).
+- [x] H3.1 Login con Google: `POST /auth/google` valida el `id_token` y devuelve un JWT propio con `rol`. Login por WhatsApp con código (reutiliza H2.6). Dependencias de FastAPI para exigir rol. `GET/PATCH /usuarios/me` (viene de H1.4).
 - [ ] H3.2 Inscripciones: `POST /eventos/{id}/inscripciones` y `DELETE …/{insc_id}`. Si no hay plazas → `lista_espera`. Al cancelar, el primero de la lista sube a `confirmada` y se le avisa vía `/notify`. Control de concurrencia (transacción con bloqueo de fila) para no vender la misma plaza dos veces.
 - [ ] H3.3 `.ics`: `GET /eventos/{id}/ics` y `GET /usuarios/me/ics` (librería `ics` o generación a mano, zona `Europe/Madrid`).
 - [ ] H3.4 Chat del evento: `GET/POST /eventos/{id}/mensajes`, anuncios fijados, ocultar, silenciar, con los permisos de la tabla de la diapositiva 17. Sin teléfonos en las respuestas. Antes de publicar un mensaje, llamada a `bot /ai/spam`; si es una pregunta, `bot /ai/responder-ficha`.

@@ -594,7 +594,7 @@ paths:
       tags: [auth]
       summary: Valida el id_token de Google y devuelve un JWT propio con rol
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -617,7 +617,7 @@ paths:
       tags: [auth]
       summary: Envía un código de un solo uso por WhatsApp (vía bot /notify)
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -645,7 +645,7 @@ paths:
       tags: [auth]
       summary: Verifica el código. Marca el WhatsApp como verificado y devuelve sesión.
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -663,6 +663,35 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Token" }
         "401": { $ref: "#/components/responses/Error" }
+
+  /api/v1/auth/demo:
+    post:
+      tags: [auth]
+      summary: "Solo en modo demo (DEMO_MODE=true): sesión como un usuario o rol sin login"
+      description: |
+        Existe solo si la API arranca con `DEMO_MODE=true` (por defecto `false`); si no, responde 404.
+        Sirve para que el panel y la app entren en la demo como la moderadora o como una vecina sin cuentas
+        de Google. Con `usuario_id` da la sesión de ese usuario; con `rol`, la del usuario más antiguo con ese rol.
+        Nunca se activa fuera de la presentación.
+      security: [{}]
+      x-implementado: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                usuario_id: { type: string, format: uuid }
+                rol: { enum: [vecino, publicador, moderador] }
+      responses:
+        "200":
+          description: Sesión
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Token" }
+        "404": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
 
   /api/v1/usuarios:
     post:
@@ -757,7 +786,7 @@ paths:
       tags: [usuarios]
       summary: Perfil del usuario autenticado
       security: [{ bearer: [] }]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Usuario
@@ -769,7 +798,7 @@ paths:
       tags: [usuarios]
       summary: Editar preferencias (gustos, pueblo, formato de aviso…)
       security: [{ bearer: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:

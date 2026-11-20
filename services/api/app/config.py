@@ -15,8 +15,14 @@ class Settings(BaseSettings):
     # Sin .env: SQLite en services/api/hackemate.db. Docker fija la de PostgreSQL en el compose.
     database_url: str = "sqlite:///./hackemate.db"
     internal_token: str = "cambia-esto"
+    # Login (app/seguridad.py y app/rutas/auth.py)
     jwt_secret: str = "cambia-esto-tambien"
+    jwt_expira_min: int = 1440
     google_client_id: str = ""
+    google_tokeninfo_url: str = "https://oauth2.googleapis.com/tokeninfo"
+    google_timeout_s: float = 5.0
+    # Solo para la demo: POST /auth/demo da sesión como cualquier usuario sin contraseña. Nunca en producción.
+    demo_mode: bool = False
     bot_url: str = "http://bot:8001"
     zona_horaria: str = "Europe/Madrid"
     app_version: str | None = None

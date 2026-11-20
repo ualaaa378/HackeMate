@@ -135,6 +135,6 @@ def test_alta_municipio_desconocido_422(api):
     _error(r, 422, "municipio_no_encontrado")
 
 
-def test_me_no_esta_implementado_aun(api):
-    # GET/PATCH /usuarios/me llegan en H3 con el login.
-    assert api.get("/api/v1/usuarios/me", headers=TOKEN).status_code == 404
+def test_me_pide_sesion_de_usuario_no_token_interno(api):
+    # /usuarios/me es del usuario (Bearer): el token interno no basta (tests/test_auth.py cubre el resto).
+    _error(api.get("/api/v1/usuarios/me", headers=TOKEN), 401, "no_autenticado")

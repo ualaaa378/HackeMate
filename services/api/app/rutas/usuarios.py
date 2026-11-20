@@ -1,7 +1,7 @@
 """Usuarios: alta, búsqueda por teléfono o por contacto de cualquier canal (WhatsApp, Telegram…) y
-vinculación de un canal con el teléfono, para el bot. `/usuarios/me` llega en H3 con el login."""
+vinculación de un canal con el teléfono, para el bot (token interno). Y `/usuarios/me` (sesión del usuario)."""
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
@@ -13,13 +13,15 @@ from sqlalchemy.orm import Session
 from app.canales import buscar_usuario_por_contacto, parsear_contacto
 from app.db import get_db
 from app.errores import ErrorApi
-from app.modelos import Municipio, Publicador, Usuario
-from app.seguridad import exigir_token_interno
+from app.modelos import CATEGORIAS, FORMATOS_AVISO, Municipio, Publicador, Usuario
+from app.seguridad import exigir_token_interno, exigir_usuario
 from app.serializar import usuario_a_dict
 from app.telefonos import normalizar_telefono, validar_telefono
 
-# Todas las rutas son solo para servicios internos (openapi: security interno).
+# Rutas solo para servicios internos (openapi: security interno).
 router = APIRouter(prefix="/api/v1", tags=["usuarios"], dependencies=[Depends(exigir_token_interno)])
+# Rutas del propio usuario (openapi: security bearer).
+router_me = APIRouter(prefix="/api/v1", tags=["usuarios"])
 
 # El contrato no exige nombre en el alta, pero el usuario siempre tiene uno (minLength 1).
 NOMBRE_POR_DEFECTO = "Vecino"
@@ -161,3 +163,79 @@ def vincular_usuario(datos: UsuarioVincular, db: Session = Depends(get_db)):
         db.rollback()
         raise ErrorApi(409, "contacto_en_uso", "Ese contacto ya está vinculado a otra persona")
     return JSONResponse(usuario_a_dict(usuario), status_code=201 if creado else 200)
+
+
+# --- /usuarios/me (sesión del usuario) -----------------------------------------------------------
+
+
+class UsuarioEditar(BaseModel):
+    """components/schemas/UsuarioEditar de openapi.yaml. Solo se cambia lo que viene en el cuerpo.
+
+    Los campos que no admiten null en el schema (nombre, gustos…) tienen None solo como «no enviado»:
+    pydantic no valida el valor por defecto, pero un null explícito sí da 422.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    nombre: Annotated[str, Field(min_length=1, max_length=120)] = None
+    municipio: str | None = None
+    lat: Annotated[float, Field(ge=-90, le=90)] | None = None
+    lon: Annotated[float, Field(ge=-180, le=180)] | None = None
+    gustos: Annotated[list[Literal[CATEGORIAS]], Field(max_length=len(CATEGORIAS))] = None
+    etiquetas_interes: Annotated[list[Annotated[str, Field(min_length=1, max_length=60)]], Field(max_length=30)] = None
+    formato_aviso: Literal[FORMATOS_AVISO] = None
+    acepta_avisos: bool = None
+    radio_km: Annotated[float, Field(ge=0, le=500)] | None = None
+    telefono: str = None
+
+    _telefono = field_validator("telefono")(validar_telefono)
+
+
+def _sin_repetidos(valores: list[str]) -> list[str]:
+    return list(dict.fromkeys(valores))
+
+
+@router_me.get("/usuarios/me")
+def mi_perfil(usuario: Usuario = Depends(exigir_usuario)):
+    return usuario_a_dict(usuario)
+
+
+@router_me.patch("/usuarios/me")
+def editar_mi_perfil(datos: UsuarioEditar, usuario: Usuario = Depends(exigir_usuario), db: Session = Depends(get_db)):
+    cambios = datos.model_dump(exclude_unset=True)
+
+    if "nombre" in cambios:
+        nombre = cambios.pop("nombre").strip()
+        if not nombre:
+            raise ErrorApi(422, "validacion", "El nombre no puede estar vacío", {"campo": "nombre"})
+        usuario.nombre = nombre
+    if "municipio" in cambios:
+        municipio = _municipio(db, cambios.pop("municipio"))
+        usuario.municipio = municipio.nombre if municipio else None
+        # Al cambiar de pueblo, su ubicación pasa a ser la del pueblo salvo que mande otra.
+        if municipio is not None:
+            usuario.lat = cambios.pop("lat", municipio.lat)
+            usuario.lon = cambios.pop("lon", municipio.lon)
+    if "gustos" in cambios:
+        usuario.gustos = _sin_repetidos(cambios.pop("gustos"))
+    if "etiquetas_interes" in cambios:
+        usuario.etiquetas_interes = _sin_repetidos([e.strip().lower() for e in cambios.pop("etiquetas_interes")])
+    if "telefono" in cambios:
+        telefono = cambios.pop("telefono")
+        if telefono != usuario.telefono:
+            otro = _por_telefono(db, telefono)
+            if otro is not None:
+                raise ErrorApi(409, "telefono_en_uso", "Ese teléfono ya es de otro usuario", {"campo": "telefono"})
+            usuario.telefono = telefono
+            # El número nuevo no está verificado hasta que confirme el código (/auth/whatsapp/verificar).
+            usuario.whatsapp_verificado = False
+    # lat, lon, formato_aviso, acepta_avisos, radio_km: tal cual
+    for campo, valor in cambios.items():
+        setattr(usuario, campo, valor)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise ErrorApi(409, "telefono_en_uso", "Ese teléfono ya es de otro usuario", {"campo": "telefono"})
+    return usuario_a_dict(usuario)
