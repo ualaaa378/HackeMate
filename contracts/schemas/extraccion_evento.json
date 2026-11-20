@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "extraccion_evento.json",
+  "title": "ExtraccionEvento",
+  "description": "Lo que devuelve la IA del bot al leer un post, cartel o audio. La API lo recibe en POST /eventos/importar.",
+  "type": "object",
+  "required": ["campos", "faltan", "es_evento", "proveedor_ia"],
+  "properties": {
+    "campos": {
+      "type": "object",
+      "description": "Un campo por cada dato del evento (titulo, descripcion, categoria, municipio, lugar, fecha_inicio, fecha_fin, precio_eur, es_gratuito, plazas_totales).",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["valor", "confianza"],
+        "properties": {
+          "valor": {},
+          "confianza": { "enum": ["alta", "media", "baja", "falta"] }
+        }
+      }
+    },
+    "faltan": { "type": "array", "items": { "type": "string" } },
+    "es_evento": { "type": "boolean" },
+    "proveedor_ia": { "type": "string" },
+    "tokens": {
+      "type": "object",
+      "properties": {
+        "entrada": { "type": "integer", "minimum": 0 },
+        "salida": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "4d3e0000-0000-4000-8000-000000000001",
+    "evento_id": "1e5d0000-0000-4000-8000-000000000001",
+    "autor_id": "5a5e0000-0000-4000-8000-000000000003",
+    "autor_nombre": "Amigos de Velefique",
+    "autor_rol": "publicador",
+    "tipo": "anuncio",
+    "texto": "Recordad traer agua y calzado de montaña. Salimos puntuales.",
+    "en_respuesta_a": null,
+    "fijado": true,
+    "oculto": false,
+    "respondido_por_ia": false,
+    "score_spam": 0.01,
+    "creado_en": "2026-11-21T09:00:00+01:00"
+  },
+  {
+    "id": "4d3e0000-0000-4000-8000-000000000002",
+    "evento_id": "1e5d0000-0000-4000-8000-000000000001",
+    "autor_id": "5a5e0000-0000-4000-8000-000000000001",
+    "autor_nombre": "Carmen",
+    "autor_rol": "vecino",
+    "tipo": "pregunta",
+    "texto": "¿Hay recorrido corto para ir con mi nieto?",
+    "en_respuesta_a": null,
+    "fijado": false,
+    "oculto": false,
+    "respondido_por_ia": false,
+    "score_spam": 0.02,
+    "creado_en": "2026-11-21T10:10:00+01:00"
+  },
+  {
+    "id": "4d3e0000-0000-4000-8000-000000000003",
+    "evento_id": "1e5d0000-0000-4000-8000-000000000001",
+    "autor_id": null,
+    "autor_nombre": "Asistente",
+    "autor_rol": "ia",
+    "tipo": "respuesta",
+    "texto": "Sí: según la ficha hay un recorrido corto de 4 km pensado para familias.",
+    "en_respuesta_a": "4d3e0000-0000-4000-8000-000000000002",
+    "fijado": false,
+    "oculto": false,
+    "respondido_por_ia": true,
+    "score_spam": null,
+    "creado_en": "2026-11-21T10:10:05+01:00"
+  }
+]

@@ -98,7 +98,8 @@
 ### Decisión
 
 > **Propuesta del Tech Lead: Opción 1.** Debatid 15 minutos en el kickoff; si no hay objeción fuerte, se congela y no se vuelve a discutir.
-> Decisión final: ☐ Opción 1 ☐ Opción 2 ☐ Opción 3 · Firmado: ___ / ___ / ___
+> Decisión final: ☑ Opción 1 ☐ Opción 2 ☐ Opción 3 · Firmado: Benas / Francisco / Adán (vie 20 nov)
+> Cuarta persona: **Juan Carlos** hace pareja con el flujo A (seed y datos de demo, `.ics`, estadísticas, smoke test y despliegue).
 
 ---
 

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mensaje_evento.json",
+  "title": "MensajeEvento",
+  "description": "Mensaje del chat (tablón) de un evento. Nunca incluye números de teléfono.",
+  "type": "object",
+  "required": ["id", "evento_id", "autor_nombre", "autor_rol", "tipo", "texto", "creado_en"],
+  "not": { "anyOf": [{ "required": ["telefono"] }, { "required": ["autor_telefono"] }] },
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "evento_id": { "type": "string", "format": "uuid" },
+    "autor_id": { "type": ["string", "null"], "format": "uuid", "description": "null si lo escribe la IA" },
+    "autor_nombre": { "type": "string" },
+    "autor_rol": { "enum": ["vecino", "publicador", "moderador", "ia"] },
+    "tipo": { "enum": ["pregunta", "respuesta", "anuncio", "comentario"] },
+    "texto": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "en_respuesta_a": { "type": ["string", "null"], "format": "uuid" },
+    "fijado": { "type": "boolean" },
+    "oculto": { "type": "boolean" },
+    "respondido_por_ia": { "type": "boolean" },
+    "score_spam": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "creado_en": { "type": "string", "format": "date-time" }
+  }
+}

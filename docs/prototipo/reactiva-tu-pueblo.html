@@ -1,0 +1,596 @@
+<title>Reactiva tu pueblo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: portal municipal (barra marina + cabecera clara + rejillas de accesos y tarjetas) llevado a app con pestañas en móvil.
+   Tema claro único a propósito: es el de la plantilla y así controlamos el contraste. */
+:root {
+  color-scheme: light;
+  --azul-barra: #1f3d63;   /* barra superior, pie, cabecera de la app (11:1 con blanco) */
+  --azul: #1d5a8c;         /* color principal (7,3:1) */
+  --azul-oscuro: #123b5e;  /* marca, títulos, pulsado (11,6:1) */
+  --gris-cabecera: #e9ecef;
+  --fondo: #f4f6f8;
+  --superficie: #ffffff;
+  --texto: #1f2933;        /* 13,6:1 */
+  --texto-suave: #4a5560;  /* 7,6:1 */
+  --borde: #d5dbe1;
+  --foco: #ffbf47;
+  --verde: #2e7d32;
+  --whatsapp: #128c4a;
+
+  --letra: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --tam: 18px;
+  --radio: 8px;
+  --hueco: 14px;
+  --toque: 52px;
+  --ancho: 1200px;
+}
+html { font-size: var(--tam); }
+html[data-letra="grande"] { --tam: 21px; }
+html[data-letra="enorme"] { --tam: 24px; }
+body { background: var(--fondo); color: var(--texto); font-family: var(--letra); font-size: 1rem; line-height: 1.5; }
+* { box-sizing: border-box; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.2; }
+.oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.contenedor { max-width: var(--ancho); margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* ---------- Barra superior ---------- */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--azul-barra); }
+.barra { background: var(--azul-barra); color: #fff; font-size: .8rem; }
+.barra .contenedor { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; min-height: 44px; }
+.barra__wa { display: flex; align-items: center; gap: 8px; text-decoration: none; padding: 8px 0; margin-right: auto; }
+.barra__wa svg { width: 20px; height: 20px; flex: none; }
+.letra { display: flex; align-items: center; gap: 4px; }
+.letra span { margin-right: 4px; }
+.letra button { min-width: 44px; min-height: 40px; border: 1px solid rgba(255,255,255,.4); background: transparent; color: #fff; border-radius: 6px; cursor: pointer; font-weight: 700; }
+.letra button[aria-pressed="true"] { background: #fff; color: var(--azul-barra); }
+.letra button:nth-of-type(2) { font-size: 1.15em; }
+.letra button:nth-of-type(3) { font-size: 1.3em; }
+
+/* ---------- Cabecera ---------- */
+.cabecera { background: var(--gris-cabecera); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; border-bottom: 1px solid var(--borde); }
+.cabecera .contenedor { display: flex; align-items: center; gap: 24px; min-height: 80px; }
+.marca { display: flex; align-items: center; gap: 12px; color: var(--azul-oscuro); text-decoration: none; }
+.marca__logo { flex: none; width: 42px; height: 50px; border: 2px solid var(--azul-oscuro); border-radius: 4px 4px 18px 18px; display: grid; place-items: center; font-size: .7rem; font-weight: 700; letter-spacing: .05em; }
+.marca__nombre { display: block; font-size: 1.15rem; font-weight: 700; line-height: 1.1; }
+.marca__sub { display: block; font-size: .65rem; text-transform: uppercase; letter-spacing: .05em; color: var(--texto-suave); }
+.menu { margin-left: auto; display: flex; gap: 4px; list-style: none; margin-block: 0; padding: 0; }
+.menu a { display: flex; align-items: center; gap: 8px; min-height: var(--toque); padding: 0 14px; color: var(--azul-oscuro); text-decoration: none; border-radius: var(--radio); font-weight: 700; }
+.menu a:hover { background: rgba(29,90,140,.08); }
+.menu a[aria-current="page"] { background: var(--azul); color: #fff; }
+.menu svg { width: 22px; height: 22px; }
+
+/* ---------- Pestañas inferiores (móvil) ---------- */
+.pestanas { display: none; }
+
+/* ---------- Secciones ---------- */
+main { padding-block: 20px 40px; }
+.vista { display: grid; gap: 28px; }
+.titulo-seccion { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
+.titulo-seccion h2 { margin: 0; font-size: 1.35rem; color: var(--azul-oscuro); }
+.enlace { color: var(--azul); font-weight: 700; text-underline-offset: 3px; }
+.saludo h1 { margin: 0 0 4px; font-size: 1.75rem; color: var(--azul-oscuro); }
+.saludo p { margin: 0; color: var(--texto-suave); }
+
+/* Accesos rápidos */
+.rapidos { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--hueco); }
+.rapido { display: flex; align-items: center; gap: 12px; min-height: 76px; padding: 12px 14px; border-radius: var(--radio); color: #fff; background: linear-gradient(135deg, var(--azul), var(--azul-oscuro)); text-decoration: none; font-weight: 700; line-height: 1.2; border: 0; cursor: pointer; text-align: left; transition: transform .15s; }
+.rapido:hover { transform: translateY(-2px); }
+.rapido svg { flex: none; width: 28px; height: 28px; }
+.rapido--wa { background: linear-gradient(135deg, var(--whatsapp), #0b5e31); }
+
+/* Tarjetas de pueblos */
+.pueblos { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--hueco); }
+.pueblo { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 16px; min-height: 160px; padding: 18px; border-radius: var(--radio); color: #fff; background: var(--color); text-decoration: none; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,.12); transition: transform .15s, box-shadow .15s; }
+.pueblo:hover { transform: translateY(-3px); box-shadow: 0 8px 18px rgba(0,0,0,.18); }
+.pueblo h3 { margin: 0; font-size: 1.25rem; max-width: 80%; }
+.pueblo p { margin: 0; font-size: .85rem; }
+.pueblo__cuenta { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; background: rgba(0,0,0,.22); padding: 4px 10px; border-radius: 999px; align-self: flex-start; }
+.pueblo__dibujo { position: absolute; right: -8px; bottom: -8px; width: 90px; height: 90px; opacity: .28; }
+
+/* Destacados + próximos */
+.fila-noticias { display: grid; grid-template-columns: 3fr 2fr; gap: var(--hueco); }
+.carrusel { position: relative; min-height: 320px; border-radius: var(--radio); overflow: hidden; color: #fff; background: #222; }
+.diapo { position: absolute; inset: 0; display: flex; align-items: flex-end; padding: 28px 28px 64px; background: var(--fondo-diapo); text-decoration: none; }
+.diapo[hidden] { display: none !important; }
+.diapo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0) 70%); }
+.diapo__cuerpo { position: relative; max-width: 90%; }
+.diapo__emoji { position: absolute; top: 20px; right: 24px; font-size: 4.5rem; line-height: 1; z-index: 1; }
+.etiqueta { display: inline-block; font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; padding: 3px 9px; border-radius: 4px; background: rgba(255,255,255,.95); color: var(--azul-oscuro); margin-bottom: 8px; }
+.diapo h3 { margin: 0 0 6px; font-size: 1.45rem; }
+.diapo p { margin: 0; opacity: .95; }
+.carrusel__controles { position: absolute; z-index: 2; left: 20px; right: 20px; bottom: 14px; display: flex; align-items: center; gap: 10px; }
+.carrusel__btn { width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255,255,255,.92); color: #000; font-size: 1.3rem; cursor: pointer; display: grid; place-items: center; }
+.carrusel__puntos { display: flex; gap: 8px; margin-left: auto; }
+.carrusel__puntos button { width: 14px; height: 14px; padding: 0; border: 2px solid #fff; border-radius: 50%; background: transparent; cursor: pointer; }
+.carrusel__puntos button[aria-current="true"] { background: #fff; }
+
+.proximos { display: grid; gap: 10px; align-content: start; }
+
+/* Lista de eventos */
+.lista { display: grid; gap: 10px; }
+.dia { margin: 10px 0 0; font-size: 1rem; color: var(--azul-oscuro); }
+.dia::first-letter { text-transform: uppercase; }
+.evento { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; padding: 14px; background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); text-decoration: none; min-height: var(--toque); }
+.evento:hover { border-color: var(--azul); }
+.evento__icono { width: 56px; height: 56px; border-radius: var(--radio); display: grid; place-items: center; font-size: 1.7rem; background: var(--color); }
+.evento__texto { min-width: 0; }
+.evento h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.evento__meta { margin: 0; color: var(--texto-suave); font-size: .9rem; }
+.evento__lado { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.chapa { font-size: .8rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.chapa--precio { background: var(--texto-suave); color: #fff; }
+.chapa--gratis { background: var(--verde); color: #fff; }
+.chapa--gente { background: var(--gris-cabecera); color: var(--azul-oscuro); }
+
+/* Filtros */
+.filtros { display: grid; gap: 12px; padding: 16px; background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); }
+.filtros label { font-weight: 700; font-size: .9rem; display: block; margin-bottom: 4px; }
+.filtros select { width: 100%; min-height: var(--toque); padding: 0 12px; font: inherit; border: 2px solid var(--borde); border-radius: var(--radio); background: var(--superficie); color: var(--texto); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 48px; padding: 0 16px; border: 2px solid var(--borde); border-radius: var(--radio); background: var(--superficie); cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; }
+.chip[aria-pressed="true"] { background: var(--azul); border-color: var(--azul); color: #fff; }
+.agenda-layout { display: grid; grid-template-columns: 300px 1fr; gap: 24px; align-items: start; }
+.agenda-layout .filtros { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 100px); }
+.vacio { padding: 24px; background: var(--superficie); border: 1px dashed var(--borde); border-radius: var(--radio); color: var(--texto-suave); }
+
+/* Ficha */
+.ficha { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start; }
+.volver { display: inline-flex; align-items: center; gap: 8px; min-height: var(--toque); font-weight: 700; color: var(--azul); text-decoration: none; }
+.ficha__tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); overflow: hidden; }
+.ficha__cabeza { padding: 24px; color: #fff; background: var(--color); position: relative; }
+.ficha__cabeza h1 { margin: 8px 0 6px; font-size: 1.7rem; max-width: 85%; }
+.ficha__cabeza p { margin: 0; opacity: .95; }
+.ficha__cabeza .diapo__emoji { top: 18px; }
+.datos { list-style: none; margin: 0; padding: 12px 24px; display: grid; }
+.datos li { display: grid; grid-template-columns: 32px 1fr; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--gris-cabecera); }
+.datos li:last-child { border-bottom: 0; }
+.ficha__desc { padding: 0 24px 24px; margin: 0; max-width: 65ch; }
+.acciones { display: grid; gap: 10px; }
+.boton { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 60px; padding: 0 18px; border-radius: var(--radio); font-weight: 700; font-size: 1.05rem; text-decoration: none; cursor: pointer; border: 2px solid var(--azul); background: var(--superficie); color: var(--azul); }
+.boton--principal { background: var(--azul); color: #fff; font-size: 1.2rem; min-height: 68px; }
+.boton--hecho { background: var(--verde); border-color: var(--verde); color: #fff; }
+.boton--wa { border-color: var(--whatsapp); color: var(--whatsapp); }
+.boton svg { width: 24px; height: 24px; }
+.nota { font-size: .85rem; color: var(--texto-suave); margin: 0; }
+.chat { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: 16px; display: grid; gap: 10px; }
+.chat h2 { margin: 0; font-size: 1.1rem; color: var(--azul-oscuro); }
+.burbuja { padding: 10px 12px; border-radius: 12px 12px 12px 4px; background: var(--fondo); max-width: 90%; }
+.burbuja--yo { justify-self: end; border-radius: 12px 12px 4px 12px; background: #dbe9f5; }
+.burbuja b { display: block; font-size: .8rem; color: var(--azul-oscuro); }
+.chat form { display: flex; gap: 8px; }
+.chat input { flex: 1; min-width: 0; min-height: var(--toque); padding: 0 12px; font: inherit; border: 2px solid var(--borde); border-radius: var(--radio); }
+.chat button { min-width: var(--toque); min-height: var(--toque); border: 0; border-radius: var(--radio); background: var(--azul); color: #fff; font-weight: 700; padding: 0 14px; cursor: pointer; }
+
+/* Mapa */
+.mapa-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start; }
+.mapa { background: #e6efe4; border: 1px solid var(--borde); border-radius: var(--radio); overflow: hidden; }
+.mapa svg { display: block; width: 100%; height: auto; }
+.mapa__pie { padding: 10px 14px; background: var(--superficie); font-size: .8rem; color: var(--texto-suave); border-top: 1px solid var(--borde); }
+.pin { cursor: pointer; }
+.pin:focus-visible circle.aro { stroke: var(--foco); stroke-width: 5; }
+
+/* Perfil */
+.perfil { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--hueco); }
+.caja { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: 20px; display: grid; gap: 12px; align-content: start; }
+.caja h2 { margin: 0; font-size: 1.15rem; color: var(--azul-oscuro); }
+.caja p { margin: 0; color: var(--texto-suave); }
+.interruptor { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--toque); font-weight: 700; cursor: pointer; }
+.interruptor input { width: 28px; height: 28px; accent-color: var(--azul); }
+
+/* Pie */
+.pie { background: var(--azul-barra); color: #fff; font-size: .85rem; padding-block: 22px; }
+.pie ul { display: flex; flex-wrap: wrap; gap: 6px 22px; list-style: none; margin: 0 0 10px; padding: 0; }
+.pie a { text-underline-offset: 3px; }
+.pie small { opacity: .85; }
+
+/* Aviso flotante */
+.aviso { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); background: var(--texto); color: #fff; padding: 14px 20px; border-radius: var(--radio); font-weight: 700; z-index: 20; max-width: calc(100% - 32px); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .rapidos { grid-template-columns: repeat(3, 1fr); }
+  .pueblos { grid-template-columns: repeat(3, 1fr); }
+  .fila-noticias, .ficha, .mapa-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .menu { display: none; }
+  .agenda-layout { grid-template-columns: 1fr; }
+  .agenda-layout .filtros { position: static; }
+  .cabecera .contenedor { min-height: 68px; }
+  .letra span { display: none; }
+  .pestanas { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--superficie); border-top: 1px solid var(--borde); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+  .pestanas a { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 70px; text-decoration: none; font-size: .8rem; font-weight: 700; color: var(--texto-suave); }
+  .pestanas svg { width: 28px; height: 28px; }
+  .pestanas a[aria-current="page"] { color: var(--azul); }
+  .pestanas a[aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 22%; right: 22%; height: 4px; border-radius: 0 0 4px 4px; background: var(--azul); }
+  main { padding-bottom: 110px; }
+  .pie { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 600px) {
+  .rapidos, .pueblos, .perfil { grid-template-columns: 1fr 1fr; }
+  .perfil { grid-template-columns: 1fr; }
+  .pueblo { min-height: 130px; }
+  .saludo h1 { font-size: 1.45rem; }
+  .carrusel { min-height: 300px; }
+  .diapo { padding: 20px 20px 70px; }
+  .diapo h3 { font-size: 1.2rem; }
+  .diapo__emoji { font-size: 3rem; }
+  .evento { grid-template-columns: auto 1fr; }
+  .evento__lado { grid-column: 2; flex-direction: row; align-items: center; justify-content: flex-start; }
+  .barra__wa span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <div class="barra"><div class="contenedor">
+    <a class="barra__wa" href="#perfil"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2s.2-1.1.1-1.2l-.4-.2z"/></svg><span>También por WhatsApp, con audios</span></a>
+    <div class="letra" role="group" aria-label="Tamaño de letra">
+      <span>Tamaño de letra</span>
+      <button type="button" data-letra="normal" aria-label="Letra normal">A</button>
+      <button type="button" data-letra="grande" aria-label="Letra grande">A</button>
+      <button type="button" data-letra="enorme" aria-label="Letra muy grande">A</button>
+    </div>
+  </div></div>
+  <div class="cabecera"><div class="contenedor">
+    <a class="marca" href="#inicio"><span class="marca__logo" aria-hidden="true">HM</span><span><span class="marca__nombre">Reactiva tu pueblo</span><span class="marca__sub">5 pueblos de Almería</span></span></a>
+    <nav aria-label="Menú principal"><ul class="menu" id="menu"></ul></nav>
+  </div></div>
+</header>
+
+<main class="contenedor" id="principal" tabindex="-1"></main>
+
+<footer class="pie"><div class="contenedor">
+  <ul>
+    <li><a href="#perfil">Accesibilidad</a></li>
+    <li><a href="#perfil">Privacidad</a></li>
+    <li><a href="#perfil">Cómo publicar un plan</a></li>
+    <li><a href="#perfil">Contacto</a></li>
+  </ul>
+  <small>Lucainena de las Torres · Senés · Velefique · Uleila del Campo · Tahal. Prototipo de HackeMate para el Hackathon UAL 2026.</small>
+</div></footer>
+
+<nav class="pestanas" aria-label="Secciones" id="pestanas"></nav>
+<div class="aviso" id="aviso" role="status" hidden></div>
+
+<script>
+const EVENTOS = [{"id": "db1435ef-df48-5fb4-98bf-13260af5aee3", "titulo": "Teatro cómico con la Asociación de Mujeres de Benizalón", "descripcion": "Obra de teatro de humor interpretada por la Asociación de Mujeres de Benizalón. Anunciada por el Ayuntamiento como «una tarde de risas abundantes».", "categoria": "cultural", "etiquetas": ["teatro", "humor"], "municipio": "Uleila del Campo", "lugar": "Teatro Municipal", "fecha_inicio": "2026-11-21T18:30:00+01:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": "Ayuntamiento de Uleila del Campo", "fuente": "https://www.facebook.com/profile.php?id=100064568389094", "canal": "facebook"}, {"id": "c77279c2-a072-530e-9f2b-9c405a8a5f33", "titulo": "Ruta de la Tapa y el Postre", "descripcion": "Desde las 12:00 h, recorrido por los establecimientos para probar sus tapas y postres, con minibús gratuito entre ellos. Con el Tapaporte (al menos 4 sellos de establecimientos distintos) se vota la mejor tapa y el mejor postre y se entra en un sorteo de regalos. 16:00 h música en directo en La Placeta y después DJ. 18:00 h cierre de la urna; 19:00 h entrega de premios.", "categoria": "gastronomia", "etiquetas": ["tapas", "postres", "concurso", "musica", "minibus_gratis"], "municipio": "Uleila del Campo", "lugar": "Establecimientos del pueblo y La Placeta", "fecha_inicio": "2026-11-28T12:00:00+01:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": "Ayuntamiento de Uleila del Campo", "fuente": "https://www.facebook.com/profile.php?id=100064568389094", "canal": "facebook"}, {"id": "cbab517a-94c9-5ebe-9d22-9fbfe6b440a7", "titulo": "Lata navideña de la Virgen de Monte-Sión (edición limitada 2026)", "descripcion": "Lata redonda «Costurero, la de toda la vida» (19x5 cm) con diseño inspirado en la cerámica pintada a mano, dedicada a la patrona. Vacía desde 15 € o rellena de mantecados de Estepa por 20 €. Edición limitada para la Navidad de 2026.", "categoria": "comercio", "etiquetas": ["navidad", "recuerdo", "mantecados", "sin_hora"], "municipio": "Lucainena de las Torres", "lugar": "Parroquia de Santa María de Monte-Sión, Calle El Viento 1D", "fecha_inicio": "2026-11-13T16:26:00+01:00", "fecha_fin": null, "precio_eur": 15.0, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": "Monte-Sión (Lucainena de las Torres)", "fuente": "https://www.facebook.com/MonteSionLucainenaDeLasTorres", "canal": "facebook"}, {"id": "c58929ad-f2b3-5c6c-9cf4-1dd92397700d", "titulo": "Menú completo por 14 € en el Restaurante-Hotel El Museo", "descripcion": "Menú completo por 14 € recomendado en el vídeo «Parada Obligatoria» que compartió el Ayuntamiento. El establecimiento también es hotel de 2 estrellas.", "categoria": "gastronomia", "etiquetas": ["restaurante", "menu", "hotel", "sin_hora"], "municipio": "Lucainena de las Torres", "lugar": "Restaurante-Hotel El Museo", "fecha_inicio": "2026-11-11T09:00:00+01:00", "fecha_fin": null, "precio_eur": 14.0, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": "Restaurante-Hotel El Museo", "fuente": "https://www.facebook.com/profile.php?id=100064636603636", "canal": "facebook"}, {"id": "9d7e4f77-d668-53af-9f88-b16e6db81f74", "titulo": "Cabalgata de Reyes Magos", "descripcion": "Cabalgata de Reyes en la noche del 5 de enero. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.", "categoria": "fiestas", "etiquetas": ["navidad", "infantil", "fecha_estimada", "sin_hora"], "municipio": "Lucainena de las Torres", "lugar": null, "fecha_inicio": "2027-01-05T00:00:00+01:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": null, "fuente": "https://www.andalucia.com/province/almeria/lucainena/festivals", "canal": "web_externa"}, {"id": "4de907b4-2430-5e83-b70a-528a2cf39253", "titulo": "Cabalgata de Reyes Magos", "descripcion": "Cabalgata de Reyes en la noche del 5 de enero. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.", "categoria": "fiestas", "etiquetas": ["navidad", "infantil", "fecha_estimada", "sin_hora"], "municipio": "Uleila del Campo", "lugar": null, "fecha_inicio": "2027-01-05T00:00:00+01:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": null, "fuente": "https://www.andalucia.com/province/almeria/uleila-del-campo/festivals", "canal": "web_externa"}, {"id": "93ab7d00-b0b7-5190-a53f-699d323ed459", "titulo": "Fiestas de San Sebastián", "descripcion": "Fiestas de San Sebastián, el tercer fin de semana de enero. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.", "categoria": "fiestas", "etiquetas": ["fiesta_patronal", "fecha_estimada", "sin_hora"], "municipio": "Lucainena de las Torres", "lugar": null, "fecha_inicio": "2027-01-16T00:00:00+01:00", "fecha_fin": "2027-01-17T23:59:00+01:00", "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": null, "fuente": "https://www.andalucia.com/province/almeria/lucainena/festivals", "canal": "web_externa"}, {"id": "bef2c1c9-7ac4-5383-a207-eb4b531dcaae", "titulo": "Noche de los Burros", "descripcion": "Tradición del Sábado de Gloria (Sábado Santo) en la que los animales se cambian de un corral a otro. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.", "categoria": "fiestas", "etiquetas": ["semana_santa", "tradicion", "fecha_estimada", "sin_hora"], "municipio": "Senés", "lugar": null, "fecha_inicio": "2027-03-27T00:00:00+01:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": null, "fuente": "https://www.andalucia.org/en/senes", "canal": "web_externa"}, {"id": "3d001310-64ed-5b92-802b-9cdc90fe8ef3", "titulo": "Romería Chica a Monteagud", "descripcion": "Romería al santuario de Monteagud el último domingo de abril. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.", "categoria": "fiestas", "etiquetas": ["romeria", "fecha_estimada", "sin_hora"], "municipio": "Uleila del Campo", "lugar": null, "fecha_inicio": "2027-04-25T00:00:00+02:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": null, "fuente": "https://www.andalucia.com/province/almeria/uleila-del-campo/festivals", "canal": "web_externa"}, {"id": "8a9c55d9-8b4c-5134-a00a-01e05e6d7757", "titulo": "Fiesta del Emigrante", "descripcion": "Fiesta del Emigrante, el primer fin de semana de agosto. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.", "categoria": "fiestas", "etiquetas": ["fecha_estimada", "sin_hora"], "municipio": "Uleila del Campo", "lugar": null, "fecha_inicio": "2027-08-07T00:00:00+02:00", "fecha_fin": "2027-08-08T23:59:00+02:00", "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": null, "fuente": "https://www.andalucia.com/province/almeria/uleila-del-campo/festivals", "canal": "web_externa"}, {"id": "6154c01b-e19d-5dd0-8fde-8c3ae97f3e6f", "titulo": "Fiestas patronales del Santo Cristo de las Penas", "descripcion": "Fiestas patronales en honor al Santo Cristo de las Penas, en torno al segundo sábado de septiembre: feria de mediodía, verbenas, actividades infantiles, misa, procesión y fuegos artificiales. Las actividades son gratuitas según la guía de fiestas. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.", "categoria": "fiestas", "etiquetas": ["fiesta_patronal", "verbena", "procesion", "fecha_estimada", "sin_hora"], "municipio": "Uleila del Campo", "lugar": null, "fecha_inicio": "2027-09-11T00:00:00+02:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": true, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": null, "fuente": "https://www.festivalesdeespana.com/festival/fiestas-patronales-de-uleila-del-campo-santo-cristo-de-las-penas", "canal": "web_externa"}, {"id": "bc4761c9-619d-5cc1-9906-ab43d1ab0777", "titulo": "Fiesta de la Virgen del Pilar", "descripcion": "Fiesta de la Virgen del Pilar, el 12 de octubre. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.", "categoria": "fiestas", "etiquetas": ["fecha_estimada", "sin_hora"], "municipio": "Uleila del Campo", "lugar": null, "fecha_inicio": "2027-10-12T00:00:00+02:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": null, "fuente": "https://www.andalucia.com/province/almeria/uleila-del-campo/festivals", "canal": "web_externa"}, {"id": "d351aeee-3001-5b8a-b6c6-ce4c9348ec57", "titulo": "21.º Día de las Flores", "descripcion": "Fin de semana con ecomercado de productos locales y artesanía, talleres infantiles, descubrimiento de la cruz municipal, concurso de cruces de mayo, música y bailes tradicionales. La Asociación de Mujeres Lucanius ofreció migas y arroz con fines solidarios.", "categoria": "fiestas", "etiquetas": ["flores", "cruces_de_mayo", "ecomercado", "sin_hora"], "municipio": "Lucainena de las Torres", "lugar": "Pueblo; ecomercado junto a la iglesia", "fecha_inicio": "2026-05-09T00:00:00+02:00", "fecha_fin": "2026-05-10T23:59:00+02:00", "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": null, "fuente": "https://visitingalmeria.com/events/day-of-the-flowers-celebration/", "canal": "web_externa"}, {"id": "f714d881-b8d0-5cf3-8130-e73051020305", "titulo": "Exaltación y besamanos de la Virgen de Monte-Sión", "descripcion": "Inicio de los Solemnes Cultos: Exaltación a la Virgen de Monte-Sión, bendición e imposición de medallas, acto «Bajo el Manto de la Madre» y besamanos.", "categoria": "fiestas", "etiquetas": ["fiesta_patronal", "religioso"], "municipio": "Lucainena de las Torres", "lugar": "Parroquia de Santa María de Monte-Sión", "fecha_inicio": "2026-09-19T17:30:00+02:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": "Ayuntamiento de Lucainena de las Torres", "fuente": "https://www.facebook.com/profile.php?id=100064636603636", "canal": "facebook"}, {"id": "e6427bad-1b34-502a-88b8-abb9bcdf35e4", "titulo": "Día de la Virgen de Monte-Sión: veneración y procesión", "descripcion": "La Virgen, entronizada en el altar mayor de 10:30 a 14:00, y procesión por la calle Posadas, la Plaza del Ayuntamiento y la calle Real con la Banda de Música Santa Cecilia de Sorbas.", "categoria": "fiestas", "etiquetas": ["fiesta_patronal", "procesion", "banda_de_musica"], "municipio": "Lucainena de las Torres", "lugar": "Parroquia de Santa María de Monte-Sión y calles del pueblo", "fecha_inicio": "2026-09-20T10:30:00+02:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": null, "fuente": "https://www.facebook.com/MonteSionLucainenaDeLasTorres", "canal": "facebook"}, {"id": "d09223b9-084f-5f89-8287-7bf39d736317", "titulo": "Día de los Pueblos más Bonitos de España", "descripcion": "Lectura del manifiesto de la asociación Los Pueblos más Bonitos de España con vecinos, alumnado y profesorado del colegio.", "categoria": "cultural", "etiquetas": ["pueblos_mas_bonitos"], "municipio": "Lucainena de las Torres", "lugar": "Plaza del Ayuntamiento", "fecha_inicio": "2026-10-01T11:00:00+02:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": "Ayuntamiento de Lucainena de las Torres", "fuente": "https://www.facebook.com/profile.php?id=100064636603636", "canal": "facebook"}, {"id": "983edb7e-9f3a-5f54-8288-5d10dba9a9ff", "titulo": "Taller de sevillanas", "descripcion": "Taller de sevillanas con María Durán, para todos los niveles. Sesiones el lunes 3 y el miércoles 5 de agosto a las 12:00.", "categoria": "cultural", "etiquetas": ["baile", "fiestas_de_agosto"], "municipio": "Senés", "lugar": "Salón Cultural", "fecha_inicio": "2026-08-03T12:00:00+02:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": "Ayuntamiento de Senés", "fuente": "https://www.facebook.com/profile.php?id=61551352857893", "canal": "facebook"}, {"id": "ecf4aba2-a237-5cb5-b4be-d4ac763548ac", "titulo": "Taller de bachata", "descripcion": "Taller de bachata con Salva Linares: nivel inicial de 18:00 a 19:00 y avanzado de 19:00 a 20:00.", "categoria": "cultural", "etiquetas": ["baile", "fiestas_de_agosto"], "municipio": "Senés", "lugar": "Salón Cultural", "fecha_inicio": "2026-08-04T18:00:00+02:00", "fecha_fin": "2026-08-04T20:00:00+02:00", "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": "Ayuntamiento de Senés", "fuente": "https://www.facebook.com/profile.php?id=61551352857893", "canal": "facebook"}, {"id": "f3f45dd4-facb-5200-89c2-f91f546d902c", "titulo": "Fiestas patronales del Santo Cristo de las Penas 2026", "descripcion": "Pregón de Nerea Molina Sánchez y coronación de Reinas y Majos; feria de mediodía; exposición de aves, alfarería, tiro con arco y concurso de mascotas; fiesta flamenca con el coro de Uleila, charanga, pasacalles K-Pop; verbenas con Orquesta El Origen, Dúo Reencuentro, Acontraluz y tributos a Camela y La Oreja de Van Gogh.", "categoria": "fiestas", "etiquetas": ["fiesta_patronal", "verbena", "feria"], "municipio": "Uleila del Campo", "lugar": "Calles del pueblo, La Placeta y pistas de petanca", "fecha_inicio": "2026-09-11T22:30:00+02:00", "fecha_fin": "2026-09-15T03:30:00+02:00", "precio_eur": null, "es_gratuito": true, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": "Ayuntamiento de Uleila del Campo", "fuente": "https://www.facebook.com/profile.php?id=100064568389094", "canal": "facebook"}, {"id": "d695f532-60fe-567b-b5c2-5451e65706c3", "titulo": "Carrera vertical de Uleila del Campo", "descripcion": "Carrera de montaña de 4 km con 700 m de desnivel positivo, con recorridos para menores. Organizan el Ayuntamiento y la Federación Andaluza de Deportes de Montaña, Escalada y Senderismo.", "categoria": "deportiva", "etiquetas": ["carrera_de_montana", "trail"], "municipio": "Uleila del Campo", "lugar": "Salida en la Plaza", "fecha_inicio": "2026-09-19T09:00:00+02:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": "Ayuntamiento de Uleila del Campo", "fuente": "https://gotrail.run/es/carrera/kv-la-yesera", "canal": "web_externa"}, {"id": "1225944a-4635-5897-8ecb-6b9de228c50e", "titulo": "Espectáculo de baile flamenco", "descripcion": "Espectáculo organizado por la escuela de baile flamenco 11 Rosas 2 Claveles.", "categoria": "cultural", "etiquetas": ["baile", "flamenco"], "municipio": "Uleila del Campo", "lugar": "La Placeta", "fecha_inicio": "2026-10-03T17:00:00+02:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": "Ayuntamiento de Uleila del Campo", "fuente": "https://www.facebook.com/profile.php?id=100064568389094", "canal": "facebook"}, {"id": "2400a52d-3c59-5def-9537-ddaa039dc924", "titulo": "Halloween: pasacalles y concurso de disfraces", "descripcion": "Pasacalles y concurso de disfraces con premios infantiles, de adultos y de grupo. Se aplazó del 31 de octubre al 2 de noviembre por el luto nacional.", "categoria": "ludica", "etiquetas": ["halloween", "disfraces", "infantil"], "municipio": "Uleila del Campo", "lugar": "Salida desde el Ayuntamiento hasta La Placeta", "fecha_inicio": "2026-11-02T18:00:00+01:00", "fecha_fin": null, "precio_eur": null, "es_gratuito": false, "plazas_totales": null, "plazas_libres": null, "inscritos": 0, "publicador_nombre": "Ayuntamiento de Uleila del Campo", "fuente": "https://www.facebook.com/profile.php?id=100064568389094", "canal": "facebook"}];
+
+/* =========================================================
+   CONFIGURACIÓN — textos, accesos y pueblos. Lo que más se toca.
+   ========================================================= */
+const HOY = new Date("2026-11-20T19:00:00+01:00"); // fecha fija para la demo
+
+const CATEGORIAS = {
+  deportiva:   { etiqueta: "Deportiva",   emoji: "🥾", color: "#2e7d32" },
+  cultural:    { etiqueta: "Cultural",    emoji: "🎭", color: "#6a1b9a" },
+  fiestas:     { etiqueta: "Fiestas",     emoji: "🎉", color: "#c62828" },
+  gastronomia: { etiqueta: "Gastronomía", emoji: "🍽️", color: "#b45309" },
+  ludica:      { etiqueta: "Lúdica",      emoji: "🎲", color: "#1565c0" },
+  comercio:    { etiqueta: "Comercio",    emoji: "🛍️", color: "#00727c" }
+};
+
+const PUEBLOS = [
+  { nombre: "Lucainena de las Torres", lema: "Uno de los pueblos más bonitos de España", color: "#1b4f7a", lat: 37.0406, lon: -2.2017 },
+  { nombre: "Senés",                   lema: "Sierra de los Filabres",                  color: "#2c6e78", lat: 37.1983, lon: -2.3447 },
+  { nombre: "Velefique",               lema: "Puerto de Velefique",                     color: "#5b6670", lat: 37.1931, lon: -2.4006 },
+  { nombre: "Uleila del Campo",        lema: "Teatro, rutas y fiestas",                 color: "#7a3b6e", lat: 37.1856, lon: -2.2061 },
+  { nombre: "Tahal",                   lema: "Castillo de Tahal",                       color: "#14558a", lat: 37.2231, lon: -2.2861 }
+];
+
+const RAPIDOS = [
+  { texto: "Planes de hoy",       icono: "sol",      accion: () => irAgenda({ cuando: "hoy" }) },
+  { texto: "Este fin de semana",  icono: "calendario", accion: () => irAgenda({ cuando: "finde" }) },
+  { texto: "Planes gratis",       icono: "euro",     accion: () => irAgenda({ gratis: true }) },
+  { texto: "Ver en el mapa",      icono: "mapa",     accion: () => (location.hash = "mapa") },
+  { texto: "Mis planes",          icono: "check",    accion: () => (location.hash = "perfil") },
+  { texto: "Escríbenos por WhatsApp", icono: "wa",   accion: () => mostrarWhatsapp(), clase: "rapido--wa" }
+];
+
+const NUMERO_WA = "+34 600 000 000"; // número del bot (sustituir por el de Twilio)
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+const ZONA = "Europe/Madrid";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fechaLarga = iso => new Date(iso).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: ZONA });
+const fechaCorta = iso => new Date(iso).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short", timeZone: ZONA });
+const hora = iso => new Date(iso).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: ZONA });
+const claveDia = iso => new Date(iso).toLocaleDateString("sv-SE", { timeZone: ZONA });
+const sinHora = e => (e.etiquetas || []).includes("sin_hora") || hora(e.fecha_inicio) === "00:00";
+const estimada = e => (e.etiquetas || []).includes("fecha_estimada");
+const horaEvento = e => sinHora(e) ? "Hora por confirmar" : hora(e.fecha_inicio);
+const precio = e => e.es_gratuito ? "Gratis" : e.precio_eur == null ? "Consultar" : `${e.precio_eur.toLocaleString("es-ES")} €`;
+const textoGente = n => n === 0 ? "Aún no se ha apuntado nadie" : n === 1 ? "1 persona apuntada" : `${n} personas apuntadas`;
+
+const ICONOS = {
+  inicio: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+  calendario: '<rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2"/>',
+  mapa: '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+  persona: '<circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2"/>',
+  sol: '<circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2"/>',
+  euro: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 8.5a4 4 0 1 0 0 7M7 11h6M7 13.5h6" fill="none" stroke="currentColor" stroke-width="2"/>',
+  check: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12l3 3 5-6" fill="none" stroke="currentColor" stroke-width="2"/>',
+  wa: '<path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 9c0 3 3 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  casa: '<path d="M10 70V40l20-15 20 15v30zM60 70V30l15-10 15 10v40z" fill="#fff"/>'
+};
+const icono = n => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONOS[n] || ""}</svg>`;
+
+/* =========================================================
+   ESTADO (simulado; en la app lo da la API)
+   ========================================================= */
+const estado = { municipio: "", categoria: "", cuando: "", gratis: false, inscritos: new Set(), diapo: 0, chats: {} };
+try { const g = JSON.parse(localStorage.getItem("hm-inscritos") || "[]"); g.forEach(id => estado.inscritos.add(id)); } catch {}
+const guardar = () => { try { localStorage.setItem("hm-inscritos", JSON.stringify([...estado.inscritos])); } catch {} };
+
+const proximos = () => EVENTOS.filter(e => new Date(e.fecha_fin || e.fecha_inicio) >= new Date(claveDia(HOY.toISOString()))).sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
+const gente = e => (e.inscritos || 0) + (estado.inscritos.has(e.id) ? 1 : 0);
+
+function filtrar(lista) {
+  const hoy = claveDia(HOY.toISOString());
+  const d = HOY.getDay(); // 5 = viernes
+  const ini = new Date(HOY); ini.setDate(HOY.getDate() + ((5 - d + 7) % 7));
+  const fin = new Date(ini); fin.setDate(ini.getDate() + 2);
+  return lista.filter(e => {
+    if (estado.municipio && e.municipio !== estado.municipio) return false;
+    if (estado.categoria && e.categoria !== estado.categoria) return false;
+    if (estado.gratis && !e.es_gratuito) return false;
+    const k = claveDia(e.fecha_inicio);
+    if (estado.cuando === "hoy" && k !== hoy) return false;
+    if (estado.cuando === "finde" && (k < claveDia(ini.toISOString()) || k > claveDia(fin.toISOString()))) return false;
+    return true;
+  });
+}
+
+/* =========================================================
+   COMPONENTES
+   ========================================================= */
+function tarjetaEvento(e) {
+  const c = CATEGORIAS[e.categoria];
+  const n = gente(e);
+  return `<a class="evento" href="#evento-${e.id}">
+    <span class="evento__icono" style="--color:${c.color}" aria-hidden="true">${c.emoji}</span>
+    <div class="evento__texto"><h3>${esc(e.titulo)}</h3>
+      <p class="evento__meta">${fechaCorta(e.fecha_inicio)} · ${horaEvento(e)} · ${esc(e.municipio)}</p></div>
+    <span class="evento__lado">
+      <span class="chapa ${e.es_gratuito ? "chapa--gratis" : "chapa--precio"}">${precio(e)}</span>
+      <span class="chapa chapa--gente" aria-label="${textoGente(n)}">👥 ${n}</span>
+    </span></a>`;
+}
+
+function listaPorDias(lista) {
+  if (!lista.length) return `<p class="vacio">No hay planes con estos filtros. Prueba con otro pueblo, otra categoría o quita «gratis».</p>`;
+  const grupos = new Map();
+  lista.forEach(e => { const k = claveDia(e.fecha_inicio); grupos.set(k, [...(grupos.get(k) || []), e]); });
+  return [...grupos].map(([, evs]) => `<h3 class="dia">${fechaLarga(evs[0].fecha_inicio)}</h3>${evs.map(tarjetaEvento).join("")}`).join("");
+}
+
+/* =========================================================
+   VISTAS
+   ========================================================= */
+function vistaInicio() {
+  const prox = proximos();
+  const destacados = prox.slice(0, 4);
+  const p = PUEBLOS.map(pu => {
+    const n = prox.filter(e => e.municipio === pu.nombre).length;
+    return `<a class="pueblo" href="#agenda" data-pueblo="${esc(pu.nombre)}" style="--color:${pu.color}">
+      <div><h3>${esc(pu.nombre)}</h3><p>${esc(pu.lema)}</p></div>
+      <span class="pueblo__cuenta">${n ? `${n} ${n === 1 ? "plan" : "planes"}` : "Sin planes aún"}</span>
+      <svg class="pueblo__dibujo" viewBox="0 0 100 80" aria-hidden="true">${ICONOS.casa}</svg></a>`;
+  }).join("");
+  const diapos = destacados.map((e, i) => {
+    const c = CATEGORIAS[e.categoria];
+    return `<a class="diapo" href="#evento-${e.id}" ${i === estado.diapo ? "" : "hidden"} style="--fondo-diapo:linear-gradient(135deg, ${c.color}, #1f3d63)" aria-roledescription="diapositiva" aria-label="${i + 1} de ${destacados.length}">
+      <span class="diapo__emoji" aria-hidden="true">${c.emoji}</span>
+      <span class="diapo__cuerpo"><span class="etiqueta">${c.etiqueta} · ${esc(e.municipio)}</span><h3>${esc(e.titulo)}</h3><p>${fechaLarga(e.fecha_inicio)} · ${horaEvento(e)}</p></span></a>`;
+  }).join("");
+  return `<div class="vista">
+    <section class="saludo"><h1>¿Qué hacemos hoy en el pueblo?</h1><p>Fiestas, rutas, talleres y comercios de cinco pueblos de Almería, en un solo sitio.</p></section>
+    <section aria-labelledby="t-rapidos"><h2 class="oculto" id="t-rapidos">Accesos rápidos</h2>
+      <div class="rapidos">${RAPIDOS.map((r, i) => `<button type="button" class="rapido ${r.clase || ""}" data-rapido="${i}">${icono(r.icono)}<span>${r.texto}</span></button>`).join("")}</div></section>
+    <section aria-labelledby="t-pueblos"><div class="titulo-seccion"><h2 id="t-pueblos">Elige tu pueblo</h2><a class="enlace" href="#mapa">Verlos en el mapa</a></div>
+      <div class="pueblos">${p}</div></section>
+    <section aria-labelledby="t-destacados"><div class="titulo-seccion"><h2 id="t-destacados">Próximos planes</h2><a class="enlace" href="#agenda">Ver toda la agenda</a></div>
+      <div class="fila-noticias">
+        <div class="carrusel" aria-roledescription="carrusel" aria-label="Planes destacados">${diapos}
+          <div class="carrusel__controles">
+            <button class="carrusel__btn" type="button" data-diapo="-1" aria-label="Plan anterior">‹</button>
+            <button class="carrusel__btn" type="button" data-diapo="1" aria-label="Plan siguiente">›</button>
+            <div class="carrusel__puntos">${destacados.map((_, i) => `<button type="button" data-ir="${i}" aria-label="Ir al plan ${i + 1}" aria-current="${i === estado.diapo}"></button>`).join("")}</div>
+          </div></div>
+        <div class="proximos">${prox.slice(4, 7).map(tarjetaEvento).join("")}</div>
+      </div></section>
+  </div>`;
+}
+
+function vistaAgenda() {
+  const lista = filtrar(proximos());
+  const cuandoTxt = { "": "Cualquier día", hoy: "Hoy", finde: "Este fin de semana" };
+  return `<div class="vista">
+    <div class="titulo-seccion"><h2>Agenda de la comarca</h2><span class="nota">${lista.length} ${lista.length === 1 ? "plan" : "planes"}</span></div>
+    <div class="agenda-layout">
+      <section class="filtros" aria-label="Filtros">
+        <div><label for="f-pueblo">Pueblo</label>
+          <select id="f-pueblo"><option value="">Todos los pueblos</option>${PUEBLOS.map(p => `<option ${p.nombre === estado.municipio ? "selected" : ""}>${esc(p.nombre)}</option>`).join("")}</select></div>
+        <div><label for="f-cuando">Cuándo</label>
+          <select id="f-cuando">${Object.entries(cuandoTxt).map(([v, t]) => `<option value="${v}" ${v === estado.cuando ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+        <div><span class="oculto" id="t-cat">Categoría</span>
+          <div class="chips" role="group" aria-labelledby="t-cat">${Object.entries(CATEGORIAS).map(([k, c]) => `<button type="button" class="chip" data-cat="${k}" aria-pressed="${estado.categoria === k}"><span aria-hidden="true">${c.emoji}</span>${c.etiqueta}</button>`).join("")}
+            <button type="button" class="chip" data-gratis aria-pressed="${estado.gratis}">💶 Solo gratis</button></div></div>
+      </section>
+      <section class="lista" aria-label="Planes">${listaPorDias(lista)}</section>
+    </div></div>`;
+}
+
+function vistaFicha(id) {
+  const e = EVENTOS.find(x => x.id === id);
+  if (!e) return `<p class="vacio">No encontramos este plan. <a class="enlace" href="#agenda">Volver a la agenda</a></p>`;
+  const c = CATEGORIAS[e.categoria];
+  const apuntado = estado.inscritos.has(e.id);
+  const n = gente(e);
+  const chat = estado.chats[e.id] || [{ quien: "Organización", texto: "¡Hola! Si tenéis dudas sobre el plan, preguntad por aquí." }];
+  return `<div class="vista">
+    <a class="volver" href="#agenda">‹ Volver a la agenda</a>
+    <div class="ficha">
+      <article class="ficha__tarjeta">
+        <header class="ficha__cabeza" style="--color:${c.color}">
+          <span class="diapo__emoji" aria-hidden="true">${c.emoji}</span>
+          <span class="etiqueta">${c.etiqueta}</span>
+          <h1>${esc(e.titulo)}</h1>
+          ${e.publicador_nombre ? `<p>Organiza: ${esc(e.publicador_nombre)}</p>` : ""}
+        </header>
+        <ul class="datos">
+          <li><span aria-hidden="true">📅</span><span>${fechaLarga(e.fecha_inicio)}${sinHora(e) ? " · hora por confirmar" : `, a las ${hora(e.fecha_inicio)}`}${estimada(e) ? "<br><small>Fecha estimada según el calendario de fiestas</small>" : ""}</span></li>
+          <li><span aria-hidden="true">📍</span><span>${e.lugar ? esc(e.lugar) + ", " : ""}${esc(e.municipio)}</span></li>
+          <li><span aria-hidden="true">💶</span><span>${precio(e)}</span></li>
+          <li><span aria-hidden="true">👥</span><strong>${textoGente(n)}</strong></li>
+        </ul>
+        ${e.descripcion ? `<p class="ficha__desc">${esc(e.descripcion)}</p>` : ""}
+      </article>
+      <aside class="acciones" aria-label="Qué puedo hacer">
+        <button type="button" class="boton boton--principal ${apuntado ? "boton--hecho" : ""}" data-apuntar="${e.id}">${apuntado ? `${icono("check")} Ya estás apuntado` : "🙋 Apuntarme"}</button>
+        ${apuntado ? `<p class="nota">Te avisaremos por WhatsApp si cambia la hora o el sitio. Toca otra vez para desapuntarte.</p>` : ""}
+        <a class="boton" href="https://www.openstreetmap.org/search?query=${encodeURIComponent((e.lugar ? e.lugar + ", " : "") + e.municipio)}" target="_blank" rel="noopener">${icono("mapa")} Cómo llegar</a>
+        <button type="button" class="boton boton--wa" data-wa>${icono("wa")} Preguntar por WhatsApp</button>
+        ${e.fuente ? `<a class="boton" href="${esc(e.fuente)}" target="_blank" rel="noopener">Ver el anuncio original</a>` : ""}
+        <section class="chat" aria-label="Chat del plan">
+          <h2>Preguntas sobre el plan</h2>
+          <div class="chat__mensajes" aria-live="polite">${chat.map(m => `<p class="burbuja ${m.yo ? "burbuja--yo" : ""}"><b>${esc(m.quien)}</b>${esc(m.texto)}</p>`).join("")}</div>
+          <form data-chat="${e.id}"><label class="oculto" for="chat-${e.id}">Escribe tu pregunta</label><input id="chat-${e.id}" placeholder="Escribe tu pregunta" autocomplete="off"><button type="submit">Enviar</button></form>
+        </section>
+      </aside>
+    </div></div>`;
+}
+
+function vistaMapa() {
+  const prox = proximos();
+  const lats = PUEBLOS.map(p => p.lat), lons = PUEBLOS.map(p => p.lon);
+  const [la0, la1, lo0, lo1] = [Math.min(...lats), Math.max(...lats), Math.min(...lons), Math.max(...lons)];
+  const W = 800, H = 520, m = 90;
+  const x = lon => m + (lon - lo0) / (lo1 - lo0) * (W - 2 * m);
+  const y = lat => H - m - (lat - la0) / (la1 - la0) * (H - 2 * m);
+  const pins = PUEBLOS.map(p => {
+    const n = prox.filter(e => e.municipio === p.nombre).length;
+    const r = 22 + Math.min(n, 8) * 2;
+    const ancla = x(p.lon) > W - 200 ? "end" : "start", dx = ancla === "end" ? -(r + 10) : r + 10;
+    return `<a class="pin" href="#agenda" data-pueblo="${esc(p.nombre)}" aria-label="${esc(p.nombre)}: ${n} planes">
+      <circle class="aro" cx="${x(p.lon)}" cy="${y(p.lat)}" r="${r}" fill="${p.color}" stroke="#fff" stroke-width="3"/>
+      <text x="${x(p.lon)}" y="${y(p.lat) + 7}" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">${n}</text>
+      <text x="${x(p.lon) + dx}" y="${y(p.lat) + 6}" text-anchor="${ancla}" font-size="19" font-weight="700" fill="#123b5e" paint-order="stroke" stroke="#e6efe4" stroke-width="5">${esc(p.nombre)}</text></a>`;
+  }).join("");
+  return `<div class="vista">
+    <div class="titulo-seccion"><h2>Mapa de planes</h2><span class="nota">Toca un pueblo para ver sus planes</span></div>
+    <div class="mapa-layout">
+      <figure class="mapa" style="margin:0">
+        <svg viewBox="0 0 ${W} ${H}" role="group" aria-label="Mapa de los cinco pueblos">
+          <path d="M0 ${H * .35} C 200 ${H * .25}, 420 ${H * .45}, ${W} ${H * .3}" fill="none" stroke="#c9dcc4" stroke-width="40" stroke-linecap="round"/>
+          <text x="${W / 2}" y="${H * .22}" text-anchor="middle" font-size="15" fill="#4a5560" letter-spacing="3">SIERRA DE LOS FILABRES</text>
+          <text x="${W * .55}" y="${H - 20}" text-anchor="middle" font-size="15" fill="#4a5560" letter-spacing="3">SIERRA ALHAMILLA</text>
+          ${pins}
+        </svg>
+        <figcaption class="mapa__pie">Esquema del prototipo. En la app es un mapa real de OpenStreetMap con Leaflet.</figcaption>
+      </figure>
+      <section class="lista" aria-label="Planes cercanos"><h3 class="dia">Los más cercanos en el tiempo</h3>${prox.slice(0, 4).map(tarjetaEvento).join("")}</section>
+    </div></div>`;
+}
+
+function vistaPerfil() {
+  const mios = EVENTOS.filter(e => estado.inscritos.has(e.id));
+  return `<div class="vista">
+    <div class="titulo-seccion"><h2>Mi perfil</h2></div>
+    <div class="perfil">
+      <section class="caja"><h2>Mis planes</h2>${mios.length ? `<div class="lista">${mios.map(tarjetaEvento).join("")}</div>` : `<p>Todavía no te has apuntado a nada. Abre un plan y toca «Apuntarme».</p>`}</section>
+      <section class="caja"><h2>Entrar</h2><p>Entra con tu cuenta de Google para guardar tus planes en todos tus aparatos.</p><button type="button" class="boton">Entrar con Google</button></section>
+      <section class="caja"><h2>Avisos por WhatsApp</h2>
+        <label class="interruptor" for="av-cambios">Si cambia un plan al que voy<input type="checkbox" id="av-cambios" checked></label>
+        <label class="interruptor" for="av-recom">Planes que me pueden gustar<input type="checkbox" id="av-recom" checked></label>
+        <label class="interruptor" for="av-audio">Recibir los avisos en audio<input type="checkbox" id="av-audio"></label></section>
+      <section class="caja"><h2>Usarlo solo con WhatsApp</h2><p>Manda un audio diciendo qué te apetece hacer y te contestamos con los planes. No hace falta instalar nada.</p>
+        <p><strong style="color:var(--texto);font-size:1.2rem">${NUMERO_WA}</strong></p><button type="button" class="boton boton--wa" data-copiar>${icono("wa")} Copiar el número</button></section>
+    </div></div>`;
+}
+
+/* =========================================================
+   NAVEGACIÓN
+   ========================================================= */
+const SECCIONES = [
+  { id: "inicio", texto: "Inicio", icono: "inicio" },
+  { id: "agenda", texto: "Agenda", icono: "calendario" },
+  { id: "mapa", texto: "Mapa", icono: "mapa" },
+  { id: "perfil", texto: "Mi perfil", icono: "persona" }
+];
+
+function pintar() {
+  const h = location.hash.slice(1) || "inicio";
+  const actual = h.startsWith("evento-") ? "agenda" : (SECCIONES.find(s => s.id === h) ? h : "inicio");
+  $("#menu").innerHTML = SECCIONES.map(s => `<li><a href="#${s.id}" ${s.id === actual ? 'aria-current="page"' : ""}>${icono(s.icono)}${s.texto}</a></li>`).join("");
+  $("#pestanas").innerHTML = SECCIONES.map(s => `<a href="#${s.id}" ${s.id === actual ? 'aria-current="page"' : ""}>${icono(s.icono)}${s.texto}</a>`).join("");
+  const v = h.startsWith("evento-") ? vistaFicha(h.slice(7)) : { inicio: vistaInicio, agenda: vistaAgenda, mapa: vistaMapa, perfil: vistaPerfil }[actual]();
+  $("#principal").innerHTML = v;
+}
+
+function irAgenda(f) { Object.assign(estado, { municipio: "", categoria: "", cuando: "", gratis: false }, f); location.hash === "#agenda" ? pintar() : (location.hash = "agenda"); window.scrollTo(0, 0); }
+
+let avisoT;
+function avisar(t) { const a = $("#aviso"); a.textContent = t; a.hidden = false; clearTimeout(avisoT); avisoT = setTimeout(() => (a.hidden = true), 2800); }
+function mostrarWhatsapp() { avisar(`Escribe o manda un audio al ${NUMERO_WA}`); }
+
+document.addEventListener("click", ev => {
+  const t = ev.target.closest("[data-rapido],[data-pueblo],[data-diapo],[data-ir],[data-cat],[data-gratis],[data-apuntar],[data-wa],[data-copiar],[data-letra]");
+  if (!t) return;
+  const d = t.dataset;
+  if (d.rapido != null) RAPIDOS[+d.rapido].accion();
+  else if (d.pueblo != null) { ev.preventDefault(); irAgenda({ municipio: d.pueblo }); }
+  else if (d.diapo != null || d.ir != null) {
+    const n = proximos().slice(0, 4).length;
+    estado.diapo = d.ir != null ? +d.ir : (estado.diapo + +d.diapo + n) % n;
+    document.querySelectorAll(".diapo").forEach((s, i) => (s.hidden = i !== estado.diapo));
+    document.querySelectorAll(".carrusel__puntos button").forEach((b, i) => b.setAttribute("aria-current", i === estado.diapo));
+  }
+  else if (d.cat != null) { estado.categoria = estado.categoria === d.cat ? "" : d.cat; pintar(); }
+  else if (d.gratis != null) { estado.gratis = !estado.gratis; pintar(); }
+  else if (d.apuntar) {
+    const ya = estado.inscritos.has(d.apuntar);
+    ya ? estado.inscritos.delete(d.apuntar) : estado.inscritos.add(d.apuntar);
+    guardar(); pintar(); avisar(ya ? "Te has desapuntado" : "¡Plaza confirmada! Te llegará un WhatsApp.");
+  }
+  else if (d.wa != null) mostrarWhatsapp();
+  else if (d.copiar != null) { navigator.clipboard?.writeText(NUMERO_WA).then(() => avisar("Número copiado"), () => avisar(`El número es ${NUMERO_WA}`)); }
+  else if (d.letra) ponerLetra(d.letra);
+});
+
+document.addEventListener("change", ev => {
+  if (ev.target.id === "f-pueblo") { estado.municipio = ev.target.value; pintar(); $("#f-pueblo").focus(); }
+  if (ev.target.id === "f-cuando") { estado.cuando = ev.target.value; pintar(); $("#f-cuando").focus(); }
+});
+
+document.addEventListener("submit", ev => {
+  const f = ev.target.closest("[data-chat]"); if (!f) return;
+  ev.preventDefault();
+  const id = f.dataset.chat, input = f.querySelector("input"), texto = input.value.trim(); if (!texto) return;
+  const chat = estado.chats[id] ||= [{ quien: "Organización", texto: "¡Hola! Si tenéis dudas sobre el plan, preguntad por aquí." }];
+  chat.push({ quien: "Tú", texto, yo: true });
+  chat.push({ quien: "Asistente", texto: "Gracias por preguntar. Se lo paso a la organización y te contestamos aquí y por WhatsApp." });
+  pintar(); document.getElementById("chat-" + id)?.focus();
+});
+
+function ponerLetra(t) {
+  document.documentElement.dataset.letra = t;
+  document.querySelectorAll(".letra button").forEach(b => b.setAttribute("aria-pressed", b.dataset.letra === t));
+  try { localStorage.setItem("hm-letra", t); } catch {}
+}
+let letraGuardada = "normal"; try { letraGuardada = localStorage.getItem("hm-letra") || "normal"; } catch {}
+ponerLetra(letraGuardada);
+
+window.addEventListener("hashchange", () => { pintar(); window.scrollTo(0, 0); });
+pintar();
+</script>

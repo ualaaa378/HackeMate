@@ -1,8 +1,33 @@
+# Secretos
 .env
+.env.*
+!.env.example
+!**/.env.example
+
+# Python
 .venv/
+venv/
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Datos locales
+*.db
+*.sqlite3
+
+# Node / web
 node_modules/
 dist/
-*.db
+.vite/
+apps/web/android/app/build/
+apps/web/android/.gradle/
+
+# Editores y SO
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db

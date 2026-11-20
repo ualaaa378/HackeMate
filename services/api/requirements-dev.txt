@@ -1,0 +1,5 @@
+-r requirements.txt
+pytest==9.2.0
+jsonschema[format]==4.26.0
+rfc3339-validator
+ruamel.yaml

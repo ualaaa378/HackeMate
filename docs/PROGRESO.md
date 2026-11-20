@@ -10,9 +10,9 @@
 
 | Flujo | Responsable | Rama actual | Estado | Última actualización |
 |---|---|---|---|---|
-| A · Backend, datos e infra | Dev A: Benas | `feat/api-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
-| B · WhatsApp e IA | Dev B: Francisco | `Flujo-B` | 🟢 / 🟡 / 🔴 | vie __:__ |
-| C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| A · Backend, datos e infra | Dev A: Benas | `Flujo-A` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| B · Bot (Telegram/WhatsApp) e IA | Dev B: Francisco | `Flujo-B` | 🟢 | vie 20/11 20:00 |
+| C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-docker` | 🟢 | vie 20/11 |
 
 🟢 en plazo · 🟡 riesgo de no llegar al próximo checkpoint · 🔴 bloqueado
 
@@ -43,16 +43,30 @@
 
 ## CP0 · Arranque (vie 17:00–18:30) · los 3
 
-- [ ] Enfoque decidido y firmado en `PLAN.md` §2
+- [x] Enfoque decidido y firmado en `PLAN.md` §2 (Opción 1; Juan Carlos en pareja con el flujo A)
 - [x] Nombres asignados a Dev A / B / C (tablero de arriba)
 - [ ] Cuentas creadas: Twilio WhatsApp Sandbox, Google OAuth, clave de Claude, clave de Gemini (AI Studio)
-- [ ] Ramas `main` (protegida) y `develop` creadas
-- [ ] Estructura de carpetas del monorepo creada
-- [ ] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo
-- [ ] `.env.example` con todas las variables
-- [ ] `contracts/openapi.yaml` v1
-- [ ] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion)
-- [ ] `contracts/enums.md` y `contracts/fixtures/*.json`
+- [~] Ramas `main` y `develop` creadas (falta activar la protección de `main` en GitHub)
+- [x] Estructura de carpetas del monorepo creada
+- [~] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo (escrito; falta validarlo con Docker en otra máquina: pasos y resultado esperado en `PLAN_FLUJO_A.md` H0, «Cómo probar H0»). **Responsable de la prueba: por asignar en la reunión** (alguien con Docker)
+- [x] `.env.example` con todas las variables
+- [x] `contracts/openapi.yaml` v1
+- [x] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion, lugar)
+- [x] `contracts/enums.md` y `contracts/fixtures/*.json`
+- [ ] **B (Francisco) confirma los contratos v1 de `Flujo-A`.** Revisar que:
+  - `services/bot/app/schemas.py` (`ExtraccionEvento`, `Campo`, `Tokens`) encaja con `contracts/schemas/extraccion_evento.json` y su fixture valida con el modelo Pydantic.
+  - El cuerpo que manda `api_cliente.importar_evento` (`extraccion`, `telefono_publicador`, `origen`) encaja con `ImportarEvento` de `openapi.yaml`.
+  - `POST /notify` acepta `contracts/schemas/notificacion.json` (lo mínimo: `telefono`, `tipo`, `texto`) y `metrics.registrar` envía lo que pide `MetricaTokens`.
+  - Los endpoints `/ai/*` de `openapi.yaml` son los que va a implementar.
+  - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
+- [ ] **C (Adán) confirma los contratos v1 de `Flujo-A`.** Revisar que:
+  - `contracts/schemas/evento.json` (con `inscritos`), `lugar.json` y los fixtures `eventos.json`, `eventos_demo.json`, `lugares.json`, `municipios.json` y `FUENTES.md` son los de su PR de datos reales, sin cambios. `openapi.yaml` ya incluye `GET /lugares` y `GET /lugares/{id}`.
+  - Su PR de datos reales se rebasa sobre `develop` cuando entre `Flujo-A` (los archivos de `contracts/` quedan idénticos y desaparecen del diff).
+  - `npx openapi-typescript contracts/openapi.yaml -o apps/web/src/api/schema.d.ts` genera tipos sin errores.
+  - Los fixtures de usuarios, publicadores, inscripciones, mensajes y notificaciones le bastan para las pantallas con mocks (los fixtures de moderación y antispam llegan en H2).
+  - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
+- [x] Cerrar la PR #1 (`contract/v1`) **sin merge**: la sustituyen los contratos de `Flujo-A` (mismo `evento.json`). Si tenía algo que falte en `Flujo-A`, se añade por PR `contract-change`.
+- [~] PR `Flujo-A` → `develop` revisada y mergeada (orden A → B → C); `main` protegida en GitHub *(Flujo-A en `develop` vía PR #3 y #4; falta proteger `main`)*
 - [ ] Preguntas enviadas a la organización por Telegram (PLAN §8)
 
 ---
@@ -87,29 +101,36 @@
 
 ---
 
-## Flujo B · WhatsApp, IA y automatizaciones
+## Flujo B · Bot (Telegram / WhatsApp), IA y automatizaciones
+
+> Plan y decisiones del flujo: [`PLAN_FLUJO_B.md`](PLAN_FLUJO_B.md). Canal activo: **Telegram** (@HackeMate_bot).
+> WhatsApp Cloud API (Meta) está programado pero bloqueado por Meta (verificación de negocio + método de pago).
 
 **Bloque 1 (vie 18:30–23:30)**
-- [x] Webhook de Twilio con acuse inmediato (<1 s) y trabajo en segundo plano
-- [x] Adaptador de canal `console` para probar sin WhatsApp
-- [~] `llm_router` con cadena Gemini → FreeLLMAPI → Claude (opcional) → reglas, timeout y registro de tokens (falta probar con claves reales)
+- [x] Webhooks con acuse inmediato y trabajo en segundo plano: Telegram, WhatsApp (Meta) y Twilio
+- [x] Canal Telegram funcionando de punta a punta (botones, voz, fotos, ubicación)
+- [x] Canal WhatsApp Cloud API (Meta) programado y probado contra la API real · [!] envío bloqueado por Meta
+- [x] Simulador `POST /dev/mensaje` y consola para probar sin mensajería
+- [x] `llm_router` Gemini → FreeLLMAPI → Claude (opcional) → reglas, con timeout y registro de tokens (probado con FreeLLMAPI real)
 - [x] Extractor de eventos desde texto → `ExtraccionEvento` validada
+- [ ] Integrar `services/bot` en `infra/docker-compose.yml` en lugar del stub (con Flujo A)
+- [ ] Ajustar al contrato el flujo importar → confirmar (`POST /eventos/importar` y luego `/eventos/{id}/confirmar`)
 
 **Bloque 2 (sáb 08:00–13:00)**
-- [ ] Extractor desde imagen (cartel) y desde audio (Whisper)
-- [ ] Conversación del publicador: pregunta lo que falta y confirma (botones)
-- [ ] Antispam: reglas baratas primero, IA solo si es dudoso
+- [ ] Extractor desde imagen (cartel) y desde audio (transcripción)
+- [~] Conversación del publicador: pregunta lo que falta y confirma (botones hechos; falta usar `/confirmar` de la API)
+- [ ] Antispam: reglas baratas primero, IA solo si es dudoso (`POST /ai/spam`)
 - [ ] Ingesta: «pega el enlace/texto del post» + scraper de una web pública
 - [ ] Conversación del moderador: «enséñame lo pendiente», aprobar/rechazar
 
 **Bloque 3 (sáb 14:00–19:00)**
-- [ ] Conversación del vecino: gustos, pueblo/ubicación, «¿qué hay este finde cerca?»
-- [ ] Inscripción desde WhatsApp con un botón
-- [ ] `POST /notify`: recomendaciones, cambios de hora y anuncios (respetando preferencias)
-- [ ] Asistente del evento: responde solo con la ficha, si no, deriva al organizador
+- [ ] Conversación del vecino: gustos, pueblo/ubicación, «¿qué hay este finde cerca?» (`POST /ai/preferencias`)
+- [ ] Inscripción desde el chat con un botón
+- [~] `POST /notify`: hecho el envío (texto, botones, plantillas de WhatsApp); faltan preferencias y destinos de Telegram en el contrato
+- [ ] Asistente del evento: responde solo con la ficha, si no, deriva al organizador (`POST /ai/responder-ficha`)
 
 **Bloque 4 (sáb 20:00–00:00)**
-- [ ] Botón/flag «simular caída del LLM» para enseñar el fallback
+- [~] «Simular caída del LLM»: la variable `LLM_SIMULAR_CAIDA` existe; falta el botón en el panel (Flujo C)
 - [ ] Respuesta en audio (TTS) para quien escribe con audios
 - [ ] Respuestas en otros idiomas para visitantes
 
@@ -118,13 +139,14 @@
 ## Flujo C · App Ionic, web/PWA y panel
 
 **Bloque 1 (vie 18:30–23:30)**
-- [ ] Proyecto Ionic React (`ionic start web tabs --type=react`) con pestañas Agenda · Mapa · Perfil
-- [ ] Tipos generados desde `openapi.yaml` y `VITE_API_URL` configurable
-- [ ] Android Studio + JDK instalados (dejarlo descargando en segundo plano)
-- [ ] Mocks con `contracts/fixtures` (MSW o json-server)
-- [ ] Agenda (lista por fecha con filtros)
-- [ ] Mapa Leaflet con pines por categoría y «cerca de mí»
-- [ ] Ficha del evento
+- [x] Proyecto Ionic React (`ionic start web tabs --type=react`) con pestañas Agenda · Mapa · Perfil
+- [x] Tipos generados desde `openapi.yaml` y `VITE_API_URL` configurable *(`src/api/openapi.d.ts` con openapi-typescript; se regenera con `npm run api:tipos`)*
+- [x] Android Studio + JDK instalados *(el JDK va incluido en Android Studio)*
+- [x] Mocks con `contracts/fixtures` *(JSON en `src/mocks`, activos con `VITE_USE_MOCKS=true` o sin `VITE_API_URL`)*
+- [x] Agenda (lista por fecha con filtros)
+- [x] Mapa Leaflet con pines por categoría y «cerca de mí»
+- [x] Ficha del evento
+- [x] App en Docker: `apps/web/Dockerfile` (node → nginx en 8080) y `web` del compose apuntando a `apps/web` *(validado con `docker compose up --build`: web en :8080 carga eventos de la API)*
 
 **Bloque 2 (sáb 08:00–13:00)**
 - [ ] Panel del moderador: bandeja con motivo de la IA, aprobar/rechazar
@@ -183,13 +205,13 @@
 
 | Hora | Flujo | Problema | Quién ayuda | Resuelto |
 |---|---|---|---|---|
-| | | | | [ ] |
+| vie 19:00 | B | Meta bloquea el envío de WhatsApp Cloud API (errores 141010 verificación de negocio, 141006 método de pago, 131031). Decisión: canal activo **Telegram**; WhatsApp queda para producción con una entidad verificada | Organización (¿portfolio de Meta verificado de la Diputación/UAL?) | [~] |
 
 ## Cambios de contrato
 
 | Hora | PR | Cambio | Aprobado por |
 |---|---|---|---|
-| | | | |
+| vie 20:00 | (propuesta B) | Añadir `telegram` al enum `canal`; `telegram_id` opcional en `Usuario` (el bot pide el teléfono con el botón «Compartir mi número», así `telefono` E.164 sigue valiendo en `ImportarEvento` y `Notificacion`); `plantilla`/`parametros` opcionales en `Notificacion`; documentar `/webhook/telegram`, `/webhook/meta` y `/dev/mensaje` en `openapi.yaml`. Detalle en `PLAN_FLUJO_B.md` §5 | pendiente (A y C) |
 
 ## Registro de checkpoints
 
