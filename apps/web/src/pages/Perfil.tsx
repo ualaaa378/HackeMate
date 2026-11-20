@@ -1,4 +1,14 @@
-import { IonButton, IonCard, IonCardContent, IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
+import {
+  IonButton,
+  IonCard,
+  IonCardContent,
+  IonContent,
+  IonHeader,
+  IonPage,
+  IonRouterLink,
+  IonTitle,
+  IonToolbar,
+} from '@ionic/react';
 
 import { useSesion } from '../cuenta/sesion';
 
@@ -59,6 +69,9 @@ const Perfil: React.FC = () => {
             </IonButton>
           </IonCardContent>
         </IonCard>
+        <p className="enlace-creditos">
+          <IonRouterLink routerLink="/creditos">Créditos de las fotos de los pueblos</IonRouterLink>
+        </p>
       </IonContent>
     </IonPage>
   );
