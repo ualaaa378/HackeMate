@@ -12,7 +12,8 @@ _ENV_FILES = ((_rutas[3] / ".env",) if len(_rutas) > 3 else ()) + (".env",)
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=_ENV_FILES, extra="ignore")
 
-    database_url: str = "postgresql+psycopg://hackemate:hackemate@db:5432/hackemate"
+    # Sin .env: SQLite en services/api/hackemate.db. Docker fija la de PostgreSQL en el compose.
+    database_url: str = "sqlite:///./hackemate.db"
     internal_token: str = "cambia-esto"
     jwt_secret: str = "cambia-esto-tambien"
     google_client_id: str = ""

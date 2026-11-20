@@ -9,8 +9,11 @@
 import uuid
 from datetime import datetime, timezone
 
+from zoneinfo import ZoneInfo
+
 from sqlalchemy import JSON, Boolean, CheckConstraint, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.types import TypeDecorator
 
 from app.db import Base
 
@@ -33,6 +36,26 @@ TIPOS_LUGAR = ("ruta", "sitio_interes", "comercio", "alojamiento", "servicio")
 ESTADOS_ENVIO = ("pendiente", "enviada", "fallida")
 
 
+class FechaUTC(TypeDecorator):
+    """Fecha con zona. Se guarda en UTC y se lee siempre con zona (SQLite no guarda la zona por sí solo).
+    Una fecha sin zona se interpreta como hora de Madrid."""
+
+    impl = DateTime(timezone=True)
+    cache_ok = True
+
+    def process_bind_param(self, valor, dialect):
+        if valor is None:
+            return None
+        if valor.tzinfo is None:
+            valor = valor.replace(tzinfo=ZoneInfo("Europe/Madrid"))
+        return valor.astimezone(timezone.utc)
+
+    def process_result_value(self, valor, dialect):
+        if valor is None:
+            return None
+        return valor.replace(tzinfo=timezone.utc) if valor.tzinfo is None else valor.astimezone(timezone.utc)
+
+
 def _enum(nombre: str, valores: tuple[str, ...]) -> Enum:
     return Enum(*valores, name=nombre, native_enum=False, create_constraint=True, length=32)
 
@@ -50,7 +73,7 @@ def _id() -> Mapped[str]:
 
 
 def _creado() -> Mapped[datetime]:
-    return mapped_column(DateTime(timezone=True), default=ahora, nullable=False)
+    return mapped_column(FechaUTC(), default=ahora, nullable=False)
 
 
 class Municipio(Base):
@@ -154,8 +177,8 @@ class Evento(Base):
     lugar: Mapped[str | None] = mapped_column(String(300))
     lat: Mapped[float] = mapped_column(Float, nullable=False)
     lon: Mapped[float] = mapped_column(Float, nullable=False)
-    fecha_inicio: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
-    fecha_fin: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    fecha_inicio: Mapped[datetime] = mapped_column(FechaUTC(), nullable=False, index=True)
+    fecha_fin: Mapped[datetime | None] = mapped_column(FechaUTC())
     precio_eur: Mapped[float | None] = mapped_column(Float)
     es_gratuito: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     plazas_totales: Mapped[int | None] = mapped_column(Integer)
@@ -177,7 +200,7 @@ class Evento(Base):
     extraccion: Mapped[dict | None] = mapped_column(JSON)
     faltan: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     creado_en: Mapped[datetime] = _creado()
-    actualizado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora, onupdate=ahora, nullable=False)
+    actualizado_en: Mapped[datetime] = mapped_column(FechaUTC(), default=ahora, onupdate=ahora, nullable=False)
 
     publicador: Mapped[Publicador | None] = relationship()
 
@@ -194,7 +217,7 @@ class Inscripcion(Base):
     plazas: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     canal: Mapped[str] = mapped_column(_enum("canal_inscripcion", CANALES), default="web", nullable=False)
     creado_en: Mapped[datetime] = _creado()
-    actualizado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora, onupdate=ahora, nullable=False)
+    actualizado_en: Mapped[datetime] = mapped_column(FechaUTC(), default=ahora, onupdate=ahora, nullable=False)
 
 
 class MensajeEvento(Base):
@@ -234,7 +257,7 @@ class Notificacion(Base):
     intentos: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     ultimo_error: Mapped[str | None] = mapped_column(Text)
     creado_en: Mapped[datetime] = _creado()
-    enviada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    enviada_en: Mapped[datetime | None] = mapped_column(FechaUTC())
 
 
 class MetricaTokens(Base):
@@ -250,4 +273,4 @@ class MetricaTokens(Base):
     tokens_salida: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     latencia_ms: Mapped[int | None] = mapped_column(Integer)
     ok: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora, nullable=False, index=True)
+    ts: Mapped[datetime] = mapped_column(FechaUTC(), default=ahora, nullable=False, index=True)
