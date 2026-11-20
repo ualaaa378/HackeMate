@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getEventos } from '../api/client';
 import type { Categoria, Evento } from '../api/types';
 import FiltrosEventos from '../components/FiltrosEventos';
+import Marca from '../components/Marca';
 import TarjetaEvento from '../components/TarjetaEvento';
 import { agruparPorDia, fechaLarga } from '../utils/formato';
 
@@ -46,8 +47,10 @@ const Agenda: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar color="primary">
-          <IonTitle>🧭 Agenda de la comarca</IonTitle>
+        <IonToolbar color="secondary">
+          <IonTitle>
+            <Marca />
+          </IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent>
