@@ -1,0 +1,104 @@
+/* Letra algo más grande por defecto: buena parte del público es mayor (WCAG 2.1 AA). */
+html {
+  font-size: 17px;
+}
+
+.centrado {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.filtros {
+  padding: 4px 12px 8px;
+  background: var(--ion-background-color);
+}
+
+.filtros .chips {
+  display: flex;
+  overflow-x: auto;
+  gap: 2px;
+  padding-top: 4px;
+}
+
+.filtros ion-chip {
+  flex-shrink: 0;
+  min-height: 40px;
+}
+
+.dia {
+  font-weight: 600;
+}
+
+.dia::first-letter {
+  text-transform: uppercase;
+}
+
+.tarjeta-evento h2 {
+  font-weight: 600;
+  white-space: normal;
+}
+
+.emoji-categoria {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+}
+
+.mapa-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mapa {
+  flex: 1;
+  min-height: 300px;
+}
+
+.pin-evento div {
+  width: 38px;
+  height: 38px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  font-size: 18px;
+}
+
+.pin-evento span {
+  transform: rotate(45deg);
+  line-height: 1;
+}
+
+.descripcion {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-top: 12px;
+}
+
+.tarjeta-lateral {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.contador-apuntados {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+  background: var(--ion-color-light);
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.contador-ficha {
+  font-weight: 600;
+}
