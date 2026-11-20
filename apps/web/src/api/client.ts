@@ -45,7 +45,11 @@ async function peticion<T>(ruta: string, opciones: RequestInit = {}): Promise<T>
   }
   if (!resp.ok) {
     const cuerpo = (await resp.json().catch(() => null)) as Partial<ApiError> | null;
-    if (!cuerpo?.error || resp.status >= 500) throw new ApiNoDisponible(`${resp.status} ${resp.statusText}`);
+    // La API responde a una ruta que aún no existe con el código genérico «no_encontrado» (o 405);
+    // los 404 de negocio llevan un código propio, como «evento_no_encontrado».
+    const rutaSinImplementar = resp.status === 405 || cuerpo?.error?.code === 'no_encontrado';
+    if (!cuerpo?.error || resp.status >= 500 || rutaSinImplementar)
+      throw new ApiNoDisponible(`${resp.status} ${resp.statusText}`);
     throw new ErrorApi(cuerpo.error.code, cuerpo.error.message, resp.status);
   }
   return resp.status === 204 ? (undefined as T) : ((await resp.json()) as T);
