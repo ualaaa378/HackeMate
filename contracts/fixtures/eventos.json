@@ -1,0 +1,292 @@
+[
+  {
+    "id": "1e5d0000-0000-4000-8000-000000000001",
+    "titulo": "II Ruta Solidaria Sierra de Velefique",
+    "descripcion": "Ruta benéfica de 12 km por la sierra (recorrido corto de 4 km para familias). Donativo para la asociación local.",
+    "categoria": "deportiva",
+    "etiquetas": [
+      "senderismo",
+      "solidario"
+    ],
+    "municipio": "Velefique",
+    "lugar": "Plaza de la iglesia",
+    "lat": 37.1951,
+    "lon": -2.3996,
+    "fecha_inicio": "2026-11-29T09:00:00+01:00",
+    "fecha_fin": "2026-11-29T14:00:00+01:00",
+    "precio_eur": 5.0,
+    "es_gratuito": false,
+    "plazas_totales": 40,
+    "plazas_libres": 8,
+    "estado": "publicado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a01",
+    "publicador_nombre": "Amigos de Velefique",
+    "imagen_url": null,
+    "origen": {
+      "canal": "facebook",
+      "url": "https://www.facebook.com/amigosdevelefique/posts/ejemplo-ruta",
+      "importado_auto": true
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.03,
+      "revisado_por": null
+    },
+    "creado_en": "2026-11-20T18:00:00+01:00",
+    "actualizado_en": "2026-11-20T18:00:00+01:00"
+  },
+  {
+    "id": "1e5d0000-0000-4000-8000-000000000002",
+    "titulo": "Visita guiada a los hornos de calcinación",
+    "descripcion": "Recorrido por el patrimonio minero de Lucainena: hornos, cargadero y antiguo trazado del tren.",
+    "categoria": "cultural",
+    "etiquetas": [
+      "patrimonio",
+      "mineria",
+      "visita guiada"
+    ],
+    "municipio": "Lucainena de las Torres",
+    "lugar": "Hornos de calcinación",
+    "lat": 37.0446,
+    "lon": -2.2047,
+    "fecha_inicio": "2026-11-28T11:00:00+01:00",
+    "fecha_fin": "2026-11-28T13:00:00+01:00",
+    "precio_eur": null,
+    "es_gratuito": true,
+    "plazas_totales": 25,
+    "plazas_libres": 11,
+    "estado": "publicado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a02",
+    "publicador_nombre": "Ayto. Lucainena de las Torres",
+    "imagen_url": null,
+    "origen": {
+      "canal": "web_externa",
+      "url": "https://www.lucainenadelastorres.es/",
+      "importado_auto": true
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.03,
+      "revisado_por": null
+    },
+    "creado_en": "2026-11-20T18:00:00+01:00",
+    "actualizado_en": "2026-11-20T18:00:00+01:00"
+  },
+  {
+    "id": "1e5d0000-0000-4000-8000-000000000003",
+    "titulo": "Menú del domingo: migas con tropezones",
+    "descripcion": "Migas tradicionales con postre casero. Reserva por WhatsApp.",
+    "categoria": "gastronomia",
+    "etiquetas": [
+      "migas",
+      "comida tradicional"
+    ],
+    "municipio": "Senés",
+    "lugar": "Bar La Plaza",
+    "lat": 37.1988,
+    "lon": -2.3443,
+    "fecha_inicio": "2026-11-29T13:30:00+01:00",
+    "fecha_fin": "2026-11-29T16:00:00+01:00",
+    "precio_eur": 12.0,
+    "es_gratuito": false,
+    "plazas_totales": null,
+    "plazas_libres": null,
+    "estado": "publicado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a03",
+    "publicador_nombre": "Bar La Plaza",
+    "imagen_url": null,
+    "origen": {
+      "canal": "facebook",
+      "url": "https://www.facebook.com/barlaplazasenes/posts/ejemplo-menu",
+      "importado_auto": true
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.03,
+      "revisado_por": null
+    },
+    "creado_en": "2026-11-20T18:00:00+01:00",
+    "actualizado_en": "2026-11-20T18:00:00+01:00"
+  },
+  {
+    "id": "1e5d0000-0000-4000-8000-000000000004",
+    "titulo": "Taller de esparto",
+    "descripcion": "Aprende a trabajar el esparto con las artesanas del pueblo. Material incluido.",
+    "categoria": "cultural",
+    "etiquetas": [
+      "artesania",
+      "taller"
+    ],
+    "municipio": "Senés",
+    "lugar": "Centro social",
+    "lat": 37.1975,
+    "lon": -2.3441,
+    "fecha_inicio": "2026-12-05T17:00:00+01:00",
+    "fecha_fin": "2026-12-05T19:30:00+01:00",
+    "precio_eur": 3.0,
+    "es_gratuito": false,
+    "plazas_totales": 15,
+    "plazas_libres": 9,
+    "estado": "publicado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a04",
+    "publicador_nombre": "Asociación de Mujeres de Senés",
+    "imagen_url": null,
+    "origen": {
+      "canal": "whatsapp",
+      "url": null,
+      "importado_auto": false
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.03,
+      "revisado_por": null
+    },
+    "creado_en": "2026-11-20T18:00:00+01:00",
+    "actualizado_en": "2026-11-20T18:00:00+01:00"
+  },
+  {
+    "id": "1e5d0000-0000-4000-8000-000000000005",
+    "titulo": "Mercado artesano de Navidad",
+    "descripcion": "Puestos de artesanía, aceite, miel y dulces de la comarca.",
+    "categoria": "comercio",
+    "etiquetas": [
+      "mercado",
+      "producto local",
+      "navidad"
+    ],
+    "municipio": "Lucainena de las Torres",
+    "lugar": "Plaza del Ayuntamiento",
+    "lat": 37.0413,
+    "lon": -2.2008,
+    "fecha_inicio": "2026-12-06T10:00:00+01:00",
+    "fecha_fin": "2026-12-06T15:00:00+01:00",
+    "precio_eur": null,
+    "es_gratuito": true,
+    "plazas_totales": null,
+    "plazas_libres": null,
+    "estado": "publicado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a02",
+    "publicador_nombre": "Ayto. Lucainena de las Torres",
+    "imagen_url": null,
+    "origen": {
+      "canal": "panel",
+      "url": null,
+      "importado_auto": false
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.03,
+      "revisado_por": null
+    },
+    "creado_en": "2026-11-20T18:00:00+01:00",
+    "actualizado_en": "2026-11-20T18:00:00+01:00"
+  },
+  {
+    "id": "1e5d0000-0000-4000-8000-000000000006",
+    "titulo": "Torneo de dominó y parchís",
+    "descripcion": "Campeonato abierto por parejas en el hogar del pensionista. Premios para los ganadores.",
+    "categoria": "ludica",
+    "etiquetas": [
+      "juegos de mesa",
+      "mayores"
+    ],
+    "municipio": "Uleila del Campo",
+    "lugar": "Hogar del pensionista",
+    "lat": 37.1859,
+    "lon": -2.2066,
+    "fecha_inicio": "2026-12-04T17:30:00+01:00",
+    "fecha_fin": "2026-12-04T20:30:00+01:00",
+    "precio_eur": null,
+    "es_gratuito": true,
+    "plazas_totales": 32,
+    "plazas_libres": 20,
+    "estado": "publicado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a05",
+    "publicador_nombre": "Peña Cultural Uleila",
+    "imagen_url": null,
+    "origen": {
+      "canal": "whatsapp",
+      "url": null,
+      "importado_auto": false
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.03,
+      "revisado_por": null
+    },
+    "creado_en": "2026-11-20T18:00:00+01:00",
+    "actualizado_en": "2026-11-20T18:00:00+01:00"
+  },
+  {
+    "id": "1e5d0000-0000-4000-8000-000000000007",
+    "titulo": "Cine de verano de invierno: proyección al aire libre",
+    "descripcion": "Película familiar en la plaza con chocolate caliente.",
+    "categoria": "cultural",
+    "etiquetas": [
+      "cine",
+      "familia"
+    ],
+    "municipio": "Uleila del Campo",
+    "lugar": "Plaza Mayor",
+    "lat": 37.185,
+    "lon": -2.2057,
+    "fecha_inicio": "2026-12-12T18:30:00+01:00",
+    "fecha_fin": "2026-12-12T21:00:00+01:00",
+    "precio_eur": null,
+    "es_gratuito": true,
+    "plazas_totales": null,
+    "plazas_libres": null,
+    "estado": "publicado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a05",
+    "publicador_nombre": "Peña Cultural Uleila",
+    "imagen_url": null,
+    "origen": {
+      "canal": "instagram",
+      "url": "https://www.instagram.com/p/ejemplo-cine/",
+      "importado_auto": true
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.03,
+      "revisado_por": null
+    },
+    "creado_en": "2026-11-20T18:00:00+01:00",
+    "actualizado_en": "2026-11-20T18:00:00+01:00"
+  },
+  {
+    "id": "1e5d0000-0000-4000-8000-000000000008",
+    "titulo": "Fiesta de la Inmaculada: verbena y migas populares",
+    "descripcion": "Verbena con orquesta y migas para todos los vecinos y visitantes.",
+    "categoria": "fiestas",
+    "etiquetas": [
+      "verbena",
+      "fiestas patronales"
+    ],
+    "municipio": "Tahal",
+    "lugar": "Plaza de la iglesia",
+    "lat": 37.2223,
+    "lon": -2.2851,
+    "fecha_inicio": "2026-12-08T13:00:00+01:00",
+    "fecha_fin": "2026-12-09T02:00:00+01:00",
+    "precio_eur": null,
+    "es_gratuito": true,
+    "plazas_totales": null,
+    "plazas_libres": null,
+    "estado": "publicado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a06",
+    "publicador_nombre": "Ayto. Tahal",
+    "imagen_url": null,
+    "origen": {
+      "canal": "facebook",
+      "url": "https://www.facebook.com/aytotahal/posts/ejemplo-fiesta",
+      "importado_auto": true
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.03,
+      "revisado_por": null
+    },
+    "creado_en": "2026-11-20T18:00:00+01:00",
+    "actualizado_en": "2026-11-20T18:00:00+01:00"
+  }
+]

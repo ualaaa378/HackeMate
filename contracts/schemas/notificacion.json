@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "notificacion.json",
+  "title": "Notificacion",
+  "description": "Aviso que la API pide enviar al bot con POST /notify. Si el bot está caído, queda en cola (estado_envio = pendiente).",
+  "type": "object",
+  "required": ["telefono", "tipo", "texto"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "telefono": { "type": "string", "pattern": "^\\+[1-9][0-9]{6,14}$" },
+    "tipo": { "enum": ["recomendacion", "cambio_evento", "anuncio", "respuesta", "moderacion", "confirmacion"] },
+    "texto": { "type": "string", "minLength": 1 },
+    "formato": { "enum": ["texto", "audio"], "default": "texto" },
+    "usuario_id": { "type": ["string", "null"], "format": "uuid" },
+    "evento_id": { "type": ["string", "null"], "format": "uuid" },
+    "botones": { "type": "array", "items": { "type": "string" }, "maxItems": 3, "description": "Respuestas rápidas sugeridas" },
+    "estado_envio": { "enum": ["pendiente", "enviada", "fallida"] },
+    "intentos": { "type": "integer", "minimum": 0 },
+    "creado_en": { "type": "string", "format": "date-time" }
+  }
+}

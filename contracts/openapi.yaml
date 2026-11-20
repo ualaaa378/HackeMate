@@ -1,0 +1,1198 @@
+openapi: 3.1.0
+info:
+  title: HackeMate · contratos v1
+  version: 1.0.0
+  description: |
+    API REST de `api` (Flujo A) y endpoints de `bot` (Flujo B) que llama la API.
+    Convenciones (PLAN.md §5.2): snake_case en español, UUID v4, fechas ISO 8601 con zona,
+    paginación `{items, total, page, size}` y errores `{"error": {code, message, details}}`.
+    Los schemas de entidades viven en `schemas/*.json`.
+    Estado: v1 congelado en CP0. Los endpoints marcados `x-implementado: false` aún no existen.
+servers:
+  - url: http://localhost:8000
+    description: api
+  - url: http://localhost:8001
+    description: bot
+
+tags:
+  - name: sistema
+  - name: eventos
+  - name: ingesta
+  - name: inscripciones
+  - name: chat
+  - name: calendario
+  - name: recomendaciones
+  - name: moderacion
+  - name: publicadores
+  - name: auth
+  - name: usuarios
+  - name: estadisticas
+  - name: bot
+
+security:
+  - {}
+  - bearer: []
+  - interno: []
+
+paths:
+  /health:
+    get:
+      tags: [sistema]
+      summary: Estado del servicio (api, bot y web)
+      security: [{}]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+
+  /api/v1/municipios:
+    get:
+      tags: [eventos]
+      summary: Los 5 pueblos con coordenadas
+      security: [{}]
+      x-implementado: false
+      responses:
+        "200":
+          description: Lista de municipios
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Municipio" }
+
+  /api/v1/eventos:
+    get:
+      tags: [eventos]
+      summary: Agenda y mapa. Público solo ve `publicado`.
+      security: [{}]
+      x-implementado: false
+      parameters:
+        - { name: municipio, in: query, schema: { type: string } }
+        - { name: categoria, in: query, schema: { $ref: "#/components/schemas/Categoria" } }
+        - { name: desde, in: query, schema: { type: string, format: date-time } }
+        - { name: hasta, in: query, schema: { type: string, format: date-time } }
+        - { name: lat, in: query, schema: { type: number } }
+        - { name: lon, in: query, schema: { type: number } }
+        - { name: radio_km, in: query, schema: { type: number, minimum: 0 } }
+        - { name: q, in: query, description: Texto libre en título y descripción, schema: { type: string } }
+        - name: estado
+          in: query
+          description: Solo moderador y publicador (sus eventos). Por defecto `publicado`.
+          schema: { $ref: "#/components/schemas/EstadoEvento" }
+        - { name: publicador_id, in: query, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: Página de eventos
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaginaEventos" }
+        "422": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [eventos]
+      summary: Crear evento a mano (publicador o moderador)
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EventoCrear" }
+      responses:
+        "201":
+          description: Creado
+          content:
+            application/json:
+              schema: { $ref: "./schemas/evento.json" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /api/v1/eventos/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [eventos]
+      summary: Ficha del evento
+      security: [{}]
+      x-implementado: false
+      responses:
+        "200":
+          description: Evento
+          content:
+            application/json:
+              schema: { $ref: "./schemas/evento.json" }
+        "404": { $ref: "#/components/responses/Error" }
+    patch:
+      tags: [eventos]
+      summary: Editar evento. Si cambia `fecha_inicio`, avisa a todos los inscritos (`cambio_evento`) y fija un anuncio.
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EventoEditar" }
+      responses:
+        "200":
+          description: Evento actualizado
+          content:
+            application/json:
+              schema: { $ref: "./schemas/evento.json" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /api/v1/eventos/importar:
+    post:
+      tags: [ingesta]
+      summary: El bot entrega una ExtraccionEvento + origen. Crea el evento en `pendiente_confirmacion`.
+      description: Si ya existe un evento con el mismo `origen.url`, devuelve ese (`duplicado = true`) y no crea otro.
+      security: [{ interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ImportarEvento" }
+      responses:
+        "201":
+          description: Evento creado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResultadoImportacion" }
+        "200":
+          description: Ya existía (mismo origen.url)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResultadoImportacion" }
+        "403": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /api/v1/eventos/{id}/confirmar:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [ingesta]
+      summary: El publicador completa lo que falta y confirma. Pasa a moderación (`en_revision` o `publicado` según nivel).
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmarEvento" }
+      responses:
+        "200":
+          description: Evento tras la moderación automática
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResultadoImportacion" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /api/v1/eventos/{id}/inscripciones:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [inscripciones]
+      summary: Lista de inscritos (solo organizador y moderador)
+      x-implementado: false
+      responses:
+        "200":
+          description: Inscripciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "./schemas/inscripcion.json" }
+        "403": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [inscripciones]
+      summary: Apuntarse. Si no hay plazas, queda en `lista_espera`.
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InscripcionCrear" }
+      responses:
+        "201":
+          description: Inscripción
+          content:
+            application/json:
+              schema: { $ref: "./schemas/inscripcion.json" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /api/v1/eventos/{id}/inscripciones/{insc_id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+      - { name: insc_id, in: path, required: true, schema: { type: string, format: uuid } }
+    delete:
+      tags: [inscripciones]
+      summary: Cancelar. El primero de la lista de espera sube a `confirmada` y se le avisa.
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      responses:
+        "200":
+          description: Inscripción cancelada
+          content:
+            application/json:
+              schema: { $ref: "./schemas/inscripcion.json" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    patch:
+      tags: [inscripciones]
+      summary: Marcar asistencia (organizador o moderador)
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado: { enum: [asistio, no_asistio] }
+      responses:
+        "200":
+          description: Inscripción
+          content:
+            application/json:
+              schema: { $ref: "./schemas/inscripcion.json" }
+
+  /api/v1/eventos/{id}/mensajes:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [chat]
+      summary: Chat del evento. Anuncios fijados primero. Nunca expone teléfonos.
+      security: [{}]
+      x-implementado: false
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: Mensajes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaginaMensajes" }
+    post:
+      tags: [chat]
+      summary: Publicar mensaje. Pasa por `bot /ai/spam`; si es pregunta, `bot /ai/responder-ficha`.
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MensajeCrear" }
+      responses:
+        "201":
+          description: Mensaje (y respuesta de la IA si la hubo)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [mensaje]
+                properties:
+                  mensaje: { $ref: "./schemas/mensaje_evento.json" }
+                  respuesta_ia: { oneOf: [{ $ref: "./schemas/mensaje_evento.json" }, { type: "null" }] }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /api/v1/eventos/{id}/mensajes/{msg_id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+      - { name: msg_id, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      tags: [chat]
+      summary: Fijar u ocultar (organizador o moderador)
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fijado: { type: boolean }
+                oculto: { type: boolean }
+      responses:
+        "200":
+          description: Mensaje
+          content:
+            application/json:
+              schema: { $ref: "./schemas/mensaje_evento.json" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /api/v1/eventos/{id}/ics:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [calendario]
+      summary: Evento en formato iCalendar (zona Europe/Madrid)
+      security: [{}]
+      x-implementado: false
+      responses:
+        "200":
+          description: Archivo .ics
+          content:
+            text/calendar:
+              schema: { type: string }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /api/v1/usuarios/me/ics:
+    get:
+      tags: [calendario]
+      summary: Todos los eventos en los que el usuario está confirmado
+      security: [{ bearer: [] }]
+      x-implementado: false
+      responses:
+        "200":
+          description: Archivo .ics
+          content:
+            text/calendar:
+              schema: { type: string }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /api/v1/recomendaciones:
+    get:
+      tags: [recomendaciones]
+      summary: Eventos recomendados con motivo legible
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      parameters:
+        - { name: usuario_id, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: limite, in: query, schema: { type: integer, default: 5, minimum: 1, maximum: 20 } }
+      responses:
+        "200":
+          description: Recomendaciones ordenadas por puntuación
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Recomendacion" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /api/v1/moderacion/pendientes:
+    get:
+      tags: [moderacion]
+      summary: Bandeja del moderador (eventos en revisión y publicadores por aprobar), con motivo
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: Pendientes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaginaPendientes" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /api/v1/moderacion/{id}/decision:
+    parameters:
+      - { name: id, in: path, required: true, description: ID del evento, schema: { type: string, format: uuid } }
+    post:
+      tags: [moderacion]
+      summary: Aprobar, rechazar o retirar un evento
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Decision" }
+      responses:
+        "200":
+          description: Evento tras la decisión
+          content:
+            application/json:
+              schema: { $ref: "./schemas/evento.json" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /api/v1/publicadores:
+    get:
+      tags: [publicadores]
+      summary: Lista de publicadores
+      x-implementado: false
+      parameters:
+        - { name: estado, in: query, schema: { enum: [solicitado, whatsapp_verificado, aprobado, rechazado, pausado] } }
+        - { name: municipio, in: query, schema: { type: string } }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: Página de publicadores
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaginaPublicadores" }
+    post:
+      tags: [publicadores]
+      summary: Solicitar ser publicador (queda en `solicitado` hasta verificar el WhatsApp)
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PublicadorCrear" }
+      responses:
+        "201":
+          description: Publicador
+          content:
+            application/json:
+              schema: { $ref: "./schemas/publicador.json" }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /api/v1/publicadores/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [publicadores]
+      summary: Ficha del publicador
+      x-implementado: false
+      responses:
+        "200":
+          description: Publicador
+          content:
+            application/json:
+              schema: { $ref: "./schemas/publicador.json" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /api/v1/publicadores/{id}/aprobar:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [publicadores]
+      summary: El moderador aprueba (o rechaza) la entidad
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                aprobar: { type: boolean, default: true }
+                nivel_confianza: { enum: [0, 1, 2], default: 0 }
+                motivo: { type: [string, "null"] }
+      responses:
+        "200":
+          description: Publicador
+          content:
+            application/json:
+              schema: { $ref: "./schemas/publicador.json" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /api/v1/publicadores/{id}/pausar:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [publicadores]
+      summary: Pausar (o reactivar) un publicador o solo sus automatizaciones
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [que, pausado]
+              properties:
+                que: { enum: [publicador, automatizaciones] }
+                pausado: { type: boolean }
+      responses:
+        "200":
+          description: Publicador
+          content:
+            application/json:
+              schema: { $ref: "./schemas/publicador.json" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /api/v1/publicadores/{id}/fuentes:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [publicadores]
+      summary: Conectar una fuente (Facebook, Instagram, web) que el bot vigila
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [canal, url]
+              properties:
+                canal: { enum: [facebook, instagram, web_externa] }
+                url: { type: string }
+      responses:
+        "201":
+          description: Publicador con la fuente añadida
+          content:
+            application/json:
+              schema: { $ref: "./schemas/publicador.json" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /api/v1/auth/google:
+    post:
+      tags: [auth]
+      summary: Valida el id_token de Google y devuelve un JWT propio con rol
+      security: [{}]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id_token]
+              properties:
+                id_token: { type: string }
+      responses:
+        "200":
+          description: Sesión
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Token" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /api/v1/auth/whatsapp/codigo:
+    post:
+      tags: [auth]
+      summary: Envía un código de un solo uso por WhatsApp (vía bot /notify)
+      security: [{}]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [telefono]
+              properties:
+                telefono: { $ref: "#/components/schemas/Telefono" }
+      responses:
+        "200":
+          description: Código enviado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [enviado, expira_en]
+                properties:
+                  enviado: { type: boolean }
+                  expira_en: { type: string, format: date-time }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /api/v1/auth/whatsapp/verificar:
+    post:
+      tags: [auth]
+      summary: Verifica el código. Marca el WhatsApp como verificado y devuelve sesión.
+      security: [{}]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [telefono, codigo]
+              properties:
+                telefono: { $ref: "#/components/schemas/Telefono" }
+                codigo: { type: string, pattern: "^[0-9]{6}$" }
+      responses:
+        "200":
+          description: Sesión
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Token" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /api/v1/usuarios:
+    post:
+      tags: [usuarios]
+      summary: Alta de usuario (el bot la usa la primera vez que escribe un teléfono nuevo)
+      security: [{ interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UsuarioCrear" }
+      responses:
+        "201":
+          description: Usuario
+          content:
+            application/json:
+              schema: { $ref: "./schemas/usuario.json" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /api/v1/usuarios/by-phone/{e164}:
+    parameters:
+      - { name: e164, in: path, required: true, schema: { $ref: "#/components/schemas/Telefono" } }
+    get:
+      tags: [usuarios]
+      summary: Identidad a partir del teléfono (solo servicios internos)
+      security: [{ interno: [] }]
+      x-implementado: false
+      responses:
+        "200":
+          description: Usuario
+          content:
+            application/json:
+              schema: { $ref: "./schemas/usuario.json" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /api/v1/usuarios/me:
+    get:
+      tags: [usuarios]
+      summary: Perfil del usuario autenticado
+      security: [{ bearer: [] }]
+      x-implementado: false
+      responses:
+        "200":
+          description: Usuario
+          content:
+            application/json:
+              schema: { $ref: "./schemas/usuario.json" }
+        "401": { $ref: "#/components/responses/Error" }
+    patch:
+      tags: [usuarios]
+      summary: Editar preferencias (gustos, pueblo, formato de aviso…)
+      security: [{ bearer: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UsuarioEditar" }
+      responses:
+        "200":
+          description: Usuario
+          content:
+            application/json:
+              schema: { $ref: "./schemas/usuario.json" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /api/v1/estadisticas:
+    get:
+      tags: [estadisticas]
+      summary: Datos del panel (actividades, importadas solas, asistencia, ocupación, solapamientos, tokens)
+      x-implementado: false
+      parameters:
+        - { name: desde, in: query, schema: { type: string, format: date-time } }
+        - { name: hasta, in: query, schema: { type: string, format: date-time } }
+        - { name: municipio, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Estadísticas
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Estadisticas" }
+
+  /api/v1/metrics/tokens:
+    post:
+      tags: [estadisticas]
+      summary: El bot registra cada llamada a la IA (criterio «coste en tokens»)
+      security: [{ interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MetricaTokens" }
+      responses:
+        "202": { description: Registrado }
+
+  # ---------------- bot (Flujo B) ----------------
+  /webhook/twilio:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: Entrada de WhatsApp (Twilio). Responde TwiML con acuse inmediato.
+      security: [{}]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                From: { type: string }
+                Body: { type: string }
+                NumMedia: { type: integer }
+                MediaUrl0: { type: string }
+                MediaContentType0: { type: string }
+                Latitude: { type: number }
+                Longitude: { type: number }
+      responses:
+        "200":
+          description: TwiML
+          content:
+            application/xml:
+              schema: { type: string }
+
+  /notify:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: La api pide enviar un aviso
+      security: [{ interno: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "./schemas/notificacion.json" }
+      responses:
+        "200":
+          description: Enviado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [enviado]
+                properties:
+                  enviado: { type: boolean }
+
+  /ai/extraer:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: Texto → ExtraccionEvento
+      security: [{ interno: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto: { type: string }
+      responses:
+        "200":
+          description: Extracción
+          content:
+            application/json:
+              schema: { $ref: "./schemas/extraccion_evento.json" }
+
+  /ai/spam:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: Puntuación de spam de un texto (evento o mensaje del chat)
+      security: [{ interno: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto: { type: string }
+                contexto: { enum: [evento, mensaje] }
+                publicador_id: { type: [string, "null"], format: uuid }
+      responses:
+        "200":
+          description: Resultado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [score_spam, es_spam]
+                properties:
+                  score_spam: { type: number, minimum: 0, maximum: 1 }
+                  es_spam: { type: boolean }
+                  motivo: { type: [string, "null"] }
+                  proveedor_ia: { type: string }
+
+  /ai/responder-ficha:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: Responde una pregunta usando solo la ficha del evento
+      security: [{ interno: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [evento, pregunta]
+              properties:
+                evento: { $ref: "./schemas/evento.json" }
+                pregunta: { type: string }
+      responses:
+        "200":
+          description: Respuesta
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [puede_responder]
+                properties:
+                  puede_responder: { type: boolean, description: false = no está en la ficha, se deriva al organizador }
+                  respuesta: { type: [string, "null"] }
+                  proveedor_ia: { type: string }
+
+  /ai/preferencias:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: «Me gustan las rutas» → gustos estructurados
+      security: [{ interno: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto: { type: string }
+      responses:
+        "200":
+          description: Preferencias
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gustos: { type: array, items: { $ref: "#/components/schemas/Categoria" } }
+                  etiquetas_interes: { type: array, items: { type: string } }
+                  municipio: { type: [string, "null"] }
+                  formato_aviso: { enum: [texto, audio] }
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    interno:
+      type: apiKey
+      in: header
+      name: X-Internal-Token
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    Size:
+      name: size
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+
+  responses:
+    Error:
+      description: Error con el formato común
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Health:
+      type: object
+      required: [status, version]
+      properties:
+        status: { const: ok }
+        version: { type: string }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, examples: [evento_no_encontrado, publicador_pausado, sin_plazas, token_interno_invalido] }
+            message: { type: string }
+            details: { type: object }
+
+    Telefono:
+      type: string
+      pattern: "^\\+[1-9][0-9]{6,14}$"
+      description: E.164, p. ej. +34600000000
+
+    Categoria:
+      enum: [deportiva, cultural, fiestas, gastronomia, ludica, comercio]
+
+    EstadoEvento:
+      enum: [borrador, pendiente_confirmacion, en_revision, publicado, rechazado, cancelado, finalizado, archivado]
+
+    Municipio:
+      type: object
+      required: [nombre, lat, lon]
+      properties:
+        nombre: { type: string }
+        lat: { type: number }
+        lon: { type: number }
+
+    Pagina:
+      type: object
+      required: [items, total, page, size]
+      properties:
+        items: { type: array }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        size: { type: integer, minimum: 1 }
+
+    PaginaEventos:
+      allOf:
+        - $ref: "#/components/schemas/Pagina"
+        - properties:
+            items: { type: array, items: { $ref: "./schemas/evento.json" } }
+
+    PaginaMensajes:
+      allOf:
+        - $ref: "#/components/schemas/Pagina"
+        - properties:
+            items: { type: array, items: { $ref: "./schemas/mensaje_evento.json" } }
+
+    PaginaPublicadores:
+      allOf:
+        - $ref: "#/components/schemas/Pagina"
+        - properties:
+            items: { type: array, items: { $ref: "./schemas/publicador.json" } }
+
+    PaginaPendientes:
+      allOf:
+        - $ref: "#/components/schemas/Pagina"
+        - properties:
+            items: { type: array, items: { $ref: "#/components/schemas/Pendiente" } }
+
+    Pendiente:
+      type: object
+      required: [tipo, motivo]
+      properties:
+        tipo: { enum: [evento, publicador] }
+        motivo: { type: string }
+        score_spam: { type: [number, "null"] }
+        evento: { $ref: "./schemas/evento.json" }
+        publicador: { $ref: "./schemas/publicador.json" }
+
+    EventoCrear:
+      type: object
+      required: [titulo, categoria, municipio, fecha_inicio]
+      properties:
+        titulo: { type: string, minLength: 3, maxLength: 120 }
+        descripcion: { type: string }
+        categoria: { $ref: "#/components/schemas/Categoria" }
+        etiquetas: { type: array, items: { type: string } }
+        municipio: { type: string }
+        lugar: { type: [string, "null"] }
+        lat: { type: [number, "null"], description: Si falta, se usan las del municipio }
+        lon: { type: [number, "null"] }
+        fecha_inicio: { type: string, format: date-time }
+        fecha_fin: { type: [string, "null"], format: date-time }
+        precio_eur: { type: [number, "null"], minimum: 0 }
+        es_gratuito: { type: boolean }
+        plazas_totales: { type: [integer, "null"], minimum: 0 }
+        imagen_url: { type: [string, "null"] }
+        publicador_id: { type: [string, "null"], format: uuid }
+
+    EventoEditar:
+      type: object
+      description: Todos los campos de EventoCrear son opcionales. `estado` solo lo cambia el moderador o el publicador para cancelar.
+      properties:
+        titulo: { type: string, minLength: 3, maxLength: 120 }
+        descripcion: { type: string }
+        categoria: { $ref: "#/components/schemas/Categoria" }
+        etiquetas: { type: array, items: { type: string } }
+        lugar: { type: [string, "null"] }
+        lat: { type: [number, "null"] }
+        lon: { type: [number, "null"] }
+        fecha_inicio: { type: string, format: date-time }
+        fecha_fin: { type: [string, "null"], format: date-time }
+        precio_eur: { type: [number, "null"], minimum: 0 }
+        es_gratuito: { type: boolean }
+        plazas_totales: { type: [integer, "null"], minimum: 0 }
+        imagen_url: { type: [string, "null"] }
+        estado: { enum: [cancelado, archivado] }
+
+    Origen:
+      type: object
+      required: [canal, importado_auto]
+      properties:
+        canal: { enum: [whatsapp, web, panel, facebook, instagram, web_externa, manual] }
+        url: { type: [string, "null"] }
+        importado_auto: { type: boolean }
+
+    ImportarEvento:
+      type: object
+      required: [extraccion, origen]
+      description: Hace falta `telefono_publicador` o `publicador_id` (o un origen.url de una fuente conocida).
+      properties:
+        extraccion: { $ref: "./schemas/extraccion_evento.json" }
+        telefono_publicador: { $ref: "#/components/schemas/Telefono" }
+        publicador_id: { type: [string, "null"], format: uuid }
+        origen: { $ref: "#/components/schemas/Origen" }
+
+    ResultadoImportacion:
+      type: object
+      required: [evento, faltan, duplicado]
+      properties:
+        evento: { $ref: "./schemas/evento.json" }
+        faltan: { type: array, items: { type: string } }
+        duplicado: { type: boolean, description: true = mismo origen.url, no se ha creado nada }
+        posible_duplicado_de: { type: [string, "null"], format: uuid, description: Evento parecido (título + fecha + municipio) }
+
+    ConfirmarEvento:
+      type: object
+      properties:
+        campos:
+          type: object
+          description: Valores que faltaban o que el publicador corrige (mismos nombres que EventoCrear)
+          additionalProperties: true
+        confirmado_por: { enum: [whatsapp, web] }
+
+    InscripcionCrear:
+      type: object
+      properties:
+        usuario_id: { type: string, format: uuid, description: Solo con X-Internal-Token (el bot inscribe en nombre del vecino) }
+        plazas: { type: integer, minimum: 1, default: 1 }
+        canal: { enum: [whatsapp, web] }
+
+    MensajeCrear:
+      type: object
+      required: [texto]
+      properties:
+        texto: { type: string, minLength: 1, maxLength: 1000 }
+        tipo: { enum: [pregunta, comentario, anuncio], default: comentario }
+        en_respuesta_a: { type: [string, "null"], format: uuid }
+        usuario_id: { type: string, format: uuid, description: Solo con X-Internal-Token }
+
+    Recomendacion:
+      type: object
+      required: [evento, puntuacion, motivo]
+      properties:
+        evento: { $ref: "./schemas/evento.json" }
+        puntuacion: { type: number }
+        motivo: { type: string, examples: ["Te gusta el senderismo, está a 4 km y quedan 8 plazas"] }
+        distancia_km: { type: [number, "null"] }
+
+    Decision:
+      type: object
+      required: [decision]
+      properties:
+        decision: { enum: [aprobar, rechazar, retirar] }
+        motivo: { type: [string, "null"] }
+
+    PublicadorCrear:
+      type: object
+      required: [nombre, tipo, municipio, telefono]
+      properties:
+        nombre: { type: string, minLength: 2 }
+        tipo: { enum: [asociacion, ayuntamiento, bar_restaurante, comercio, otro] }
+        municipio: { type: string }
+        descripcion: { type: [string, "null"] }
+        telefono: { $ref: "#/components/schemas/Telefono" }
+        email: { type: [string, "null"], format: email }
+
+    UsuarioCrear:
+      type: object
+      required: [telefono]
+      properties:
+        telefono: { $ref: "#/components/schemas/Telefono" }
+        nombre: { type: string }
+        municipio: { type: [string, "null"] }
+
+    UsuarioEditar:
+      type: object
+      properties:
+        nombre: { type: string }
+        municipio: { type: [string, "null"] }
+        lat: { type: [number, "null"] }
+        lon: { type: [number, "null"] }
+        gustos: { type: array, items: { $ref: "#/components/schemas/Categoria" } }
+        etiquetas_interes: { type: array, items: { type: string } }
+        formato_aviso: { enum: [texto, audio] }
+        acepta_avisos: { type: boolean }
+        radio_km: { type: [number, "null"], minimum: 0 }
+        telefono: { $ref: "#/components/schemas/Telefono" }
+
+    Token:
+      type: object
+      required: [access_token, token_type, usuario]
+      properties:
+        access_token: { type: string }
+        token_type: { const: bearer }
+        usuario: { $ref: "./schemas/usuario.json" }
+
+    MetricaTokens:
+      type: object
+      description: Lo que ya envía services/bot/app/metrics.py
+      required: [proveedor, tarea, tokens_entrada, tokens_salida]
+      properties:
+        proveedor: { type: string }
+        modelo: { type: string }
+        tarea: { type: string }
+        tokens_entrada: { type: integer, minimum: 0 }
+        tokens_salida: { type: integer, minimum: 0 }
+        latencia_ms: { type: integer, minimum: 0 }
+        ok: { type: boolean }
+        ts: { type: number, description: Epoch en segundos }
+
+    Estadisticas:
+      type: object
+      properties:
+        periodo:
+          type: object
+          properties:
+            desde: { type: [string, "null"], format: date-time }
+            hasta: { type: [string, "null"], format: date-time }
+        actividades: { type: integer }
+        pct_importadas_auto: { type: number }
+        inscripciones: { type: integer }
+        asistencias: { type: integer }
+        ocupacion_por_categoria:
+          type: object
+          additionalProperties: { type: number, description: "0-1" }
+        pct_otro_pueblo: { type: number }
+        solapamientos:
+          type: array
+          items:
+            type: object
+            properties:
+              evento_a: { type: string, format: uuid }
+              evento_b: { type: string, format: uuid }
+              motivo: { type: string }
+        tokens:
+          type: object
+          properties:
+            por_proveedor:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  llamadas: { type: integer }
+                  entrada: { type: integer }
+                  salida: { type: integer }
+                  coste_eur: { type: number }
+            coste_total_eur: { type: number }

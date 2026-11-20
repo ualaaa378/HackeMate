@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "inscripcion.json",
+  "title": "Inscripcion",
+  "type": "object",
+  "required": ["id", "evento_id", "usuario_id", "estado"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "evento_id": { "type": "string", "format": "uuid" },
+    "usuario_id": { "type": "string", "format": "uuid" },
+    "usuario_nombre": { "type": ["string", "null"], "description": "Solo lo ven organizador y moderador" },
+    "estado": { "enum": ["confirmada", "lista_espera", "cancelada", "asistio", "no_asistio"] },
+    "posicion_espera": { "type": ["integer", "null"], "minimum": 1, "description": "Solo si estado = lista_espera" },
+    "plazas": { "type": "integer", "minimum": 1, "default": 1 },
+    "canal": { "enum": ["whatsapp", "web", "panel", "facebook", "instagram", "web_externa", "manual"] },
+    "creado_en": { "type": "string", "format": "date-time" },
+    "actualizado_en": { "type": "string", "format": "date-time" }
+  }
+}
