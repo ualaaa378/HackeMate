@@ -83,6 +83,7 @@ export function distanciaKm(lat1: number, lon1: number, lat2: number, lon2: numb
 }
 
 // ---------- mocks ----------
+const USUARIO_MOCK_ID = '00000000-0000-4000-8000-000000000001';
 const mockEventos = eventosMock as Evento[];
 const esperar = <T>(valor: T, ms = 250) => new Promise<T>((r) => setTimeout(() => r(valor), ms));
 
@@ -126,7 +127,14 @@ export function inscribirse(eventoId: string): Promise<Inscripcion> {
       const hayPlaza = e?.plazas_libres == null || e.plazas_libres > 0;
       if (e && e.plazas_libres != null && e.plazas_libres > 0) e.plazas_libres -= 1;
       if (e && hayPlaza) e.inscritos = (e.inscritos ?? 0) + 1;
-      return esperar<Inscripcion>({ id: crypto.randomUUID(), evento_id: eventoId, estado: hayPlaza ? 'confirmada' : 'lista_espera' });
+      return esperar<Inscripcion>({
+        id: crypto.randomUUID(),
+        evento_id: eventoId,
+        usuario_id: USUARIO_MOCK_ID,
+        estado: hayPlaza ? 'confirmada' : 'lista_espera',
+        plazas: 1,
+        canal: 'web',
+      });
     },
   );
 }

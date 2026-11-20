@@ -133,8 +133,8 @@
 
 **Bloque 1 (vie 18:30–23:30)**
 - [x] Proyecto Ionic React (`ionic start web tabs --type=react`) con pestañas Agenda · Mapa · Perfil
-- [~] Tipos generados desde `openapi.yaml` y `VITE_API_URL` configurable *(`VITE_API_URL` hecho y la app lee la API en `develop`; los tipos de `src/api/types.ts` siguen escritos a mano, falta generarlos con openapi-typescript)*
-- [ ] Android Studio + JDK instalados (dejarlo descargando en segundo plano)
+- [x] Tipos generados desde `openapi.yaml` y `VITE_API_URL` configurable *(`src/api/openapi.d.ts` con openapi-typescript; se regenera con `npm run api:tipos`)*
+- [x] Android Studio + JDK instalados *(el JDK va incluido en Android Studio)*
 - [x] Mocks con `contracts/fixtures` *(JSON en `src/mocks`, activos con `VITE_USE_MOCKS=true` o sin `VITE_API_URL`)*
 - [x] Agenda (lista por fecha con filtros)
 - [x] Mapa Leaflet con pines por categoría y «cerca de mí»
