@@ -275,8 +275,8 @@ main { padding-block: 20px 40px; }
   .agenda-layout .filtros { position: static; }
   .cabecera .contenedor { min-height: 68px; }
   .letra span { display: none; }
-  .pestanas { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--superficie); border-top: 1px solid var(--borde); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
-  .pestanas a { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 70px; text-decoration: none; font-size: .8rem; font-weight: 700; color: var(--texto-suave); }
+  .pestanas { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--superficie); border-top: 1px solid var(--borde); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+  .pestanas a { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 70px; text-decoration: none; font-size: .75rem; font-weight: 700; color: var(--texto-suave); }
   .pestanas svg { width: 28px; height: 28px; }
   .pestanas a[aria-current="page"] { color: var(--azul); }
   .pestanas a[aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 22%; right: 22%; height: 4px; border-radius: 0 0 4px 4px; background: var(--azul); }
@@ -297,6 +297,31 @@ main { padding-block: 20px 40px; }
   .barra__wa span { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.evento__foto { position: relative; flex: none; width: 64px; height: 64px; }
+.evento__foto img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radio); display: block; }
+.evento__foto span { position: absolute; left: -4px; bottom: -4px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: .85rem; background: var(--color); border: 2px solid #fff; }
+.recuerdos { height: calc(100dvh - 180px); overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; background: #000; }
+.recuerdo { position: relative; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; overflow: hidden; color: #fff; isolation: isolate; }
+.recuerdo__foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.recuerdo::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.45) 40%, transparent 70%); }
+.recuerdo__texto { position: absolute; left: 16px; right: 84px; bottom: 18px; }
+.recuerdo__texto h2 { margin: 8px 0 4px; font-size: 1.45rem; line-height: 1.2; }
+.recuerdo__texto p { margin: 0 0 6px; }
+.recuerdo__desc { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; opacity: .92; }
+.recuerdo__chapa { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .8rem; font-weight: 700; }
+.recuerdo__credito { font-size: .72rem; color: #fff; opacity: .85; }
+.recuerdo__acciones { position: absolute; right: 12px; bottom: 30px; display: grid; gap: 16px; }
+.recuerdo__acciones > * { width: 58px; min-height: 58px; border-radius: 50%; border: 0; background: rgba(0,0,0,.5); color: #fff; display: grid; place-items: center; align-content: center; font: inherit; font-size: .8rem; font-weight: 700; text-decoration: none; cursor: pointer; }
+.recuerdo__acciones span[aria-hidden] { font-size: 1.4rem; line-height: 1; }
+body.en-recuerdos .pie { display: none; }
+@media (max-width: 860px) { body.en-recuerdos #principal { padding: 0; } body.en-recuerdos .recuerdos { height: calc(100dvh - 120px - 71px - env(safe-area-inset-bottom, 0px)); } }
+.hoja { align-self: end; width: min(560px, 100%); max-height: 80dvh; overflow-y: auto; border-radius: 16px 16px 0 0; }
+.hoja__cabeza { display: flex; justify-content: space-between; align-items: center; }
+.hoja__cabeza h2 { margin: 0; }
+.hoja__cerrar { width: var(--toque); height: var(--toque); border: 0; background: none; font-size: 1.2rem; cursor: pointer; }
+.hoja__plan { font-weight: 700; color: var(--azul-oscuro); }
+.selector-imagen { display: grid; gap: 8px; }
+#p-vista img { width: 100%; max-height: 260px; object-fit: cover; border-radius: var(--radio); margin-bottom: 8px; }
 </style>
 
 <header>
@@ -350,7 +375,7 @@ const CATEGORIAS = {
   comercio:    { etiqueta: "Comercio",    emoji: "🛍️", color: "#00727c" }
 };
 
-const RUTA_FOTOS = "../../apps/web/public/pueblos/"; // en el artefacto publicado: "pueblos/"
+const RUTA_FOTOS = "../../apps/web/public/pueblos/"; // en el repo: ../../apps/web/public/pueblos/
 const PUEBLOS = [
   { nombre: "Lucainena de las Torres", lema: "Uno de los pueblos más bonitos de España", color: "#1b4f7a", lat: 37.0406, lon: -2.2017, foto: {"base": "lucainena-de-las-torres", "alt": "Casas blancas con tejados de teja de Lucainena de las Torres y la iglesia al fondo, entre lomas de la Sierra de Alhamilla", "autor": "Ziegler175", "licencia": "CC BY-SA 4.0", "url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es", "url": "https://commons.wikimedia.org/wiki/File:Alm04LucainenaDLTorres2.jpg"} },
   { nombre: "Senés",                   lema: "Sierra de los Filabres",                  color: "#2c6e78", lat: 37.1983, lon: -2.3447, foto: {"base": "senes", "alt": "Senés, un pueblo blanco recogido en la ladera de la Sierra de los Filabres, rodeado de bancales y montes verdes", "autor": "Julen Iturbe-Ormaetxe", "licencia": "CC BY-SA 2.0", "url_licencia": "https://creativecommons.org/licenses/by-sa/2.0/deed.es", "url": "https://commons.wikimedia.org/wiki/File:Sen%C3%A9s_(Almer%C3%ADa).jpg"} },
@@ -358,6 +383,12 @@ const PUEBLOS = [
   { nombre: "Uleila del Campo",        lema: "Teatro, rutas y fiestas",                 color: "#7a3b6e", lat: 37.1856, lon: -2.2061, foto: {"base": "uleila-del-campo", "alt": "Calle de Uleila del Campo con casas encaladas y de piedra, y el campanario de la iglesia sobre los tejados", "autor": "Ziegler175", "licencia": "CC BY-SA 4.0", "url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es", "url": "https://commons.wikimedia.org/wiki/File:Alm10UleilaDelCampo2.jpg"} },
   { nombre: "Tahal",                   lema: "Castillo de Tahal",                       color: "#14558a", lat: 37.2231, lon: -2.2861, foto: {"base": "tahal", "alt": "Torre del castillo de Tahal, de piedra oscura y con almenas, bajo un cielo azul", "autor": "Eduardo Milla", "licencia": "CC BY-SA 4.0", "url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es", "url": "https://commons.wikimedia.org/wiki/File:Castillo_de_Tahal_01.jpg"} }
 ];
+
+const RUTA_EVENTOS = "../../apps/web/public/eventos/"; // en el repo: ../../apps/web/public/eventos/
+// Foto ilustrativa por tipo de plan (Wikimedia Commons, licencia libre). Si la organización sube una, se usa esa.
+const FOTOS_PLANES = {"procesion": {"alt": "Procesión de Semana Santa con nazarenos de túnica morada por una calle de Almería","autor": "Eduardo Milla","licencia": "CC BY-SA 4.0","url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Procesi%C3%B3n_Angustias_02.jpg"},"romeria": {"alt": "Romería de San Marcos en El Ejido: carroza adornada con flores tirada por un tractor entre la gente","autor": "ANESTRELLA","licencia": "CC BY-SA 4.0","url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Romer%C3%ADa_San_Marcos_El_Ejido.jpg"},"cruces": {"alt": "Azulejo pintado con una cruz de mayo adornada de flores y gente bailando alrededor","autor": "CarlosVdeHabsburgo","licencia": "CC BY-SA 4.0","url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Cruces_de_Mayo_(Sevilla).jpg"},"fuegos": {"alt": "Castillo de fuegos artificiales de colores en el cielo de noche","autor": "German Prados","licencia": "CC BY 3.0","url_licencia": "https://creativecommons.org/licenses/by/3.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Castillo_De_Fuegos_Artificiales_(84575397).jpeg"},"flamenco": {"alt": "Bailaora de flamenco con traje de lunares y mantón sobre un escenario, con público alrededor","autor": "Schnobby","licencia": "CC BY-SA 4.0","url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Flamenco_in_Sevilla_02.jpg"},"sevillanas": {"alt": "Parejas bailando sevillanas bajo una carpa en unas fiestas de pueblo","autor": "Starkenbergg","licencia": "CC0 (dominio público)","url_licencia": "https://creativecommons.org/publicdomain/zero/1.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Sevillanas_Serraparera.JPG"},"bachata": {"alt": "Pareja de baile en plena figura de bachata","autor": "Terralivredance","licencia": "CC BY-SA 4.0","url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Professional_Bachata_Couple.jpg"},"teatro": {"alt": "Actrices sobre un escenario iluminado en tonos cálidos durante una obra de teatro","autor": "José Simón Escalona","licencia": "CC0 (dominio público)","url_licencia": "https://creativecommons.org/publicdomain/zero/1.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Representaci%C3%B3n_de_La_celestina_del_Teatro_Alberto_de_Paz_y_Mateos,_Caracas_(2007).jpg"},"carrera": {"alt": "Corredores de montaña subiendo por un sendero de piedras entre árboles","autor": "Julia Baykova","licencia": "CC BY 2.0","url_licencia": "https://creativecommons.org/licenses/by/2.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Trail_Running_Lago_Orta.jpg"},"senderismo": {"alt": "Grupo de senderistas descansando en un llano de la Sierra de los Filabres, en Tahal","autor": "Ayuntamiento de Roquetas de Mar","licencia": "Dominio público","url_licencia": null,"url_original": "https://commons.wikimedia.org/wiki/File:Ruta_senderismo_Sierra_de_los_Filabres_-_24985109473.jpg"},"tapas": {"alt": "Tres platos de tapas de jibia en salsa con pan sobre una bandeja de bar","autor": "Urci dream","licencia": "CC BY-SA 4.0","url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Tapas_de_jibia_en_salsa.jpg"},"mantecados": {"alt": "Mantecados navideños en forma de estrella espolvoreados de azúcar","autor": "Lobo","licencia": "Dominio público","url_licencia": null,"url_original": "https://commons.wikimedia.org/wiki/File:Mantecados_-_Navidad_2010-2011.jpg"},"cabalgata": {"alt": "Mucha gente en la calle esperando el paso de la cabalgata de Reyes","autor": "El Pantera","licencia": "CC BY-SA 4.0","url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Cabalgata_de_Reyes_Magos_2022-JErez-P1600194.jpg"},"halloween": {"alt": "Niñas y niños disfrazados de calavera y de monstruo pidiendo caramelos en un pasacalles de Halloween","autor": "Silar","licencia": "CC BY-SA 4.0","url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:02024_1221_Trick-or-treating.jpg"},"mercado": {"alt": "Mercadillo de productos locales y artesanía en la plaza de un pueblo","autor": "Alfredo Sánchez Garzón","licencia": "CC BY-SA 4.0","url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Casasbajas-feriaManzana_(2018)7946.jpg"},"plaza": {"alt": "Plaza de Lucainena de las Torres con árboles podados en forma de cubo y la sierra al fondo","autor": "Inma Gasteiz","licencia": "CC BY-SA 4.0","url_licencia": "https://creativecommons.org/licenses/by-sa/4.0/deed.es","url_original": "https://commons.wikimedia.org/wiki/File:Plaza_de_Lucainena_de_las_Torres,_Almer%C3%ADa.jpg"},"burro": {"alt": "Cabeza de un burro andaluz con su cabezada, entre la gente","autor": "Iván Salvía","licencia": "Dominio público","url_licencia": null,"url_original": "https://commons.wikimedia.org/wiki/File:Alboxmonachilmotril_039.jpg"}};
+const REGLAS_FOTO = [[/burro/, "burro"], [/cabalgata/, "cabalgata"], [/halloween|disfraces/, "halloween"], [/mantecados|navide/, "mantecados"], [/tapa|postre|menu|restaurante|gastronom/, "tapas"], [/carrera|trail/, "carrera"], [/senderis|ruta_|excursion/, "senderismo"], [/flamenco/, "flamenco"], [/bachata|salsa/, "bachata"], [/sevillanas|baile/, "sevillanas"], [/teatro/, "teatro"], [/romeria/, "romeria"], [/procesion|religioso|semana_santa|besamanos/, "procesion"], [/flores|cruces_de_mayo|cruz/, "cruces"], [/ecomercado|mercad|artesan/, "mercado"], [/pueblos_mas_bonitos/, "plaza"], [/verbena|feria|fiesta_patronal|fuegos/, "fuegos"]];
+const FOTO_CATEGORIA = { deportiva: "senderismo", cultural: "teatro", fiestas: "fuegos", gastronomia: "tapas", ludica: "sevillanas", comercio: "mercado" };
 
 const RAPIDOS = [
   { texto: "Planes de hoy",       icono: "sol",      accion: () => irAgenda({ cuando: "hoy" }) },
@@ -384,6 +415,14 @@ const sinHora = e => (e.etiquetas || []).includes("sin_hora") || hora(e.fecha_in
 const estimada = e => (e.etiquetas || []).includes("fecha_estimada");
 const horaEvento = e => sinHora(e) ? "Hora por confirmar" : hora(e.fecha_inicio);
 const precio = e => e.es_gratuito ? "Gratis" : e.precio_eur == null ? "Consultar" : `${e.precio_eur.toLocaleString("es-ES")} €`;
+function fotoPlan(e) {
+  if (e.imagen_url) return { src: e.imagen_url, mini: e.imagen_url, alt: `Imagen del plan «${e.titulo}»`, credito: null };
+  const texto = [...(e.etiquetas || []), e.titulo.replace(/\s+/g, "_")].join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const clave = REGLAS_FOTO.find(([re]) => re.test(texto))?.[1] || FOTO_CATEGORIA[e.categoria] || "fuegos";
+  const f = FOTOS_PLANES[clave];
+  return { src: `${RUTA_EVENTOS}${clave}-900.webp`, srcset: `${RUTA_EVENTOS}${clave}-320.webp 320w, ${RUTA_EVENTOS}${clave}-900.webp 900w`, mini: `${RUTA_EVENTOS}${clave}-320.webp`, alt: f.alt, credito: f };
+}
+const pasados = () => EVENTOS.filter(e => new Date(e.fecha_fin || e.fecha_inicio) < HOY).sort((a, b) => b.fecha_inicio.localeCompare(a.fecha_inicio));
 const textoGente = n => n === 0 ? "Aún no se ha apuntado nadie" : n === 1 ? "1 persona apuntada" : `${n} personas apuntadas`;
 
 const ICONOS = {
@@ -396,6 +435,7 @@ const ICONOS = {
   mas: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v10M7 12h10" stroke="currentColor" stroke-width="2"/>',
   check: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12l3 3 5-6" fill="none" stroke="currentColor" stroke-width="2"/>',
   wa: '<path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 9c0 3 3 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  fotos: '<rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="10" r="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 17l5-4 4 3 3-2 6 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
   casa: '<path d="M10 70V40l20-15 20 15v30zM60 70V30l15-10 15 10v40z" fill="#fff"/>'
 };
 const icono = n => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONOS[n] || ""}</svg>`;
@@ -403,7 +443,7 @@ const icono = n => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONOS[n] || "
 /* =========================================================
    ESTADO (simulado; en la app lo da la API)
    ========================================================= */
-const estado = { municipio: "", categoria: "", cuando: "", gratis: false, inscritos: new Set(), diapo: 0, chats: {} };
+const estado = { municipio: "", categoria: "", cuando: "", gratis: false, inscritos: new Set(), diapo: 0, chats: {}, comentarios: {} };
 try { const g = JSON.parse(localStorage.getItem("hm-inscritos") || "[]"); g.forEach(id => estado.inscritos.add(id)); } catch {}
 estado.usuario = null;
 try { estado.usuario = JSON.parse(localStorage.getItem("hm-usuario") || "null"); } catch {}
@@ -436,7 +476,7 @@ function tarjetaEvento(e) {
   const c = CATEGORIAS[e.categoria];
   const n = gente(e);
   return `<a class="evento" href="#evento-${e.id}">
-    <span class="evento__icono" style="--color:${c.color}" aria-hidden="true">${c.emoji}</span>
+    <span class="evento__foto" aria-hidden="true"><img src="${fotoPlan(e).mini}" alt="" width="320" height="240" loading="lazy" decoding="async"><span style="--color:${c.color}">${c.emoji}</span></span>
     <div class="evento__texto"><h3>${esc(e.titulo)}</h3>
       <p class="evento__meta">${fechaCorta(e.fecha_inicio)} · ${horaEvento(e)} · ${esc(e.municipio)}</p></div>
     <span class="evento__lado">
@@ -520,7 +560,7 @@ function vistaFicha(id) {
     <a class="volver" href="#agenda">‹ Volver a la agenda</a>
     <div class="ficha">
       <article class="ficha__tarjeta">
-        ${fotoPueblo(e.municipio)}
+        ${figuraPlan(e)}
         <header class="ficha__cabeza" style="--color:${c.color}">
           <span class="diapo__emoji" aria-hidden="true">${c.emoji}</span>
           <span class="etiqueta">${c.etiqueta}</span>
@@ -551,6 +591,53 @@ function vistaFicha(id) {
     </div></div>`;
 }
 
+function figuraPlan(e) {
+  const f = fotoPlan(e);
+  return `<figure class="ficha__foto"><img src="${f.src}" ${f.srcset ? `srcset="${f.srcset}" sizes="(min-width: 1100px) 760px, 100vw"` : ""} alt="${esc(f.alt)}" width="900" height="675" decoding="async">
+    <figcaption>${f.credito ? `<a href="#creditos">Foto ilustrativa · ${esc(f.credito.autor)} · ${esc(f.credito.licencia)}</a>` : "Foto de la organización"}</figcaption></figure>`;
+}
+
+function vistaRecuerdos() {
+  const lista = pasados();
+  if (!lista.length) return `<div class="vista"><p class="vacio">Todavía no hay planes pasados. Cuando acabe uno, aparecerá aquí.</p></div>`;
+  return `<div class="recuerdos" aria-label="Planes que ya han pasado. Desliza hacia arriba para ver más.">${lista.map((e, i) => {
+    const f = fotoPlan(e), c = CATEGORIAS[e.categoria], n = (estado.comentarios[e.id] || []).length;
+    return `<article class="recuerdo" aria-labelledby="r-${e.id}">
+      <img class="recuerdo__foto" src="${f.src}" ${f.srcset ? `srcset="${f.srcset}" sizes="100vw"` : ""} alt="${esc(f.alt)}" loading="${i < 2 ? "eager" : "lazy"}" decoding="async">
+      <div class="recuerdo__texto">
+        <span class="recuerdo__chapa" style="background:${c.color}">${c.emoji} ${c.etiqueta}</span>
+        <h2 id="r-${e.id}">${esc(e.titulo)}</h2>
+        <p>📍 ${esc(e.municipio)} · ${fechaLarga(e.fecha_inicio)}</p>
+        ${e.descripcion ? `<p class="recuerdo__desc">${esc(e.descripcion)}</p>` : ""}
+        ${f.credito ? `<a class="recuerdo__credito" href="#creditos">Foto ilustrativa · ${esc(f.credito.autor)} · ${esc(f.credito.licencia)}</a>` : ""}
+      </div>
+      <div class="recuerdo__acciones">
+        <button type="button" data-comentarios="${e.id}" aria-label="Comentarios de «${esc(e.titulo)}»: ${n}"><span aria-hidden="true">💬</span><span>${n}</span></button>
+        <a href="#evento-${e.id}" aria-label="Ver la ficha de «${esc(e.titulo)}»"><span aria-hidden="true">ℹ️</span><span>Ficha</span></a>
+      </div></article>`;
+  }).join("")}</div>`;
+}
+
+function abrirComentarios(id) {
+  const e = EVENTOS.find(x => x.id === id); if (!e) return;
+  focoAntes = document.activeElement;
+  const lista = estado.comentarios[id] || [];
+  const m = $("#modal");
+  m.innerHTML = `<div class="modal hoja" role="dialog" aria-modal="true" aria-labelledby="t-coment">
+    <div class="hoja__cabeza"><h2 id="t-coment">Comentarios</h2><button type="button" class="hoja__cerrar" data-cerrar aria-label="Cerrar comentarios">✕</button></div>
+    <p class="hoja__plan">${esc(e.titulo)}</p>
+    <div class="chat__mensajes" aria-live="polite">${lista.length ? lista.map(c => `<p class="burbuja ${c.yo ? "burbuja--yo" : ""}"><b>${esc(c.quien)}</b>${esc(c.texto)}</p>`).join("") : `<p class="nota">¿Estuviste? Cuenta qué tal fue. Sé la primera persona en comentar.</p>`}</div>
+    ${!estado.usuario ? `<p class="candado">🔒 Puedes leer los comentarios sin cuenta. Para escribir, crea una.</p>` : ""}
+    <form class="chat" data-comentar="${id}" style="padding:0;border:0"><label class="oculto" for="coment-${id}">Escribe un comentario</label><input id="coment-${id}" placeholder="¿Qué tal fue?" autocomplete="off" maxlength="1000"><button type="submit">Publicar</button></form>
+  </div>`;
+  m.hidden = false; $("#coment-" + id).focus();
+}
+function comentar(id, texto) {
+  (estado.comentarios[id] ||= []).push({ quien: estado.usuario.nombre.split(" ")[0], texto, yo: true });
+  if (location.hash === "#recuerdos") { const y = $(".recuerdos")?.scrollTop; pintar(); const r = $(".recuerdos"); if (r) r.scrollTop = y; }
+  abrirComentarios(id);
+}
+
 function fotoPueblo(nombre) {
   const f = PUEBLOS.find(p => p.nombre === nombre)?.foto;
   if (!f) return "";
@@ -564,6 +651,10 @@ function vistaCreditos() {
     <p>Las fotos de los pueblos son de Wikimedia Commons y tienen licencia libre. Las hemos reducido y pasado a WebP para que la web cargue rápido.</p>
     <ul class="creditos">${PUEBLOS.filter(p => p.foto).map(p => `<li><img src="${RUTA_FOTOS}${p.foto.base}-600.webp" alt="" width="600" height="450" loading="lazy">
       <div><h3>${esc(p.nombre)}</h3><p>Autoría: <strong>${esc(p.foto.autor)}</strong><br>Licencia: <a class="enlace" href="${p.foto.url_licencia}" target="_blank" rel="noopener noreferrer">${esc(p.foto.licencia)}</a><br><a class="enlace" href="${p.foto.url}" target="_blank" rel="noopener noreferrer">Ver la foto original en Wikimedia Commons</a></p></div></li>`).join("")}</ul>
+    <div class="titulo-seccion" style="margin-top:24px"><h2>Fotos de los planes</h2></div>
+    <p>Cuando quien organiza un plan no sube su propia foto, mostramos una foto ilustrativa del tipo de plan. No es del evento concreto, y así lo indicamos en cada una.</p>
+    <ul class="creditos">${Object.entries(FOTOS_PLANES).map(([k, f]) => `<li><img src="${RUTA_EVENTOS}${k}-320.webp" alt="" width="320" height="240" loading="lazy">
+      <div><p>${esc(f.alt)}</p><p>Autoría: <strong>${esc(f.autor)}</strong><br>Licencia: ${f.url_licencia ? `<a class="enlace" href="${f.url_licencia}" target="_blank" rel="noopener noreferrer">${esc(f.licencia)}</a>` : esc(f.licencia)}<br><a class="enlace" href="${f.url_original}" target="_blank" rel="noopener noreferrer">Ver la foto original en Wikimedia Commons</a></p></div></li>`).join("")}</ul>
   </div>`;
 }
 
@@ -628,6 +719,11 @@ function vistaProponer() {
             <div><label for="p-pueblo">Pueblo</label><select id="p-pueblo">${PUEBLOS.map(p => `<option>${esc(p.nombre)}</option>`).join("")}</select></div>
           </div>
           <div><label for="p-desc">¿En qué consiste? <span class="ayuda">Qué se hará, qué hay que llevar…</span></label><textarea id="p-desc"></textarea></div>
+          <div class="selector-imagen"><span class="etq">Foto o cartel del plan <span class="ayuda">(opcional, hace el plan más llamativo)</span></span>
+            <input type="file" id="p-imagen" accept="image/*" class="oculto" tabindex="-1" aria-hidden="true">
+            <div id="p-vista" hidden><img id="p-vista-img" alt="Vista previa de la foto elegida para el plan"><button type="button" class="boton" data-quitar-imagen>Quitar la foto</button></div>
+            <button type="button" class="boton" id="p-elegir" data-elegir-imagen>📷 Añadir una foto</button>
+            <p class="nota">Si no pones ninguna, usaremos una foto que encaje con el tipo de plan.</p></div>
         </fieldset>
 
         <fieldset><legend>Cuándo y dónde</legend>
@@ -727,6 +823,7 @@ const SECCIONES = [
   { id: "inicio", texto: "Inicio", icono: "inicio" },
   { id: "agenda", texto: "Agenda", icono: "calendario" },
   { id: "mapa", texto: "Mapa", icono: "mapa" },
+  { id: "recuerdos", texto: "Recuerdos", icono: "fotos" },
   { id: "perfil", texto: "Mi perfil", icono: "persona" }
 ];
 
@@ -738,7 +835,8 @@ function pintar() {
   $("#zona-cuenta").innerHTML = estado.usuario
     ? `<a class="cuenta cuenta--dentro" href="#perfil">${icono("persona")}<span>${esc(estado.usuario.nombre.split(" ")[0])}</span></a>`
     : `<button type="button" class="cuenta" data-entrar>${icono("persona")}<span>Entrar</span></button>`;
-  const v = h.startsWith("evento-") ? vistaFicha(h.slice(7)) : { inicio: vistaInicio, agenda: vistaAgenda, mapa: vistaMapa, perfil: vistaPerfil, proponer: vistaProponer, creditos: vistaCreditos }[actual]();
+  const v = h.startsWith("evento-") ? vistaFicha(h.slice(7)) : { inicio: vistaInicio, agenda: vistaAgenda, mapa: vistaMapa, perfil: vistaPerfil, recuerdos: vistaRecuerdos, proponer: vistaProponer, creditos: vistaCreditos }[actual]();
+  document.body.classList.toggle("en-recuerdos", actual === "recuerdos");
   $("#principal").innerHTML = v;
 }
 
@@ -801,6 +899,10 @@ document.addEventListener("click", ev => {
 });
 
 document.addEventListener("click", ev => {
+  const q = ev.target.closest("[data-comentarios],[data-quitar-imagen],[data-elegir-imagen]");
+  if (q?.dataset.elegirImagen != null) return $("#p-imagen").click();
+  if (q?.dataset.comentarios) return abrirComentarios(q.dataset.comentarios);
+  if (q) { estado.imagenPropuesta = null; $("#p-vista").hidden = true; $("#p-elegir").textContent = "📷 Añadir una foto"; return; }
   const t = ev.target.closest("[data-rapido],[data-pueblo],[data-diapo],[data-ir],[data-cat],[data-gratis],[data-apuntar],[data-wa],[data-copiar],[data-letra]");
   if (!t) return;
   const d = t.dataset;
@@ -825,6 +927,7 @@ document.addEventListener("click", ev => {
 
 document.addEventListener("change", ev => {
   if (ev.target.name === "pago") $("#caja-precio").hidden = ev.target.value !== "si";
+  if (ev.target.id === "p-imagen") elegirImagen(ev.target);
   if (ev.target.id === "f-pueblo") { estado.municipio = ev.target.value; pintar(); $("#f-pueblo").focus(); }
   if (ev.target.id === "f-cuando") { estado.cuando = ev.target.value; pintar(); $("#f-cuando").focus(); }
 });
@@ -842,19 +945,39 @@ document.addEventListener("submit", ev => {
     const v = id => $("#" + id).value.trim(), radio = n => document.querySelector(`input[name="${n}"]:checked`)?.value;
     const pr = { titulo: v("p-titulo"), categoria: v("p-cat"), pueblo: v("p-pueblo"), descripcion: v("p-desc"), fecha: v("p-fecha"), hora: v("p-hora"), fin: v("p-fin"), lugar: v("p-lugar"),
       publico: radio("publico"), plazas: v("p-plazas"), pago: radio("pago"), precio: v("p-precio"), responsable: v("p-resp"), telefono: v("p-tel"), entidad: v("p-entidad"), entidadNombre: v("p-nombre-ent"),
-      necesidades: [...document.querySelectorAll(".necesidades input:checked")].map(i => i.value), seguro: radio("seguro"), observaciones: v("p-obs") };
+      necesidades: [...document.querySelectorAll(".necesidades input:checked")].map(i => i.value), seguro: radio("seguro"), observaciones: v("p-obs"), imagen_url: estado.imagenPropuesta || null };
     const faltan = [["titulo", "el nombre del plan", "p-titulo"], ["fecha", "el día", "p-fecha"], ["hora", "la hora de inicio", "p-hora"], ["lugar", "el lugar", "p-lugar"], ["responsable", "la persona responsable", "p-resp"], ["telefono", "un teléfono de contacto", "p-tel"]].filter(([k]) => !pr[k]);
     const err = $("#p-error");
     if (pr.pago === "si" && !pr.precio) faltan.push(["precio", "el precio", "p-precio"]);
     if (faltan.length) { err.textContent = "Falta " + faltan.map(f => f[1]).join(", ") + "."; err.hidden = false; $("#" + faltan[0][2]).focus(); return; }
-    const enviar = () => { estado.propuestas.push(pr); $("#principal").innerHTML = vistaPropuestaEnviada(pr); window.scrollTo(0, 0); avisar("Propuesta enviada al ayuntamiento"); };
+    const enviar = () => { estado.imagenPropuesta = null; estado.propuestas.push(pr); $("#principal").innerHTML = vistaPropuestaEnviada(pr); window.scrollTo(0, 0); avisar("Propuesta enviada al ayuntamiento"); };
     return estado.usuario ? enviar() : pedirCuenta("Para proponer un plan necesitas una cuenta. Así el ayuntamiento puede contactarte.", enviar);
+  }
+  const fc = ev.target.closest("[data-comentar]");
+  if (fc) {
+    ev.preventDefault();
+    const id = fc.dataset.comentar, texto = fc.querySelector("input").value.trim(); if (!texto) return;
+    return estado.usuario ? comentar(id, texto) : pedirCuenta("Para comentar un plan necesitas una cuenta. Así se sabe quién lo escribe.", () => comentar(id, texto));
   }
   const f = ev.target.closest("[data-chat]"); if (!f) return;
   ev.preventDefault();
   const id = f.dataset.chat, texto = f.querySelector("input").value.trim(); if (!texto) return;
   estado.usuario ? enviarPregunta(id, texto) : pedirCuenta("Para preguntar a la organización necesitas una cuenta. Así pueden contestarte a ti.", () => enviarPregunta(id, texto));
 });
+
+// Reduce la foto a 1200 px y la pasa a WebP, como en la app.
+async function elegirImagen(input) {
+  const a = input.files?.[0]; input.value = "";
+  if (!a) return;
+  if (!a.type.startsWith("image/")) return avisar("Elige una foto (JPG, PNG o similar).");
+  try {
+    const bmp = await createImageBitmap(a), k = Math.min(1, 1200 / bmp.width);
+    const c = document.createElement("canvas"); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    estado.imagenPropuesta = c.toDataURL("image/webp", .72);
+    $("#p-vista-img").src = estado.imagenPropuesta; $("#p-vista").hidden = false; $("#p-elegir").textContent = "📷 Cambiar la foto";
+  } catch { avisar("No hemos podido leer esa foto. Prueba con otra."); }
+}
 
 function ponerLetra(t) {
   document.documentElement.dataset.letra = t;
@@ -864,7 +987,7 @@ function ponerLetra(t) {
 let letraGuardada = "normal"; try { letraGuardada = localStorage.getItem("hm-letra") || "normal"; } catch {}
 ponerLetra(letraGuardada);
 
-window.addEventListener("hashchange", () => { pintar(); window.scrollTo(0, 0); });
+window.addEventListener("hashchange", () => { if (!$("#modal").hidden) cerrarModal(); pintar(); window.scrollTo(0, 0); });
 pintar();
 </script>
 
