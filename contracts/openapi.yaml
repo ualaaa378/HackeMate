@@ -178,8 +178,10 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/evento.json" }
-        "403": { $ref: "#/components/responses/Error" }
-        "404": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo el organizador del evento o un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` o `fechas_invalidas` (fecha_fin anterior a fecha_inicio)" }
 
   /api/v1/eventos/importar:
     post:
@@ -204,8 +206,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ResultadoImportacion" }
-        "403": { $ref: "#/components/responses/Error" }
-        "422": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `publicador_pausado` o `publicador_rechazado` (la solicitud del publicador fue rechazada)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`, `no_es_evento`, `publicador_no_encontrado` o `municipio_no_encontrado`" }
 
   /api/v1/eventos/{id}/confirmar:
     parameters:
@@ -226,9 +229,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ResultadoImportacion" }
-        "403": { $ref: "#/components/responses/Error" }
-        "404": { $ref: "#/components/responses/Error" }
-        "409": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `publicador_pausado` o `publicador_rechazado`" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `estado_invalido` (el evento no está en `pendiente_confirmacion`)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `faltan_campos` (details.faltan), `validacion`, `municipio_no_encontrado` o `fechas_invalidas`" }
 
   /api/v1/eventos/{id}/inscripciones:
     parameters:
@@ -245,7 +250,9 @@ paths:
               schema:
                 type: array
                 items: { $ref: "./schemas/inscripcion.json" }
-        "403": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo el organizador del evento o un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
     post:
       tags: [inscripciones]
       summary: Apuntarse. Si no hay plazas, queda en `lista_espera`.
@@ -262,9 +269,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/inscripcion.json" }
-        "401": { $ref: "#/components/responses/Error" }
-        "404": { $ref: "#/components/responses/Error" }
-        "409": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (con sesión solo puedes inscribirte a ti mismo)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado` o `usuario_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `ya_inscrito` (details.inscripcion_id), `evento_no_inscribible` (el evento no está publicado) o `evento_terminado`" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `falta_usuario_id` (con X-Internal-Token hay que indicar usuario_id) o `validacion`" }
 
   /api/v1/eventos/{id}/inscripciones/{insc_id}:
     parameters:
@@ -281,8 +290,10 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/inscripcion.json" }
-        "403": { $ref: "#/components/responses/Error" }
-        "404": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo quien se apuntó, el organizador o un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado` o `inscripcion_no_encontrada`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `inscripcion_cerrada` (ya se marcó la asistencia)" }
     patch:
       tags: [inscripciones]
       summary: Marcar asistencia (organizador o moderador)
@@ -302,6 +313,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/inscripcion.json" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo el organizador del evento o un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado` o `inscripcion_no_encontrada`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `inscripcion_sin_plaza` (solo se marca la asistencia de quien tenía plaza)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
 
   /api/v1/eventos/{id}/mensajes:
     parameters:
@@ -320,6 +336,8 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaginaMensajes" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_invalido` o `token_caducado` (se envió una sesión no válida; sin sesión es público)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
     post:
       tags: [chat]
       summary: Publicar mensaje. Pasa por `bot /ai/spam`; si es pregunta, `bot /ai/responder-ficha`.
@@ -341,8 +359,11 @@ paths:
                 properties:
                   mensaje: { $ref: "./schemas/mensaje_evento.json" }
                   respuesta_ia: { oneOf: [{ $ref: "./schemas/mensaje_evento.json" }, { type: "null" }] }
-        "401": { $ref: "#/components/responses/Error" }
-        "403": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (escribir en nombre de otro, o un anuncio sin ser organizador ni moderador) o `usuario_silenciado` (el organizador o un moderador le ha silenciado en el chat de este evento)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado` o `usuario_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `chat_cerrado` (el evento no admite mensajes por su estado; details.estado)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `mensaje_spam` (details.score_spam y details.motivo), `falta_usuario_id`, `mensaje_no_encontrado` (en_respuesta_a no es de este evento) o `validacion`" }
 
   /api/v1/eventos/{id}/mensajes/{msg_id}:
     parameters:
@@ -361,13 +382,19 @@ paths:
               properties:
                 fijado: { type: boolean }
                 oculto: { type: boolean }
+                silenciar_autor:
+                  type: boolean
+                  description: "Solo organizador o moderador: el autor no puede volver a escribir en el chat de este evento"
       responses:
         "200":
           description: Mensaje
           content:
             application/json:
               schema: { $ref: "./schemas/mensaje_evento.json" }
-        "403": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo el organizador o un moderador fijan, ocultan o silencian; el autor solo puede ocultar su propio mensaje)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado` o `mensaje_no_encontrado`" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
 
   /api/v1/eventos/{id}/ics:
     parameters:
@@ -375,6 +402,10 @@ paths:
     get:
       tags: [calendario]
       summary: Evento en formato iCalendar (zona Europe/Madrid)
+      description: |
+        Las fechas (`DTSTART`, `DTEND`, `DTSTAMP`) van en UTC con sufijo `Z`: equivalen a la hora de Europe/Madrid
+        del evento y cada calendario las muestra en su zona local. Excepción: los eventos con la etiqueta
+        `sin_hora` van de día completo (`VALUE=DATE`, con la fecha de Madrid). Sin `fecha_fin`, dura 2 horas.
       security: [{}]
       x-implementado: true
       responses:
@@ -420,7 +451,10 @@ paths:
                   items:
                     type: array
                     items: { $ref: "#/components/schemas/Recomendacion" }
-        "404": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo puedes ver tus propias recomendaciones, salvo moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `usuario_no_encontrado`" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` (usuario_id no es UUID o limite fuera de 1-20)" }
 
   /api/v1/moderacion/pendientes:
     get:
@@ -437,7 +471,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaginaPendientes" }
-        "403": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` (page o size fuera de rango)" }
 
   /api/v1/moderacion/{id}/decision:
     parameters:
@@ -458,8 +494,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/evento.json" }
-        "403": { $ref: "#/components/responses/Error" }
-        "404": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `estado_invalido` (la decisión no vale para el estado actual, p. ej. otro moderador ya decidió; details.estado y details.decision)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
 
   /api/v1/publicadores:
     get:
@@ -493,7 +532,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/publicador.json" }
-        "422": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `publicador_ya_existe` (ya hay un publicador con ese teléfono; details.publicador_id)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` o `municipio_no_encontrado`" }
 
   /api/v1/publicadores/{id}:
     parameters:
@@ -534,8 +575,10 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/publicador.json" }
-        "403": { $ref: "#/components/responses/Error" }
-        "409": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `publicador_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `estado_invalido` (el publicador no está pendiente de aprobación; details.estado)" }
 
   /api/v1/publicadores/{id}/pausar:
     parameters:
@@ -561,7 +604,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/publicador.json" }
-        "403": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `publicador_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `estado_invalido` (solo se pausa o reactiva un publicador aprobado; details.estado)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
 
   /api/v1/publicadores/{id}/fuentes:
     parameters:
@@ -587,7 +634,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/publicador.json" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
         "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `publicador_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `fuente_ya_existe` (details.publicador_id) o `estado_invalido` (el publicador está rechazado)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
 
   /api/v1/auth/google:
     post:
@@ -610,7 +661,8 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Token" }
-        "401": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_google_invalido` o `email_no_verificado`" }
+        "503": { $ref: "#/components/responses/Error", description: "503 `google_no_configurado` (falta GOOGLE_CLIENT_ID) o `google_no_disponible`" }
 
   /api/v1/auth/whatsapp/codigo:
     post:
@@ -638,7 +690,7 @@ paths:
                 properties:
                   enviado: { type: boolean }
                   expira_en: { type: string, format: date-time }
-        "429": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error", description: "429 `demasiados_codigos` (details.maximo_por_hora)" }
 
   /api/v1/auth/whatsapp/verificar:
     post:
@@ -662,7 +714,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Token" }
-        "401": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `codigo_invalido` (incorrecto o caducado)" }
 
   /api/v1/auth/demo:
     post:
@@ -710,7 +762,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/usuario.json" }
-        "409": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `usuario_ya_existe` (details.usuario_id)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` o `municipio_no_encontrado`" }
 
   /api/v1/usuarios/by-phone/{e164}:
     parameters:
@@ -726,7 +780,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/usuario.json" }
-        "404": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `usuario_no_encontrado`" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `telefono_invalido` (no está en formato E.164)" }
 
   /api/v1/usuarios/by-contacto/{contacto}:
     parameters:
@@ -810,7 +866,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/usuario.json" }
-        "401": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `telefono_en_uso` (ese teléfono ya es de otro usuario)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` o `municipio_no_encontrado`" }
 
   /api/v1/estadisticas:
     get:
@@ -1325,7 +1383,9 @@ components:
       required: [decision]
       properties:
         decision: { enum: [aprobar, rechazar, retirar] }
-        motivo: { type: [string, "null"] }
+        motivo:
+          type: [string, "null"]
+          description: "Motivo que se guarda en el evento y se manda al publicador. En `retirar` es opcional (por defecto «Retirado por moderación»)."
 
     PublicadorCrear:
       type: object
