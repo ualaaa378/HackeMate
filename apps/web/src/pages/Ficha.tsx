@@ -26,6 +26,8 @@ import { useParams } from 'react-router-dom';
 
 import { enModoRespaldo, getEvento, inscribirse, urlIcs } from '../api/client';
 import { CATEGORIAS, type Evento } from '../api/types';
+import ChatEvento from '../components/ChatEvento';
+import { useSesion } from '../cuenta/sesion';
 import { claveDia, fechaEstimada, fechaLarga, hora, plazas, precio, sinHora, textoApuntados } from '../utils/formato';
 
 const Ficha: React.FC = () => {
@@ -35,6 +37,7 @@ const Ficha: React.FC = () => {
   const [apuntando, setApuntando] = useState(false);
   const [inscrito, setInscrito] = useState<'confirmada' | 'lista_espera' | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const { usuario, conCuenta } = useSesion();
 
   useEffect(() => {
     if (!id) return;
@@ -43,7 +46,14 @@ const Ficha: React.FC = () => {
       .catch(() => setError('No encontramos este plan.'));
   }, [id]);
 
-  const apuntarme = async () => {
+  const apuntarme = () => {
+    conCuenta(
+      'Para apuntarte a este plan necesitas una cuenta. Así la organización sabe quién va y te avisamos si algo cambia.',
+      () => void apuntar(),
+    );
+  };
+
+  const apuntar = async () => {
     if (!evento) return;
     setApuntando(true);
     try {
@@ -148,6 +158,9 @@ const Ficha: React.FC = () => {
                 '🙋 Apuntarme'
               )}
             </IonButton>
+            {!usuario && !inscrito && (
+              <p className="candado">🔒 Para apuntarte te pediremos crear una cuenta. Solo se tarda un momento.</p>
+            )}
             <IonButton
               expand="block"
               fill="outline"
@@ -172,6 +185,7 @@ const Ficha: React.FC = () => {
                 Ver fuente original
               </IonButton>
             )}
+            <ChatEvento eventoId={evento.id} />
           </>
         )}
         <IonToast isOpen={!!aviso} message={aviso ?? ''} duration={2500} onDidDismiss={() => setAviso(null)} />

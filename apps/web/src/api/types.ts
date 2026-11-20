@@ -13,6 +13,10 @@ export type Categoria = Esquemas['Categoria'];
 export type EstadoEvento = Esquemas['EstadoEvento'];
 export type Canal = Evento['origen']['canal'];
 export type ApiError = Esquemas['Error'];
+export type Usuario = Esquemas['usuario'];
+export type Token = Esquemas['Token'];
+export type UsuarioEditar = Esquemas['UsuarioEditar'];
+export type MensajeCrear = Esquemas['MensajeCrear'];
 
 export interface Pagina<T> {
   items: T[];
