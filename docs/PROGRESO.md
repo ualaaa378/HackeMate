@@ -63,7 +63,7 @@
   - `contracts/schemas/evento.json` (con `inscritos`), `lugar.json` y los fixtures `eventos.json`, `eventos_demo.json`, `lugares.json`, `municipios.json` y `FUENTES.md` son los de su PR de datos reales, sin cambios. `openapi.yaml` ya incluye `GET /lugares` y `GET /lugares/{id}`.
   - Su PR de datos reales se rebasa sobre `develop` cuando entre `Flujo-A` (los archivos de `contracts/` quedan idénticos y desaparecen del diff).
   - `npx openapi-typescript contracts/openapi.yaml -o apps/web/src/api/schema.d.ts` genera tipos sin errores.
-  - Los fixtures de usuarios, publicadores, inscripciones, mensajes, notificaciones y `eventos_moderacion.json` le bastan para las pantallas con mocks.
+  - Los fixtures de usuarios, publicadores, inscripciones, mensajes y notificaciones le bastan para las pantallas con mocks (los fixtures de moderación y antispam llegan en H2).
   - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
 - [ ] Cerrar la PR #1 (`contract/v1`) **sin merge**: la sustituyen los contratos de `Flujo-A` (mismo `evento.json`). Si tenía algo que falte en `Flujo-A`, se añade por PR `contract-change`.
 - [ ] PR `Flujo-A` → `develop` revisada y mergeada (orden A → B → C); `main` protegida en GitHub

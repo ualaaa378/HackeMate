@@ -86,7 +86,7 @@ cd services/api
 python -m venv .venv
 source .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
 pip install -r requirements-dev.txt
-python -m pytest -q                # esperado: 23 passed
+python -m pytest -q                # esperado: 32 passed
 deactivate && cd ../..
 ```
 
