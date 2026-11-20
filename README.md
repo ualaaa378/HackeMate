@@ -63,6 +63,8 @@ El proyecto está **en sus primeras fases**. Iremos actualizando este README a m
 
 Revisado el 21/11/2026 a las 00:15. Todo esto ya lo usa la app web (flujo C) o el bot (flujo B), pero depende de otro flujo. Mientras no esté, **la web vuelve sola a los datos de prueba (mocks) y el bot guarda la petición en cola**, así que nada se rompe, pero la demo no usa datos reales. Al cerrar cada punto, se borra de esta lista.
 
+> **Regla del equipo (ver `CLAUDE.md`):** cada flujo apunta aquí, bajo el flujo responsable, lo que necesita de los demás. Antes de empezar una tarea, revisa tu apartado.
+
 ### Flujo A · API (Benas)
 
 Rutas que ya están en `contracts/openapi.yaml` pero la API aún no tiene:
