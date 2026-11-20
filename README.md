@@ -80,6 +80,10 @@ Rutas que ya están en `contracts/openapi.yaml` pero la API aún no tiene:
 | `GET /estadisticas` | web `/admin` (Panel) | Panel de estadísticas para el jurado |
 
 Otros puntos de la API:
+- **Moderación automática al confirmar:** `POST /eventos/{id}/confirmar` tiene que llamar a `bot POST /ai/spam` y aplicar los niveles de confianza y `MODERACION_UMBRAL_SPAM` (antispam del paso 3 de la demo).
+- **Aviso de cambio de hora:** cuando `PATCH /eventos/{id}` cambia la hora, la API llama a `bot POST /notify` para cada inscrito, con `formato: "audio"` si el usuario lo pidió (pasos 6 y 7 de la demo).
+- **`POST /metrics/tokens`:** el bot ya manda el coste de cada llamada a la IA y hoy recibe 404. Sin esto, `GET /estadisticas` no puede mostrar los tokens.
+- **Panel de robustez (lo pide la web, pasando por la API):** que la API exponga el interruptor `bot POST /admin/simular-caida` y las cifras de `bot GET /metrics`, para no poner el `INTERNAL_TOKEN` en el navegador.
 - **Permisos de `POST /eventos` y `PATCH /eventos/{id}`:** hoy solo aceptan `X-Internal-Token`. La web (Proponer y `/admin`) llama con el JWT del usuario, así que tienen que aceptar `Authorization: Bearer` con rol de vecino, publicador o moderador.
 - **Imagen del plan (`imagen_url`):** la web manda la foto opcional como *data URL* WebP comprimida dentro de `imagen_url`. La API tiene que aceptarla (puede ocupar cientos de KB) o, mejor, ofrecer una ruta de subida de archivos que devuelva la URL. Si se añade esa ruta, primero va al contrato.
 - **Planes terminados para «Recuerdos»:** la pestaña pide `GET /eventos?hasta=<ahora>`, pero el seed omite los eventos ya terminados, así que con la API real sale vacía. Hace falta sembrar algunos planes pasados (estado `finalizado`) o que el seed no los borre.
@@ -89,6 +93,17 @@ Otros puntos de la API:
 
 - **`PATCH /usuarios/{id}`:** el bot lo usa para guardar los gustos de la vecina (`services/bot/app/api_cliente.py`, `guardar_preferencias`), pero no está en el contrato, que solo tiene `PATCH /usuarios/me`. O se añade al contrato con `X-Internal-Token`, o el bot pasa a usar otra ruta.
 - **Código de acceso por mensajería:** `POST /auth/whatsapp/codigo` tiene que pedir al bot (`POST /notify`) que mande el código. Hoy el canal activo es Telegram.
+
+### Flujo C · web (Adán), lo que pide el bot
+
+- Botón «Simular caída de la IA» y coste en tokens en `/admin/panel`, en cuanto la API los exponga (ver arriba).
+- Opcional, como plan C de la demo: un chat simulado en la web que llame a `bot POST /dev/mensaje`.
+
+### Flujo B · bot (Francisco), opcional en el compose
+
+- Volumen `bot_data` con `COLA_PATH` para que la cola sobreviva si se recrea el contenedor, y `PUBLIC_URL` en el `.env` si el túnel tiene URL fija (ver `services/bot/PARA_FLUJO_A.md` §4).
+
+Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
 
 ### Ya resuelto
 
