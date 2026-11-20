@@ -77,7 +77,7 @@ const Mapa: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar color="primary">
+        <IonToolbar color="secondary">
           <IonTitle>🗺️ Mapa de planes</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={cercaDeMi} aria-label="Planes cerca de mí">

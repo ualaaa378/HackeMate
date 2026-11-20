@@ -1,6 +1,104 @@
-/* Letra algo más grande por defecto: buena parte del público es mayor (WCAG 2.1 AA). */
+/* Letra grande por defecto: buena parte del público es mayor (WCAG 2.1 AA). */
 html {
-  font-size: 17px;
+  font-size: 18px;
+}
+
+body {
+  line-height: 1.45;
+}
+
+/* Foco muy visible al navegar con teclado, como en la plantilla */
+:focus-visible,
+ion-item.ion-focused,
+ion-tab-button.ion-focused,
+ion-button.ion-focused,
+ion-chip.ion-focused {
+  outline: 3px solid var(--hm-foco);
+  outline-offset: 2px;
+}
+
+/* ---------- Cabecera ---------- */
+ion-toolbar {
+  --min-height: 64px;
+}
+
+ion-toolbar ion-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.marca__logo {
+  flex: none;
+  width: 38px;
+  height: 44px;
+  border: 2px solid #fff;
+  border-radius: 4px 4px 16px 16px;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.marca__nombre {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.marca__sub {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  opacity: 0.9;
+}
+
+/* ---------- Barra de pestañas: botones grandes ---------- */
+ion-tab-bar {
+  height: 68px;
+  border-top: 1px solid var(--hm-gris-cabecera);
+}
+
+ion-tab-button {
+  position: relative;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+ion-tab-button ion-icon {
+  font-size: 28px;
+}
+
+ion-tab-button.tab-selected::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 4px;
+  border-radius: 0 0 4px 4px;
+  background: var(--hm-azul);
+}
+
+/* ---------- Botones y elementos táctiles ---------- */
+ion-button {
+  min-height: var(--hm-toque);
+  font-size: 1rem;
+  font-weight: 600;
+  --border-radius: var(--hm-radio);
+}
+
+ion-item {
+  --min-height: var(--hm-toque);
 }
 
 .centrado {
@@ -23,7 +121,10 @@ html {
 
 .filtros ion-chip {
   flex-shrink: 0;
-  min-height: 40px;
+  min-height: 48px;
+  font-size: 1rem;
+  font-weight: 600;
+  --border-radius: var(--hm-radio);
 }
 
 .dia {
@@ -35,17 +136,35 @@ html {
 }
 
 .tarjeta-evento h2 {
+  font-size: 1.1rem;
   font-weight: 600;
   white-space: normal;
+  color: var(--hm-texto);
 }
 
 .emoji-categoria {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--hm-radio);
   display: grid;
   place-items: center;
-  font-size: 24px;
+  font-size: 28px;
+}
+
+.tarjeta-evento {
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+}
+
+.tarjeta-evento p {
+  color: var(--hm-texto-suave);
+  font-size: 0.95rem;
+}
+
+ion-item-divider.dia,
+ion-item-divider {
+  --color: var(--hm-azul-oscuro);
+  font-size: 1rem;
 }
 
 .mapa-layout {
@@ -92,7 +211,7 @@ html {
 .contador-apuntados {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--ion-color-dark);
+  color: var(--hm-azul-oscuro);
   background: var(--ion-color-light);
   border-radius: 999px;
   padding: 2px 8px;
@@ -101,4 +220,31 @@ html {
 
 .contador-ficha {
   font-weight: 600;
+}
+
+/* ---------- Ficha ---------- */
+ion-card {
+  border-radius: var(--hm-radio);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+ion-card-header ion-chip {
+  align-self: flex-start;
+  font-weight: 600;
+}
+
+ion-card-title {
+  font-size: 1.5rem;
+  color: var(--hm-azul-oscuro);
+}
+
+ion-card-subtitle {
+  font-size: 0.9rem;
+  color: var(--hm-texto-suave);
+  text-transform: none;
+}
+
+ion-card-content {
+  color: var(--hm-texto);
+  font-size: 1rem;
 }
