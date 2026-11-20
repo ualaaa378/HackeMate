@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | A · Backend, datos e infra | Dev A: Benas | `Flujo-A` | 🟢 / 🟡 / 🔴 | vie __:__ |
 | B · WhatsApp e IA | Dev B: Francisco | `Flujo-B` | 🟢 / 🟡 / 🔴 | vie __:__ |
-| C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-docker` | 🟢 | vie 20/11 |
 
 🟢 en plazo · 🟡 riesgo de no llegar al próximo checkpoint · 🔴 bloqueado
 
@@ -132,13 +132,14 @@
 ## Flujo C · App Ionic, web/PWA y panel
 
 **Bloque 1 (vie 18:30–23:30)**
-- [ ] Proyecto Ionic React (`ionic start web tabs --type=react`) con pestañas Agenda · Mapa · Perfil
-- [ ] Tipos generados desde `openapi.yaml` y `VITE_API_URL` configurable
+- [x] Proyecto Ionic React (`ionic start web tabs --type=react`) con pestañas Agenda · Mapa · Perfil
+- [x] Tipos generados desde `openapi.yaml` y `VITE_API_URL` configurable *(`src/api/openapi.d.ts` con openapi-typescript; se regenera con `npm run api:tipos`)*
 - [x] Android Studio + JDK instalados *(el JDK va incluido en Android Studio)*
-- [ ] Mocks con `contracts/fixtures` (MSW o json-server)
-- [ ] Agenda (lista por fecha con filtros)
-- [ ] Mapa Leaflet con pines por categoría y «cerca de mí»
-- [ ] Ficha del evento
+- [x] Mocks con `contracts/fixtures` *(JSON en `src/mocks`, activos con `VITE_USE_MOCKS=true` o sin `VITE_API_URL`)*
+- [x] Agenda (lista por fecha con filtros)
+- [x] Mapa Leaflet con pines por categoría y «cerca de mí»
+- [x] Ficha del evento
+- [x] App en Docker: `apps/web/Dockerfile` (node → nginx en 8080) y `web` del compose apuntando a `apps/web` *(validado con `docker compose up --build`: web en :8080 carga eventos de la API)*
 
 **Bloque 2 (sáb 08:00–13:00)**
 - [ ] Panel del moderador: bandeja con motivo de la IA, aprobar/rechazar

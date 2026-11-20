@@ -52,8 +52,15 @@ services:
       - "8001:8001"
 
   web:
-    # Stub hasta que apps/web (Flujo C) tenga Dockerfile en develop. Al integrarlo: build: ../apps/web
-    build: ./stubs/web
+    # App Ionic (Flujo C). VITE_API_URL se incrusta en el build y la usa el navegador,
+    # por eso es la URL pública de la API (localhost:8000 en local), no http://api:8000.
+    build:
+      context: ../apps/web
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_USE_MOCKS: ${VITE_USE_MOCKS:-false}
+    depends_on:
+      - api
     ports:
       - "8080:8080"
 
