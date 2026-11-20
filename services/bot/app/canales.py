@@ -34,6 +34,18 @@ def enviar(telefono: str, texto: str, botones: list[Boton] | None = None,
         enviar_consola(telefono, texto, botones, pedir_contacto)
 
 
+def enviar_voz(telefono: str, ogg: bytes) -> bool:
+    """Nota de voz. De momento solo en Telegram; en WhatsApp habría que subir antes el audio a Meta."""
+    from app import telegram
+
+    if telegram.es_telegram(telefono) and get_settings().telegram_token:
+        return telegram.enviar_voz(telefono, ogg)
+    if get_settings().canal == "console":
+        bandeja_consola.append({"para": telefono, "texto": "[nota de voz]", "botones": [], "voz": len(ogg)})
+        return True
+    return False
+
+
 def enviar_plantilla(telefono: str, plantilla: str, parametros: list[str], texto_alternativo: str) -> None:
     """Mensaje que inicia el bot (avisos). WhatsApp solo lo permite fuera de la ventana
     de 24 h con una plantilla aprobada por Meta. En los otros canales se manda el texto."""

@@ -134,9 +134,9 @@
 - [!] Guardar los gustos en la API: `PATCH /usuarios/me` solo admite login de usuario. Propuesta a A: `PATCH /usuarios/{id}` con `X-Internal-Token`. Mientras, el bot los guarda en memoria
 
 **Bloque 4 (sáb 20:00–00:00)**
-- [~] «Simular caída del LLM»: la variable `LLM_SIMULAR_CAIDA` existe; falta el botón en el panel (Flujo C)
-- [ ] Respuesta en audio (TTS) para quien escribe con audios
-- [ ] Respuestas en otros idiomas para visitantes
+- [x] «Simular caída del LLM» en caliente: `POST /admin/simular-caida {"activa": true}` (con `X-Internal-Token`) y estado en `GET /metrics`. Falta el botón en el panel (Flujo C, vía la API)
+- [x] Respuesta en audio: quien escribe con notas de voz (o pide avisos por voz) recibe también una nota de voz. TTS gratis por FreeLLMAPI + ffmpeg (imageio-ffmpeg). `/notify` con `formato: audio` también
+- [x] Otros idiomas: detecta inglés, francés, alemán, italiano y portugués sin tokens; traduce la pregunta al español y la respuesta (con botones) de vuelta
 
 ---
 

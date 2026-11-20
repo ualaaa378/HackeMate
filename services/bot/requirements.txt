@@ -9,3 +9,4 @@ google-genai==3.6.1
 twilio==9.13.0
 pytest==9.2.0
 tzdata==2026.6
+imageio-ffmpeg==0.8.1

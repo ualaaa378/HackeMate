@@ -16,7 +16,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from app import api_cliente, canales, telegram, vecino
-from app.agentes import extractor, intencion, medios
+from app.agentes import extractor, idiomas, intencion, medios, voz
 from app.api_cliente import ApiNoDisponible, ErrorApi
 from app.config import get_settings
 from app.respuestas import Respuesta
@@ -71,17 +71,58 @@ def necesita_ia(msg: MensajeEntrante) -> bool:
     return len(msg.texto) > 40 or bool(msg.media_url or msg.media_id)
 
 
+idiomas_por_contacto: dict[str, str] = {}  # el último idioma claro en que escribió
+
+
 def procesar(msg: MensajeEntrante, solo_consola: bool = False) -> list[str]:
     """Procesa un mensaje y envía las respuestas. Devuelve los textos enviados.
     solo_consola: el simulador (/dev/mensaje) nunca debe escribir a un canal real."""
+    idioma = _idioma(msg)
+    if idioma != "es" and msg.texto and not msg.boton_id:
+        msg = msg.model_copy(update={"texto": idiomas.traducir([msg.texto], "es", origen=idioma)[0]})
+
     respuestas = [r if isinstance(r, Respuesta) else Respuesta(r) for r in _responder(msg)]
+    if idioma != "es":
+        _traducir_respuestas(respuestas, idioma)
+
     for r in respuestas:
         if solo_consola:
             canales.enviar_consola(msg.de, r.texto, r.botones, r.pedir_contacto)
         else:
             canales.enviar(msg.de, r.texto, r.botones, pedir_contacto=r.pedir_contacto,
                            quitar_teclado=r.quitar_teclado, pedir_ubicacion=r.pedir_ubicacion)
-    return [r.texto for r in respuestas]
+    textos = [r.texto for r in respuestas]
+    if not solo_consola and _quiere_voz(msg):
+        ogg = voz.sintetizar(voz.texto_para_voz(textos))
+        if ogg:
+            canales.enviar_voz(msg.de, ogg)
+    return textos
+
+
+def _idioma(msg: MensajeEntrante) -> str:
+    if msg.texto and not msg.boton_id and (detectado := idiomas.detectar(msg.texto)):
+        idiomas_por_contacto[msg.de] = detectado
+    return idiomas_por_contacto.get(msg.de, "es")
+
+
+def _traducir_respuestas(respuestas: list[Respuesta], idioma: str) -> None:
+    """Una sola llamada a la IA para todos los textos y botones de la respuesta."""
+    etiquetas = [t for r in respuestas for _, t in (r.botones or [])]
+    traducidos = idiomas.traducir([r.texto for r in respuestas] + etiquetas, idioma)
+    for r, texto in zip(respuestas, traducidos):
+        r.texto = texto
+    resto = iter(traducidos[len(respuestas):])
+    for r in respuestas:
+        if r.botones:
+            r.botones = [(i, next(resto, t)) for i, t in r.botones]
+
+
+def _quiere_voz(msg: MensajeEntrante) -> bool:
+    """Responde también en audio a quien escribe con notas de voz o pidió avisos por voz."""
+    if (msg.media_tipo or "").startswith("audio"):
+        return True
+    prefs = vecino.preferencias_locales.get(msg.de)
+    return bool(prefs and prefs.formato_aviso == "audio")
 
 
 def _canal(msg: MensajeEntrante) -> str:

@@ -65,6 +65,20 @@ def enviar(destino: str, texto: str, botones: list[tuple[str, str]] | None = Non
     _llamar("sendMessage", cuerpo)
 
 
+def enviar_voz(destino: str, ogg: bytes) -> bool:
+    """Nota de voz (OGG/Opus). Telegram la muestra como un audio que se escucha con un toque."""
+    try:
+        r = httpx.post(_api("sendVoice"), data={"chat_id": destino.removeprefix(PREFIJO)},
+                       files={"voice": ("respuesta.ogg", ogg, "audio/ogg")}, timeout=30)
+        datos = r.json()
+    except (httpx.HTTPError, ValueError) as e:
+        log.error("No se pudo enviar la nota de voz: %s", e)
+        return False
+    if not datos.get("ok"):
+        log.error("Telegram sendVoice falló: %s", datos.get("description"))
+    return bool(datos.get("ok"))
+
+
 def normalizar_telefono(numero: str) -> str:
     """Telegram manda el número sin «+» (34600…). La API lo quiere en E.164."""
     digitos = "".join(c for c in numero if c.isdigit())
