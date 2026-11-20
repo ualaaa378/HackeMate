@@ -68,7 +68,7 @@ Cada hito termina en un checkpoint de equipo (CP) de `PLAN.md`. Al terminar un h
 - [~] H0.3 `infra/docker-compose.yml` con `db` (pgvector/pg16), `api`, `bot`, `web`, `tunnel`. Un `/health` mínimo en `api` (y stubs vacíos para `bot` y `web` si los otros aún no han empezado). *(Escrito; falta validarlo con Docker en otra máquina.)*
 - [x] H0.4 `.env.example` con todas las variables conocidas (`DATABASE_URL`, `INTERNAL_TOKEN`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `BOT_URL`, `API_URL`, claves IA, Twilio…).
 - [x] H0.5 Con B y C: `contracts/openapi.yaml` v1, `schemas/*.json` (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion), `enums.md`, `fixtures/*.json`.
-- [~] H0.6 Commit `chore: esqueleto` y `contract: v1` en `develop`. *(Commits hechos en `Flujo-A`; falta push y PR a `develop`.)*
+- [x] H0.6 Commit `chore: esqueleto` y `contract: v1` en `develop`. *(En `develop` por la PR #3; la PR #4 añadió la lectura pública provisional desde fixtures, `errores.py` y CORS.)*
 
 #### Cómo probar H0 (lo hace otra persona del equipo con Docker; el portátil de Benas no puede ejecutarlo)
 

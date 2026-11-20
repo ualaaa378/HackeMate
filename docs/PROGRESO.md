@@ -10,7 +10,7 @@
 
 | Flujo | Responsable | Rama actual | Estado | Última actualización |
 |---|---|---|---|---|
-| A · Backend, datos e infra | Dev A: Benas | `Flujo-A` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| A · Backend, datos e infra | Dev A: Benas | `Flujo-A` | 🟡 H0 cerrado con deuda (Docker sin validar, confirmación de B) | vie 19:10 |
 | B · WhatsApp e IA | Dev B: Francisco | `Flujo-B` | 🟢 / 🟡 / 🔴 | vie __:__ |
 | C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
 
@@ -49,7 +49,7 @@
 - [~] Ramas `main` y `develop` creadas (falta activar la protección de `main` en GitHub)
 - [x] Estructura de carpetas del monorepo creada
 - [~] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo (escrito; falta validarlo con Docker en otra máquina: pasos y resultado esperado en `PLAN_FLUJO_A.md` H0, «Cómo probar H0»). **Responsable de la prueba: por asignar en la reunión** (alguien con Docker)
-- [x] `.env.example` con todas las variables
+- [x] `.env.example` con todas las variables (incluidas las `META_*` del canal WhatsApp Cloud API de `Flujo-B`)
 - [x] `contracts/openapi.yaml` v1
 - [x] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion, lugar)
 - [x] `contracts/enums.md` y `contracts/fixtures/*.json`
@@ -59,12 +59,14 @@
   - `POST /notify` acepta `contracts/schemas/notificacion.json` (lo mínimo: `telefono`, `tipo`, `texto`) y `metrics.registrar` envía lo que pide `MetricaTokens`.
   - Los endpoints `/ai/*` de `openapi.yaml` son los que va a implementar.
   - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
+  - *Revisión previa del flujo A (vie 19:10, contra `origin/Flujo-B`):* el cuerpo de `importar`, `MetricaTokens` y la forma de `ExtraccionEvento` encajan. Por decidir con B: `POST /webhook/meta` (y `GET`) no está en `openapi.yaml` → añadirlo por PR `contract-change`; `/ai/spam`, `/ai/responder-ficha` y `/ai/preferencias` aún no existen en el bot (los necesita A en H2/H3).
 - [ ] **C (Adán) confirma los contratos v1 de `Flujo-A`.** Revisar que:
   - `contracts/schemas/evento.json` (con `inscritos`), `lugar.json` y los fixtures `eventos.json`, `eventos_demo.json`, `lugares.json`, `municipios.json` y `FUENTES.md` son los de su PR de datos reales, sin cambios. `openapi.yaml` ya incluye `GET /lugares` y `GET /lugares/{id}`.
   - Su PR de datos reales se rebasa sobre `develop` cuando entre `Flujo-A` (los archivos de `contracts/` quedan idénticos y desaparecen del diff).
   - `npx openapi-typescript contracts/openapi.yaml -o apps/web/src/api/schema.d.ts` genera tipos sin errores.
   - Los fixtures de usuarios, publicadores, inscripciones, mensajes y notificaciones le bastan para las pantallas con mocks (los fixtures de moderación y antispam llegan en H2).
   - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
+  - *Nota del flujo A (vie 19:10):* la web ya lee `GET /eventos`, `/lugares` y `/municipios` de la API en `develop` (PR #4), así que en la práctica los contratos le sirven; falta solo su confirmación explícita.
 - [x] Cerrar la PR #1 (`contract/v1`) **sin merge**: la sustituyen los contratos de `Flujo-A` (mismo `evento.json`). Si tenía algo que falte en `Flujo-A`, se añade por PR `contract-change`.
 - [~] PR `Flujo-A` → `develop` revisada y mergeada (orden A → B → C); `main` protegida en GitHub *(Flujo-A en `develop` vía PR #3 y #4; falta proteger `main`)*
 - [ ] Preguntas enviadas a la organización por Telegram (PLAN §8)
