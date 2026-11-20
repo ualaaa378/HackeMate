@@ -187,7 +187,7 @@ paths:
       summary: El bot entrega una ExtraccionEvento + origen. Crea el evento en `pendiente_confirmacion`.
       description: Si ya existe un evento con el mismo `origen.url`, devuelve ese (`duplicado = true`) y no crea otro.
       security: [{ interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:

@@ -83,7 +83,7 @@
 - [x] Formato de error y paginación comunes
 
 **Bloque 2 (sáb 08:00–13:00)**
-- [ ] `POST /eventos/importar` y `POST /eventos/{id}/confirmar`
+- [~] `POST /eventos/importar` y `POST /eventos/{id}/confirmar` *(importar mínimo hecho en E1.6: pendiente_confirmacion, `faltan`, duplicado por origen.url; falta confirmar)*
 - [ ] Niveles de confianza 0/1/2 y bandeja de moderación con motivo
 - [ ] Detección de duplicados (origen_url + similitud)
 - [ ] Alta de publicador: verificación de WhatsApp con código + aprobación
