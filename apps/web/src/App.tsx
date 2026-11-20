@@ -9,12 +9,13 @@ import {
   setupIonicReact,
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { ellipse, square, triangle } from 'ionicons/icons';
+import { calendar, map, person } from 'ionicons/icons';
 import { Navigate, Route } from 'react-router-dom';
 
-import Tab1 from './pages/Tab1';
-import Tab2 from './pages/Tab2';
-import Tab3 from './pages/Tab3';
+import Agenda from './pages/Agenda';
+import Ficha from './pages/Ficha';
+import Mapa from './pages/Mapa';
+import Perfil from './pages/Perfil';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -45,6 +46,7 @@ import '@ionic/react/css/palettes/dark.system.css';
 
 /* Theme variables */
 import './theme/variables.css';
+import './theme/app.css';
 
 setupIonicReact();
 
@@ -53,23 +55,24 @@ const App: React.FC = () => (
     <IonReactRouter>
       <IonTabs>
         <IonRouterOutlet>
-          <Route path="/tab1" element={<Tab1 />} />
-          <Route path="/tab2" element={<Tab2 />} />
-          <Route path="/tab3" element={<Tab3 />} />
-          <Route path="/" element={<Navigate to="/tab1" replace />} />
+          <Route path="/agenda" element={<Agenda />} />
+          <Route path="/mapa" element={<Mapa />} />
+          <Route path="/perfil" element={<Perfil />} />
+          <Route path="/evento/:id" element={<Ficha />} />
+          <Route path="/" element={<Navigate to="/agenda" replace />} />
         </IonRouterOutlet>
         <IonTabBar slot="bottom">
-          <IonTabButton tab="tab1" href="/tab1">
-            <IonIcon aria-hidden="true" icon={triangle} />
-            <IonLabel>Tab 1</IonLabel>
+          <IonTabButton tab="agenda" href="/agenda">
+            <IonIcon aria-hidden="true" icon={calendar} />
+            <IonLabel>Agenda</IonLabel>
           </IonTabButton>
-          <IonTabButton tab="tab2" href="/tab2">
-            <IonIcon aria-hidden="true" icon={ellipse} />
-            <IonLabel>Tab 2</IonLabel>
+          <IonTabButton tab="mapa" href="/mapa">
+            <IonIcon aria-hidden="true" icon={map} />
+            <IonLabel>Mapa</IonLabel>
           </IonTabButton>
-          <IonTabButton tab="tab3" href="/tab3">
-            <IonIcon aria-hidden="true" icon={square} />
-            <IonLabel>Tab 3</IonLabel>
+          <IonTabButton tab="perfil" href="/perfil">
+            <IonIcon aria-hidden="true" icon={person} />
+            <IonLabel>Perfil</IonLabel>
           </IonTabButton>
         </IonTabBar>
       </IonTabs>
