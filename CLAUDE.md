@@ -63,6 +63,11 @@ python -m pytest -q
 ```
 
 - Base de datos local: `DATABASE_URL=sqlite:///./hackemate.db`, o una PostgreSQL externa (Neon/Supabase) en `.env`. El código no debe depender de nada exclusivo de PostgreSQL sin un camino alternativo para SQLite (p. ej. pgvector es opcional).
+- **SQLAlchemy en este portátil:** el Control de aplicaciones de Windows bloquea sus extensiones compiladas (`DLL load failed while importing _util_cy`). Después de `pip install -r requirements-dev.txt`, reinstalarla en Python puro:
+  ```powershell
+  $env:DISABLE_SQLALCHEMY_CEXT='1'; python -m pip install --force-reinstall --no-deps --no-binary sqlalchemy sqlalchemy==2.1.9
+  ```
+  No cambia el código: SQLAlchemy funciona igual, solo algo más lento. En Docker (Linux) se usa el wheel normal.
 - Python local: 3.15. PyYAML no tiene wheel para 3.15: para leer YAML se usa `ruamel.yaml`, y `uvicorn` va **sin** el extra `[standard]` (lo arrastraría). No añadas dependencias que necesiten PyYAML.
 
 ### Con Docker (otras máquinas, demo y E2E)
