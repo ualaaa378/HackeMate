@@ -3,7 +3,6 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
-  IonInput,
   IonModal,
   IonPage,
   IonSpinner,
@@ -14,9 +13,9 @@ import { chatbubbleEllipses, close, informationCircle } from 'ionicons/icons';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { enviarMensaje, getEventosPasados, getMensajes } from '../api/client';
-import { CATEGORIAS, type Evento, type MensajeEvento } from '../api/types';
-import { useSesion } from '../cuenta/sesion';
+import { getEventosPasados, getMensajes } from '../api/client';
+import { CATEGORIAS, type Evento } from '../api/types';
+import RecuerdoPlan from '../components/RecuerdoPlan';
 import { imagenPlan } from '../eventos/imagenes';
 import { fechaLarga } from '../utils/formato';
 
@@ -28,6 +27,7 @@ const Recuerdos: React.FC = () => {
   const [error, setError] = useState(false);
   const [abierto, setAbierto] = useState<Evento | null>(null);
   const [cuentas, setCuentas] = useState<Record<string, number>>({});
+  const actualizarCuenta = useCallback((id: string, n: number) => setCuentas((c) => ({ ...c, [id]: n })), []);
 
   useEffect(() => {
     let vivo = true;
@@ -82,11 +82,7 @@ const Recuerdos: React.FC = () => {
             ))}
           </div>
         )}
-        <Comentarios
-          evento={abierto}
-          onCerrar={() => setAbierto(null)}
-          onNuevo={(id, n) => setCuentas((c) => ({ ...c, [id]: n }))}
-        />
+        <Comentarios evento={abierto} onCerrar={() => setAbierto(null)} onNuevo={actualizarCuenta} />
       </IonContent>
     </IonPage>
   );
@@ -127,7 +123,11 @@ const TarjetaRecuerdo: React.FC<{
         )}
       </div>
       <div className="recuerdo__acciones">
-        <button type="button" onClick={onComentarios} aria-label={`Comentarios de «${e.titulo}»: ${comentarios}`}>
+        <button
+          type="button"
+          onClick={onComentarios}
+          aria-label={`Fotos y comentarios de «${e.titulo}»: ${comentarios} comentarios`}
+        >
           <IonIcon icon={chatbubbleEllipses} aria-hidden="true" />
           <span>{comentarios}</span>
         </button>
@@ -145,51 +145,8 @@ const Comentarios: React.FC<{
   onCerrar: () => void;
   onNuevo: (eventoId: string, total: number) => void;
 }> = ({ evento, onCerrar, onNuevo }) => {
-  const { usuario, conCuenta } = useSesion();
-  const [lista, setLista] = useState<MensajeEvento[]>([]);
-  const [texto, setTexto] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const cargar = useCallback(async (id: string) => {
-    const p = await getMensajes(id);
-    const comentarios = p.items.filter((m) => m.tipo === 'comentario' && !m.oculto);
-    setLista(comentarios);
-    return comentarios.length;
-  }, []);
-
-  useEffect(() => {
-    if (!evento) return;
-    let vivo = true;
-    getMensajes(evento.id)
-      .then((p) => vivo && setLista(p.items.filter((m) => m.tipo === 'comentario' && !m.oculto)))
-      .catch(() => vivo && setError('No hemos podido cargar los comentarios.'));
-    return () => {
-      vivo = false;
-      setLista([]);
-      setError(null);
-    };
-  }, [evento]);
-
-  const enviar = (ev: React.FormEvent) => {
-    ev.preventDefault();
-    const t = texto.trim();
-    if (!evento || !t) return;
-    conCuenta('Para comentar un plan necesitas una cuenta. Así se sabe quién lo escribe.', async (u) => {
-      setEnviando(true);
-      setError(null);
-      try {
-        await enviarMensaje(evento.id, { texto: t, tipo: 'comentario' }, u);
-        setTexto('');
-        onNuevo(evento.id, await cargar(evento.id));
-      } catch {
-        setError('No hemos podido publicar tu comentario. Inténtalo de nuevo.');
-      } finally {
-        setEnviando(false);
-      }
-    });
-  };
-
+  const id = evento?.id;
+  const alCambiar = useCallback((n: number) => id && onNuevo(id, n), [id, onNuevo]);
   return (
     <IonModal
       isOpen={!!evento}
@@ -200,40 +157,19 @@ const Comentarios: React.FC<{
     >
       <IonHeader>
         <IonToolbar color="secondary">
-          <IonTitle>Comentarios</IonTitle>
-          <IonButton slot="end" fill="clear" color="light" onClick={onCerrar} aria-label="Cerrar comentarios">
+          <IonTitle>Fotos y comentarios</IonTitle>
+          <IonButton slot="end" fill="clear" color="light" onClick={onCerrar} aria-label="Cerrar">
             <IonIcon icon={close} aria-hidden="true" />
           </IonButton>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        {evento && <p className="hoja-comentarios__plan">{evento.titulo}</p>}
-        <div aria-live="polite">
-          {lista.length === 0 && !error && (
-            <p className="nota">¿Estuviste? Cuenta qué tal fue. Sé la primera persona en comentar.</p>
-          )}
-          {lista.map((m) => (
-            <p key={m.id} className={`burbuja${m.autor_id && m.autor_id === usuario?.id ? ' burbuja--yo' : ''}`}>
-              <b>{m.autor_nombre}</b>
-              {m.texto}
-            </p>
-          ))}
-        </div>
-        {error && <p className="error-form">{error}</p>}
-        {!usuario && <p className="candado">🔒 Puedes leer los comentarios sin cuenta. Para escribir, crea una.</p>}
-        <form className="chat-form" onSubmit={enviar}>
-          <IonInput
-            aria-label="Escribe un comentario"
-            placeholder="¿Qué tal fue?"
-            fill="outline"
-            value={texto}
-            maxlength={1000}
-            onIonInput={(e) => setTexto(e.detail.value ?? '')}
-          />
-          <IonButton type="submit" disabled={enviando || !texto.trim()}>
-            {enviando ? <IonSpinner name="dots" /> : 'Publicar'}
-          </IonButton>
-        </form>
+        {evento && (
+          <>
+            <p className="hoja-comentarios__plan">{evento.titulo}</p>
+            <RecuerdoPlan evento={evento} onTotal={alCambiar} />
+          </>
+        )}
       </IonContent>
     </IonModal>
   );
