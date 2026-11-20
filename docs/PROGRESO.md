@@ -97,8 +97,8 @@
 - [x] Recomendador con motivo legible (gustos + distancia + fecha/plazas + historial) *(sin embeddings)*
 
 **Bloque 4 (sáb 20:00–00:00)**
-- [ ] `GET /estadisticas` (actividades, % importadas, inscripciones vs asistencia, ocupación, solapamientos)
-- [ ] `POST /metrics/tokens` y coste acumulado
+- [x] `GET /estadisticas` (actividades, % importadas, inscripciones vs asistencia, ocupación, solapamientos) *(seed con histórico de 8 actividades pasadas y asistencia; solapamiento de demo «Cine de verano en Uleila» con la verbena de Senés)*
+- [x] `POST /metrics/tokens` y coste acumulado *(precios por proveedor/modelo en `PRECIOS_TOKENS_EUR_MTOK`; gratuitos a 0)*
 - [ ] Despliegue alternativo en Render/Railway (opcional)
 
 ---

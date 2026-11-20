@@ -35,6 +35,14 @@ class Settings(BaseSettings):
     # Cola de avisos (app/notificaciones.py)
     notificaciones_timeout_s: float = 3.0
     notificaciones_max_intentos: int = 5
+    # Coste de la IA (app/estadisticas.py): euros por millón de tokens. Clave «proveedor:modelo» o «proveedor»;
+    # lo que no aparece cuenta como gratuito (0 €). JSON en la variable PRECIOS_TOKENS_EUR_MTOK.
+    precios_tokens_eur_mtok: dict[str, dict[str, float]] = {
+        "gemini": {"entrada": 0.0, "salida": 0.0},
+        "freellm": {"entrada": 0.0, "salida": 0.0},
+        "reglas": {"entrada": 0.0, "salida": 0.0},
+        "claude": {"entrada": 5.0, "salida": 25.0},
+    }
 
     @property
     def lista_cors(self) -> list[str]:

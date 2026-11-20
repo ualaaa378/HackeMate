@@ -206,9 +206,9 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 ### H4 · Criterios del jurado (sáb 20:00 → dom 00:00 · CP4 · `v0.9` feature freeze)
 
 **Tareas**
-- [ ] H4.1 `GET /estadisticas`: actividades del periodo, % importadas solas, inscripciones vs asistencia, ocupación por categoría, % de gente de otro pueblo, **solapamientos** entre pueblos (mismo día y franja, misma categoría o eventos grandes).
-- [ ] H4.2 `POST /metrics/tokens` (B registra cada llamada) y acumulados de tokens y euros por proveedor en `/estadisticas`.
-- [ ] H4.3 Marcar asistencia (`asistio`/`no_asistio`) para que el panel tenga datos reales; seed con eventos pasados para que las gráficas no salgan vacías.
+- [x] H4.1 `GET /estadisticas`: actividades del periodo, % importadas solas, inscripciones vs asistencia, ocupación por categoría, % de gente de otro pueblo, **solapamientos** entre pueblos (mismo día y franja, misma categoría o eventos grandes).
+- [x] H4.2 `POST /metrics/tokens` (B registra cada llamada) y acumulados de tokens y euros por proveedor en `/estadisticas`.
+- [x] H4.3 Marcar asistencia (`asistio`/`no_asistio`) para que el panel tenga datos reales; seed con eventos pasados para que las gráficas no salgan vacías.
 - [ ] H4.4 URL pública estable: túnel de Cloudflare funcionando para el jurado. **Opcional:** despliegue alternativo en Render/Railway + Neon/Supabase.
 - [ ] H4.5 Revisión de robustez: la API arranca aunque `bot` esté caído; si `/notify` falla, la notificación queda en cola (tabla) y se reintenta.
 

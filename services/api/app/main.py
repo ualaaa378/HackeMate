@@ -6,6 +6,7 @@ from app.config import get_settings
 from app.rutas import (
     auth,
     calendario,
+    estadisticas,
     eventos,
     importar,
     inscripciones,
@@ -38,6 +39,7 @@ app.include_router(auth.router)
 app.include_router(moderacion.router)
 app.include_router(calendario.router)
 app.include_router(recomendaciones.router)
+app.include_router(estadisticas.router)
 
 
 @app.get("/health")

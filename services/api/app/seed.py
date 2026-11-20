@@ -5,6 +5,10 @@
 - Los eventos con fechas reales que ya han terminado no se cargan, y si ya estaban en la base
   (de un seed anterior) se borran, junto con sus inscripciones y mensajes. Así la agenda solo
   enseña lo que aún va a pasar y, llegado el día, cada evento desaparece solo al volver a sembrar.
+- Excepción: el histórico para el panel de estadísticas (H4.3). `eventos_pasados.json` trae actividades ya
+  celebradas (estado `finalizado`, con aforo) e `inscripciones_pasadas.json` su asistencia (`asistio`/`no_asistio`).
+  Se cargan siempre: no salen en la agenda ni en las recomendaciones (solo muestran `publicado`), pero así las
+  gráficas no están vacías. Incluyen el solapamiento de demo «Cine de verano en Uleila» con la verbena de Senés.
 - Solo toca los datos de los fixtures; lo que creen los usuarios no se borra (salvo con --reset).
 
 Uso:  python scripts/seed.py [--reset]        (desde la raíz del repo)
@@ -37,6 +41,8 @@ from app.modelos import (
 )
 
 FICHEROS_EVENTOS = ("eventos.json", "eventos_demo.json")
+FICHERO_HISTORICO = "eventos_pasados.json"
+FICHERO_INSCRIPCIONES_HISTORICO = "inscripciones_pasadas.json"
 
 
 def directorio_fixtures() -> Path:
@@ -154,6 +160,19 @@ def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None 
             borrados += 1
     db.flush()
     resumen |= {"eventos": len(cargados), "eventos_terminados_omitidos": len(terminados), "eventos_terminados_borrados": borrados}
+
+    historico = set()
+    for e in _leer(FICHERO_HISTORICO, directorio):
+        db.merge(Evento(**_fila_evento(e)))
+        historico.add(e["id"])
+    db.flush()
+    n = 0
+    for fila in _leer(FICHERO_INSCRIPCIONES_HISTORICO, directorio):
+        if fila["evento_id"] in historico:
+            db.merge(Inscripcion(**_columnas(Inscripcion, fila, ("creado_en", "actualizado_en"))))
+            n += 1
+    db.flush()
+    resumen |= {"eventos_historico": len(historico), "inscripciones_historico": n}
 
     # Lo que cuelga de un evento solo se carga si el evento sigue en la agenda.
     for clave, modelo, fichero, fechas in (
