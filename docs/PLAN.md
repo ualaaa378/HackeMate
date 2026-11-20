@@ -166,8 +166,8 @@ Cada flujo tiene su carpeta. **Nadie edita la carpeta de otro** sin avisar (y en
 5. Panel de estadísticas: actividades, % importadas solas, inscripciones vs asistencia, ocupación por categoría, solapamientos, **tokens y coste**.
 6. Accesibilidad: letra grande, contraste AA, botones grandes, navegación por teclado, `aria-label`, textos alternativos.
 7. PWA: `manifest.json`, service worker, icono.
-9. **Capacitor → APK de Android** (bloque 4). Instalar Android Studio + JDK **el viernes por la noche o el sábado por la mañana** (tarda 1–2 h) para no perder tiempo después. La URL de la API se configura por variable de entorno (`VITE_API_URL`) para que el APK apunte a la URL pública del túnel.
-8. Trabaja desde el minuto 1 con **mocks** (`contracts/fixtures/` servidos por MSW o un `json-server`).
+8. **Capacitor → APK de Android** (bloque 4). Instalar Android Studio + JDK **el viernes por la noche o el sábado por la mañana** (tarda 1–2 h) para no perder tiempo después. La URL de la API se configura por variable de entorno (`VITE_API_URL`) para que el APK apunte a la URL pública del túnel.
+9. Trabaja desde el minuto 1 con **mocks** (`contracts/fixtures/` servidos por MSW o un `json-server`).
 
 ### Reparto de carga (aprox.)
 
