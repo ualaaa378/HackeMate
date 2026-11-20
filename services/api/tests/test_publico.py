@@ -132,7 +132,9 @@ def test_publico_solo_ve_publicados(api, db):
     assert all(e["estado"] == "publicado" for e in _todos(api, estado="en_revision"))
     # Un servicio interno sí puede pedir otro estado
     r = api.get("/api/v1/eventos", params={"estado": "en_revision"}, headers=TOKEN).json()
-    assert [e["id"] for e in r["items"]] == [RUTA_SOLIDARIA]
+    # La Ruta y los dos eventos de la demo de moderación que el seed ya deja en revisión
+    assert RUTA_SOLIDARIA in {e["id"] for e in r["items"]} and r["total"] == 3
+    assert all(e["estado"] == "en_revision" for e in r["items"])
     # La ficha de un evento no publicado no existe para el público
     assert api.get(f"/api/v1/eventos/{RUTA_SOLIDARIA}").status_code == 404
     assert api.get(f"/api/v1/eventos/{RUTA_SOLIDARIA}", headers=TOKEN).status_code == 200

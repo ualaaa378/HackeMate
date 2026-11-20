@@ -8,7 +8,7 @@ Recopilado el 20/11/2026. Todo dato de `eventos.json` y `lugares.json` sale de u
 |---|---|
 | `eventos.json` | 22 eventos reales (cumple `schemas/evento.json`). Los usa la app como mock. |
 | `lugares.json` | 35 lugares permanentes: rutas, sitios que ver, comercios, alojamientos y servicios (cumple `schemas/lugar.json`, nuevo). |
-| `eventos_demo.json` | Los 8 eventos inventados de antes, por si algún flujo los necesita para la demo. No son reales. |
+| `eventos_demo.json` | 10 eventos inventados para la demo. No son reales. Los 8 primeros están publicados; los 2 últimos están `en_revision` para que la bandeja del moderador no salga vacía (un taller de la Asociación Juvenil de Tahal, publicador nuevo de nivel 0, y un post de apuestas de Bar La Plaza parado por el antispam). |
 
 ## Cómo están clasificados
 

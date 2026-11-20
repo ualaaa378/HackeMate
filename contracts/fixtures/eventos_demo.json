@@ -296,5 +296,80 @@
     },
     "creado_en": "2026-11-20T18:00:00+01:00",
     "actualizado_en": "2026-11-20T18:00:00+01:00"
+  },
+  {
+    "id": "1e5d0000-0000-4000-8000-000000000009",
+    "titulo": "Taller de grafiti y mural en el lavadero",
+    "descripcion": "Taller abierto para jóvenes: diseñamos y pintamos entre todos un mural en la pared del lavadero. Pinturas incluidas.",
+    "categoria": "cultural",
+    "etiquetas": [
+      "taller",
+      "jovenes",
+      "arte urbano"
+    ],
+    "municipio": "Tahal",
+    "lugar": "Lavadero",
+    "lat": 37.2219,
+    "lon": -2.2856,
+    "fecha_inicio": "2026-12-13T11:00:00+01:00",
+    "fecha_fin": "2026-12-13T14:00:00+01:00",
+    "precio_eur": null,
+    "es_gratuito": true,
+    "plazas_totales": 20,
+    "plazas_libres": 20,
+    "inscritos": 0,
+    "estado": "en_revision",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a07",
+    "publicador_nombre": "Asociación Juvenil de Tahal",
+    "imagen_url": null,
+    "origen": {
+      "canal": "whatsapp",
+      "url": null,
+      "importado_auto": false
+    },
+    "moderacion": {
+      "motivo": "Publicador nuevo (nivel 0)",
+      "score_spam": 0.05,
+      "revisado_por": null
+    },
+    "creado_en": "2026-11-20T18:00:00+01:00",
+    "actualizado_en": "2026-11-20T18:00:00+01:00"
+  },
+  {
+    "id": "1e5d0000-0000-4000-8000-000000000010",
+    "titulo": "¡¡GANA 500€ GARANTIZADOS!! Apuestas del partido en el bar",
+    "descripcion": "Apuesta YA con nuestro código promocional y duplica tu dinero. Ganancias garantizadas, plazas limitadas. Escríbenos por privado y te pasamos el enlace.",
+    "categoria": "ludica",
+    "etiquetas": [
+      "apuestas",
+      "promocion"
+    ],
+    "municipio": "Senés",
+    "lugar": "Bar La Plaza",
+    "lat": 37.1988,
+    "lon": -2.3443,
+    "fecha_inicio": "2026-12-06T21:00:00+01:00",
+    "fecha_fin": "2026-12-06T23:00:00+01:00",
+    "precio_eur": null,
+    "es_gratuito": true,
+    "plazas_totales": null,
+    "plazas_libres": null,
+    "inscritos": 0,
+    "estado": "en_revision",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a03",
+    "publicador_nombre": "Bar La Plaza",
+    "imagen_url": null,
+    "origen": {
+      "canal": "instagram",
+      "url": "https://www.instagram.com/p/ejemplo-apuestas/",
+      "importado_auto": true
+    },
+    "moderacion": {
+      "motivo": "Posible spam: apuestas y promesas de dinero fácil",
+      "score_spam": 0.95,
+      "revisado_por": null
+    },
+    "creado_en": "2026-11-20T18:00:00+01:00",
+    "actualizado_en": "2026-11-20T18:00:00+01:00"
   }
 ]

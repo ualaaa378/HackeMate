@@ -169,7 +169,7 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 - [ ] H2.4 Niveles de confianza: nivel 0 todo a `en_revision`; nivel 1 pasa si es «lo habitual» (misma categoría que publicaciones ya aprobadas y `score_spam` bajo); nivel 2 pasa salvo spam alto. Subida de nivel automática tras N aprobaciones (N configurable, p. ej. 3).
 - [ ] H2.5 `GET /moderacion/pendientes` (con `motivo`) y `POST /moderacion/{id}/decision` (aprobar, rechazar, retirar). Pausar publicador y pausar automatizaciones.
 - [ ] H2.6 Alta de publicador: `POST /publicadores` → `POST /auth/whatsapp/codigo` + `/verificar` → `POST /publicadores/{id}/aprobar` → `POST /publicadores/{id}/fuentes`. El moderador recibe aviso vía `/notify`.
-- [ ] H2.7 Seed con un publicador de nivel 2 (Bar La Plaza, «Menú del domingo») y uno de nivel 0 para la demo del antispam.
+- [x] H2.7 Seed con un publicador de nivel 2 (Bar La Plaza, «Menú del domingo») y uno de nivel 0 para la demo del antispam.
 
 **Criterios de aceptación**
 - ✅ Importar el fixture de la Ruta Solidaria crea un evento `pendiente_confirmacion` y la respuesta lista `faltan: ["plazas_totales","lugar"]`.
