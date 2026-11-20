@@ -72,7 +72,7 @@ Cada hito termina en un checkpoint de equipo (CP) de `PLAN.md`. Al terminar un h
 
 #### Cómo probar H0 (lo hace otra persona del equipo con Docker; el portátil de Benas no puede ejecutarlo)
 
-**Requisitos:** Git, Docker con Compose **2.24 o superior** (`docker compose version`; el compose usa `env_file` con `path`/`required`), Python 3.11+ y `curl`.
+**Requisitos:** Git, Docker con Compose **2.24 o superior** (`docker compose version`; el compose usa `env_file` con `path`/`required`), Python 3.11 a 3.15 y `curl`.
 
 **1. Descargar la rama del flujo A** (hasta que esté en `develop`):
 ```bash

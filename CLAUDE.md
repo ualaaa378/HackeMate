@@ -63,7 +63,7 @@ python -m pytest -q
 ```
 
 - Base de datos local: `DATABASE_URL=sqlite:///./hackemate.db`, o una PostgreSQL externa (Neon/Supabase) en `.env`. El código no debe depender de nada exclusivo de PostgreSQL sin un camino alternativo para SQLite (p. ej. pgvector es opcional).
-- Python local: 3.15. PyYAML no tiene wheel para 3.15: para leer YAML se usa `ruamel.yaml`.
+- Python local: 3.15. PyYAML no tiene wheel para 3.15: para leer YAML se usa `ruamel.yaml`, y `uvicorn` va **sin** el extra `[standard]` (lo arrastraría). No añadas dependencias que necesiten PyYAML.
 
 ### Con Docker (otras máquinas, demo y E2E)
 

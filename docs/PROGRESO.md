@@ -48,11 +48,24 @@
 - [ ] Cuentas creadas: Twilio WhatsApp Sandbox, Google OAuth, clave de Claude, clave de Gemini (AI Studio)
 - [~] Ramas `main` y `develop` creadas (falta activar la protección de `main` en GitHub)
 - [x] Estructura de carpetas del monorepo creada
-- [~] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo (escrito; falta validarlo con Docker en otra máquina: pasos y resultado esperado en `PLAN_FLUJO_A.md` H0, «Cómo probar H0»)
+- [~] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo (escrito; falta validarlo con Docker en otra máquina: pasos y resultado esperado en `PLAN_FLUJO_A.md` H0, «Cómo probar H0»). **Responsable de la prueba: por asignar en la reunión** (alguien con Docker)
 - [x] `.env.example` con todas las variables
 - [x] `contracts/openapi.yaml` v1
 - [x] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion)
 - [x] `contracts/enums.md` y `contracts/fixtures/*.json`
+- [ ] **B (Francisco) confirma los contratos v1 de `Flujo-A`.** Revisar que:
+  - `services/bot/app/schemas.py` (`ExtraccionEvento`, `Campo`, `Tokens`) encaja con `contracts/schemas/extraccion_evento.json` y su fixture valida con el modelo Pydantic.
+  - El cuerpo que manda `api_cliente.importar_evento` (`extraccion`, `telefono_publicador`, `origen`) encaja con `ImportarEvento` de `openapi.yaml`.
+  - `POST /notify` acepta `contracts/schemas/notificacion.json` (lo mínimo: `telefono`, `tipo`, `texto`) y `metrics.registrar` envía lo que pide `MetricaTokens`.
+  - Los endpoints `/ai/*` de `openapi.yaml` son los que va a implementar.
+  - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
+- [ ] **C (Adán) confirma los contratos v1 de `Flujo-A`.** Revisar que:
+  - `contracts/schemas/evento.json`, `fixtures/eventos.json` y `fixtures/municipios.json` son los suyos sin cambios.
+  - `npx openapi-typescript contracts/openapi.yaml -o apps/web/src/api/schema.d.ts` genera tipos sin errores.
+  - Los fixtures de usuarios, publicadores, inscripciones, mensajes, notificaciones y `eventos_moderacion.json` le bastan para las pantallas con mocks.
+  - Dónde confirmar: aprobación (o comentarios) en la PR `Flujo-A` → `develop`, y marcar esta casilla.
+- [ ] Cerrar la PR #1 (`contract/v1`) **sin merge**: la sustituyen los contratos de `Flujo-A` (mismo `evento.json`). Si tenía algo que falte en `Flujo-A`, se añade por PR `contract-change`.
+- [ ] PR `Flujo-A` → `develop` revisada y mergeada (orden A → B → C); `main` protegida en GitHub
 - [ ] Preguntas enviadas a la organización por Telegram (PLAN §8)
 
 ---
