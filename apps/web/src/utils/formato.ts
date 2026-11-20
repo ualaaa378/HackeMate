@@ -61,3 +61,16 @@ export function agruparPorDia(eventos: Evento[]): [string, Evento[]][] {
   }
   return [...grupos.entries()].sort(([a], [b]) => a.localeCompare(b));
 }
+
+/** «2026-11-28» + «18:30» → ISO con el desfase de Madrid de ese día (+01:00 en invierno, +02:00 en verano). */
+export function isoMadrid(fecha: string, horaTexto: string): string {
+  const aprox = new Date(`${fecha}T${horaTexto}:00Z`);
+  const enMadrid = new Date(aprox.toLocaleString('en-US', { timeZone: 'Europe/Madrid' }));
+  const enUtc = new Date(aprox.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const minutos = Math.round((enMadrid.getTime() - enUtc.getTime()) / 60000);
+  const signo = minutos >= 0 ? '+' : '-';
+  const abs = Math.abs(minutos);
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0');
+  const mm = String(abs % 60).padStart(2, '0');
+  return `${fecha}T${horaTexto}:00${signo}${hh}:${mm}`;
+}
