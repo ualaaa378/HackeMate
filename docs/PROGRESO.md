@@ -48,7 +48,7 @@
 - [ ] Cuentas creadas: Twilio WhatsApp Sandbox, Google OAuth, clave de Claude, clave de Gemini (AI Studio)
 - [~] Ramas `main` y `develop` creadas (falta activar la protección de `main` en GitHub)
 - [x] Estructura de carpetas del monorepo creada
-- [~] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo (escrito; falta validarlo con Docker en otra máquina)
+- [~] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo (escrito; falta validarlo con Docker en otra máquina: pasos y resultado esperado en `PLAN_FLUJO_A.md` H0, «Validación de Docker»)
 - [x] `.env.example` con todas las variables
 - [x] `contracts/openapi.yaml` v1
 - [x] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion)

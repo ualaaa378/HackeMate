@@ -64,11 +64,25 @@ Cada hito termina en un checkpoint de equipo (CP) de `PLAN.md`. Al terminar un h
 
 **Tareas**
 - [x] H0.1 Confirmar enfoque (Opción 1 de `PLAN.md` §2) y el reparto de personas (ver §6, punto 1).
-- [ ] H0.2 Crear ramas `main` (protegida) y `develop`; estructura de carpetas del monorepo.
-- [ ] H0.3 `infra/docker-compose.yml` con `db` (pgvector/pg16), `api`, `bot`, `web`, `tunnel`. Un `/health` mínimo en `api` (y stubs vacíos para `bot` y `web` si los otros aún no han empezado).
-- [ ] H0.4 `.env.example` con todas las variables conocidas (`DATABASE_URL`, `INTERNAL_TOKEN`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `BOT_URL`, `API_URL`, claves IA, Twilio…).
-- [ ] H0.5 Con B y C: `contracts/openapi.yaml` v1, `schemas/*.json` (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion), `enums.md`, `fixtures/*.json`.
-- [ ] H0.6 Commit `chore: esqueleto` y `contract: v1` en `develop`.
+- [~] H0.2 Crear ramas `main` (protegida) y `develop`; estructura de carpetas del monorepo. *(Ramas y carpetas hechas; falta proteger `main` en GitHub.)*
+- [~] H0.3 `infra/docker-compose.yml` con `db` (pgvector/pg16), `api`, `bot`, `web`, `tunnel`. Un `/health` mínimo en `api` (y stubs vacíos para `bot` y `web` si los otros aún no han empezado). *(Escrito; falta validarlo con Docker en otra máquina.)*
+- [x] H0.4 `.env.example` con todas las variables conocidas (`DATABASE_URL`, `INTERNAL_TOKEN`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `BOT_URL`, `API_URL`, claves IA, Twilio…).
+- [x] H0.5 Con B y C: `contracts/openapi.yaml` v1, `schemas/*.json` (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion), `enums.md`, `fixtures/*.json`.
+- [~] H0.6 Commit `chore: esqueleto` y `contract: v1` en `develop`. *(Commits hechos en `Flujo-A`; falta push y PR a `develop`.)*
+
+**Validación de Docker (la hace otra persona del equipo con Docker; el portátil de Benas no puede ejecutarlo):**
+Requisito: Docker Compose 2.24 o superior (el compose usa `env_file` con `path`/`required`).
+```bash
+cp .env.example .env
+docker compose -f infra/docker-compose.yml up --build
+curl localhost:8000/health   # api  → {"status":"ok","version":"0.0.1"}
+curl localhost:8001/health   # bot (stub) → {"status":"ok","version":"0.0.0-stub"}
+curl localhost:8080/health   # web (stub) → {"status":"ok","version":"0.0.0-stub"}
+docker compose -f infra/docker-compose.yml logs tunnel   # debe aparecer una URL https://…trycloudflare.com
+```
+Resultado: marcar en `docs/PROGRESO.md` (CP0, línea del compose) y, si falla, apuntarlo en «Bloqueos» con el error.
+
+**Alcance de los fixtures en H0:** solo datos base válidos contra los schemas (5 municipios, publicadores, usuarios, eventos publicados, la extracción de la Ruta Solidaria, inscripciones, mensajes y notificaciones). Los escenarios de moderación y antispam no entran en H0: se definen en H2 junto con su lógica.
 
 **Criterios de aceptación**
 - ✅ `docker compose -f infra/docker-compose.yml up --build` arranca sin errores en una máquina limpia.
