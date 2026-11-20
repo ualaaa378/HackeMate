@@ -138,6 +138,19 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 - [ ] H1.6 `scripts/seed.py`: Lucainena de las Torres, Senés, Velefique, Uleila del Campo y Tahal con coordenadas; 3–4 publicadores (Amigos de Velefique, Bar La Plaza…); 15–25 eventos realistas de las 6 categorías repartidos en las próximas 2 semanas, incluida la **II Ruta Solidaria** del guion.
 - [ ] H1.7 Sync a las 21:00 con B y C (10 min).
 
+#### Entregables de H1 (se avanza uno a uno; al terminar cada uno se explica y se pide permiso para seguir)
+
+| # | Entregable | Tareas | Cómo se comprueba |
+|---|---|---|---|
+| E1.0 | **Entorno listo para base de datos.** SQLAlchemy y Alembic funcionando en el portátil de Benas (Windows bloquea las extensiones compiladas: se instala la versión en Python puro) y añadidos a `requirements.txt` (+ `psycopg[binary]` para PostgreSQL en Docker). | — | `import sqlalchemy` funciona y los 32 tests siguen en verde |
+| E1.1 | **Modelo de datos y migración inicial.** Tablas de municipios, lugares, publicadores, fuentes, usuarios, eventos, inscripciones, mensajes, notificaciones y métricas de tokens. Funciona igual en SQLite y PostgreSQL. | H1.1 | Test: `alembic upgrade head` sobre una base vacía crea todas las tablas |
+| E1.2 | **Piezas comunes.** Conexión a la base de datos por petición, paginación `{items,total,page,size}` reutilizable y protección `X-Internal-Token` para las rutas internas. | H1.2, H1.5 | Tests: sin token → 401 con el formato de error; con token → pasa |
+| E1.3 | **Datos de la demo (`scripts/seed.py`).** Carga los 5 pueblos, los lugares, los publicadores, los usuarios (Carmen de Senés incluida) y los eventos reales + de demo, con la II Ruta Solidaria. Se puede ejecutar varias veces sin duplicar. | H1.6 | Test: base vacía → seed → conteos esperados; repetir no duplica |
+| E1.4 | **Eventos desde la base de datos.** `GET /eventos` (filtros por pueblo, categoría, fechas, texto y radio), ficha, `POST` y `PATCH`. Municipios y lugares también salen de la base. Se retira la lectura provisional desde fixtures. | H1.3 | Tests: filtro por radio desde Senés, 404 con formato, respuestas que validan contra `evento.json` |
+| E1.5 | **Publicadores y usuarios.** Listar, ver y crear publicadores; alta de usuario; `GET /usuarios/by-phone/{e164}` para el bot; `GET/PATCH /usuarios/me` con verificación de JWT (el login que lo emite llega en H3). | H1.4 | Tests de cada ruta, incluidos 401/404/409 |
+| E1.6 | **Importación mínima para el CP1.** `POST /eventos/importar` crea el evento en `pendiente_confirmacion` desde lo que envía el bot (adelanto de H2.1, sin duplicados ni moderación). | (H2.1) | Test con el fixture de la Ruta Solidaria: crea el evento y devuelve `faltan` |
+| E1.7 | **Cierre de H1.** `PROGRESO.md` al día, `x-implementado: true` en `openapi.yaml`, compose revisado, PR `Flujo-A` → `develop` y etiqueta `v0.1` (con permiso). | — | Criterios de aceptación de abajo |
+
 **Criterios de aceptación**
 - ✅ `alembic upgrade head` sobre una base vacía crea todas las tablas sin errores.
 - ✅ Tras `seed.py`, `GET /api/v1/eventos` devuelve `{items, total, page, size}` con los eventos de demo.
