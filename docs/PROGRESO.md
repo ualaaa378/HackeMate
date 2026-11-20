@@ -48,7 +48,7 @@
 - [ ] Cuentas creadas: Twilio WhatsApp Sandbox, Google OAuth, clave de Claude, clave de Gemini (AI Studio)
 - [~] Ramas `main` y `develop` creadas (falta activar la protección de `main` en GitHub)
 - [x] Estructura de carpetas del monorepo creada
-- [~] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo (escrito; falta validarlo con Docker en otra máquina: pasos y resultado esperado en `PLAN_FLUJO_A.md` H0, «Cómo probar H0»). **Responsable de la prueba: por asignar en la reunión** (alguien con Docker)
+- [x] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo *(validado por C el vie 22:20 con PostgreSQL y la API de #10; falta repetirlo con el bot real en lugar del stub)*
 - [x] `.env.example` con todas las variables (incluidas las `META_*` del canal WhatsApp Cloud API de `Flujo-B`)
 - [x] `contracts/openapi.yaml` v1
 - [x] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion, lugar)
