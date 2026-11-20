@@ -14,6 +14,8 @@
 - Tres flujos de trabajo independientes: **A · Backend y datos**, **B · WhatsApp e IA**, **C · Web, PWA y panel**.
 - Se trabaja **contra contratos congelados** (`contracts/`) y **datos de ejemplo** (`contracts/fixtures/`), así nadie espera a nadie.
 - **Una rama por flujo**, integración en `develop`, `main` solo recibe versiones probadas.
+- El avance se controla en **[`PROGRESO.md`](PROGRESO.md)** (checklist por flujo, checkpoints, demo y criterios del jurado).
+- ⚠️ Si se elige la Opción 1, hay que actualizar `CLAUDE.md` del repo, que todavía describe el plan anterior (Streamlit + SQLite, equipo de 4).
 
 ---
 
