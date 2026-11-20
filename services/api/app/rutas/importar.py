@@ -4,7 +4,6 @@ El evento se crea en `pendiente_confirmacion`: no lo ve nadie hasta que el publi
 La IA propone; aquí se valida cada campo y lo que no sirve cuenta como que falta.
 """
 
-import unicodedata
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
@@ -16,11 +15,13 @@ from sqlalchemy.orm import Session
 
 from app.canales import buscar_publicador_por_contacto, validar_contacto
 from app.db import get_db
+from app.duplicados import buscar_posible_duplicado
 from app.errores import ErrorApi
 from app.modelos import CANALES, CATEGORIAS, Evento, Fuente, Municipio, Publicador, ahora
 from app.rutas.eventos import _buscar, _con_zona, _ficha
 from app.rutas.publico import es_uuid
 from app.seguridad import exigir_token_interno
+from app.texto import plegar
 
 router = APIRouter(prefix="/api/v1", tags=["ingesta"])
 
@@ -125,11 +126,6 @@ def _entero(valor: Any) -> int | None:
     return int(numero) if numero is not None and numero == int(numero) else None
 
 
-def _plegar(texto: str) -> str:
-    """Sin tildes ni mayúsculas: la IA puede escribir «Senes» o «SENÉS»."""
-    return "".join(c for c in unicodedata.normalize("NFKD", texto) if not unicodedata.combining(c)).casefold().strip()
-
-
 def _municipio(db: Session, valor: Any) -> Municipio | None:
     nombre = _texto(valor)
     if nombre is None:
@@ -137,8 +133,8 @@ def _municipio(db: Session, valor: Any) -> Municipio | None:
     exacto = db.get(Municipio, nombre)
     if exacto is not None:
         return exacto
-    buscado = _plegar(nombre)
-    return next((m for m in db.scalars(select(Municipio)).all() if _plegar(m.nombre) == buscado), None)
+    buscado = plegar(nombre)
+    return next((m for m in db.scalars(select(Municipio)).all() if plegar(m.nombre) == buscado), None)
 
 
 # --- Publicador -------------------------------------------------------------------------------------
@@ -173,12 +169,14 @@ def _asociar_publicador(db: Session, datos: ImportarEvento) -> Publicador | None
     return publicador
 
 
-def _resultado(db: Session, evento: Evento, duplicado: bool, status: int) -> JSONResponse:
+def _resultado(
+    db: Session, evento: Evento, duplicado: bool, status: int, posible_duplicado_de: str | None = None
+) -> JSONResponse:
     cuerpo = {
         "evento": _ficha(db, _buscar(db, evento.id)),
         "faltan": list(evento.faltan or []),
         "duplicado": duplicado,
-        "posible_duplicado_de": None,
+        "posible_duplicado_de": posible_duplicado_de,
     }
     return JSONResponse(cuerpo, status_code=status)
 
@@ -201,8 +199,6 @@ def importar_evento(datos: ImportarEvento, db: Session = Depends(get_db)):
         existente = db.scalar(select(Evento).where(Evento.origen_url == url).order_by(Evento.creado_en))
         if existente is not None:
             return _resultado(db, existente, duplicado=True, status=200)
-    # H2.2: si no hay mismo origen.url, buscar uno parecido (título + fecha + municipio) por encima de un
-    # umbral y devolverlo en `posible_duplicado_de` (se crea igualmente).
 
     campos = extraccion.campos
     titulo = _texto(_valor(campos, "titulo"))
@@ -225,6 +221,12 @@ def importar_evento(datos: ImportarEvento, db: Session = Depends(get_db)):
     faltan = list(dict.fromkeys(extraccion.faltan))
     validos = {"titulo": titulo, "categoria": categoria, "municipio": municipio, "fecha_inicio": fecha_inicio}
     faltan += [c for c in OBLIGATORIOS if validos[c] is None and c not in faltan]
+
+    # H2.2: sin mismo origen.url, uno parecido (título + fecha + municipio) se señala pero se crea igualmente.
+    # Solo con valores reales: con los provisionales todo se parecería a todo.
+    parecido = None
+    if titulo is not None and fecha_inicio is not None and municipio is not None:
+        parecido = buscar_posible_duplicado(db, titulo, fecha_inicio, municipio.nombre)
 
     # Valores provisionales para lo obligatorio que falta (ver OBLIGATORIOS). El municipio, el del
     # publicador o, si no hay, el primero de la plataforma.
@@ -264,4 +266,4 @@ def importar_evento(datos: ImportarEvento, db: Session = Depends(get_db)):
     # H2.4: moderación y niveles de confianza (score_spam, en_revision/publicado) al confirmar (H2.3).
     db.add(evento)
     db.commit()
-    return _resultado(db, evento, duplicado=False, status=201)
+    return _resultado(db, evento, duplicado=False, status=201, posible_duplicado_de=parecido.id if parecido else None)

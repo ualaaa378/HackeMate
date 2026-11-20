@@ -164,7 +164,7 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 
 **Tareas**
 - [ ] H2.1 `POST /eventos/importar`: recibe `ExtraccionEvento` + origen, la asocia al publicador (fuente → publicador → WhatsApp), crea el evento en `pendiente_confirmacion` y devuelve los campos que faltan.
-- [ ] H2.2 Detección de duplicados: mismo `origen.url` → devuelve el existente; si no, similitud de título + fecha + municipio por encima de un umbral → se marca como posible duplicado.
+- [x] H2.2 Detección de duplicados: mismo `origen.url` → devuelve el existente; si no, similitud de título + fecha + municipio por encima de un umbral → se marca como posible duplicado.
 - [ ] H2.3 `POST /eventos/{id}/confirmar` con los campos completados → pasa a moderación.
 - [ ] H2.4 Niveles de confianza: nivel 0 todo a `en_revision`; nivel 1 pasa si es «lo habitual» (misma categoría que publicaciones ya aprobadas y `score_spam` bajo); nivel 2 pasa salvo spam alto. Subida de nivel automática tras N aprobaciones (N configurable, p. ej. 3).
 - [ ] H2.5 `GET /moderacion/pendientes` (con `motivo`) y `POST /moderacion/{id}/decision` (aprobar, rechazar, retirar). Pausar publicador y pausar automatizaciones.

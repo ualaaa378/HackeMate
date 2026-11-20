@@ -217,3 +217,95 @@ def test_campos_desconocidos_se_ignoran(api):
     cuerpo["extraccion"]["campo_futuro"] = "x"
     r = api.post(URL, json=cuerpo, headers=TOKEN)
     assert r.status_code == 201, r.text
+
+
+# --- H2.2: posible duplicado (título parecido + fecha cercana + mismo municipio) ----------------------
+
+RUTA_TAPA = "c77279c2-a072-530e-9f2b-9c405a8a5f33"  # seed: Uleila del Campo, 2026-11-28 12:00
+
+
+def _cuerpo_tapa(titulo="RUTA DE LA TAPA Y EL POSTRE!", municipio="Uleila del Campo",
+                 fecha="2026-11-28T12:00:00+01:00", url="https://example.org/posts/tapa-otra") -> dict:
+    cuerpo = _cuerpo(url=url)
+    campos = cuerpo["extraccion"]["campos"]
+    campos["titulo"] = {"valor": titulo, "confianza": "alta"}
+    campos["categoria"] = {"valor": "gastronomia", "confianza": "alta"}
+    campos["municipio"] = {"valor": municipio, "confianza": "alta"}
+    campos["fecha_inicio"] = {"valor": fecha, "confianza": "alta"}
+    return cuerpo
+
+
+def test_titulo_casi_igual_es_posible_duplicado(api, db):
+    r = api.post(URL, json=_cuerpo_tapa(), headers=TOKEN)
+    assert r.status_code == 201, r.text
+    _valida(r.json())
+    assert r.json()["duplicado"] is False
+    assert r.json()["posible_duplicado_de"] == RUTA_TAPA
+    # Se crea igualmente
+    assert r.json()["evento"]["id"] != RUTA_TAPA
+    assert db.get(Evento, r.json()["evento"]["id"]) is not None
+
+
+def test_posible_duplicado_con_fecha_a_menos_de_un_dia(api):
+    r = api.post(URL, json=_cuerpo_tapa(titulo="Ruta de la tapa y postre", fecha="2026-11-29T10:00:00+01:00"), headers=TOKEN)
+    assert r.status_code == 201, r.text
+    assert r.json()["posible_duplicado_de"] == RUTA_TAPA
+
+
+@pytest.mark.parametrize(
+    "cambio",
+    [
+        {"municipio": "Tahal"},
+        {"fecha": "2026-12-01T12:00:00+01:00"},
+        {"titulo": "Concierto de la banda municipal"},
+    ],
+)
+def test_sin_posible_duplicado(api, cambio):
+    r = api.post(URL, json=_cuerpo_tapa(**cambio), headers=TOKEN)
+    assert r.status_code == 201, r.text
+    _valida(r.json())
+    assert r.json()["posible_duplicado_de"] is None
+
+
+@pytest.mark.parametrize("estado", ["rechazado", "cancelado", "archivado"])
+def test_estados_descartados_no_cuentan(api, db, estado):
+    db.get(Evento, RUTA_TAPA).estado = estado
+    db.commit()
+    r = api.post(URL, json=_cuerpo_tapa(), headers=TOKEN)
+    assert r.status_code == 201, r.text
+    assert r.json()["posible_duplicado_de"] is None
+
+
+def test_titulo_provisional_no_busca_duplicado(api):
+    cuerpo = _cuerpo_tapa()
+    cuerpo["extraccion"]["campos"]["titulo"] = {"valor": None, "confianza": "falta"}
+    r = api.post(URL, json=cuerpo, headers=TOKEN)
+    assert r.status_code == 201, r.text
+    assert r.json()["posible_duplicado_de"] is None
+
+
+def test_mismo_origen_url_sigue_siendo_duplicado_exacto(api):
+    primero = api.post(URL, json=_cuerpo_tapa(), headers=TOKEN)
+    segundo = api.post(URL, json=_cuerpo_tapa(), headers=TOKEN)
+    assert primero.status_code == 201 and segundo.status_code == 200, segundo.text
+    _valida(segundo.json())
+    assert segundo.json()["duplicado"] is True
+    assert segundo.json()["evento"]["id"] == primero.json()["evento"]["id"]
+
+
+def test_elige_el_mas_parecido(api):
+    # Uno importado justo antes, con título idéntico, gana al del seed (casi igual).
+    primero = api.post(URL, json=_cuerpo_tapa(titulo="Ruta de la tapa y el postre en Uleila", url=None), headers=TOKEN)
+    assert primero.json()["posible_duplicado_de"] == RUTA_TAPA
+    r = api.post(URL, json=_cuerpo_tapa(titulo="Ruta de la Tapa y el Postre en Uleila", url=None), headers=TOKEN)
+    assert r.json()["posible_duplicado_de"] == primero.json()["evento"]["id"]
+
+
+def test_normalizar_y_similitud():
+    from app.duplicados import UMBRAL_SIMILITUD, similitud_titulos
+    from app.texto import normalizar
+
+    assert normalizar("  II Ruta, SOLIDARIA — Sierra de Velefique!! ") == "ii ruta solidaria sierra de velefique"
+    assert normalizar("Senés_Velefique") == "senes velefique"
+    assert similitud_titulos("Ruta de la Tapa y el Postre", "RUTA DE LA TAPA Y EL POSTRE.") == 1.0
+    assert similitud_titulos("Ruta de la Tapa", "Concierto de la banda") < UMBRAL_SIMILITUD
