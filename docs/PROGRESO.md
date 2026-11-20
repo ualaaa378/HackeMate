@@ -43,7 +43,7 @@
 
 ## CP0 · Arranque (vie 17:00–18:30) · los 3
 
-- [ ] Enfoque decidido y firmado en `PLAN.md` §2
+- [x] Enfoque decidido y firmado en `PLAN.md` §2 (Opción 1; Juan Carlos en pareja con el flujo A)
 - [x] Nombres asignados a Dev A / B / C (tablero de arriba)
 - [ ] Cuentas creadas: Twilio WhatsApp Sandbox, Google OAuth, clave de Claude, clave de Gemini (AI Studio)
 - [ ] Ramas `main` (protegida) y `develop` creadas
