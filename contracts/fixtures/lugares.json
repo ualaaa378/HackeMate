@@ -1,0 +1,665 @@
+[
+  {
+    "id": "80a5f2e5-3447-56da-be87-919887beecbe",
+    "nombre": "Sendero GR-244 «Pueblos del Interior de Almería»",
+    "tipo": "ruta",
+    "municipio": "Senés",
+    "descripcion": "Sendero de gran recorrido de 109 km que une, entre otros, Senés, Velefique, Uleila del Campo y Lucainena de las Torres.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1983,
+    "lon": -2.3447,
+    "coordenadas_exactas": false,
+    "ruta": {
+      "modalidad": "senderismo",
+      "distancia_km": 109,
+      "desnivel_m": null,
+      "dificultad": null,
+      "duracion": null,
+      "salida": null
+    },
+    "fuentes": [
+      "https://andalucia.com/province/almeria/senes/home.htm",
+      "https://www.komoot.com/guide/1602004/attractions-around-senes",
+      "https://es.hispanopedia.com/wiki/Sen%C3%A9s"
+    ]
+  },
+  {
+    "id": "c528ab04-9a0e-507b-b138-e729ebbd0a23",
+    "nombre": "Senés – Área recreativa La Fuente (circular)",
+    "tipo": "ruta",
+    "municipio": "Senés",
+    "descripcion": "Ruta circular desde Senés hasta el área recreativa de La Fuente.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1983,
+    "lon": -2.3447,
+    "coordenadas_exactas": false,
+    "ruta": {
+      "modalidad": "senderismo",
+      "distancia_km": 12.9,
+      "desnivel_m": 610,
+      "dificultad": "moderada",
+      "duracion": "4 h 14 min",
+      "salida": "Senés"
+    },
+    "fuentes": [
+      "https://www.komoot.com/highlight/8007255"
+    ]
+  },
+  {
+    "id": "936cb763-2273-5db9-9760-ed1add35690c",
+    "nombre": "Ruta circular señalizada de Senés",
+    "tipo": "ruta",
+    "municipio": "Senés",
+    "descripcion": "Ruta circular señalizada de 5 km.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1983,
+    "lon": -2.3447,
+    "coordenadas_exactas": false,
+    "ruta": {
+      "modalidad": "senderismo",
+      "distancia_km": 5,
+      "desnivel_m": null,
+      "dificultad": null,
+      "duracion": null,
+      "salida": "Senés"
+    },
+    "fuentes": [
+      "https://es.hispanopedia.com/wiki/Sen%C3%A9s"
+    ]
+  },
+  {
+    "id": "b912beef-f31e-59f5-858a-b9c31c9ec6de",
+    "nombre": "Ruta BTT «Velefique – Sierra de los Filabres»",
+    "tipo": "ruta",
+    "municipio": "Velefique",
+    "descripcion": "Recorrido de la ruta cicloturista: Alto de Velefique, cortafuegos hacia Senés, Barranco del Infierno, Tetica de Bacares, llano hacia Calar Alto y bajada por Febeire.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1931,
+    "lon": -2.4006,
+    "coordenadas_exactas": false,
+    "ruta": {
+      "modalidad": "btt",
+      "distancia_km": 45.6,
+      "desnivel_m": 1302,
+      "dificultad": null,
+      "duracion": null,
+      "salida": "Velefique"
+    },
+    "fuentes": [
+      "https://www.bikemap.net/en/r/2138655"
+    ]
+  },
+  {
+    "id": "e3d30cac-3ae3-5249-84ed-0285c9bc3f0c",
+    "nombre": "Subida al Alto de Velefique (circular)",
+    "tipo": "ruta",
+    "municipio": "Velefique",
+    "descripcion": "Puerto de montaña muy conocido entre ciclistas.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1931,
+    "lon": -2.4006,
+    "coordenadas_exactas": false,
+    "ruta": {
+      "modalidad": "ciclismo",
+      "distancia_km": 26.4,
+      "desnivel_m": 890,
+      "dificultad": "moderada",
+      "duracion": "2 h 20 min",
+      "salida": "Velefique"
+    },
+    "fuentes": [
+      "https://www.komoot.com/guide/1621923/mtb-trails-around-velefique"
+    ]
+  },
+  {
+    "id": "c7391e31-e773-5010-ba7b-6629df41112b",
+    "nombre": "La Merendera – subida a Velefique (circular)",
+    "tipo": "ruta",
+    "municipio": "Velefique",
+    "descripcion": "Circular desde el área recreativa de La Merendera.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1931,
+    "lon": -2.4006,
+    "coordenadas_exactas": false,
+    "ruta": {
+      "modalidad": "ciclismo",
+      "distancia_km": 29.9,
+      "desnivel_m": 370,
+      "dificultad": "moderada",
+      "duracion": "2 h 31 min",
+      "salida": "La Merendera"
+    },
+    "fuentes": [
+      "https://www.komoot.com/guide/1621923/mtb-trails-around-velefique"
+    ]
+  },
+  {
+    "id": "9ad70ba6-c956-52e7-b748-82f28079ba68",
+    "nombre": "Velefique – Senés – Velefique",
+    "tipo": "ruta",
+    "municipio": "Velefique",
+    "descripcion": "Ruta de ida y vuelta entre los dos pueblos.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1931,
+    "lon": -2.4006,
+    "coordenadas_exactas": false,
+    "ruta": {
+      "modalidad": "btt",
+      "distancia_km": 25.9,
+      "desnivel_m": 1228,
+      "dificultad": null,
+      "duracion": null,
+      "salida": "Velefique"
+    },
+    "fuentes": [
+      "https://www.bikemap.net/en/r/2138655"
+    ]
+  },
+  {
+    "id": "cb2e04d6-9b70-5df9-8c02-08ddabdd0828",
+    "nombre": "Vía verde de Polopos",
+    "tipo": "ruta",
+    "municipio": "Lucainena de las Torres",
+    "descripcion": "Vía verde en la pedanía de Polopos, adaptada a personas con movilidad reducida, con bicicletas de alquiler (datos de 2020).",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.0406,
+    "lon": -2.2017,
+    "coordenadas_exactas": false,
+    "ruta": {
+      "modalidad": "paseo",
+      "distancia_km": null,
+      "desnivel_m": null,
+      "dificultad": null,
+      "duracion": null,
+      "salida": "Polopos"
+    },
+    "fuentes": [
+      "https://www.facebook.com/Polopos"
+    ]
+  },
+  {
+    "id": "9d833ff9-0a9b-5527-b764-af172332b89a",
+    "nombre": "Iglesia parroquial de Santa María",
+    "tipo": "sitio_interes",
+    "municipio": "Senés",
+    "descripcion": "Iglesia mudéjar levantada sobre una antigua mezquita; conserva el mihrab, el patio de abluciones y algunas columnas. Reformada en el siglo XVI.",
+    "direccion": "Plaza de la Iglesia",
+    "telefono": null,
+    "web": null,
+    "lat": 37.1983,
+    "lon": -2.3447,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.tuscasasrurales.com/que-ver-en-senes-458.htm",
+      "https://andalucia.com/province/almeria/senes/home.htm"
+    ]
+  },
+  {
+    "id": "5d3bb4f0-8232-5a05-bcfa-0d80b6ee8dd7",
+    "nombre": "El Castillico (castillo de Senés)",
+    "tipo": "sitio_interes",
+    "municipio": "Senés",
+    "descripcion": "Fortaleza almohade de los siglos XI-XII sobre un cerro; quedan restos de muros.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1983,
+    "lon": -2.3447,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.tuscasasrurales.com/que-ver-en-senes-458.htm",
+      "https://www.andalucia.org/en/senes",
+      "https://es.hispanopedia.com/wiki/Sen%C3%A9s"
+    ]
+  },
+  {
+    "id": "01ff8ce2-4a95-5cef-80d8-ff22fdbe044f",
+    "nombre": "Centro de Interpretación «De la Historia a la Leyenda» (Moros y Cristianos)",
+    "tipo": "sitio_interes",
+    "municipio": "Senés",
+    "descripcion": "Centro sobre las fortificaciones de Senés y la fiesta de Moros y Cristianos: maqueta, espadas del siglo XIX, lápida árabe, trajes y vídeo.",
+    "direccion": "Calle Granero s/n",
+    "telefono": "950 363 071",
+    "web": null,
+    "lat": 37.20379,
+    "lon": -2.34758,
+    "coordenadas_exactas": true,
+    "ruta": null,
+    "fuentes": [
+      "https://dipalme.org/Servicios/Informacion/Informacion.nsf/F48A41E8627919BFC1258C34003BB780/%24file/SENES_.pdf",
+      "https://andalucia.com/province/almeria/senes/home.htm"
+    ]
+  },
+  {
+    "id": "57812aaa-6eaa-5a00-ae01-42056e6de6a2",
+    "nombre": "Paraje de la Fuente y lavaderos",
+    "tipo": "sitio_interes",
+    "municipio": "Senés",
+    "descripcion": "Área recreativa con árboles y barbacoas junto a los antiguos lavaderos de ladrillo y pizarra.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1983,
+    "lon": -2.3447,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.tuscasasrurales.com/que-ver-en-senes-458.htm",
+      "https://es.hispanopedia.com/wiki/Sen%C3%A9s"
+    ]
+  },
+  {
+    "id": "5aada438-c3f1-5a93-bd35-aea89bb8c18a",
+    "nombre": "Poblado de la Edad del Bronce de la Hoya de la Matanza",
+    "tipo": "sitio_interes",
+    "municipio": "Senés",
+    "descripcion": "Yacimiento en la ladera de un cerro; sus materiales están en el Museo Arqueológico Nacional.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1983,
+    "lon": -2.3447,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://andalucia.com/province/almeria/senes/home.htm",
+      "https://es.hispanopedia.com/wiki/Sen%C3%A9s"
+    ]
+  },
+  {
+    "id": "3451201c-d4a9-51b9-9556-4ad291252635",
+    "nombre": "Hornos de calcinación",
+    "tipo": "sitio_interes",
+    "municipio": "Lucainena de las Torres",
+    "descripcion": "Hornos del pasado minero (explotación de hierro desde 1896, con ferrocarril hasta Agua Amarga). Se puede entrar y subir a uno de ellos; vistas amplias.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.0406,
+    "lon": -2.2017,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.facebook.com/lucainenadelastorres.unparaiso",
+      "https://www.andalucia.com/province/almeria/lucainena/festivals"
+    ]
+  },
+  {
+    "id": "d449a9ac-15fe-5c11-98fd-4ae2226b226f",
+    "nombre": "Iglesia de Santa María de Monte-Sión",
+    "tipo": "sitio_interes",
+    "municipio": "Lucainena de las Torres",
+    "descripcion": "Parroquia de la patrona, la Virgen de Monte-Sión, «Reina de las Flores».",
+    "direccion": "Calle El Viento 1D",
+    "telefono": null,
+    "web": null,
+    "lat": 37.0406,
+    "lon": -2.2017,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.facebook.com/MonteSionLucainenaDeLasTorres",
+      "https://www.andalucia.com/province/almeria/lucainena/festivals"
+    ]
+  },
+  {
+    "id": "906709eb-85b9-5737-a6f0-bf66666fa93f",
+    "nombre": "Mirador del Poyo de la Cruz",
+    "tipo": "sitio_interes",
+    "municipio": "Lucainena de las Torres",
+    "descripcion": "Mirador frente al Peñón del pueblo.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.0406,
+    "lon": -2.2017,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.facebook.com/MonteSionLucainenaDeLasTorres"
+    ]
+  },
+  {
+    "id": "1362f508-a5f4-58fc-b919-dd09eb088414",
+    "nombre": "Polopos, tierra de cine",
+    "tipo": "sitio_interes",
+    "municipio": "Lucainena de las Torres",
+    "descripcion": "Pedanía donde se han rodado escenas de más de veinte películas, sobre todo western. Fiestas de San Juan Bautista en junio.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.0406,
+    "lon": -2.2017,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.facebook.com/Polopos"
+    ]
+  },
+  {
+    "id": "767de07f-080c-5ac8-b416-2694831378d2",
+    "nombre": "Centro de Interpretación del Trabajo Tradicional",
+    "tipo": "sitio_interes",
+    "municipio": "Uleila del Campo",
+    "descripcion": "Centro de interpretación sobre los oficios tradicionales.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1856,
+    "lon": -2.2061,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.andalucia.com/province/almeria/uleila-del-campo/festivals"
+    ]
+  },
+  {
+    "id": "31177702-e325-5a9f-9a98-fe673be39f1c",
+    "nombre": "Yacimiento arqueológico Cueva de la Mora",
+    "tipo": "sitio_interes",
+    "municipio": "Uleila del Campo",
+    "descripcion": "Yacimiento con restos neolíticos y pinturas rupestres.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1856,
+    "lon": -2.2061,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.andalucia.com/province/almeria/uleila-del-campo/festivals",
+      "https://www.komoot.com/guide/1602004/attractions-around-senes"
+    ]
+  },
+  {
+    "id": "23262138-5bf9-51ac-882d-b39ec26c5455",
+    "nombre": "Mirador de la Umbría",
+    "tipo": "sitio_interes",
+    "municipio": "Uleila del Campo",
+    "descripcion": "Mirador.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1856,
+    "lon": -2.2061,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.andalucia.com/province/almeria/uleila-del-campo/festivals"
+    ]
+  },
+  {
+    "id": "d7735367-e208-55df-81c8-8bad8f0ddd3e",
+    "nombre": "Ermita de la Virgen de la Cabeza",
+    "tipo": "sitio_interes",
+    "municipio": "Uleila del Campo",
+    "descripcion": "Ermita.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1856,
+    "lon": -2.2061,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.andalucia.com/province/almeria/uleila-del-campo/festivals"
+    ]
+  },
+  {
+    "id": "38d7e035-1fea-54eb-b5ed-0a9e3e240b55",
+    "nombre": "Iglesia de Santa María",
+    "tipo": "sitio_interes",
+    "municipio": "Uleila del Campo",
+    "descripcion": "Iglesia parroquial.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1856,
+    "lon": -2.2061,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.andalucia.com/province/almeria/uleila-del-campo/festivals"
+    ]
+  },
+  {
+    "id": "d5027a67-9389-5dc1-8ca4-b4f26b9e9c3a",
+    "nombre": "Área recreativa La Merendera",
+    "tipo": "sitio_interes",
+    "municipio": "Velefique",
+    "descripcion": "Área recreativa con mesas, barbacoas y mirador en la sierra.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1931,
+    "lon": -2.4006,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.komoot.com/guide/1621923/mtb-trails-around-velefique"
+    ]
+  },
+  {
+    "id": "b57b2631-0033-56fc-ba4a-680e365431a0",
+    "nombre": "Cueva de la Paloma",
+    "tipo": "sitio_interes",
+    "municipio": "Velefique",
+    "descripcion": "Cueva en el entorno de Velefique.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1931,
+    "lon": -2.4006,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.komoot.com/guide/1621923/mtb-trails-around-velefique"
+    ]
+  },
+  {
+    "id": "d386b6bd-78b4-5f4c-9094-95c56b3f9f05",
+    "nombre": "Fuente del Huevo",
+    "tipo": "sitio_interes",
+    "municipio": "Velefique",
+    "descripcion": "Cascada en el entorno de Velefique.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1931,
+    "lon": -2.4006,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.komoot.com/guide/1621923/mtb-trails-around-velefique"
+    ]
+  },
+  {
+    "id": "4925ea09-f4a2-5dd3-a36f-1a09451d7675",
+    "nombre": "Mirador del Pedregal",
+    "tipo": "sitio_interes",
+    "municipio": "Velefique",
+    "descripcion": "Mirador con vistas hacia el desierto de Tabernas.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1931,
+    "lon": -2.4006,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.komoot.com/guide/1621923/mtb-trails-around-velefique"
+    ]
+  },
+  {
+    "id": "db012810-f425-54d2-8a0c-26d86334a710",
+    "nombre": "Circuito Velefique International Freeride",
+    "tipo": "sitio_interes",
+    "municipio": "Velefique",
+    "descripcion": "Circuito de freeride de bicicleta de montaña que acogió el Velefique International Freeride (10.ª edición en 2022, 8-11 de septiembre). Salida junto a la piscina municipal.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1931,
+    "lon": -2.4006,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.facebook.com/VelefiqueInternationalFreeride"
+    ]
+  },
+  {
+    "id": "5e24273d-a114-576e-8f87-2b7c8a2c28a8",
+    "nombre": "Restaurante-Hotel El Museo",
+    "tipo": "comercio",
+    "municipio": "Lucainena de las Torres",
+    "descripcion": "Restaurante con menú completo por 14 € y hotel de 2 estrellas.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.0406,
+    "lon": -2.2017,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.facebook.com/profile.php?id=100064636603636"
+    ]
+  },
+  {
+    "id": "02dc1805-c071-5f58-9fef-de957441b834",
+    "nombre": "Casa Rural El Laurel",
+    "tipo": "alojamiento",
+    "municipio": "Senés",
+    "descripcion": "Casa rural en el pueblo de Senés.",
+    "direccion": null,
+    "telefono": null,
+    "web": "https://casarural-ellaurel.com",
+    "lat": 37.1983,
+    "lon": -2.3447,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.facebook.com/CasaRuralElLaurelSenes"
+    ]
+  },
+  {
+    "id": "a847d810-d1c0-5274-b244-d8152313fdbf",
+    "nombre": "Casa El Chacho",
+    "tipo": "alojamiento",
+    "municipio": "Velefique",
+    "descripcion": "Vivienda turística rural para 5 personas, desde 16 € por persona y noche.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1931,
+    "lon": -2.4006,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.tuscasasrurales.com/que-ver-en-senes-458.htm"
+    ]
+  },
+  {
+    "id": "194feffc-2dd8-5d0f-9010-d7f4f0133b6a",
+    "nombre": "Papelería de Uleila del Campo",
+    "tipo": "comercio",
+    "municipio": "Uleila del Campo",
+    "descripcion": "Papelería donde se canjea el cheque libro escolar del Ayuntamiento.",
+    "direccion": null,
+    "telefono": null,
+    "web": null,
+    "lat": 37.1856,
+    "lon": -2.2061,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.facebook.com/profile.php?id=100064568389094"
+    ]
+  },
+  {
+    "id": "47afbecb-657a-55fc-b284-1ffc7e9d4bf2",
+    "nombre": "Punto Vuela Lucainena",
+    "tipo": "servicio",
+    "municipio": "Lucainena de las Torres",
+    "descripcion": "Centro de alfabetización digital: talleres de robótica, impresión 3D, realidad virtual, mecanografía y Canva.",
+    "direccion": "Calle Almería 40",
+    "telefono": "619 59 11 76",
+    "web": null,
+    "lat": 37.0406,
+    "lon": -2.2017,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.facebook.com/guadalinfolucainenalastorres"
+    ]
+  },
+  {
+    "id": "65b8510d-fe86-525e-9f07-247cac1331d2",
+    "nombre": "Ayuntamiento de Lucainena de las Torres",
+    "tipo": "servicio",
+    "municipio": "Lucainena de las Torres",
+    "descripcion": "Atención al público de lunes a viernes de 9:00 a 13:00. Juzgado de Paz los miércoles de 17:00 a 20:00.",
+    "direccion": "Plaza del Ayuntamiento 4",
+    "telefono": "950 36 40 68",
+    "web": "https://lucainenadelastorres.es",
+    "lat": 37.0406,
+    "lon": -2.2017,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.facebook.com/profile.php?id=100064636603636"
+    ]
+  },
+  {
+    "id": "e761be65-a94e-5f72-80ac-a0cafaa8e8bb",
+    "nombre": "Ayuntamiento de Senés (y oficina de turismo)",
+    "tipo": "servicio",
+    "municipio": "Senés",
+    "descripcion": "Ayuntamiento; la oficina de turismo está en el mismo edificio.",
+    "direccion": "Calle Estación 30",
+    "telefono": "950 36 23 21",
+    "web": "https://www.senes.es",
+    "lat": 37.1983,
+    "lon": -2.3447,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.facebook.com/profile.php?id=61551352857893",
+      "https://andalucia.com/province/almeria/senes/home.htm"
+    ]
+  },
+  {
+    "id": "5077dafb-65c5-567e-87bd-600ad1770ef3",
+    "nombre": "Protección Civil de Uleila del Campo",
+    "tipo": "servicio",
+    "municipio": "Uleila del Campo",
+    "descripcion": "Agrupación local de voluntariado de Protección Civil.",
+    "direccion": "Avenida Juan Carlos I 13",
+    "telefono": "600 20 48 42",
+    "web": null,
+    "lat": 37.1856,
+    "lon": -2.2061,
+    "coordenadas_exactas": false,
+    "ruta": null,
+    "fuentes": [
+      "https://www.facebook.com/PCUleila"
+    ]
+  }
+]

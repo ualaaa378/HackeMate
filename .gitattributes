@@ -1,0 +1,8 @@
+# Normaliza a LF en el repo; los scripts y Dockerfiles deben ser LF para funcionar en los contenedores Linux.
+* text=auto eol=lf
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.jpeg binary
+*.jpg binary
+*.png binary
+*.pdf binary

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "publicador.json",
+  "title": "Publicador",
+  "description": "Entidad que publica eventos (asociación, bar, ayuntamiento…).",
+  "type": "object",
+  "required": ["id", "nombre", "tipo", "municipio", "estado", "nivel_confianza"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "nombre": { "type": "string", "minLength": 2 },
+    "tipo": { "enum": ["asociacion", "ayuntamiento", "bar_restaurante", "comercio", "otro"] },
+    "municipio": { "type": "string" },
+    "descripcion": { "type": ["string", "null"] },
+    "telefono": { "type": ["string", "null"], "pattern": "^\\+[1-9][0-9]{6,14}$" },
+    "email": { "type": ["string", "null"], "format": "email" },
+    "estado": { "enum": ["solicitado", "whatsapp_verificado", "aprobado", "rechazado", "pausado"] },
+    "nivel_confianza": { "enum": [0, 1, 2] },
+    "aprobaciones": { "type": "integer", "minimum": 0, "description": "Eventos aprobados; al llegar al umbral sube de nivel" },
+    "automatizaciones_pausadas": { "type": "boolean" },
+    "categorias_habituales": { "type": "array", "items": { "enum": ["deportiva", "cultural", "fiestas", "gastronomia", "ludica", "comercio"] } },
+    "fuentes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "canal", "url"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "canal": { "enum": ["whatsapp", "web", "panel", "facebook", "instagram", "web_externa", "manual"] },
+          "url": { "type": "string" },
+          "activa": { "type": "boolean" }
+        }
+      }
+    },
+    "usuario_id": { "type": ["string", "null"], "format": "uuid", "description": "Usuario responsable" },
+    "creado_en": { "type": "string", "format": "date-time" }
+  }
+}

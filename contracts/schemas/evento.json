@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evento.json",
+  "title": "Evento",
+  "type": "object",
+  "required": ["id", "titulo", "categoria", "municipio", "lat", "lon", "fecha_inicio", "es_gratuito", "estado", "origen"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "titulo": { "type": "string", "minLength": 3, "maxLength": 120 },
+    "descripcion": { "type": "string" },
+    "categoria": { "enum": ["deportiva", "cultural", "fiestas", "gastronomia", "ludica", "comercio"] },
+    "etiquetas": { "type": "array", "items": { "type": "string" } },
+    "municipio": { "type": "string" },
+    "lugar": { "type": ["string", "null"] },
+    "lat": { "type": "number" },
+    "lon": { "type": "number" },
+    "fecha_inicio": { "type": "string", "format": "date-time" },
+    "fecha_fin": { "type": ["string", "null"], "format": "date-time" },
+    "precio_eur": { "type": ["number", "null"], "minimum": 0 },
+    "es_gratuito": { "type": "boolean" },
+    "plazas_totales": { "type": ["integer", "null"], "minimum": 0 },
+    "plazas_libres": { "type": ["integer", "null"], "minimum": 0 },
+    "inscritos": { "type": "integer", "minimum": 0, "default": 0, "description": "Personas apuntadas (inscripciones confirmadas). Lo calcula la API; en los fixtures empieza en 0." },
+    "estado": { "enum": ["borrador", "pendiente_confirmacion", "en_revision", "publicado", "rechazado", "cancelado", "finalizado", "archivado"] },
+    "publicador_id": { "type": ["string", "null"], "format": "uuid" },
+    "publicador_nombre": { "type": ["string", "null"] },
+    "imagen_url": { "type": ["string", "null"] },
+    "origen": {
+      "type": "object",
+      "required": ["canal", "importado_auto"],
+      "properties": {
+        "canal": { "enum": ["whatsapp", "web", "panel", "facebook", "instagram", "web_externa", "manual"] },
+        "url": { "type": ["string", "null"] },
+        "importado_auto": { "type": "boolean" }
+      }
+    },
+    "moderacion": {
+      "type": "object",
+      "properties": {
+        "motivo": { "type": ["string", "null"] },
+        "score_spam": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "revisado_por": { "type": ["string", "null"] }
+      }
+    },
+    "creado_en": { "type": "string", "format": "date-time" },
+    "actualizado_en": { "type": "string", "format": "date-time" }
+  }
+}

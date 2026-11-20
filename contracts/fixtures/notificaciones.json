@@ -1,0 +1,28 @@
+[
+  {
+    "id": "2b7f0000-0000-4000-8000-000000000001",
+    "telefono": "+34600000201",
+    "tipo": "recomendacion",
+    "texto": "Hola Carmen 👋 El domingo 29 hay una ruta solidaria en Velefique, a 4 km de Senés. Te gusta el senderismo y quedan 8 plazas. ¿Te apunto?",
+    "formato": "audio",
+    "usuario_id": "5a5e0000-0000-4000-8000-000000000001",
+    "evento_id": "1e5d0000-0000-4000-8000-000000000001",
+    "botones": ["Apúntame", "No, gracias"],
+    "estado_envio": "enviada",
+    "intentos": 1,
+    "creado_en": "2026-11-21T10:00:00+01:00"
+  },
+  {
+    "id": "2b7f0000-0000-4000-8000-000000000002",
+    "telefono": "+34600000201",
+    "tipo": "cambio_evento",
+    "texto": "Cambio de hora en la II Ruta Solidaria: ahora sale a las 10:00 (antes 09:00).",
+    "formato": "texto",
+    "usuario_id": "5a5e0000-0000-4000-8000-000000000001",
+    "evento_id": "1e5d0000-0000-4000-8000-000000000001",
+    "botones": [],
+    "estado_envio": "pendiente",
+    "intentos": 0,
+    "creado_en": "2026-11-21T18:00:00+01:00"
+  }
+]

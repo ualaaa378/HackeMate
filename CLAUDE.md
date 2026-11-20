@@ -1,94 +1,92 @@
-# HackeMate — Reactiva tu pueblo
+# HackeMate · Reactiva tu pueblo
 
-Hackathon UAL para el Desarrollo del Interior, **reto 1: "Reactiva tu pueblo: comercio y turismo inteligente"**.
-Equipo de 4 estudiantes con poco tiempo: **prioridad absoluta a una demo que funcione** por encima del código perfecto.
-Si hay que elegir entre una funcionalidad pulida y dos que funcionan, elegimos las dos.
+Hackathon UAL para el Desarrollo del Interior, **reto 1 «Reactiva tu pueblo»** (20–22 nov 2026).
+Prioridad absoluta: **una demo que funcione**. Entre una funcionalidad pulida y dos que funcionan, elegimos las dos.
+
+Documentos que mandan (léelos antes de tocar nada):
+- `docs/PLAN.md`: plan general, arquitectura, contratos, ramas y cronograma.
+- `docs/PLAN_FLUJO_A.md`: hitos y criterios de aceptación del flujo A (backend, datos, infra).
+- `docs/PROGRESO.md`: checklist de avance. Se marca en el mismo commit que la tarea.
 
 ## Qué construimos
 
-Plataforma web para cuatro pueblos de Almería: **Lucainena de las Torres, Senes, Velefique y Uleila del Campo**.
+Una plataforma con tres puertas sincronizadas para cinco pueblos de Almería (Lucainena de las Torres, Senés, Velefique, Uleila del Campo y Tahal):
+- **WhatsApp** (bot con IA): publicadores, vecinos y moderador pueden hacerlo todo por ahí.
+- **App Ionic React** (web/PWA + APK Android con Capacitor): agenda, mapa, ficha, inscripción, chat del evento.
+- **Panel** del moderador y de estadísticas.
 
-1. **Negocios** publican ofertas, promociones y eventos (con ayuda de IA para redactarlos).
-2. **Calendario** de actividades turísticas, culturales y deportivas.
-3. **Ayuntamiento** modera las publicaciones (aprobar / rechazar). Una IA las preclasifica antes (categoría, intereses, recomendación y motivo).
-4. **Visitante** descubre qué hacer por intereses, fecha y ubicación en un mapa, con búsqueda semántica y un chatbot RAG que **solo responde con nuestros datos**.
-5. (Opcional) **Panel de analíticas**.
+Guion de la demo (lo que TIENE que funcionar): post/audio → ficha · el publicador confirma por WhatsApp · el moderador aprueba uno y el antispam para otro · a una vecina le llega la recomendación y se apunta · pregunta en el chat del evento · cambio de hora → aviso a los inscritos · una persona mayor lo usa solo con audios.
 
-## Stack
+## Stack y responsables
 
-- Python + **Streamlit** (multipágina con `pages/`)
-- **SQLite** (`sqlite3` de la librería estándar, sin ORM)
-- **folium** + OpenStreetMap, integrado con `streamlit-folium`
-- **sentence-transformers** con `paraphrase-multilingual-MiniLM-L12-v2` para embeddings; búsqueda por similitud coseno con numpy en memoria (el volumen es pequeño, no hace falta base vectorial)
-- **API de Claude** (SDK oficial `anthropic`) para el chat RAG, la redacción de publicaciones y la preclasificación
-- Configuración en `.env` (cargada con `python-dotenv`)
+| Servicio | Carpeta | Flujo | Stack | Puerto |
+|---|---|---|---|---|
+| `api` | `services/api/` | A · Benas (+ Juan Carlos) | FastAPI + SQLAlchemy + Alembic + PostgreSQL (pgvector) / SQLite en local | 8000 |
+| `bot` | `services/bot/` | B · Francisco | FastAPI, Twilio, `llm_router` (Gemini → FreeLLM → Claude → reglas), Whisper | 8001 |
+| `web` | `apps/web/` | C · Adán | Ionic React + Vite + react-leaflet, Capacitor | 8080 |
+| `db` | — | A | `pgvector/pgvector:pg16` | 5432 |
+| `tunnel` | — | A | `cloudflare/cloudflared` (HTTPS público para el webhook) | — |
 
-## Estructura de carpetas
+**Nadie edita la carpeta de otro flujo** sin avisar y sin PR. Los stubs de `infra/stubs/` existen solo para que el compose arranque hasta que B y C integren sus servicios en `develop`.
 
-```
-HackeMate/
-├── app.py                  # Punto de entrada: portada y selector de rol en la sidebar
-├── pages/                  # Una página Streamlit por pantalla (solo UI)
-│   ├── 1_Descubrir.py      # Visitante: filtros, mapa y búsqueda semántica
-│   ├── 2_Calendario.py     # Actividades por fecha
-│   ├── 3_Asistente.py      # Chatbot RAG
-│   ├── 4_Negocios.py       # Publicar oferta/promoción/evento (+ redactar con IA)
-│   ├── 5_Ayuntamiento.py   # Cola de moderación con preclasificación IA
-│   └── 6_Analiticas.py     # Panel opcional
-├── core/                   # Lógica reutilizable, sin código de Streamlit salvo caché
-│   ├── config.py           # Variables de .env, pueblos (coordenadas), categorías, intereses
-│   ├── db.py               # Conexión SQLite, esquema y todas las consultas
-│   ├── search.py           # Modelo de embeddings, indexado y búsqueda semántica
-│   ├── llm.py              # Cliente Claude: chat RAG, redacción y preclasificación
-│   └── maps.py             # Construcción de mapas folium
-├── data/
-│   ├── seed.py             # Crea la BD y la llena con datos de demo realistas
-│   └── hackemate.db        # Generada; no se versiona
-├── requirements.txt
-├── .env.example            # Plantilla de variables (sin secretos)
-└── CLAUDE.md
-```
+## Reglas de arquitectura (nadie las rompe)
+
+- Solo `api` toca la base de datos. `bot` y `web` hablan con `api` por HTTP.
+- Solo `bot` habla con Twilio y con los proveedores de IA. Si `api` necesita IA, llama a `bot` en `POST /ai/...`.
+- Solo `api` decide estados. La IA propone, la API valida, una persona decide lo importante.
+- Toda notificación saliente la pide `api` a `bot` con `POST /notify`. Si el bot está caído, se guarda en cola.
+- Entre servicios: cabecera `X-Internal-Token: ${INTERNAL_TOKEN}`. Usuarios: `Authorization: Bearer <jwt>`.
+
+## Contratos (`contracts/`) · contract-first
+
+- `openapi.yaml`, `schemas/*.json` (JSON Schema 2020-12), `enums.md` y `fixtures/*.json`.
+- Ningún endpoint se programa sin estar antes en `openapi.yaml`; ningún campo se usa sin estar en el schema.
+- Después de CP0 solo se **añaden** campos opcionales, por PR a `develop` con etiqueta `contract-change`. Nunca se renombra ni se borra.
+- `services/api/tests/test_contratos.py` valida todos los fixtures contra los schemas y comprueba que los endpoints de `PLAN.md` §5.2 están en `openapi.yaml`.
+
+Convenciones de la API: JSON en snake_case y en español sin tildes (`fecha_inicio`); IDs UUID v4; fechas ISO 8601 con zona (`Europe/Madrid`); rutas bajo `/api/v1/`; paginación `{items, total, page, size}`; errores siempre `{"error": {"code", "message", "details"}}`.
 
 ## Cómo ejecutar
 
+### En Windows (portátil de Benas): SIN Docker
+
+**En este portátil no se puede ejecutar Docker Desktop ni WSL2. No ejecutes `docker` ni `docker compose` aquí.** Todo el desarrollo y las pruebas locales del flujo A van con Python nativo:
+
 ```powershell
-py -3.14 -m venv .venv            # 3.14: torch puede no tener wheels para 3.15
+cd services\api
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-copy .env.example .env            # y rellenar ANTHROPIC_API_KEY
-python data/seed.py               # regenera la BD de demo
-streamlit run app.py
+pip install -r requirements-dev.txt
+copy ..\..\.env.example ..\..\.env     # y ajustar DATABASE_URL
+uvicorn app.main:app --reload --port 8000
+python -m pytest -q
 ```
 
-## Convenciones
+- Base de datos local: `DATABASE_URL=sqlite:///./hackemate.db`, o una PostgreSQL externa (Neon/Supabase) en `.env`. El código no debe depender de nada exclusivo de PostgreSQL sin un camino alternativo para SQLite (p. ej. pgvector es opcional).
+- Python local: 3.15. PyYAML no tiene wheel para 3.15: para leer YAML se usa `ruamel.yaml`, y `uvicorn` va **sin** el extra `[standard]` (lo arrastraría). No añadas dependencias que necesiten PyYAML.
 
-**Código**
-- Identificadores, comentarios y textos de la interfaz en **español**. Los identificadores van sin tildes ni eñes (`publicacion`, `ano`, `pueblo_id`).
-- Las páginas de `pages/` solo contienen UI. La lógica va en `core/` y las páginas la importan.
-- Todo el SQL vive en `core/db.py`, siempre con consultas parametrizadas (`?`), nunca con f-strings.
-- Las fechas se guardan como texto ISO 8601 (`2026-12-05` o `2026-12-05T18:00`).
-- Usamos `@st.cache_resource` para el modelo de embeddings y el cliente de Claude, y `@st.cache_data` para lecturas. Después de cada escritura llamamos a `st.cache_data.clear()`.
+### Con Docker (otras máquinas, demo y E2E)
+
+`infra/docker-compose.yml` y los `Dockerfile` se mantienen igualmente al día; los valida un compañero en su máquina.
+
+```bash
+cp .env.example .env
+docker compose -f infra/docker-compose.yml up --build
+curl localhost:8000/health
+```
+
+## Convenciones de código
+
+- Identificadores, comentarios y textos en **español**, sin tildes ni eñes en los identificadores (`publicacion`, `ano`, `municipio_id`).
+- Configuración solo por variables de entorno (`pydantic-settings`), todas listadas en `.env.example`. Nada de URLs ni claves en el código.
+- SQL siempre a través de SQLAlchemy o con parámetros, nunca con f-strings.
 - Comentarios solo donde aporten algo que el código no dice.
+- Cada servicio arranca aunque los demás estén caídos y expone `GET /health` → `{"status":"ok","version":"x.y.z"}`.
 
-**Datos y roles**
-- No hay login. El rol (Visitante / Negocio / Ayuntamiento) se elige en la sidebar y se guarda en `st.session_state["rol"]`. Es una demo.
-- Cada publicación tiene `estado`: `pendiente` | `aprobada` | `rechazada`. El visitante, el mapa, la búsqueda y el chat **solo ven las aprobadas**.
-- Las actividades del ayuntamiento son publicaciones sin `negocio_id` y se crean ya aprobadas.
-- Si una publicación no tiene coordenadas, se usan las del pueblo.
+## Git
 
-**IA (Claude)**
-- SDK oficial `anthropic`, sin llamadas HTTP a mano. El modelo se lee de `CLAUDE_MODEL` en `.env` (por defecto `claude-opus-5-5`).
-- Preclasificación con salidas estructuradas (`output_config.format` con JSON Schema). No usar prefill de respuesta: devuelve error en los modelos actuales.
-- El chat usa streaming. Su system prompt obliga a responder solo con el contexto recuperado, a citar las publicaciones usadas y a decir que no tiene esa información cuando no esté en los datos.
-- Comprobar `stop_reason` (incluido `"refusal"`) antes de leer el contenido.
-- **La app tiene que funcionar sin `ANTHROPIC_API_KEY`**, aunque sea en modo reducido: el chat muestra los resultados recuperados, la preclasificación usa reglas simples y el botón de redactar se desactiva. Así una caída de red o de clave no mata la demo.
-
-**Secretos y git**
-- `.env`, `.venv/` y `data/*.db` están en `.gitignore`. Nunca se sube una clave.
-- Un commit por fase terminada, con un mensaje que diga qué se puede demostrar.
-
-## Flujo de trabajo
-
-- Trabajamos **fase a fase**. Cada fase deja algo demostrable.
-- Antes de pasar a la siguiente fase, la actual se prueba con `streamlit run app.py`: la app arranca sin errores y el flujo nuevo funciona de punta a punta en el navegador.
-- Si algo bloquea más de ~20 minutos, se simplifica o se recorta. No se deja una fase a medias para empezar otra.
+- `main`: solo versiones probadas y etiquetadas. `develop`: integración en los checkpoints. Trabajo del flujo A en `Flujo-A` o `feat/api-<tarea>`.
+- Conventional Commits pequeños y frecuentes: `feat(api): …`, `fix(api): …`, `contract: …`, `chore: …`, `docs: …`.
+- Merge en cada checkpoint en orden **A → B → C**.
+- `.env` nunca se sube. Las claves se pasan por mensaje privado.
+- Si algo bloquea más de ~20 minutos, se simplifica o se recorta.
