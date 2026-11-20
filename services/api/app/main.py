@@ -1,9 +1,20 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from app import __version__
+from app import __version__, errores
 from app.config import get_settings
+from app.rutas import publico
 
 app = FastAPI(title="HackeMate api", version=__version__)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=get_settings().lista_cors,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+errores.registrar(app)
+app.include_router(publico.router)
 
 
 @app.get("/health")

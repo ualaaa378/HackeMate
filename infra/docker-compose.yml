@@ -32,6 +32,10 @@ services:
       # Dentro de Docker siempre contra el contenedor db (el .env puede traer la URL de SQLite de Windows)
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hackemate}:${POSTGRES_PASSWORD:-hackemate}@db:5432/${POSTGRES_DB:-hackemate}
       BOT_URL: http://bot:8001
+      FIXTURES_DIR: /srv/contracts/fixtures
+    volumes:
+      # Datos de solo lectura mientras no haya seed en la base de datos
+      - ../contracts:/srv/contracts:ro
     ports:
       - "8000:8000"
     depends_on:

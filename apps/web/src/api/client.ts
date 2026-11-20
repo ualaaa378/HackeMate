@@ -1,6 +1,8 @@
 // Única puerta de la app hacia el backend. Las pantallas solo importan de aquí.
 // Con VITE_USE_MOCKS=true (o sin VITE_API_URL) responde con src/mocks/eventos.json,
 // copia de contracts/fixtures/eventos.json.
+// Con la API configurada, si no responde o el endpoint aún no existe, se vuelve a los mocks
+// para que la demo no se caiga. Los errores de negocio de la API sí llegan a la pantalla.
 
 import eventosMock from '../mocks/eventos.json';
 import type { ApiError, Evento, FiltrosEventos, Inscripcion, Pagina } from './types';
@@ -23,15 +25,44 @@ export class ErrorApi extends Error {
   }
 }
 
+// Fallo que no viene de la lógica de la API: sin red, CORS, 5xx o ruta sin implementar.
+class ApiNoDisponible extends Error {}
+
+let usandoRespaldo = false;
+/** true si alguna llamada a la API real ha fallado y se han servido mocks. */
+export function enModoRespaldo(): boolean {
+  return USAR_MOCKS || usandoRespaldo;
+}
+
 async function peticion<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
   const cabeceras: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) cabeceras.Authorization = `Bearer ${token}`;
-  const resp = await fetch(`${API_URL}/api/v1${ruta}`, { ...opciones, headers: { ...cabeceras, ...opciones.headers } });
+  let resp: Response;
+  try {
+    resp = await fetch(`${API_URL}/api/v1${ruta}`, { ...opciones, headers: { ...cabeceras, ...opciones.headers } });
+  } catch {
+    throw new ApiNoDisponible('sin conexion con la API');
+  }
   if (!resp.ok) {
-    const cuerpo = (await resp.json().catch(() => null)) as ApiError | null;
-    throw new ErrorApi(cuerpo?.error.code ?? 'error_red', cuerpo?.error.message ?? resp.statusText, resp.status);
+    const cuerpo = (await resp.json().catch(() => null)) as Partial<ApiError> | null;
+    if (!cuerpo?.error || resp.status >= 500) throw new ApiNoDisponible(`${resp.status} ${resp.statusText}`);
+    throw new ErrorApi(cuerpo.error.code, cuerpo.error.message, resp.status);
   }
   return resp.status === 204 ? (undefined as T) : ((await resp.json()) as T);
+}
+
+async function conRespaldo<T>(real: () => Promise<T>, mock: () => Promise<T>): Promise<T> {
+  if (USAR_MOCKS) return mock();
+  try {
+    const r = await real();
+    usandoRespaldo = false;
+    return r;
+  } catch (e) {
+    if (!(e instanceof ApiNoDisponible)) throw e;
+    console.warn('[api] usando mocks:', e.message);
+    usandoRespaldo = true;
+    return mock();
+  }
 }
 
 function query(filtros: object): string {
@@ -71,31 +102,37 @@ function filtrarMock(f: FiltrosEventos): Pagina<Evento> {
 
 // ---------- API pública ----------
 export function getEventos(filtros: FiltrosEventos = {}): Promise<Pagina<Evento>> {
-  if (USAR_MOCKS) return esperar(filtrarMock(filtros));
-  return peticion(`/eventos${query(filtros)}`);
+  return conRespaldo(
+    () => peticion(`/eventos${query({ size: 100, ...filtros })}`),
+    () => esperar(filtrarMock(filtros)),
+  );
 }
 
 export function getEvento(id: string): Promise<Evento> {
-  if (USAR_MOCKS) {
-    const e = mockEventos.find((x) => x.id === id);
-    return e ? esperar(e) : Promise.reject(new ErrorApi('evento_no_encontrado', 'No existe ese evento', 404));
-  }
-  return peticion(`/eventos/${id}`);
+  return conRespaldo(
+    () => peticion(`/eventos/${id}`),
+    () => {
+      const e = mockEventos.find((x) => x.id === id);
+      return e ? esperar(e) : Promise.reject(new ErrorApi('evento_no_encontrado', 'No existe ese evento', 404));
+    },
+  );
 }
 
 export function inscribirse(eventoId: string): Promise<Inscripcion> {
-  if (USAR_MOCKS) {
-    const e = mockEventos.find((x) => x.id === eventoId);
-    const hayPlaza = e?.plazas_libres == null || e.plazas_libres > 0;
-    if (e && e.plazas_libres != null && e.plazas_libres > 0) e.plazas_libres -= 1;
-    if (e && hayPlaza) e.inscritos = (e.inscritos ?? 0) + 1;
-    return esperar({ id: crypto.randomUUID(), evento_id: eventoId, estado: hayPlaza ? 'confirmada' : 'lista_espera' });
-  }
-  return peticion(`/eventos/${eventoId}/inscripciones`, { method: 'POST' });
+  return conRespaldo(
+    () => peticion(`/eventos/${eventoId}/inscripciones`, { method: 'POST' }),
+    () => {
+      const e = mockEventos.find((x) => x.id === eventoId);
+      const hayPlaza = e?.plazas_libres == null || e.plazas_libres > 0;
+      if (e && e.plazas_libres != null && e.plazas_libres > 0) e.plazas_libres -= 1;
+      if (e && hayPlaza) e.inscritos = (e.inscritos ?? 0) + 1;
+      return esperar<Inscripcion>({ id: crypto.randomUUID(), evento_id: eventoId, estado: hayPlaza ? 'confirmada' : 'lista_espera' });
+    },
+  );
 }
 
 export function urlIcs(eventoId: string): string {
-  if (USAR_MOCKS) return '#';
+  if (enModoRespaldo()) return '#';
   return `${API_URL}/api/v1/eventos/${eventoId}/ics`;
 }
 

@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     bot_url: str = "http://bot:8001"
     zona_horaria: str = "Europe/Madrid"
     app_version: str | None = None
+    cors_origenes: str = "http://localhost:8080,http://localhost:5173,http://localhost:8100"
+    # Vacío = contracts/fixtures del monorepo. En Docker se monta en /srv/contracts/fixtures.
+    fixtures_dir: str = ""
+
+    @property
+    def lista_cors(self) -> list[str]:
+        return [o.strip() for o in self.cors_origenes.split(",") if o.strip()]
 
 
 @lru_cache

@@ -24,7 +24,7 @@ import { calendarOutline, checkmarkCircle, globeOutline, logoFacebook, mapOutlin
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { getEvento, inscribirse, urlIcs, USAR_MOCKS } from '../api/client';
+import { enModoRespaldo, getEvento, inscribirse, urlIcs } from '../api/client';
 import { CATEGORIAS, type Evento } from '../api/types';
 import { claveDia, fechaEstimada, fechaLarga, hora, plazas, precio, sinHora, textoApuntados } from '../utils/formato';
 
@@ -152,7 +152,7 @@ const Ficha: React.FC = () => {
               expand="block"
               fill="outline"
               href={urlIcs(evento.id)}
-              disabled={USAR_MOCKS}
+              disabled={enModoRespaldo()}
               download={`${evento.titulo}.ics`}
             >
               <IonIcon slot="start" icon={calendarOutline} aria-hidden="true" />
