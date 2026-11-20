@@ -10,7 +10,7 @@
 
 | Flujo | Responsable | Rama actual | Estado | Última actualización |
 |---|---|---|---|---|
-| A · Backend, datos e infra | Dev A: Benas | `feat/api-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
+| A · Backend, datos e infra | Dev A: Benas | `Flujo-A` | 🟢 / 🟡 / 🔴 | vie __:__ |
 | B · WhatsApp e IA | Dev B: Francisco | `Flujo-B` | 🟢 / 🟡 / 🔴 | vie __:__ |
 | C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
 
@@ -46,13 +46,13 @@
 - [x] Enfoque decidido y firmado en `PLAN.md` §2 (Opción 1; Juan Carlos en pareja con el flujo A)
 - [x] Nombres asignados a Dev A / B / C (tablero de arriba)
 - [ ] Cuentas creadas: Twilio WhatsApp Sandbox, Google OAuth, clave de Claude, clave de Gemini (AI Studio)
-- [ ] Ramas `main` (protegida) y `develop` creadas
-- [ ] Estructura de carpetas del monorepo creada
-- [ ] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo
-- [ ] `.env.example` con todas las variables
-- [ ] `contracts/openapi.yaml` v1
-- [ ] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion)
-- [ ] `contracts/enums.md` y `contracts/fixtures/*.json`
+- [~] Ramas `main` y `develop` creadas (falta activar la protección de `main` en GitHub)
+- [x] Estructura de carpetas del monorepo creada
+- [~] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo (escrito; falta validarlo con Docker en otra máquina)
+- [x] `.env.example` con todas las variables
+- [x] `contracts/openapi.yaml` v1
+- [x] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion)
+- [x] `contracts/enums.md` y `contracts/fixtures/*.json`
 - [ ] Preguntas enviadas a la organización por Telegram (PLAN §8)
 
 ---

@@ -1,0 +1,67 @@
+# Arranque: cp .env.example .env  →  docker compose -f infra/docker-compose.yml up --build
+# Puertos fijos (PLAN.md §5.3): api 8000 · bot 8001 · web 8080 · db 5432
+
+name: hackemate
+
+x-env: &env
+  env_file:
+    - path: ../.env
+      required: false
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hackemate}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hackemate}
+      POSTGRES_DB: ${POSTGRES_DB:-hackemate}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    <<: *env
+    build: ../services/api
+    environment:
+      # Dentro de Docker siempre contra el contenedor db (el .env puede traer la URL de SQLite de Windows)
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hackemate}:${POSTGRES_PASSWORD:-hackemate}@db:5432/${POSTGRES_DB:-hackemate}
+      BOT_URL: http://bot:8001
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  bot:
+    <<: *env
+    # Stub hasta que services/bot (Flujo B) esté en develop. Al integrarlo: build: ../services/bot
+    build: ./stubs/bot
+    environment:
+      API_URL: http://api:8000
+    ports:
+      - "8001:8001"
+
+  web:
+    # Stub hasta que apps/web (Flujo C) tenga Dockerfile en develop. Al integrarlo: build: ../apps/web
+    build: ./stubs/web
+    ports:
+      - "8080:8080"
+
+  tunnel:
+    # Túnel rápido de Cloudflare hacia el bot (webhook de Twilio). La URL https sale en:
+    #   docker compose -f infra/docker-compose.yml logs tunnel
+    # Con CLOUDFLARE_TUNNEL_TOKEN se podrá usar un túnel con nombre estable (H4.4).
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://bot:8001
+    restart: unless-stopped
+    depends_on:
+      - bot
+
+volumes:
+  db_data:
