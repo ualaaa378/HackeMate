@@ -223,9 +223,9 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 
 **Tareas**
 - [ ] H5.1 Arreglar lo que salga del smoke test y de los ensayos.
-- [ ] H5.2 `scripts/demo_reset.sh` deja la base de datos en el estado inicial de la demo en menos de 1 minuto.
+- [x] H5.2 `scripts/demo_reset.sh` deja la base de datos en el estado inicial de la demo en menos de 1 minuto.
 - [ ] H5.3 Prueba E2E en **otro portátil**: clonar, `cp .env.example .env`, rellenar claves, `docker compose up --build`, guion de la demo 2 veces.
-- [ ] H5.4 Sección de backend en el README: arranque en 3 comandos, arquitectura, variables.
+- [x] H5.4 Sección de backend en el README: arranque en 3 comandos, arquitectura, variables.
 - [ ] H5.5 Merge `develop` → `main`, etiqueta `v1.0`, smoke test sobre `main`.
 
 **Criterios de aceptación**
