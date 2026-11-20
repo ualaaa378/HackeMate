@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # Moderación (app/moderacion.py)
     moderacion_aprobaciones_subir_nivel: int = 3
     moderacion_umbral_spam: float = 0.7
+    # Cola de avisos (app/notificaciones.py)
+    notificaciones_timeout_s: float = 3.0
+    notificaciones_max_intentos: int = 5
 
     @property
     def lista_cors(self) -> list[str]:

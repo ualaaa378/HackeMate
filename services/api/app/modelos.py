@@ -241,18 +241,24 @@ class MensajeEvento(Base):
 
 
 class Notificacion(Base):
-    """Cola de avisos: la API los pide al bot con POST /notify; si el bot está caído quedan pendientes (H4.5)."""
+    """Cola de avisos: la API los pide al bot con POST /notify; si el bot está caído quedan pendientes (H4.5).
+    Ver app/notificaciones.py."""
 
     __tablename__ = "notificaciones"
 
     id: Mapped[str] = _id()
-    telefono: Mapped[str] = mapped_column(String(16), nullable=False)
+    # Opcional en la tabla (usuarios solo de Telegram), pero el contrato de /notify lo exige para enviar.
+    telefono: Mapped[str | None] = mapped_column(String(16))
+    contacto: Mapped[str | None] = mapped_column(String(32))  # `+34…` o `tg:<chat_id>` (app/canales.py)
     tipo: Mapped[str] = mapped_column(_enum("tipo_notificacion", TIPOS_NOTIFICACION), nullable=False)
     texto: Mapped[str] = mapped_column(Text, nullable=False)
     formato: Mapped[str] = mapped_column(_enum("formato_notificacion", FORMATOS_AVISO), default="texto", nullable=False)
     usuario_id: Mapped[str | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
     evento_id: Mapped[str | None] = mapped_column(ForeignKey("eventos.id", ondelete="SET NULL"))
     botones: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    # Plantilla de WhatsApp para avisos fuera de la ventana de 24 h; se guarda para poder reintentar
+    plantilla: Mapped[str | None] = mapped_column(String(64))
+    parametros: Mapped[list | None] = mapped_column(JSON)
     estado_envio: Mapped[str] = mapped_column(
         _enum("estado_envio", ESTADOS_ENVIO), default="pendiente", nullable=False, index=True
     )

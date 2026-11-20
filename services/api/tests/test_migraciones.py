@@ -78,10 +78,10 @@ def test_la_base_rechaza_datos_fuera_del_contrato(url):
 
 
 def test_canal_telegram_se_puede_deshacer_y_rehacer(url):
-    """0002: `telegram` en el CHECK del enum canal y columna telegram_id; downgrade -1 y upgrade head."""
+    """0002: `telegram` en el CHECK del enum canal y columna telegram_id; downgrade a 0001 y upgrade head."""
     cfg = _config(url)
     command.upgrade(cfg, "head")
-    command.downgrade(cfg, "-1")
+    command.downgrade(cfg, "0001")
     motor = crear_motor(url)
     assert "telegram_id" not in {c["name"] for c in inspect(motor).get_columns("usuarios")}
     motor.dispose()
@@ -102,10 +102,38 @@ def test_canal_telegram_se_puede_deshacer_y_rehacer(url):
         c.execute(text(insertar), {"id": "b", "canal": "sms"})
     motor.dispose()
     # Al deshacer, lo que entró por Telegram pasa a `manual` y el CHECK vuelve a rechazar `telegram`.
-    command.downgrade(cfg, "-1")
+    command.downgrade(cfg, "0001")
     motor = crear_motor(url)
     with motor.connect() as c:
         assert c.execute(text("SELECT origen_canal FROM eventos WHERE id = 'a'")).scalar() == "manual"
     with pytest.raises(IntegrityError), motor.begin() as c:
         c.execute(text(insertar), {"id": "c", "canal": "telegram"})
+    motor.dispose()
+
+
+def test_notificaciones_contacto_se_puede_deshacer_y_rehacer(url):
+    """0003: contacto, plantilla y parametros en notificaciones y telefono opcional. Al deshacer se borran los
+    avisos sin telefono (no caben en la tabla antigua)."""
+    cfg = _config(url)
+    command.upgrade(cfg, "head")
+    motor = crear_motor(url)
+    insertar = (
+        "INSERT INTO notificaciones (id, telefono, contacto, tipo, texto, formato, botones, estado_envio, intentos, "
+        "creado_en) VALUES (:id, :telefono, :contacto, 'anuncio', 'Hola', 'texto', '[]', 'pendiente', 0, "
+        "'2026-11-20 10:00:00')"
+    )
+    with motor.begin() as c:
+        c.execute(text(insertar), {"id": "a", "telefono": "+34600000201", "contacto": "tg:1"})
+        c.execute(text(insertar), {"id": "b", "telefono": None, "contacto": "tg:2"})
+    motor.dispose()
+    command.downgrade(cfg, "0002")
+    motor = crear_motor(url)
+    assert "contacto" not in {c["name"] for c in inspect(motor).get_columns("notificaciones")}
+    with motor.connect() as c:
+        assert [f[0] for f in c.execute(text("SELECT id FROM notificaciones"))] == ["a"]
+    motor.dispose()
+    command.upgrade(cfg, "head")
+    motor = crear_motor(url)
+    columnas = {c["name"]: c for c in inspect(motor).get_columns("notificaciones")}
+    assert {"contacto", "plantilla", "parametros"} <= set(columnas) and columnas["telefono"]["nullable"]
     motor.dispose()
