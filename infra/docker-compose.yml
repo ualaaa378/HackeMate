@@ -34,7 +34,7 @@ services:
       BOT_URL: http://bot:8001
       FIXTURES_DIR: /srv/contracts/fixtures
     volumes:
-      # Datos de solo lectura mientras no haya seed en la base de datos
+      # Fixtures que carga el seed al arrancar (app.seed hace también alembic upgrade head)
       - ../contracts:/srv/contracts:ro
     ports:
       - "8000:8000"

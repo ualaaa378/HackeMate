@@ -10,7 +10,7 @@
 
 | Flujo | Responsable | Rama actual | Estado | Última actualización |
 |---|---|---|---|---|
-| A · Backend, datos e infra | Dev A: Benas | `Flujo-A` | 🟡 H0 cerrado con deuda (Docker sin validar, confirmación de B) | vie 19:10 |
+| A · Backend, datos e infra | Dev A: Benas | `Flujo-A` | 🟢 H1 hecho (E1.0–E1.6, 135 tests); PR a `develop` abierta; falta integración CP1 con B y C y Docker sin validar | vie 20:00 |
 | B · WhatsApp e IA | Dev B: Francisco | `Flujo-B` | 🟢 / 🟡 / 🔴 | vie __:__ |
 | C · App Ionic, web/PWA y panel | Dev C: Adán | `feat/web-…` | 🟢 / 🟡 / 🔴 | vie __:__ |
 
