@@ -3,10 +3,11 @@
 import math
 from datetime import datetime
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from app import fixtures
 from app.errores import ErrorApi
+from app.paginacion import Pagina, pagina, paginar_lista
 
 router = APIRouter(prefix="/api/v1", tags=["eventos"])
 
@@ -25,10 +26,6 @@ def _cerca(items: list[dict], lat: float | None, lon: float | None, radio_km: fl
     return [i for i in items if distancia_km(lat, lon, i["lat"], i["lon"]) <= radio_km]
 
 
-def _pagina(items: list[dict], page: int, size: int) -> dict:
-    return {"items": items[(page - 1) * size : page * size], "total": len(items), "page": page, "size": size}
-
-
 def _fecha(valor: str) -> datetime:
     return datetime.fromisoformat(valor.replace("Z", "+00:00"))
 
@@ -45,15 +42,14 @@ def listar_lugares(
     lat: float | None = None,
     lon: float | None = None,
     radio_km: float | None = Query(None, ge=0),
-    page: int = Query(1, ge=1),
-    size: int = Query(20, ge=1, le=100),
+    p: Pagina = Depends(pagina),
 ):
     items = fixtures.lugares()
     if municipio:
         items = [i for i in items if i["municipio"] == municipio]
     if tipo:
         items = [i for i in items if i["tipo"] == tipo]
-    return _pagina(_cerca(items, lat, lon, radio_km), page, size)
+    return paginar_lista(_cerca(items, lat, lon, radio_km), p)
 
 
 @router.get("/lugares/{id}")
@@ -76,8 +72,7 @@ def listar_eventos(
     q: str | None = None,
     estado: str = "publicado",
     publicador_id: str | None = None,
-    page: int = Query(1, ge=1),
-    size: int = Query(20, ge=1, le=100),
+    p: Pagina = Depends(pagina),
 ):
     # Sin login todavía: el público solo ve publicados, se ignora otro estado.
     items = [e for e in fixtures.eventos() if e["estado"] == "publicado"]
@@ -95,7 +90,7 @@ def listar_eventos(
     if publicador_id:
         items = [e for e in items if e.get("publicador_id") == publicador_id]
     items = sorted(_cerca(items, lat, lon, radio_km), key=lambda e: _fecha(e["fecha_inicio"]))
-    return _pagina(items, page, size)
+    return paginar_lista(items, p)
 
 
 @router.get("/eventos/{id}")

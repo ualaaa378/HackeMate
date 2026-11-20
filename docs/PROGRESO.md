@@ -80,7 +80,7 @@
 - [ ] CRUD de eventos con filtros (municipio, categoría, fechas, radio)
 - [ ] CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`
 - [ ] `seed.py` con los 5 pueblos y eventos de demo
-- [ ] Formato de error y paginación comunes
+- [x] Formato de error y paginación comunes
 
 **Bloque 2 (sáb 08:00–13:00)**
 - [ ] `POST /eventos/importar` y `POST /eventos/{id}/confirmar`
