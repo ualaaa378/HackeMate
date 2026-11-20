@@ -21,8 +21,8 @@ from alembic.config import Config
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.db import API_DIR, crear_motor
-from app.fixtures import _directorio
 from app.modelos import (
     Base,
     Evento,
@@ -37,6 +37,14 @@ from app.modelos import (
 )
 
 FICHEROS_EVENTOS = ("eventos.json", "eventos_demo.json")
+
+
+def directorio_fixtures() -> Path:
+    configurado = get_settings().fixtures_dir
+    if configurado:
+        return Path(configurado)
+    # Monorepo: services/api/app/seed.py -> raiz/contracts/fixtures
+    return Path(__file__).resolve().parents[3] / "contracts" / "fixtures"
 
 
 def _leer(nombre: str, directorio: Path) -> list[dict]:
@@ -96,7 +104,7 @@ def vaciar(db: Session) -> None:
 
 def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None = None) -> dict:
     """Carga los fixtures y devuelve un resumen. No hace commit: lo hace quien llama."""
-    directorio = directorio or _directorio()
+    directorio = directorio or directorio_fixtures()
     ahora = ahora or datetime.now(timezone.utc)
     resumen: dict[str, int] = {}
 

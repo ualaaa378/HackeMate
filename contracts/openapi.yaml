@@ -53,7 +53,7 @@ paths:
       tags: [eventos]
       summary: Los 5 pueblos con coordenadas
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Lista de municipios
@@ -68,7 +68,7 @@ paths:
       tags: [eventos]
       summary: Información permanente de los pueblos (rutas, sitios, comercios, alojamientos, servicios)
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       parameters:
         - { name: municipio, in: query, schema: { type: string } }
         - { name: tipo, in: query, schema: { enum: [ruta, sitio_interes, comercio, alojamiento, servicio] } }
@@ -91,7 +91,7 @@ paths:
       tags: [eventos]
       summary: Ficha de un lugar
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Lugar
@@ -105,7 +105,7 @@ paths:
       tags: [eventos]
       summary: Agenda y mapa. Público solo ve `publicado`.
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       parameters:
         - { name: municipio, in: query, schema: { type: string } }
         - { name: categoria, in: query, schema: { $ref: "#/components/schemas/Categoria" } }
@@ -132,7 +132,7 @@ paths:
     post:
       tags: [eventos]
       summary: Crear evento a mano (publicador o moderador)
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -155,7 +155,7 @@ paths:
       tags: [eventos]
       summary: Ficha del evento
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Evento
@@ -166,7 +166,7 @@ paths:
     patch:
       tags: [eventos]
       summary: Editar evento. Si cambia `fecha_inicio`, avisa a todos los inscritos (`cambio_evento`) y fija un anuncio.
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
