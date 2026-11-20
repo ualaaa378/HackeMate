@@ -31,6 +31,7 @@ import {
   type Necesidad,
   type Publico,
 } from '../api/types';
+import SelectorImagen from '../components/SelectorImagen';
 import { useSesion } from '../cuenta/sesion';
 import { fechaLarga } from '../utils/formato';
 
@@ -70,6 +71,7 @@ const Proponer: React.FC = () => {
     necesidades: [] as Necesidad[],
     seguro_rc: 'nose' as DatosAyuntamiento['seguro_rc'],
     observaciones: '',
+    imagen: null as string | null,
   });
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -110,6 +112,7 @@ const Proponer: React.FC = () => {
             precio_eur: f.pago === 'si' ? Number(f.precio) : null,
             plazas_totales: f.plazas ? Number(f.plazas) : null,
             etiquetas: ['propuesta_vecinal', `publico_${f.publico}`],
+            imagen_url: f.imagen,
           },
           {
             responsable: f.responsable.trim(),
@@ -215,6 +218,7 @@ const Proponer: React.FC = () => {
                 value={f.descripcion}
                 onIonInput={texto('descripcion')}
               />
+              <SelectorImagen valor={f.imagen} onCambio={(v) => poner('imagen', v)} />
             </fieldset>
 
             <fieldset>

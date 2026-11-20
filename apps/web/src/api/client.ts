@@ -5,6 +5,7 @@
 // para que la demo no se caiga. Los errores de negocio de la API sí llegan a la pantalla.
 
 import eventosMock from '../mocks/eventos.json';
+
 import type {
   ApiError,
   DatosAyuntamiento,
@@ -125,6 +126,21 @@ export function getEventos(filtros: FiltrosEventos = {}): Promise<Pagina<Evento>
     () => peticion(`/eventos${query({ size: 100, ...filtros })}`),
     () => esperar(filtrarMock(filtros)),
   );
+}
+
+/** Planes que ya han pasado, del más reciente al más antiguo (tablón de recuerdos).
+ *  La API aún no expone los finalizados al público: si no devuelve ninguno, se usan los de los datos de la demo. */
+export async function getEventosPasados(ahora = new Date()): Promise<Evento[]> {
+  const fin = (e: Evento) => e.fecha_fin ?? e.fecha_inicio;
+  const pasados = (lista: Evento[]) =>
+    lista.filter((e) => new Date(fin(e)) < ahora).sort((a, b) => fin(b).localeCompare(fin(a)));
+  const deMocks = () => pasados(mockEventos.filter((e) => e.estado === 'publicado' || e.estado === 'finalizado'));
+  try {
+    const reales = pasados((await getEventos({ hasta: ahora.toISOString() })).items);
+    return reales.length ? reales : deMocks();
+  } catch {
+    return deMocks();
+  }
 }
 
 export function getEvento(id: string): Promise<Evento> {
@@ -282,6 +298,10 @@ export function enviarMensaje(
         autor_nombre: autor.nombre,
         autor_rol: 'vecino',
       });
+      if (nuevo.tipo === 'comentario') {
+        chatsMock.set(eventoId, [...(chatsMock.get(eventoId) ?? []), nuevo]);
+        return esperar({ mensaje: nuevo, respuesta_ia: null });
+      }
       const ia = mensajeMock(eventoId, {
         texto: 'Gracias por preguntar. Se lo pasamos a la organización y te contestamos aquí y por WhatsApp.',
         tipo: 'respuesta',

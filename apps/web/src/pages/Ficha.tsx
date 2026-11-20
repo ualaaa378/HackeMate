@@ -27,7 +27,7 @@ import { useParams } from 'react-router-dom';
 import { enModoRespaldo, getEvento, inscribirse, urlIcs } from '../api/client';
 import { CATEGORIAS, type Evento } from '../api/types';
 import ChatEvento from '../components/ChatEvento';
-import { CabeceraPueblo } from '../components/FotosPueblo';
+import FotoPlan from '../components/FotoPlan';
 import { useSesion } from '../cuenta/sesion';
 import { claveDia, fechaEstimada, fechaLarga, hora, plazas, precio, sinHora, textoApuntados } from '../utils/formato';
 
@@ -92,7 +92,7 @@ const Ficha: React.FC = () => {
         {error && <p>{error}</p>}
         {evento && (
           <>
-            <CabeceraPueblo municipio={evento.municipio} compacta />
+            <FotoPlan evento={evento} className="foto-plan--ficha" />
             <IonCard>
               <IonCardHeader>
                 <IonChip style={{ background: CATEGORIAS[evento.categoria].color, color: '#fff' }}>

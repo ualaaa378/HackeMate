@@ -9,7 +9,7 @@ import {
   setupIonicReact,
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { calendar, fileTrayFull, list, map, people, person, statsChart } from 'ionicons/icons';
+import { calendar, fileTrayFull, images, list, map, people, person, statsChart } from 'ionicons/icons';
 import { Navigate, Route, useLocation } from 'react-router-dom';
 
 import ProveedorAcceso from './admin/ProveedorAcceso';
@@ -21,6 +21,7 @@ import Ficha from './pages/Ficha';
 import Mapa from './pages/Mapa';
 import Perfil from './pages/Perfil';
 import Proponer from './pages/Proponer';
+import Recuerdos from './pages/Recuerdos';
 import Bandeja from './pages/admin/Bandeja';
 import EventosAdmin from './pages/admin/EventosAdmin';
 import Panel from './pages/admin/Panel';
@@ -65,6 +66,7 @@ const Navegacion: React.FC = () => {
         <Route path="/evento/:id" element={<Ficha />} />
         <Route path="/proponer" element={<Proponer />} />
         <Route path="/creditos" element={<Creditos />} />
+        <Route path="/recuerdos" element={<Recuerdos />} />
         <Route path="/admin/bandeja" element={<Bandeja />} />
         <Route path="/admin/eventos" element={<EventosAdmin />} />
         <Route path="/admin/publicadores" element={<Publicadores />} />
@@ -109,6 +111,10 @@ const Navegacion: React.FC = () => {
           <IonTabButton tab="mapa" href="/mapa">
             <IonIcon aria-hidden="true" icon={map} />
             <IonLabel>Mapa</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="recuerdos" href="/recuerdos">
+            <IonIcon aria-hidden="true" icon={images} />
+            <IonLabel>Recuerdos</IonLabel>
           </IonTabButton>
           <IonTabButton tab="perfil" href="/perfil">
             <IonIcon aria-hidden="true" icon={person} />
