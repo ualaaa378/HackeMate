@@ -14,7 +14,11 @@ export function setToken(nuevo: string | null) {
 }
 
 export class ErrorApi extends Error {
-  constructor(public code: string, message: string, public status: number) {
+  constructor(
+    public code: string,
+    message: string,
+    public status: number,
+  ) {
     super(message);
   }
 }
@@ -49,7 +53,7 @@ export function distanciaKm(lat1: number, lon1: number, lat2: number, lon2: numb
 
 // ---------- mocks ----------
 const mockEventos = eventosMock as Evento[];
-const esperar = <T,>(valor: T, ms = 250) => new Promise<T>((r) => setTimeout(() => r(valor), ms));
+const esperar = <T>(valor: T, ms = 250) => new Promise<T>((r) => setTimeout(() => r(valor), ms));
 
 function filtrarMock(f: FiltrosEventos): Pagina<Evento> {
   let items = mockEventos.filter((e) => e.estado === 'publicado');
@@ -84,6 +88,7 @@ export function inscribirse(eventoId: string): Promise<Inscripcion> {
     const e = mockEventos.find((x) => x.id === eventoId);
     const hayPlaza = e?.plazas_libres == null || e.plazas_libres > 0;
     if (e && e.plazas_libres != null && e.plazas_libres > 0) e.plazas_libres -= 1;
+    if (e && hayPlaza) e.inscritos = (e.inscritos ?? 0) + 1;
     return esperar({ id: crypto.randomUUID(), evento_id: eventoId, estado: hayPlaza ? 'confirmada' : 'lista_espera' });
   }
   return peticion(`/eventos/${eventoId}/inscripciones`, { method: 'POST' });

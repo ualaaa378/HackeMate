@@ -20,6 +20,7 @@
     "es_gratuito": { "type": "boolean" },
     "plazas_totales": { "type": ["integer", "null"], "minimum": 0 },
     "plazas_libres": { "type": ["integer", "null"], "minimum": 0 },
+    "inscritos": { "type": "integer", "minimum": 0, "default": 0, "description": "Personas apuntadas (inscripciones confirmadas). Lo calcula la API; en los fixtures empieza en 0." },
     "estado": { "enum": ["borrador", "pendiente_confirmacion", "en_revision", "publicado", "rechazado", "cancelado", "finalizado", "archivado"] },
     "publicador_id": { "type": ["string", "null"], "format": "uuid" },
     "publicador_nombre": { "type": ["string", "null"] },

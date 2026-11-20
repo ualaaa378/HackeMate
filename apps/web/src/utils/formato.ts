@@ -19,8 +19,31 @@ export function claveDia(iso: string): string {
   return new Date(iso).toLocaleDateString('sv-SE', { timeZone: ZONA });
 }
 
+export function sinHora(e: Evento): boolean {
+  return e.etiquetas?.includes('sin_hora') ?? false;
+}
+
+export function fechaEstimada(e: Evento): boolean {
+  return e.etiquetas?.includes('fecha_estimada') ?? false;
+}
+
+export function horaEvento(e: Evento): string {
+  return sinHora(e) ? 'Hora por confirmar' : hora(e.fecha_inicio);
+}
+
+export function apuntados(e: Evento): number {
+  return e.inscritos ?? 0;
+}
+
+export function textoApuntados(e: Evento): string {
+  const n = apuntados(e);
+  if (n === 0) return 'Aún no se ha apuntado nadie';
+  return n === 1 ? '1 persona apuntada' : `${n} personas apuntadas`;
+}
+
 export function precio(e: Evento): string {
-  if (e.es_gratuito || e.precio_eur == null) return 'Gratis';
+  if (e.es_gratuito) return 'Gratis';
+  if (e.precio_eur == null) return 'Consultar';
   return `${e.precio_eur.toLocaleString('es-ES', { maximumFractionDigits: 2 })} €`;
 }
 

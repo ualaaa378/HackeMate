@@ -20,13 +20,13 @@ import {
   IonToast,
   IonToolbar,
 } from '@ionic/react';
-import { calendarOutline, checkmarkCircle, logoFacebook, mapOutline } from 'ionicons/icons';
+import { calendarOutline, checkmarkCircle, globeOutline, logoFacebook, mapOutline } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { getEvento, inscribirse, urlIcs, USAR_MOCKS } from '../api/client';
 import { CATEGORIAS, type Evento } from '../api/types';
-import { fechaLarga, hora, plazas, precio } from '../utils/formato';
+import { claveDia, fechaEstimada, fechaLarga, hora, plazas, precio, sinHora, textoApuntados } from '../utils/formato';
 
 const Ficha: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -93,10 +93,21 @@ const Ficha: React.FC = () => {
                 <IonList lines="none">
                   <IonItem>
                     <IonLabel>
-                      📅 {fechaLarga(evento.fecha_inicio)}, a las {hora(evento.fecha_inicio)}
-                      {evento.fecha_fin && ` (hasta las ${hora(evento.fecha_fin)})`}
+                      📅 {fechaLarga(evento.fecha_inicio)}
+                      {sinHora(evento) ? ' · hora por confirmar' : `, a las ${hora(evento.fecha_inicio)}`}
+                      {evento.fecha_fin &&
+                        (claveDia(evento.fecha_fin) !== claveDia(evento.fecha_inicio)
+                          ? ` hasta el ${fechaLarga(evento.fecha_fin)}`
+                          : !sinHora(evento) && ` (hasta las ${hora(evento.fecha_fin)})`)}
                     </IonLabel>
                   </IonItem>
+                  {fechaEstimada(evento) && (
+                    <IonItem>
+                      <IonLabel className="ion-text-wrap">
+                        📌 Fecha estimada según el calendario de fiestas; pendiente de confirmar
+                      </IonLabel>
+                    </IonItem>
+                  )}
                   <IonItem>
                     <IonLabel>
                       📍 {evento.lugar ? `${evento.lugar}, ` : ''}
@@ -105,6 +116,9 @@ const Ficha: React.FC = () => {
                   </IonItem>
                   <IonItem>
                     <IonLabel>💶 {precio(evento)}</IonLabel>
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel className="contador-ficha">👥 {textoApuntados(evento)}</IonLabel>
                   </IonItem>
                   {plazas(evento) && (
                     <IonItem>
@@ -150,8 +164,12 @@ const Ficha: React.FC = () => {
             </IonButton>
             {evento.origen.url && (
               <IonButton expand="block" fill="clear" href={evento.origen.url} target="_blank" rel="noopener">
-                <IonIcon slot="start" icon={logoFacebook} aria-hidden="true" />
-                Ver publicación original
+                <IonIcon
+                  slot="start"
+                  icon={evento.origen.canal === 'facebook' ? logoFacebook : globeOutline}
+                  aria-hidden="true"
+                />
+                Ver fuente original
               </IonButton>
             )}
           </>

@@ -81,3 +81,24 @@ html {
   line-height: 1.5;
   margin-top: 12px;
 }
+
+.tarjeta-lateral {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.contador-apuntados {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+  background: var(--ion-color-light);
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.contador-ficha {
+  font-weight: 600;
+}

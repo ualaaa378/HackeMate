@@ -31,6 +31,7 @@ export interface Evento {
   es_gratuito: boolean;
   plazas_totales?: number | null;
   plazas_libres?: number | null;
+  inscritos?: number;
   estado: EstadoEvento;
   publicador_id?: string | null;
   publicador_nombre?: string | null;
