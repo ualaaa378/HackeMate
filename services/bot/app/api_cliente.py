@@ -263,3 +263,10 @@ def _despues_de_reintentar(item: dict, res: dict | None) -> None:
     estado = "ya está enviado a revisión" if confirmado else "ya está guardado y el ayuntamiento lo revisará"
     if extra.get("avisar"):
         canales.enviar(extra["avisar"], f"✅ Ya hay conexión: *{titulo}* {estado}.")
+
+
+# ---------- Alta de publicadores (B5) ----------
+
+def crear_publicador(cuerpo: dict) -> dict | None:
+    """POST /publicadores con el responsable (dato personal): nunca se encola en disco."""
+    return _peticion("POST", "/api/v1/publicadores", cuerpo)

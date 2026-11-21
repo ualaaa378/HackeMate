@@ -234,7 +234,7 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 | H3 · CP3 | sáb 19:00 | - [x] **B2.** *(sáb 21/11: hecho. Proveedor `nim` en `app/llm/proveedores.py` (comparte código con FreeLLM, los dos son compatibles con OpenAI), cadena por defecto `gemini,nim,freellm,claude,reglas` y `NIM_URL`, `NIM_API_KEY`, `NIM_MODELOS`, `NIM_TIMEOUT_INTENTO_S` en los dos `.env.example`. Modelo medido con el plan gratuito: `nvidia/nemotron-3.5-bolt-e4b`, 1–3 s por ficha, descarta avisos y pésames y detecta el spam; los grandes pasaban de 25 s. Probado con el bot: `/ai/extraer` responde con `nim:…` y sus tokens salen en `/metrics`. **Cada uno pone su clave en `NIM_API_KEY`** (la de NVIDIA de `freellmapi.config.json` vale) y `LLM_CADENA` nueva en su `.env`.)* **NVIDIA NIM como proveedor del `llm_router`**, en el orden Gemini → NIM → FreeLLM → Claude → reglas. NIM es compatible con OpenAI, así que basta con otra instancia como la de `FreeLLM` en `app/llm/proveedores.py`, con `NIM_URL`, `NIM_API_KEY` y `NIM_MODELO` en `.env.example` (vacías). Que `/ai/extraer` lo use para A2 y que sus tokens salgan en `/metrics` y en `/metrics/tokens` de la API. |
 | H3 · CP3 | sáb 19:00 | - [ ] **B3.** **Audios fuera del portátil de Fran.** Decidido (sáb 21/11): **FreeLLMAPI con Docker en la máquina de Adán**, sin plan B dentro del bot. Fran le pasa por privado `freellmapi.config.json` y `.env` de `services/bot/freellmapi/`; Adán hace `docker compose up -d` allí y pone en el `.env` de la raíz `FREELLM_URL_DOCKER=http://host.docker.internal:3001/v1` y **su** clave unificada en `FREELLM_API_KEY` (ver `services/bot/freellmapi/README.md`). Falta ensayar el paso 7 juntos en su máquina. |
 | Aplazada | — | - [ ] **B4.** Decidir **D1** con Benas (ver A3, aplazada por Adán el sáb 13:20). |
-| H4 · CP4 | dom 00:00 | - [ ] **B5.** Solo si sobra tiempo: `POST /ai/frase` (primero en el contrato) y pedir nombre, DNI y residencia en el alta de asociaciones. |
+| H4 · CP4 | dom 00:00 | - [~] **B5.** Solo si sobra tiempo: `POST /ai/frase` (primero en el contrato) y pedir nombre, DNI y residencia en el alta de asociaciones. *(sáb 21/11: **el alta, hecha.** «Quiero dar de alta mi asociación» (también «registrar mi bar», «quiero ser publicador») → nombre, tipo (con botones), pueblo, responsable, DNI o NIE (comprueba la letra al momento) y dónde vive → resumen con el DNI enmascarado → `POST /publicadores` con `responsable`. En Telegram pide antes «Compartir mi número». El DNI solo vive en memoria durante el alta: no va a los logs ni a la cola en disco. Probado contra la API real: queda `solicitado`, nivel 0, con el responsable, y la API avisa a los moderadores. **`/ai/frase`, no:** necesita un cambio de contrato antes de las 19:00 y que la API lo llame; la web ya pone una frase fija por tipo de plan.)* |
 | H5 | dom 07:00 | - [ ] **B6.** Escribir la sección del bot del README y tener las claves de IA de la demo en el `.env` de Adán (por privado). |
 
 #### ⏰ Puesta en común · sáb 13:00 (CP2), llamada de 30 min
@@ -289,10 +289,6 @@ Lo que pide el bot:
 
 - **Audios sin depender del portátil de Fran (B3):** la transcripción va por FreeLLM, que ya corre en Docker (`services/bot/freellmapi/`). En la demo, Adán levanta su propio FreeLLMAPI en su máquina con la configuración que le pasa Fran por privado. Lo necesita el paso 7.
 
-### Flujo B · bot (Francisco), alta de asociaciones
-
-- **Datos del responsable al dar de alta una asociación:** cuando alguien pide publicar por Telegram (y por WhatsApp cuando Meta lo permita, con el mismo flujo de conversación), el bot tiene que pedir el nombre, el DNI y el pueblo donde vive el responsable, y mandarlos a la API en el alta (`POST /publicadores` con `responsable` {`nombre`, `dni`, `residencia`}; la API ya lo acepta y responde 422 `dni_invalido` si la letra del DNI/NIE no cuadra). Sin esos datos la asociación nunca podrá publicar sin revisión.
-
 ### Flujo B · bot (Francisco), frase de portada con IA
 
 - **`POST /ai/frase`** (o el nombre que se acuerde, primero en el contrato): a partir del título, la categoría y el pueblo, devolver una frase breve, espontánea y alegre (máx. 90 letras, sin inventar datos del plan) para la portada del carrusel. La llama la API cuando el publicador no escribe la suya. Mientras no exista, la web elige una frase fija por tipo de plan y la marca como «✨ Frase automática».
@@ -300,6 +296,8 @@ Lo que pide el bot:
 Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
 
 ### Ya resuelto
+
+- **Alta de asociaciones por chat con los datos del responsable** (B5, pedido por Benas para el nivel 2): el bot pide nombre, tipo, pueblo, responsable, DNI o NIE y residencia y llama a `POST /publicadores` con `responsable`. Funciona igual por Telegram y por WhatsApp (`services/bot/app/alta.py`). Para probarlo: escribir al bot «quiero dar de alta mi asociación».
 
 - **NVIDIA NIM en el `llm_router` (B2)**, para la ingesta de Facebook de Benas (A2) y el panel de Adán (C6): `/ai/extraer` lo usa antes que FreeLLM y sus tokens salen en `/metrics` y `/metrics/tokens` como `nim`. Ver B2 en el reparto.
 - **«Este finde» recomendaba planes de otras semanas** (hallazgo de Adán, paso 4): resuelto en la #52; las recomendaciones se filtran por el periodo pedido.

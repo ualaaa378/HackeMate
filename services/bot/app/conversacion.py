@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from app import api_cliente, canales, telegram, vecino
+from app import alta, api_cliente, canales, telegram, vecino
 from app.agentes import antispam, extractor, idiomas, intencion, medios, voz
 from app.api_cliente import ApiNoDisponible, ErrorApi
 from app.config import get_settings
@@ -39,6 +39,7 @@ AYUDA = (
     "🔎 ¿Buscas planes? Pregúntame «¿qué hay este finde?» o «¿qué hay en Senés?». También vale una nota de voz.\n"
     "❤️ Dime qué te gusta («me gustan las rutas») y te aviso cuando haya algo.\n"
     "📣 ¿Organizas algo? Mándame el texto, *una foto del cartel* o *una nota de voz* y preparo la ficha.\n"
+    "🏛️ ¿Representas una asociación, un bar o el ayuntamiento? Escribe «quiero dar de alta mi asociación».\n"
     "Escribe *cancelar* en cualquier momento para empezar de nuevo."
 )
 AYUDA_MODERADOR = "Eres moderador/a: escribe *pendientes* para ver lo que espera revisión."
@@ -66,7 +67,7 @@ _usuarios: dict[str, tuple[float, dict | None]] = {}  # caché de by-contacto (6
 def necesita_ia(msg: MensajeEntrante) -> bool:
     """Para decidir si el webhook manda acuse inmediato («un momento…»)."""
     est = estados.get(msg.de)
-    if est and (est.preguntando or est.esperando_confirmacion):
+    if (est and (est.preguntando or est.esperando_confirmacion)) or alta.en_curso(msg.de):
         return False
     return len(msg.texto) > 40 or bool(msg.media_url or msg.media_id)
 
@@ -152,7 +153,16 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
 
     if t in ("cancelar", "salir", "reset"):
         estados[msg.de] = Estado()
+        if alta.en_curso(msg.de):
+            alta.cancelar(msg.de)
+            return [Respuesta("Vale, dejo el alta y he borrado los datos.", quitar_teclado=True)]
         return ["Vale, borrado. Cuando quieras me mandas otro evento."]
+
+    # Alta de una entidad (B5): mientras dura, cada mensaje es la respuesta a su pregunta
+    if alta.en_curso(msg.de):
+        return alta.responder(msg, texto)
+    if texto and not msg.boton_id and alta.quiere_alta(texto):
+        return alta.empezar(msg, _usuario(msg.de))
 
     if t.startswith("mod:"):
         return _decidir(msg, t)
@@ -376,7 +386,7 @@ def _vincular(msg: MensajeEntrante) -> list[str | Respuesta]:
     elif (usuario or {}).get("publicador_id"):
         extra = "\nPublicas en nombre de tu entidad: lo que me mandes irá con su nombre."
     return [Respuesta(f"¡Gracias, {nombre}! Ya te tengo identificado ✅{extra}", quitar_teclado=True)] + \
-        vecino.tras_vincular(msg, usuario)
+        vecino.tras_vincular(msg, usuario) + alta.tras_vincular(msg, usuario)
 
 
 # ---------- Moderador ----------
