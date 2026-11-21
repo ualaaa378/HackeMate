@@ -1,9 +1,11 @@
 import {
   IonButton,
   IonButtons,
+  IonChip,
   IonContent,
   IonHeader,
   IonIcon,
+  IonLabel,
   IonPage,
   IonTitle,
   IonToast,
@@ -14,13 +16,14 @@ import {
 import { locate } from 'ionicons/icons';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Circle, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 
 import { distanciaKm, getEventos } from '../api/client';
 import { CATEGORIAS, type Categoria, type Evento } from '../api/types';
 import FiltrosEventos from '../components/FiltrosEventos';
 import { fechaLarga, hora } from '../utils/formato';
+import { delMes, mesesConPlanes, nombreMes, proximos } from '../utils/meses';
 
 const CENTRO_COMARCA: [number, number] = [37.15, -2.3];
 const RADIO_CERCA_KM = 15;
@@ -39,7 +42,8 @@ function iconoCategoria(c: Categoria) {
 const Mapa: React.FC = () => {
   const mapa = useRef<L.Map | null>(null);
   const router = useIonRouter();
-  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [todos, setTodos] = useState<Evento[]>([]);
+  const [mes, setMes] = useState<string>();
   const [municipio, setMunicipio] = useState<string>();
   const [categoria, setCategoria] = useState<Categoria>();
   const [yo, setYo] = useState<[number, number] | null>(null);
@@ -47,9 +51,13 @@ const Mapa: React.FC = () => {
 
   useEffect(() => {
     getEventos({ municipio, categoria })
-      .then((p) => setEventos(p.items))
+      .then((p) => setTodos(proximos(p.items)))
       .catch(() => setAviso('No hemos podido cargar los planes.'));
   }, [municipio, categoria]);
+
+  const meses = useMemo(() => mesesConPlanes(todos), [todos]);
+  const mesElegido = mes && meses.includes(mes) ? mes : undefined;
+  const eventos = useMemo(() => delMes(todos, mesElegido), [todos, mesElegido]);
 
   // Ionic monta la pestaña oculta: sin esto Leaflet calcula mal el tamaño y el mapa sale gris.
   useIonViewDidEnter(() => {
@@ -95,6 +103,27 @@ const Mapa: React.FC = () => {
             onMunicipio={setMunicipio}
             onCategoria={setCategoria}
           />
+          <div className="filtros filtro-meses chips" role="group" aria-label="Filtrar por mes">
+            <IonChip
+              outline={!!mesElegido}
+              color={mesElegido ? undefined : 'primary'}
+              onClick={() => setMes(undefined)}
+              aria-pressed={!mesElegido}
+            >
+              <IonLabel>Todos los próximos</IonLabel>
+            </IonChip>
+            {meses.map((m) => (
+              <IonChip
+                key={m}
+                outline={mesElegido !== m}
+                color={mesElegido === m ? 'primary' : undefined}
+                onClick={() => setMes(mesElegido === m ? undefined : m)}
+                aria-pressed={mesElegido === m}
+              >
+                <IonLabel>{nombreMes(m)}</IonLabel>
+              </IonChip>
+            ))}
+          </div>
           <MapContainer ref={mapa} center={CENTRO_COMARCA} zoom={10} className="mapa">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -118,6 +147,11 @@ const Mapa: React.FC = () => {
               </Marker>
             ))}
           </MapContainer>
+          {eventos.length === 0 && (
+            <p className="mapa-vacio" role="status">
+              No hay planes próximos con estos filtros.
+            </p>
+          )}
         </div>
         <IonToast isOpen={!!aviso} message={aviso ?? ''} duration={3000} onDidDismiss={() => setAviso(null)} />
       </IonContent>
