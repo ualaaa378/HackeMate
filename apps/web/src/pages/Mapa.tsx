@@ -129,7 +129,7 @@ const Mapa: React.FC = () => {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {yo && <Circle center={yo} radius={RADIO_CERCA_KM * 1000} pathOptions={{ color: '#3880ff' }} />}
+            {yo && <Circle center={yo} radius={RADIO_CERCA_KM * 1000} pathOptions={{ color: '#368f94' }} />}
             {eventos.map((e) => (
               <Marker key={e.id} position={[e.lat, e.lon]} icon={iconoCategoria(e.categoria)}>
                 <Popup>

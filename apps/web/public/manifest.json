@@ -11,6 +11,6 @@
   "start_url": "/agenda",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#14451a",
-  "background_color": "#f6f8f1"
+  "theme_color": "#1b4749",
+  "background_color": "#fcf9f1"
 }

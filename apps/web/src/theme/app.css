@@ -31,9 +31,10 @@ ion-toolbar {
   --min-height: 68px;
 }
 
-/* Raya naranja bajo la cabecera verde, como en la web */
+/* Franja con los cinco colores de la paleta bajo la cabecera */
 ion-header ion-toolbar:first-child {
-  border-bottom: 4px solid var(--hm-naranja);
+  border-bottom: 5px solid var(--hm-paleta-arena);
+  border-image: var(--hm-franja) 1;
 }
 
 ion-toolbar ion-title {
@@ -101,7 +102,7 @@ ion-tab-button.tab-selected::before {
   right: 20%;
   height: 5px;
   border-radius: 0 0 4px 4px;
-  background: var(--hm-naranja);
+  background: var(--hm-terracota);
 }
 
 /* ---------- Botones y elementos táctiles ---------- */
@@ -181,7 +182,7 @@ ion-item {
 
 ion-item-divider.dia,
 ion-item-divider {
-  --color: var(--hm-verde-oscuro);
+  --color: var(--hm-petroleo-oscuro);
   font-size: 1rem;
 }
 
@@ -229,7 +230,7 @@ ion-item-divider {
 .contador-apuntados {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
   background: var(--ion-color-light);
   border-radius: 999px;
   padding: 2px 8px;
@@ -253,7 +254,7 @@ ion-card-header ion-chip {
 
 ion-card-title {
   font-size: 1.5rem;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 ion-card-subtitle {
@@ -310,7 +311,7 @@ ion-card-content {
 .titulo-caja {
   font-size: 1.2rem;
   font-weight: 700;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
   margin: 0 0 8px;
 }
 
@@ -325,7 +326,7 @@ ion-card-content {
 .chat-evento h2 {
   margin: 0 0 12px;
   font-size: 1.15rem;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 .chat-evento .nota {
@@ -349,7 +350,7 @@ ion-card-content {
 .burbuja b {
   display: block;
   font-size: 0.8rem;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 .chat-form {
@@ -385,7 +386,7 @@ ion-card-content {
   padding: 0 6px;
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 .form-propuesta ion-input,
@@ -446,7 +447,7 @@ ion-card-content {
   gap: 8px;
   padding: 4px 8px 4px 16px;
   background: var(--hm-verde-claro);
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
   font-weight: 600;
   font-size: 0.95rem;
 }
@@ -489,7 +490,7 @@ ion-card-content {
 }
 
 .pendiente {
-  border-left: 6px solid var(--hm-naranja);
+  border-left: 6px solid var(--hm-terracota);
 }
 
 .pendiente--spam {
@@ -516,8 +517,8 @@ ion-card-content {
   margin: 12px 0;
   padding: 12px;
   border-radius: var(--hm-radio);
-  background: var(--hm-naranja-claro);
-  border: 1px solid #f3c9a8;
+  background: var(--hm-terracota-claro);
+  border: 1px solid var(--hm-paleta-arena);
 }
 
 .motivo-ia p {
@@ -535,7 +536,7 @@ ion-card-content {
 }
 
 .spam--medio {
-  --background: var(--hm-naranja-oscuro);
+  --background: var(--hm-terracota-oscuro);
   --color: #fff;
 }
 
@@ -554,7 +555,7 @@ ion-card-content {
 .propuesta summary {
   cursor: pointer;
   font-weight: 700;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
   min-height: 32px;
 }
 
@@ -599,7 +600,7 @@ ion-card-content {
 .aviso-cambio {
   margin: 0;
   font-weight: 600;
-  color: var(--hm-naranja-oscuro);
+  color: var(--hm-terracota-oscuro);
 }
 
 .cifras {
@@ -621,7 +622,7 @@ ion-card-content {
 .cifra__valor {
   font-size: 1.7rem;
   font-weight: 700;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 .cifra__texto {
@@ -712,7 +713,7 @@ ion-card-content {
   border: 3px solid transparent;
   border-radius: var(--hm-radio);
   overflow: hidden;
-  background: var(--hm-verde-oscuro);
+  background: var(--hm-petroleo-oscuro);
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
@@ -738,7 +739,7 @@ ion-card-content {
 }
 
 .tarjeta-pueblo--elegida {
-  border-color: var(--hm-naranja);
+  border-color: var(--hm-terracota);
 }
 
 .cabecera-pueblo {
@@ -746,7 +747,7 @@ ion-card-content {
   margin: 0;
   max-height: 260px;
   overflow: hidden;
-  background: var(--hm-verde-oscuro);
+  background: var(--hm-petroleo-oscuro);
 }
 
 .cabecera-pueblo img {
@@ -864,7 +865,7 @@ ion-card-content {
   position: relative;
   margin: 0;
   overflow: hidden;
-  background: var(--hm-verde-oscuro);
+  background: var(--hm-petroleo-oscuro);
 }
 
 .foto-plan img {
@@ -898,7 +899,7 @@ ion-card-content {
 
 /* ---------- Recuerdos: tarjetas a pantalla completa que se pasan hacia arriba ---------- */
 .contenido-recuerdos {
-  --background: #0b1626;
+  --background: #10292b;
 }
 
 .feed-recuerdos {
@@ -1012,7 +1013,7 @@ ion-card-content {
 .hoja-comentarios__plan {
   margin-top: 0;
   font-weight: 700;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 /* ---------- Foto opcional al crear un plan ---------- */
@@ -1059,7 +1060,7 @@ ion-card-content {
 .titulo-creditos {
   margin-top: 28px;
   font-size: 1.25rem;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 /* Plan pasado: aviso, galería de fotos de quienes fueron y comentarios */
@@ -1157,7 +1158,7 @@ ion-card-content {
   margin: 0 0 6px;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 .confianza h3 + .requisitos,
@@ -1196,13 +1197,13 @@ ion-card-content {
 }
 
 .sello--pendiente {
-  background: var(--hm-naranja-oscuro);
+  background: var(--hm-terracota-oscuro);
 }
 
 .sin-datos {
   margin: 0;
   font-weight: 600;
-  color: var(--hm-naranja-oscuro);
+  color: var(--hm-terracota-oscuro);
 }
 
 .requisitos {
@@ -1254,7 +1255,7 @@ ion-card-content {
   margin-bottom: 8px;
 }
 
-/* ---------- Inicio: saludo, tamaño de letra, «Tus planes» y carrusel (tema verde y naranja, 21/11) ---------- */
+/* ---------- Inicio: saludo, tamaño de letra, «Tus planes» y carrusel (paleta de cinco colores, 21/11) ---------- */
 .inicio {
   padding: 12px 16px 4px;
 }
@@ -1264,14 +1265,14 @@ ion-card-content {
   font-weight: 700;
   font-size: 1.5rem;
   line-height: 1.2;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 .titulo-seccion {
   margin: 18px 0 10px;
   font-weight: 700;
   font-size: 1.25rem;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 .selector-letra {
@@ -1293,7 +1294,7 @@ ion-card-content {
   border: 2px solid var(--hm-verde);
   border-radius: var(--hm-radio);
   background: #fff;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -1330,7 +1331,7 @@ ion-card-content {
   gap: 12px;
   padding: 10px 12px;
   border: 1px solid var(--hm-borde);
-  border-left: 6px solid var(--hm-naranja);
+  border-left: 6px solid var(--hm-terracota);
   border-radius: var(--hm-radio);
   background: #fff;
   color: var(--hm-texto);
@@ -1355,7 +1356,7 @@ ion-card-content {
 
 .tus-planes__plan strong {
   font-size: 1.05rem;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 .tus-planes__plan > span:nth-child(2) > span {
@@ -1368,17 +1369,17 @@ ion-card-content {
   padding: 4px 10px;
   border-radius: 999px;
   background: var(--hm-verde-claro);
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 .carrusel {
   position: relative;
   border-radius: 14px;
   overflow: hidden;
-  background: var(--hm-verde-oscuro);
+  background: var(--hm-petroleo-oscuro);
 }
 
 .carrusel__marco {
@@ -1446,7 +1447,7 @@ ion-card-content {
 
 .carrusel__controles {
   padding: 10px 12px;
-  background: var(--hm-verde-oscuro);
+  background: var(--hm-petroleo-oscuro);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1500,7 +1501,7 @@ ion-card-content {
 }
 
 .carrusel__puntos button[aria-current='true']::after {
-  background: var(--hm-naranja);
+  background: var(--hm-terracota);
   border-color: #fff;
 }
 
@@ -1517,7 +1518,7 @@ ion-content.contenido-agenda::part(scroll) {
   padding-inline: max(0px, calc((100% - 1040px) / 2));
 }
 
-/* ---------- Hoja de taco: el mes arriba en naranja, el día grande ---------- */
+/* ---------- Hoja de taco: el mes arriba en terracota, el día grande ---------- */
 .hoja-dia {
   flex: none;
   display: grid;
@@ -1533,7 +1534,7 @@ ion-content.contenido-agenda::part(scroll) {
 }
 .hoja-dia__mes {
   padding: 4px 0 3px;
-  background: var(--hm-naranja);
+  background: var(--hm-terracota);
   color: #fff;
   font-size: 0.7rem;
   font-weight: 700;
@@ -1574,12 +1575,12 @@ ion-content.contenido-agenda::part(scroll) {
   display: grid;
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
   line-height: 1.25;
 }
 .cabecera-dia__relativo {
   font-size: 0.8rem;
-  color: var(--hm-naranja-oscuro);
+  color: var(--hm-terracota-oscuro);
 }
 
 /* ---------- Tarjeta de plan ---------- */
@@ -1678,15 +1679,15 @@ ion-item.tarjeta-evento {
 }
 .chapa--gratis {
   background: var(--hm-verde-claro);
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 .chapa--precio {
   background: #eceff1;
   color: var(--hm-texto);
 }
 .chapa--gente {
-  background: var(--hm-naranja-claro);
-  color: var(--hm-naranja-oscuro);
+  background: var(--hm-terracota-claro);
+  color: var(--hm-terracota-oscuro);
 }
 .chapa--aviso {
   background: #fff4d6;
@@ -1710,7 +1711,7 @@ ion-item.tarjeta-evento {
   font-size: clamp(1.45rem, 1.1rem + 1.6vw, 2rem);
   font-weight: 700;
   line-height: 1.15;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 .ficha__organiza {
   margin: 0;
@@ -1740,7 +1741,7 @@ ion-item.tarjeta-evento {
   height: 46px;
   border-radius: 50%;
   background: var(--hm-verde-claro);
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 .ficha__datos dt ion-icon {
   font-size: 24px;
@@ -1766,7 +1767,7 @@ ion-item.tarjeta-evento {
 /* Títulos de las cajas de Perfil con el mismo peso que el resto de títulos */
 .titulo-caja {
   font-weight: 700;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 /* «Para ti»: el motivo va pegado a su tarjeta, en el tono de la marca. */
@@ -1780,7 +1781,7 @@ ion-item.tarjeta-evento {
 .para-ti__motivo {
   margin: -2px 16px 4px;
   font-size: 0.95rem;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 /* Alta con código (C10): pasos para vincular el número con el bot. */
@@ -1838,10 +1839,10 @@ ion-item.tarjeta-evento {
 }
 
 /* ---------- N2: fondo con vida ----------
-   Azulejo suave en SVG (rombo, flor de cuatro pétalos, ramita de olivo y dos puntos naranjas).
-   Trazo verde al 9 % y puntos naranjas al 10 %: el texto suave sigue por encima de 6:1. Solo en las páginas, no en los modales. */
+   Azulejo suave en SVG (rombo, flor de cuatro pétalos, ramita de olivo y dos puntos arena).
+   Trazo petróleo al 9 % y puntos arena al 35 %: el texto suave sigue por encima de 6:1. Solo en las páginas, no en los modales. */
 :root {
-  --hm-mosaico: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'><g fill='none' stroke='%2314451a' stroke-opacity='.09' stroke-width='1.2'><path d='M48 0 96 48 48 96 0 48Z'/><path d='M48 34q7 14 0 28q-7-14 0-28ZM34 48q14 7 28 0q-14-7-28 0Z'/><circle cx='48' cy='48' r='4'/><circle cx='0' cy='0' r='11'/><circle cx='96' cy='0' r='11'/><circle cx='0' cy='96' r='11'/><circle cx='96' cy='96' r='11'/><path d='M14 30q4-6 10-6M24 24q-1 6-6 9M82 66q-4 6-10 6M72 72q1-6 6-9'/></g><g fill='%23b93c0b' fill-opacity='.10'><circle cx='24' cy='72' r='2.2'/><circle cx='72' cy='24' r='2.2'/></g></svg>");
+  --hm-mosaico: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'><g fill='none' stroke='%231b4749' stroke-opacity='.09' stroke-width='1.2'><path d='M48 0 96 48 48 96 0 48Z'/><path d='M48 34q7 14 0 28q-7-14 0-28ZM34 48q14 7 28 0q-14-7-28 0Z'/><circle cx='48' cy='48' r='4'/><circle cx='0' cy='0' r='11'/><circle cx='96' cy='0' r='11'/><circle cx='0' cy='96' r='11'/><circle cx='96' cy='96' r='11'/><path d='M14 30q4-6 10-6M24 24q-1 6-6 9M82 66q-4 6-10 6M72 72q1-6 6-9'/></g><g fill='%23d8a082' fill-opacity='.35'><circle cx='24' cy='72' r='2.2'/><circle cx='72' cy='24' r='2.2'/></g></svg>");
 }
 
 ion-content.contenido-agenda,
@@ -1903,7 +1904,7 @@ ion-content.contenido-agenda--zonas::part(scroll) {
 }
 
 .tus-planes__plan > span:nth-child(2) > .sugeridos__motivo {
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
   font-weight: 600;
 }
 
@@ -1962,7 +1963,7 @@ ion-content.contenido-agenda--zonas::part(scroll) {
 }
 
 .recuerdo-mini__titulo {
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
   font-weight: 700;
   font-size: 1.05rem;
   text-decoration: none;
