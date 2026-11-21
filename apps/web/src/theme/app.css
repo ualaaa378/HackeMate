@@ -1811,3 +1811,28 @@ ion-item.tarjeta-evento {
   text-align: center;
   background: var(--ion-background-color);
 }
+
+/* N4: gustos al crear la cuenta y en el perfil */
+.selector-gustos {
+  border: 0;
+  margin: 8px 0;
+  padding: 0;
+}
+
+.selector-gustos legend {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.selector-gustos__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.selector-gustos ion-chip {
+  min-height: 48px;
+  font-size: 1rem;
+  font-weight: 600;
+  --border-radius: var(--hm-radio);
+}

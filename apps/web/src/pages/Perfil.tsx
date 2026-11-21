@@ -6,17 +6,46 @@ import {
   IonHeader,
   IonPage,
   IonRouterLink,
+  IonText,
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
+import { useState } from 'react';
 
+import { actualizarPerfil } from '../api/client';
+import type { Categoria, Usuario } from '../api/types';
 import { CONTACTO_CANAL, ENLACE_CANAL, NOMBRE_CANAL } from '../canal';
+import SelectorGustos from '../components/SelectorGustos';
 import SelectorLetra from '../components/SelectorLetra';
 import { useSesion } from '../cuenta/sesion';
 
+/** Se guarda en cuanto se toca un gusto: no hay botón de guardar que olvidar. */
+const TusGustos: React.FC<{ usuario: Usuario; onGuardado: (u: Usuario) => void }> = ({ usuario, onGuardado }) => {
+  const [gustos, setGustos] = useState<Categoria[]>(usuario.gustos ?? []);
+  const [estado, setEstado] = useState<'guardado' | 'error' | null>(null);
+  const cambiar = (nuevos: Categoria[]) => {
+    setGustos(nuevos);
+    actualizarPerfil({ gustos: nuevos })
+      .then((u) => {
+        onGuardado({ ...usuario, ...u, gustos: nuevos });
+        setEstado('guardado');
+      })
+      .catch(() => setEstado('error'));
+  };
+  return (
+    <>
+      <SelectorGustos gustos={gustos} onCambio={cambiar} />
+      <p role="status" className="estado-gustos">
+        {estado === 'guardado' && 'Guardado. «Para ti» te sugerirá planes con estos gustos.'}
+        {estado === 'error' && <IonText color="danger">No hemos podido guardarlo. Inténtalo otra vez.</IonText>}
+      </p>
+    </>
+  );
+};
+
 // Bloque 3 (H3.1): gustos, pueblo, tipo de avisos y vincular el canal de mensajería (Telegram o WhatsApp).
 const Perfil: React.FC = () => {
-  const { usuario, abrirCuenta, salir } = useSesion();
+  const { usuario, abrirCuenta, salir, actualizarUsuario } = useSesion();
   return (
     <IonPage>
       <IonHeader>
@@ -35,6 +64,7 @@ const Perfil: React.FC = () => {
                   ? `Te avisaremos por ${NOMBRE_CANAL} de los planes a los que te apuntes.`
                   : 'Has entrado con tu cuenta.'}
               </p>
+              <TusGustos key={usuario.id} usuario={usuario} onGuardado={actualizarUsuario} />
               <IonButton expand="block" fill="outline" onClick={salir}>
                 Cerrar sesión
               </IonButton>
