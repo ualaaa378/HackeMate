@@ -55,6 +55,7 @@ const ProveedorSesion: React.FC<{ children: React.ReactNode }> = ({ children }) 
         setMotivo(MOTIVO_GENERAL);
       },
       entrar: (t) => guardar(t),
+      actualizarUsuario: (u) => sesion && guardar({ ...sesion, usuario: u }),
       salir: () => guardar(null),
     }),
     [sesion, guardar],

@@ -12,6 +12,8 @@ export interface Sesion {
   abrirCuenta: () => void;
   /** Guarda una sesión ya conseguida por otra vía (p. ej. la entrada de la demo en /admin). */
   entrar: (token: Token) => void;
+  /** Cambia los datos del usuario guardados en la sesión (p. ej. tras editar sus gustos). */
+  actualizarUsuario: (usuario: Usuario) => void;
   salir: () => void;
 }
 
