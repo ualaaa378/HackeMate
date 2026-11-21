@@ -164,5 +164,24 @@
     ],
     "usuario_id": null,
     "creado_en": "2026-11-21T16:00:00+01:00"
+  },
+  {
+    "id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a10",
+    "nombre": "Ayto. de Velefique",
+    "tipo": "ayuntamiento",
+    "municipio": "Velefique",
+    "descripcion": null,
+    "telefono": "+34600000110",
+    "email": null,
+    "estado": "aprobado",
+    "nivel_confianza": 2,
+    "aprobaciones": 0,
+    "automatizaciones_pausadas": false,
+    "categorias_habituales": ["cultural", "fiestas", "deportiva"],
+    "fuentes": [
+      { "id": "6f0e0000-0000-4000-8000-000000000007", "canal": "facebook", "url": "https://www.facebook.com/ayuntamientodevelefique.velefique", "activa": true }
+    ],
+    "usuario_id": null,
+    "creado_en": "2026-11-21T16:00:00+01:00"
   }
 ]
