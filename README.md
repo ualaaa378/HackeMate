@@ -172,7 +172,6 @@ Regla en `CLAUDE.md` § «Canales de mensajería». Cómo se elige el canal hoy,
 
 - **URL pública de la web (C3):** hoy la web solo funciona en la máquina de la demo (`VITE_API_URL=http://localhost:8000` y el túnel solo al bot). Lo necesitan el jurado, el APK (C5) y cualquiera que pruebe desde fuera.
 - **«Para ti» (C2):** la API ya da `GET /recomendaciones`; falta enseñarlo en la agenda para el paso 4.
-- **Sesión caducada tras reiniciar la base (prueba en Docker, sáb 11:00):** después de `down -v` o `demo_reset`, la web sigue mandando el token del usuario borrado, la API responde 401 `token_invalido` y la ficha dice «No encontramos este plan». La web tiene que cerrar la sesión sola ante `token_invalido`/`token_caducado` y repetir la petición sin token. Pasará en cada ensayo de la demo.
 
 Lo que pide el bot:
 - Opcional, como plan C de la demo: un chat simulado en la web que llame a `bot POST /dev/mensaje`.
