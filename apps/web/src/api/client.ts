@@ -131,16 +131,25 @@ export function getEventos(filtros: FiltrosEventos = {}): Promise<Pagina<Evento>
 }
 
 /** Planes que ya han pasado, del más reciente al más antiguo (tablón de recuerdos).
- *  La API aún no expone los finalizados al público: si no devuelve ninguno, se usan los de los datos de la demo. */
+ *  Junta los `finalizado` y los `publicado` cuya fecha ya pasó. Los mocks solo se usan si la API no responde:
+ *  con la API real, sus ids no existen en la base y la ficha diría «No encontramos este plan». */
 export async function getEventosPasados(ahora = new Date()): Promise<Evento[]> {
   const fin = (e: Evento) => e.fecha_fin ?? e.fecha_inicio;
   const pasados = (lista: Evento[]) =>
     lista.filter((e) => yaPaso(e, ahora)).sort((a, b) => fin(b).localeCompare(fin(a)));
   const deMocks = () => pasados(mockEventos.filter((e) => e.estado === 'publicado' || e.estado === 'finalizado'));
+  if (USAR_MOCKS) return deMocks();
   try {
-    const reales = pasados((await getEventos({ hasta: ahora.toISOString() })).items);
-    return reales.length ? reales : deMocks();
-  } catch {
+    const hasta = ahora.toISOString();
+    const [finalizados, publicados] = await Promise.all([
+      peticion<Pagina<Evento>>(`/eventos${query({ size: 100, estado: 'finalizado', hasta })}`),
+      peticion<Pagina<Evento>>(`/eventos${query({ size: 100, hasta })}`),
+    ]);
+    const porId = new Map([...finalizados.items, ...publicados.items].map((e) => [e.id, e]));
+    return pasados([...porId.values()]);
+  } catch (e) {
+    if (!(e instanceof ApiNoDisponible)) throw e;
+    usandoRespaldo = true;
     return deMocks();
   }
 }
