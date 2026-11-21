@@ -101,12 +101,13 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 | ngrok, plan gratuito | ✅ con cuenta | **Descartada:** enseña una página de aviso a cada navegador nuevo y tiene 1 GB de datos al mes y cuotas mensuales. |
 | Tailscale Funnel | ✅ con cuenta | **Descartada:** está en beta, tiene límites de ancho de banda que no publican y hay que instalar Tailscale en la máquina de la demo. |
 | Cloudflare, túnel con nombre | ✅ | **Descartada:** URL fija y sin límites, pero necesita un dominio propio, y no compramos nada. |
+| Vercel (plan Hobby, acepta `Dockerfile`) | ✅ con cuenta | **Descartada para la hackathon:** ejecuta el contenedor como función (se apaga o se duplica entre peticiones), así que el bot perdería las conversaciones a medias que guarda en memoria y la cola que reintenta cada 30 s. Además no aloja nuestro Postgres, no llega a FreeLLMAPI y el plan gratuito es solo para uso no comercial. Migrar llevaría días. Opción para después: la web en Vercel con URL fija y el resto en un servidor del ayuntamiento. |
 
 **Regla de la URL que cambia:** el túnel solo se reinicia si hace falta. Cada vez que cambie, se ejecuta el script de F1 (actualiza el webhook y los enlaces del bot) y, en el APK, se cambia la dirección en sus ajustes (C9), sin reinstalar.
 
 **Orden:** F1 y C8 (a la vez) → A6 → C9 → T1 y T2 (los tres). Fecha límite: **web fuera de localhost a las 19:00 (CP3)** y **APK a las 00:00 (CP4)**. Si el APK no sale a las 23:00, la app móvil de la demo es la **PWA instalada** desde la URL pública (C4).
 
-*Fuentes de la decisión D3: [límites del túnel rápido de Cloudflare](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/), [límites del plan gratuito de ngrok](https://ngrok.com/docs/pricing-limits/free-plan-limits), [Tailscale Funnel](https://tailscale.com/kb/1223/tailscale-funnel).*
+*Fuentes de la decisión D3: [límites del túnel rápido de Cloudflare](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/), [límites del plan gratuito de ngrok](https://ngrok.com/docs/pricing-limits/free-plan-limits), [Tailscale Funnel](https://tailscale.com/kb/1223/tailscale-funnel), [Vercel: Dockerfile como función](https://vercel.com/changelog/bring-your-dockerfile-to-vercel-functions) y [plan Hobby](https://vercel.com/docs/plans/hobby).*
 
 **Francisco (flujo B) · máquina de la demo, URL pública y bot**
 
