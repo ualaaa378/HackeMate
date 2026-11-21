@@ -63,6 +63,7 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
         VITE_USE_MOCKS: ${VITE_USE_MOCKS:-false}
+        VITE_CANAL: ${VITE_CANAL:-telegram}
     depends_on:
       - api
     ports:

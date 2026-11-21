@@ -95,7 +95,16 @@ Otros puntos de la API:
 ### Flujos A y B · a acordar (Benas + Francisco)
 
 - **`PATCH /usuarios/{id}`:** el bot lo usa para guardar los gustos de la vecina (`services/bot/app/api_cliente.py`, `guardar_preferencias`), pero no está en el contrato, que solo tiene `PATCH /usuarios/me`. O se añade al contrato con `X-Internal-Token`, o el bot pasa a usar otra ruta.
-- **Código de acceso por mensajería:** `POST /auth/whatsapp/codigo` tiene que pedir al bot (`POST /notify`) que mande el código. Hoy el canal activo es Telegram.
+- **Código de acceso por mensajería (Telegram y WhatsApp):** `POST /auth/whatsapp/codigo` tiene que pedir al bot (`POST /notify`) que mande el código. El nombre de la ruta no se cambia (el contrato no renombra), pero vale para los dos canales. Con Telegram, el bot no puede escribir a un móvil que nunca le ha hablado. Hace falta acordar el paso previo: por ejemplo, que la web enseñe el enlace `t.me/HackeMate_bot?start=alta` y el vecino comparta su número con «Compartir mi número» (`POST /usuarios/vincular`) antes de pedir el código. Si hace falta un campo `canal` en la petición, se añade como opcional con `contract-change`.
+
+### Todos · Telegram ahora, WhatsApp más adelante
+
+Regla en `CLAUDE.md` § «Canales de mensajería». Cómo se elige el canal hoy, sin tocar código:
+- **Bot (B):** Telegram se activa con `TELEGRAM_TOKEN`, y los contactos `tg:<chat_id>` salen por ahí. WhatsApp sale por `CANAL` (`meta`, `twilio` o `console`). Los dos pueden funcionar a la vez.
+- **API (A):** guarda los dos contactos (`telefono` E.164 y `telegram_id`) y los distingue en `services/api/app/canales.py`. Nada de la API puede dar por hecho un canal concreto.
+- **Web (C):** `VITE_CANAL=telegram|whatsapp` (en `.env.example`, el compose y el `Dockerfile`) elige qué canal nombra la web en el alta y en los avisos (`apps/web/src/canal.ts`).
+
+Pendiente: Benas y Francisco, que el aviso al vecino use el contacto que tenga (`telegram_id` si existe, si no `telefono`) en vez de suponer WhatsApp.
 
 ### Flujo C · web (Adán), lo que pide el bot
 
