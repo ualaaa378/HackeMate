@@ -49,6 +49,7 @@ export class ErrorApi extends Error {
     public code: string,
     message: string,
     public status: number,
+    public details: Record<string, unknown> | null = null,
   ) {
     super(message);
   }
@@ -85,7 +86,12 @@ export async function peticion<T>(ruta: string, opciones: RequestInit = {}): Pro
     const rutaSinImplementar = resp.status === 405 || cuerpo?.error?.code === 'no_encontrado';
     if (!cuerpo?.error || resp.status >= 500 || rutaSinImplementar)
       throw new ApiNoDisponible(`${resp.status} ${resp.statusText}`);
-    throw new ErrorApi(cuerpo.error.code, cuerpo.error.message, resp.status);
+    throw new ErrorApi(
+      cuerpo.error.code,
+      cuerpo.error.message,
+      resp.status,
+      (cuerpo.error.details as Record<string, unknown> | null) ?? null,
+    );
   }
   return resp.status === 204 ? (undefined as T) : ((await resp.json()) as T);
 }
@@ -183,9 +189,10 @@ export function getEvento(id: string): Promise<Evento> {
   );
 }
 
-// Planes a los que se ha apuntado este usuario en este dispositivo. Sirve para saber si puede subir fotos
-// cuando el plan termine; la API lo comprueba igualmente.
+// Planes a los que se ha apuntado este usuario en este dispositivo, con el id de su inscripción para poder
+// desapuntarse. Sirve también para saber si puede subir fotos cuando el plan termine; la API lo comprueba igualmente.
 const CLAVE_MIS_PLANES = 'hm-mis-planes';
+const CLAVE_MIS_INSCRIPCIONES = 'hm-mis-inscripciones';
 export function misPlanes(): Set<string> {
   try {
     return new Set(JSON.parse(localStorage.getItem(CLAVE_MIS_PLANES) ?? '[]') as string[]);
@@ -193,10 +200,27 @@ export function misPlanes(): Set<string> {
     return new Set();
   }
 }
-export const meApunte = (eventoId: string): boolean => misPlanes().has(eventoId);
-function apuntarEnDispositivo(eventoId: string): void {
+function misInscripciones(): Record<string, string> {
   try {
-    localStorage.setItem(CLAVE_MIS_PLANES, JSON.stringify([...misPlanes().add(eventoId)]));
+    return JSON.parse(localStorage.getItem(CLAVE_MIS_INSCRIPCIONES) ?? '{}') as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+export const meApunte = (eventoId: string): boolean => misPlanes().has(eventoId);
+function guardarEnDispositivo(eventoId: string, inscripcionId: string | null): void {
+  try {
+    const planes = misPlanes();
+    const inscripciones = misInscripciones();
+    if (inscripcionId) {
+      planes.add(eventoId);
+      inscripciones[eventoId] = inscripcionId;
+    } else {
+      planes.delete(eventoId);
+      delete inscripciones[eventoId];
+    }
+    localStorage.setItem(CLAVE_MIS_PLANES, JSON.stringify([...planes]));
+    localStorage.setItem(CLAVE_MIS_INSCRIPCIONES, JSON.stringify(inscripciones));
   } catch {
     /* sin almacenamiento: solo se pierde el recordatorio local */
   }
@@ -205,11 +229,38 @@ function apuntarEnDispositivo(eventoId: string): void {
 const errorFinalizado = () =>
   new ErrorApi('evento_finalizado', 'Este plan ya ha terminado. Solo se pueden ver las fotos y comentar.', 409);
 
+/** Apuntarse. Si ya lo estaba (por la web en otro móvil o por el bot), la API responde 409 `ya_inscrito`
+ *  con el id de la inscripción: se guarda para que la ficha ofrezca desapuntarse y se relanza el error. */
 export async function inscribirse(eventoId: string): Promise<Inscripcion> {
-  const insc = await inscribirseEnApi(eventoId);
-  apuntarEnDispositivo(eventoId);
-  return insc;
+  try {
+    const insc = await inscribirseEnApi(eventoId);
+    guardarEnDispositivo(eventoId, insc.id);
+    return insc;
+  } catch (e) {
+    const id = e instanceof ErrorApi && e.code === 'ya_inscrito' ? e.details?.inscripcion_id : null;
+    if (typeof id === 'string') guardarEnDispositivo(eventoId, id);
+    throw e;
+  }
 }
+
+/** Desapuntarse: devuelve la plaza (o la pasa al primero de la lista de espera, que lo decide la API). */
+export async function desapuntarse(eventoId: string): Promise<void> {
+  const inscripcionId = misInscripciones()[eventoId];
+  if (!inscripcionId) throw new ErrorApi('inscripcion_no_encontrada', 'No encontramos tu inscripción', 404);
+  await conRespaldo(
+    () => peticion(`/eventos/${eventoId}/inscripciones/${inscripcionId}`, { method: 'DELETE' }),
+    () => {
+      const e = mockEventos.find((x) => x.id === eventoId);
+      if (e && e.plazas_libres != null) e.plazas_libres += 1;
+      if (e) e.inscritos = Math.max(0, (e.inscritos ?? 1) - 1);
+      return esperar(null);
+    },
+  );
+  guardarEnDispositivo(eventoId, null);
+}
+
+/** Id de mi inscripción en este plan, si me apunté desde este móvil o la API me dijo que ya lo estaba. */
+export const miInscripcion = (eventoId: string): string | null => misInscripciones()[eventoId] ?? null;
 
 function inscribirseEnApi(eventoId: string): Promise<Inscripcion> {
   return conRespaldo(

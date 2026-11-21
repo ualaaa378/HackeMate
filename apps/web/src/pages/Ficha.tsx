@@ -5,6 +5,7 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
+  IonAlert,
   IonPage,
   IonRefresher,
   IonRefresherContent,
@@ -27,7 +28,7 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { enModoRespaldo, getEvento, inscribirse, urlIcs } from '../api/client';
+import { desapuntarse, enModoRespaldo, ErrorApi, getEvento, inscribirse, miInscripcion, urlIcs } from '../api/client';
 import { CATEGORIAS, type Evento } from '../api/types';
 import ChatEvento from '../components/ChatEvento';
 import FotoPlan from '../components/FotoPlan';
@@ -55,12 +56,19 @@ const textoFueron = (n: number): string =>
 
 const REFRESCO_FICHA_MS = 20_000;
 
+type EstadoInscripcion = 'confirmada' | 'lista_espera' | 'apuntado';
+
 const Ficha: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [evento, setEvento] = useState<Evento | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [apuntando, setApuntando] = useState(false);
-  const [inscrito, setInscrito] = useState<'confirmada' | 'lista_espera' | null>(null);
+  // Lo que pasa en esta pantalla manda; si no, lo que recuerda este móvil (apuntado aquí o la API dijo que ya lo estaba).
+  const [estados, setEstados] = useState<Record<string, EstadoInscripcion | null>>({});
+  const [confirmarBaja, setConfirmarBaja] = useState(false);
+  const inscrito: EstadoInscripcion | null =
+    id && id in estados ? estados[id] : id && miInscripcion(id) ? 'apuntado' : null;
+  const setInscrito = (e: EstadoInscripcion | null) => id && setEstados((xs) => ({ ...xs, [id]: e }));
   const [aviso, setAviso] = useState<string | null>(null);
   const { usuario, conCuenta } = useSesion();
 
@@ -106,8 +114,28 @@ const Ficha: React.FC = () => {
       setInscrito(insc.estado === 'lista_espera' ? 'lista_espera' : 'confirmada');
       setAviso(insc.estado === 'lista_espera' ? 'Estás en la lista de espera' : '¡Plaza confirmada!');
       setEvento(await getEvento(evento.id));
+    } catch (e) {
+      if (e instanceof ErrorApi && e.code === 'ya_inscrito') {
+        setInscrito('apuntado');
+        setAviso('Ya estabas apuntado a este plan');
+      } else {
+        setAviso('No hemos podido apuntarte. Inténtalo de nuevo.');
+      }
+    } finally {
+      setApuntando(false);
+    }
+  };
+
+  const desapuntar = async () => {
+    if (!evento) return;
+    setApuntando(true);
+    try {
+      await desapuntarse(evento.id);
+      setInscrito(null);
+      setAviso('Te has desapuntado. Tu plaza queda libre para otra persona.');
+      setEvento(await getEvento(evento.id));
     } catch {
-      setAviso('No hemos podido apuntarte. Inténtalo de nuevo.');
+      setAviso('No hemos podido desapuntarte. Inténtalo de nuevo.');
     } finally {
       setApuntando(false);
     }
@@ -233,12 +261,33 @@ const Ficha: React.FC = () => {
                   ) : inscrito ? (
                     <>
                       <IonIcon slot="start" icon={checkmarkCircle} aria-hidden="true" />
-                      {inscrito === 'confirmada' ? 'Apuntado' : 'En lista de espera'}
+                      {inscrito === 'lista_espera' ? 'En lista de espera' : 'Ya estás apuntado'}
                     </>
                   ) : (
                     '🙋 Apuntarme'
                   )}
                 </IonButton>
+                {inscrito && miInscripcion(evento.id) && (
+                  <IonButton
+                    expand="block"
+                    fill="outline"
+                    color="medium"
+                    disabled={apuntando}
+                    onClick={() => setConfirmarBaja(true)}
+                  >
+                    Desapuntarme
+                  </IonButton>
+                )}
+                <IonAlert
+                  isOpen={confirmarBaja}
+                  onDidDismiss={() => setConfirmarBaja(false)}
+                  header="¿Te desapuntas?"
+                  message="Tu plaza quedará libre para otra persona. Podrás volver a apuntarte si sigue habiendo sitio."
+                  buttons={[
+                    { text: 'No, sigo apuntado', role: 'cancel' },
+                    { text: 'Sí, desapuntarme', role: 'destructive', handler: () => void desapuntar() },
+                  ]}
+                />
                 {!usuario && !inscrito && (
                   <p className="candado">🔒 Para apuntarte te pediremos crear una cuenta. Solo se tarda un momento.</p>
                 )}
