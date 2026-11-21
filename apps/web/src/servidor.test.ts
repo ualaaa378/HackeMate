@@ -42,3 +42,27 @@ describe('dirección del servidor (APK)', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('APK sin dirección guardada', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+
+  it('un 200 con HTML (la propia app o el túnel) cae a los mocks', async () => {
+    vi.stubEnv('VITE_API_URL', '/');
+    vi.stubEnv('VITE_USE_MOCKS', 'false');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('<!doctype html><html></html>', { status: 200 })),
+    );
+    const client = await import('./api/client');
+    const pagina = await client.conRespaldo(
+      () => client.peticion<{ total: number }>('/eventos'),
+      async () => ({ total: -1 }),
+    );
+    expect(pagina.total).toBe(-1);
+    expect(client.enModoRespaldo()).toBe(true);
+  });
+});
