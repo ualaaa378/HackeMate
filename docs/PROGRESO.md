@@ -24,7 +24,7 @@
 |---|---|---|---|---|
 | CP0 | vie 18:30 | Esqueleto del repo + contratos v1 congelados | — | [ ] |
 | CP1 | vie 23:30 | Primera integración: web lee la API, WhatsApp crea evento | `v0.1` | [ ] |
-| CP2 | sáb 13:00 | Demo pasos 1–3 (post → ficha → confirma → moderación) | `v0.2` | [ ] |
+| CP2 | sáb 13:00 | Demo pasos 1–3 (post → ficha → confirma → moderación) | `v0.2` | [x] |
 | CP3 | sáb 19:00 | Demo pasos 4–7 + contratos v2 congelados | `v0.3` | [ ] |
 | CP4 | dom 00:00 | Feature freeze (solo `fix/*` a partir de aquí) | `v0.9` | [ ] |
 | E2E | dom 05:00 | Prueba en limpio en otro portátil, demo 2 veces | — | [ ] |
