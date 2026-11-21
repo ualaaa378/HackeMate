@@ -74,21 +74,27 @@ const Agenda: React.FC = () => {
   // Sube al volver a la agenda o al deslizar: «Para ti» cambia cuando la persona se apunta a algo.
   const [recarga, setRecarga] = useState(0);
 
-  const cargar = useCallback(async () => {
-    setError(null);
-    try {
-      const pagina = await getEventos({ municipio, categoria });
-      setEventos(pagina.items);
-    } catch {
-      setError('No hemos podido cargar la agenda. Inténtalo de nuevo en un momento.');
-    } finally {
-      setCargando(false);
-    }
-  }, [municipio, categoria]);
+  const cargar = useCallback(
+    () =>
+      getEventos({ municipio, categoria })
+        .then((pagina) => {
+          setEventos(pagina.items);
+          setError(null);
+        })
+        .catch(() => setError('No hemos podido cargar la agenda. Inténtalo de nuevo en un momento.'))
+        .finally(() => setCargando(false)),
+    [municipio, categoria],
+  );
 
   useEffect(() => {
-    void cargar();
-  }, [cargar]);
+    getEventos({ municipio, categoria })
+      .then((pagina) => {
+        setEventos(pagina.items);
+        setError(null);
+      })
+      .catch(() => setError('No hemos podido cargar la agenda. Inténtalo de nuevo en un momento.'))
+      .finally(() => setCargando(false));
+  }, [municipio, categoria]);
 
   const cargarTodos = useCallback(async () => {
     try {
