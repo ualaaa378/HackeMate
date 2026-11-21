@@ -33,8 +33,8 @@ const TIPOS: Record<Publicador['tipo'], string> = {
 };
 
 const ESTADOS: Record<Publicador['estado'], { texto: string; color: string }> = {
-  solicitado: { texto: 'Ha pedido acceso', color: 'warning' },
-  whatsapp_verificado: { texto: 'Por aprobar', color: 'warning' },
+  solicitado: { texto: 'Ha pedido acceso', color: 'primary' },
+  whatsapp_verificado: { texto: 'Por aprobar', color: 'primary' },
   aprobado: { texto: 'Activo', color: 'success' },
   rechazado: { texto: 'Rechazado', color: 'medium' },
   pausado: { texto: 'Pausado', color: 'danger' },
@@ -42,7 +42,7 @@ const ESTADOS: Record<Publicador['estado'], { texto: string; color: string }> = 
 
 const MODOS = {
   manual: { texto: '✋ Revisión a mano', color: 'medium' },
-  automatica: { texto: '⚡ Publica sin revisión', color: 'primary' },
+  automatica: { texto: '⚡ Publica sin revisión', color: 'tertiary' },
 } as const;
 
 const Publicadores: React.FC = () => {

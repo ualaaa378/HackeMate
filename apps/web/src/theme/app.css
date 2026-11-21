@@ -500,8 +500,8 @@ ion-card-content {
   margin: 12px 0;
   padding: 12px;
   border-radius: var(--hm-radio);
-  background: #fff8e1;
-  border: 1px solid #f0d58c;
+  background: var(--hm-naranja-claro);
+  border: 1px solid #f3c9a8;
 }
 
 .motivo-ia p {
@@ -519,12 +519,12 @@ ion-card-content {
 }
 
 .spam--medio {
-  --background: #8a5300;
+  --background: var(--hm-naranja-oscuro);
   --color: #fff;
 }
 
 .spam--bajo {
-  --background: #2e7d32;
+  --background: var(--hm-verde);
   --color: #fff;
 }
 
@@ -583,7 +583,7 @@ ion-card-content {
 .aviso-cambio {
   margin: 0;
   font-weight: 600;
-  color: #7a4a00;
+  color: var(--hm-naranja-oscuro);
 }
 
 .cifras {
@@ -1180,13 +1180,13 @@ ion-card-content {
 }
 
 .sello--pendiente {
-  background: #8a5300;
+  background: var(--hm-naranja-oscuro);
 }
 
 .sin-datos {
   margin: 0;
   font-weight: 600;
-  color: #7a4a00;
+  color: var(--hm-naranja-oscuro);
 }
 
 .requisitos {

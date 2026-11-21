@@ -11,6 +11,7 @@ import {
 } from '@ionic/react';
 import { Navigate } from 'react-router-dom';
 
+import SelectorLetra from '../components/SelectorLetra';
 import { useSesion } from '../cuenta/sesion';
 
 import { type RolAdmin, useAcceso } from './acceso';
@@ -27,7 +28,7 @@ const PaginaAdmin: React.FC<{
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar color="primary">
+        <IonToolbar color="secondary">
           <IonTitle>{titulo}</IonTitle>
           <IonButtons slot="end">{permitido && acciones}</IonButtons>
         </IonToolbar>
@@ -44,6 +45,7 @@ const PaginaAdmin: React.FC<{
         )}
       </IonHeader>
       <IonContent className="ion-padding contenido-admin">
+        <SelectorLetra />
         {permitido ? children : <Puerta rolActual={acceso.rol} />}
       </IonContent>
     </IonPage>
