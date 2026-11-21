@@ -320,3 +320,18 @@ def test_mismo_origen_url_guardados_a_la_vez_se_queda_el_mas_antiguo(api, db, mo
     assert r.json()["duplicado"] is True and r.json()["evento"]["id"] == primero
     db.expire_all()
     assert db.scalars(select(Evento.id).where(Evento.origen_url == url)).all() == [primero]
+
+
+def test_mismo_post_dos_veces_del_mismo_publicador_avisa_duplicado(api):
+    # Prueba en Docker (sáb 11:15): el mismo post mandado dos veces por chat (sin origen.url) entraba dos veces
+    # en la bandeja sin aviso. El segundo tiene que llegar señalado como posible duplicado del primero.
+    ids = []
+    for _ in range(2):
+        importado = _importar(api, telefono=AMIGOS_VELEFIQUE_TEL, titulo=OTRO_TITULO)
+        r = _confirmar(api, importado["evento"]["id"], {"lugar": "Plaza", "plazas_totales": 15})
+        assert r.status_code == 200, r.text
+        ids.append(r.json())
+    primero, segundo = ids
+    assert primero["evento"]["estado"] == segundo["evento"]["estado"] == "en_revision"
+    assert segundo["posible_duplicado_de"] == primero["evento"]["id"]
+    assert segundo["evento"]["moderacion"]["motivo"].startswith("Posible duplicado de")

@@ -17,6 +17,8 @@ from app.llm import router
 from app.schemas import ExtraccionEvento, MensajeEntrante
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+# httpx registra cada URL en INFO, y las de Telegram llevan el token del bot dentro: fuera de los logs
+logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("bot")
 
 
