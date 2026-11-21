@@ -2224,3 +2224,63 @@ ion-back-button {
   text-transform: none;
   letter-spacing: normal;
 }
+
+/* La marca es un enlace al inicio: hereda el color de la cabecera y sin subrayado. */
+a.marca {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.marca:focus-visible {
+  outline: 3px solid #ffbf47;
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+/* Recuerdos en la columna lateral: foto pequeña a la izquierda y texto al lado. */
+.recuerdos-agenda--compacto {
+  margin: 0;
+}
+
+.recuerdos-agenda--compacto .recuerdos-agenda__lista {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.recuerdos-agenda--compacto .recuerdo-mini {
+  flex-direction: row;
+}
+
+.recuerdos-agenda--compacto .recuerdo-mini img {
+  width: 96px;
+  aspect-ratio: auto;
+  align-self: stretch;
+}
+
+.recuerdos-agenda--compacto .recuerdo-mini__texto {
+  padding: 8px 10px;
+}
+
+.recuerdos-agenda--compacto .recuerdo-mini__titulo {
+  font-size: 1rem;
+}
+
+.recuerdos-agenda--compacto .recuerdo-mini__chapa {
+  display: none;
+}
+
+.recuerdos-agenda--compacto .recuerdo-mini img {
+  width: 76px;
+}
+
+.recuerdos-agenda--compacto .recuerdo-mini__lugar {
+  font-size: 0.85rem;
+}
+
+.recuerdos-agenda--compacto .recuerdo-mini ion-button {
+  --padding-start: 8px;
+  --padding-end: 8px;
+  height: auto;
+  min-height: 36px;
+  white-space: normal;
+}

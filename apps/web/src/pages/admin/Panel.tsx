@@ -71,7 +71,13 @@ const Panel: React.FC = () => {
                   {c?.emoji} {c?.etiqueta ?? cat}
                 </span>
                 <span className="barra__pista" aria-hidden="true">
-                  <span className="barra__relleno" style={{ width: pct(valor), background: c?.color }} />
+                  <span
+                    className="barra__relleno"
+                    style={{
+                      width: `${Math.min(100, Math.max(0, Math.round((valor ?? 0) * 100)))}%`,
+                      background: c?.color,
+                    }}
+                  />
                 </span>
                 <span className="barra__valor">{pct(valor)}</span>
               </div>
