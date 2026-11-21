@@ -153,6 +153,7 @@ Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen 
 
 - **Ingesta de Facebook (A2):** `scripts/importar_facebook.py` con «Facebook Posts Scraper», que usa `bot POST /ai/extraer` (con NIM, tarea B2 de Francisco) y `POST /eventos/importar`. Lo necesita C para el % de importadas del panel (C6) y la demo para el paso 1.
 - **Revisar la PR de la URL pública (C3):** Adán cambia el `nginx.conf` de la web y añade un segundo túnel en `infra/docker-compose.yml` porque Benas no puede ejecutar Docker. Como el compose es de A, la mira Benas antes de fusionarla.
+- **Duplicados en la bandeja (prueba en Docker, sáb 11:15):** el mismo post del taller de esparto, mandado dos veces por el mismo publicador (`simular_chat.py` dos veces), entra dos veces en revisión sin ningún aviso y el moderador puede aprobar los dos. La bandeja debería marcar el segundo como posible duplicado (`services/api/app/duplicados.py`). Afecta al paso 3 de la demo si alguien repite el envío.
 
 ### Flujos A y B · a acordar (Benas + Francisco)
 
@@ -177,6 +178,7 @@ Lo que pide el bot:
 
 ### Flujo B · bot (Francisco), NVIDIA NIM y audios
 
+- **«Este finde» recomienda planes de otras semanas (prueba en Docker, sáb 11:10):** Carmen escribe «¿Qué planes hay este finde?» el sábado 21 y el bot responde «Te recomiendo este fin de semana» con planes del 29/11, 5/12 y 13/12. En `services/bot/app/vecino.py`, la rama de recomendaciones personalizadas (`api_cliente.recomendaciones`) no filtra por `c.desde`/`c.hasta`; la búsqueda normal sí. Filtrar por el rango o, si no queda nada, cambiar la cabecera a «Para los próximos días». Paso 4 de la demo.
 - **NIM en el `llm_router` (B2):** lo usa la ingesta de Facebook de Benas (A2) a través de `/ai/extraer`, y C enseña sus tokens en el panel (C6).
 - **Audios sin depender del portátil de Fran (B3):** la transcripción va por FreeLLM, que ya corre en Docker (`services/bot/freellmapi/`). En la demo, Adán levanta su propio FreeLLMAPI en su máquina con la configuración que le pasa Fran por privado. Lo necesita el paso 7.
 
