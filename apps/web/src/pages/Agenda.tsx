@@ -8,6 +8,7 @@ import {
   IonPage,
   IonRefresher,
   IonRefresherContent,
+  IonSearchbar,
   IonSpinner,
   IonText,
   IonTitle,
@@ -17,7 +18,7 @@ import {
 import { addCircleOutline } from 'ionicons/icons';
 import { useCallback, useEffect, useState } from 'react';
 
-import { getEventos, misPlanes } from '../api/client';
+import { getEventos, misPlanes, MUNICIPIOS } from '../api/client';
 import type { Categoria, Evento } from '../api/types';
 import CarruselPlanes from '../components/CarruselPlanes';
 import FiltrosEventos from '../components/FiltrosEventos';
@@ -30,6 +31,8 @@ import Sugeridos from '../components/Sugeridos';
 import TarjetaEvento from '../components/TarjetaEvento';
 import TusPlanes from '../components/TusPlanes';
 import { useSesion } from '../cuenta/sesion';
+import { coincideBusqueda } from '../utils/busqueda';
+import { guardarFiltros, leerFiltros } from '../utils/filtrosGuardados';
 import { agruparPorDia, claveDia, fechaLarga, yaPaso } from '../utils/formato';
 import { usePantallaGrande } from '../utils/pantalla';
 
@@ -69,8 +72,10 @@ const Agenda: React.FC = () => {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [municipio, setMunicipio] = useState<string>();
-  const [categoria, setCategoria] = useState<Categoria>();
+  // P1: se abre con el último pueblo y tipo de plan que eligió la persona en este dispositivo.
+  const [municipio, setMunicipio] = useState<string | undefined>(() => leerFiltros(MUNICIPIOS).municipio);
+  const [categoria, setCategoria] = useState<Categoria | undefined>(() => leerFiltros(MUNICIPIOS).categoria);
+  const [busqueda, setBusqueda] = useState('');
   // Todos los próximos planes, sin filtros: alimentan «Tus planes» y el carrusel.
   const [todos, setTodos] = useState<Evento[]>([]);
   const { usuario } = useSesion();
@@ -90,6 +95,8 @@ const Agenda: React.FC = () => {
         .finally(() => setCargando(false)),
     [municipio, categoria],
   );
+
+  useEffect(() => guardarFiltros({ municipio, categoria }), [municipio, categoria]);
 
   useEffect(() => {
     getEventos({ municipio, categoria })
@@ -116,7 +123,7 @@ const Agenda: React.FC = () => {
     void Promise.all([cargar(), cargarTodos()]);
   }, [cargar, cargarTodos]);
 
-  const proximos = eventos.filter((e) => !yaPaso(e));
+  const proximos = eventos.filter((e) => !yaPaso(e) && coincideBusqueda(e, busqueda));
   const mios = misPlanes();
   const tusPlanes = todos.filter((e) => mios.has(e.id));
   const destacados = todos.slice(0, DESTACADOS);
@@ -145,6 +152,15 @@ const Agenda: React.FC = () => {
         <TarjetasPueblos municipio={municipio} onMunicipio={setMunicipio} />
       )}
 
+      <IonSearchbar
+        className="buscador-agenda"
+        placeholder="Buscar un plan: ruta, teatro, mercado…"
+        aria-label="Buscar un plan"
+        value={busqueda}
+        debounce={150}
+        onIonInput={(ev) => setBusqueda(ev.detail.value ?? '')}
+      />
+
       <FiltrosEventos
         municipio={municipio}
         categoria={categoria}
@@ -163,7 +179,11 @@ const Agenda: React.FC = () => {
         </IonText>
       )}
       {!cargando && !error && proximos.length === 0 && (
-        <p className="ion-padding">No hay planes con estos filtros. Prueba con otro pueblo o categoría.</p>
+        <p className="ion-padding">
+          {busqueda.trim()
+            ? `No encontramos «${busqueda.trim()}» en los próximos planes. Prueba con otra palabra o quita los filtros.`
+            : 'No hay planes con estos filtros. Prueba con otro pueblo o categoría.'}
+        </p>
       )}
 
       <div className="agenda-dias">

@@ -2180,3 +2180,13 @@ ion-content.contenido-agenda--zonas::part(scroll) {
   gap: 8px;
   margin-top: 6px;
 }
+
+/* P1 · buscador de la agenda */
+.buscador-agenda {
+  --border-radius: var(--hm-radio);
+  --background: #fff;
+  --color: var(--hm-texto);
+  --placeholder-color: var(--hm-texto-suave);
+  --placeholder-opacity: 1;
+  padding-inline: 0;
+}
