@@ -33,7 +33,7 @@ def test_carga_los_datos_de_la_demo(db):
     resumen = _sembrar(db)
     assert _contar(db, Municipio) == 5
     assert _contar(db, Lugar) == 35
-    assert _contar(db, Publicador) == 7
+    assert _contar(db, Publicador) == 9
     assert _contar(db, Usuario) == 5
     # 32 eventos en los fixtures: 12 reales ya terminados el viernes 20 → 18 publicados + 2 en revisión
     assert resumen["eventos"] == 20 and resumen["eventos_terminados_omitidos"] == 12
@@ -60,7 +60,7 @@ def test_repetir_no_duplica(db):
     _sembrar(db)
     _sembrar(db)
     assert _contar(db, Evento) == 20 + HISTORICO
-    assert _contar(db, Publicador) == 7
+    assert _contar(db, Publicador) == 9
     assert _contar(db, Usuario) == 5
     assert _contar(db, Inscripcion) == 3 + INSCRIPCIONES_HISTORICO
     assert _contar(db, MensajeEvento) == 3

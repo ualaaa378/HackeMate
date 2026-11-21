@@ -32,6 +32,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -120,16 +121,42 @@ def paginas_de_la_api(api_url: str, token: str) -> list[dict[str, str]]:
     return paginas
 
 
+def clave_pagina(url: str | None) -> str | None:
+    """Identifica una página aunque cambie la forma de su URL: `profile.php?id=615…`, `/p/Ayuntamiento-de-Senés-615…/`
+    y `/615…` son la misma. Las páginas con nombre (`/MonteSionLucainena…`) se comparan por su ruta."""
+    if not url:
+        return None
+    partes = urllib.parse.urlsplit(url.strip())
+    ident = urllib.parse.parse_qs(partes.query).get("id")
+    if ident and partes.path.rstrip("/").endswith(("profile.php", "permalink.php")):
+        return ident[0].strip("/")
+    ruta = urllib.parse.unquote(partes.path).strip("/")
+    numero = re.fullmatch(r"(?:p/[^/]*-)?(\d{8,})", ruta)
+    return numero.group(1) if numero else ruta.lower() or None
+
+
 def unir_paginas(de_api: list[dict[str, str]], extra: list[str]) -> list[dict[str, str]]:
-    """Sin repetir URLs; las de la API (con su asociación) mandan sobre las sueltas."""
-    vistas = {p["url"] for p in de_api}
+    """Sin repetir páginas (aunque su URL cambie de forma); las de la API (con su asociación) mandan sobre las sueltas."""
+    vistas = {clave_pagina(p["url"]) for p in de_api}
     unidas = list(de_api)
     for url in extra:
         url = url.strip().rstrip("/")
-        if url and url not in vistas:
+        if url and clave_pagina(url) not in vistas:
             unidas.append({"url": url, "publicador_id": None, "publicador": None})
-            vistas.add(url)
+            vistas.add(clave_pagina(url))
     return unidas
+
+
+def asignar_publicadores(posts: list[dict], paginas: list[dict[str, str]]) -> int:
+    """A los posts sin asociación les pone la de su página, si ahora es fuente de un publicador. Devuelve cuántos."""
+    por_clave = {clave_pagina(p["url"]): p for p in paginas if p.get("publicador_id")}
+    asignados = 0
+    for post in posts:
+        pagina = por_clave.get(clave_pagina(post.get("pagina_url")))
+        if not post.get("publicador_id") and pagina:
+            post["publicador_id"] = pagina["publicador_id"]
+            asignados += 1
+    return asignados
 
 
 def descargar_posts(paginas: list[dict[str, str]], token: str, actor: str, max_posts: int, desde: str) -> list[dict]:
@@ -160,7 +187,7 @@ def resumir_post(item: dict, paginas: list[dict[str, str]]) -> dict | None:
     if not url or not (texto or textos_fotos):
         return None
     entrada = (item.get("inputUrl") or item.get("facebookUrl") or "").rstrip("/")
-    pagina = next((p for p in paginas if p["url"] == entrada), None) or next(
+    pagina = next((p for p in paginas if clave_pagina(p["url"]) == clave_pagina(entrada)), None) or next(
         (p for p in paginas if url.startswith(p["url"] + "/")), None
     )
     return {
@@ -294,6 +321,13 @@ def ejecutar(args: argparse.Namespace, env: dict[str, str]) -> int:
             return 2
         posts = cargar_posts(args.json)
         print(f"==> {len(posts)} posts guardados en {args.json.name}")
+        try:
+            asignados = asignar_publicadores(posts, paginas_de_la_api(api_url, token))
+        except ErrorHttp as e:
+            print(f"AVISO: no se pudieron leer las fuentes de la API ({e}); los posts van sin asociación.")
+        else:
+            if asignados:
+                print(f"==> {asignados} posts asociados a su ayuntamiento o asociación por la página")
     else:
         scraper_token = env.get("FB_SCRAPER_TOKEN")
         if not scraper_token:

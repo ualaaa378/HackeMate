@@ -262,3 +262,56 @@ def test_cada_repite_aunque_falle_y_pide_solo_lo_nuevo(monkeypatch, tmp_path):
     assert esperas == [24 * 3600, 24 * 3600]
     assert pedidos[0] == "2026-11-21T10:00:00"  # solo lo publicado desde la última descarga
     assert pedidos[1] == "2026-11-21T10:00:00"  # la vuelta fallida no avanzó la fecha
+
+
+# --- La misma página con otra forma de URL y asociación de los posts guardados -----------------------------
+
+SENES = "https://www.facebook.com/profile.php?id=61551352857893"
+
+
+@pytest.mark.parametrize("url", [
+    SENES,
+    SENES + "/",
+    "https://www.facebook.com/p/Ayuntamiento-de-Sen%C3%A9s-61551352857893/",
+    "https://www.facebook.com/61551352857893",
+    "https://www.facebook.com/permalink.php?story_fbid=pfbid0SX&id=61551352857893",
+])
+def test_clave_pagina_reconoce_la_misma_pagina(url):
+    assert fb.clave_pagina(url) == "61551352857893"
+
+
+def test_clave_pagina_con_nombre():
+    assert fb.clave_pagina("https://www.facebook.com/MonteSionLucainenaDeLasTorres/") == "montesionlucainenadelastorres"
+    assert fb.clave_pagina(None) is None
+
+
+def test_unir_paginas_no_repite_la_misma_pagina_con_otra_url():
+    de_api = [{"url": SENES, "publicador_id": "p-senes", "publicador": "Ayto. de Senés"}]
+    unidas = fb.unir_paginas(de_api, ["https://www.facebook.com/p/Ayuntamiento-de-Sen%C3%A9s-61551352857893/"])
+    assert unidas == de_api
+
+
+def test_asignar_publicadores_por_la_pagina():
+    posts = [
+        {"url": "a", "pagina_url": SENES, "publicador_id": None},
+        {"url": "b", "pagina_url": "https://www.facebook.com/otra", "publicador_id": None},
+        {"url": "c", "pagina_url": SENES, "publicador_id": "ya-tenia"},
+    ]
+    paginas = [{"url": "https://www.facebook.com/p/Ayuntamiento-de-Sen%C3%A9s-61551352857893", "publicador_id": "p-senes",
+                "publicador": "Ayto. de Senés"}]
+    assert fb.asignar_publicadores(posts, paginas) == 1
+    assert [p["publicador_id"] for p in posts] == ["p-senes", None, "ya-tenia"]
+
+
+def test_desde_json_asocia_los_posts_a_su_ayuntamiento(monkeypatch, tmp_path):
+    ruta = tmp_path / "posts.json"
+    fb.guardar_posts([{"url": "https://fb/post/1", "pagina_url": SENES, "pagina": "Ayuntamiento de Senés",
+                       "publicador_id": None, "fecha": "2026-11-16T12:08:58.000Z", "texto": "Cuentos", "texto_fotos": []}],
+                     [], ruta)
+    monkeypatch.setattr(fb, "leer_env", lambda: {})
+    monkeypatch.setattr(fb, "paginas_de_la_api",
+                        lambda *a: [{"url": SENES, "publicador_id": "p-senes", "publicador": "Ayto. de Senés"}])
+    vistos = []
+    monkeypatch.setattr(fb, "procesar_post", lambda post, *a, **k: vistos.append(post) or {"resultado": "en_revision"})
+    assert fb.main(["--desde-json", "--json", str(ruta)]) == 0
+    assert vistos[0]["publicador_id"] == "p-senes"
