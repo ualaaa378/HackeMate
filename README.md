@@ -105,7 +105,7 @@ Opcional (lo pide el bot, plan C de la demo): un chat simulado en la web que lla
 | dom 00:00 | - [ ] **A8 (D1).** `acepta_avisos` a `false` por defecto (modelo y migración; los usuarios del seed que ya lo usan en la demo, a `true`). Que `/notify` de tipo `recomendacion` y los avisos de planes nuevos solo salgan a quien tiene `acepta_avisos = true`. |
 | dom 00:00 | - [ ] **A10 (D1).** Al pasar un plan a `publicado`: avisar (`tipo: recomendacion`, `evento_id`, con los botones [Apuntarme] [Más info] del bot) a quien tiene `acepta_avisos` y le gusta esa categoría o ha ido a planes de esa categoría, en su pueblo o cerca (máx. 1 aviso por persona y plan; respetar `formato_aviso`). |
 | dom 07:00 | - [ ] **A5.** Arreglos `fix/*` de los ensayos y repaso de la sección del backend del README. |
-| — | - [ ] **D4 (decidir con Adán).** Lo importado de Facebook de los ayuntamientos (modo «automática») hoy se publica sin revisión; pasarlo siempre por la bandeja son dos líneas en `decidir_estado`, sin tocar el contrato. Además, los Aytos. de Uleila y Senés no son publicadores: sus posts llegan «Sin publicador identificado» (van a revisión). |
+| sáb 21/11 | - [x] **D4.** Lo importado solo (Facebook de los ayuntamientos, `importado_auto`) **pasa siempre por la bandeja**, aunque la asociación esté en automática (motivo «Importado automáticamente…»). Lo que publica la asociación por el bot o la web sigue saliendo solo. Se cambia sin tocar código con `MODERACION_IMPORTADOS_A_BANDEJA=false` en el `.env` (por defecto `true`). Sin cambio de contrato. *Comprobado además el scraping (sáb 21/11, 16:15): Apify en vivo (5 páginas, 7 posts, solo los nuevos) y los 20 posts guardados con la IA de NIM → 14 a la bandeja, 5 descartados, 1 pendiente sin título.* |
 
 Notas: `frase_portada` ya se guarda; si llega vacía la pedirá a `bot POST /ai/frase` cuando exista. Un vecino sin asociación que propone un plan solo ve sus `datos_ayuntamiento` en la respuesta del alta.
 
@@ -133,7 +133,6 @@ Detalle de las llamadas: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJ
   - **Quien solo usa Telegram también recibe avisos:** `telefono` deja de ser obligatorio en `schemas/notificacion.json` cuando viene `contacto` (`tg:…`). No es un cambio aditivo: **contrato antes de las 19:00 (CP3)**. Tareas A9 (Benas) y B7 (Francisco).
   - **Alguien tiene que mandar esos avisos:** hoy la API no avisa a nadie cuando se publica un plan nuevo (el tipo `recomendacion` del contrato no se usa). Tarea A10 (Benas).
 - **✅ D2 · se mantiene (Francisco, sáb 21/11): el código por mensajería**, para comprobar que nadie mete mal su número. La API ya lo genera y lo manda (`POST /auth/whatsapp/codigo` → bot `/notify`); falta el camino para quien aún no ha hablado con el bot: la web lo manda a `t.me/HackeMate_bot?start=codigo`, el bot le pide «Compartir mi número» y le dice que ya puede pedir el código. Tareas C10 (Adán) y B8 (Francisco).
-- **D4** · Facebook de los ayuntamientos con o sin bandeja (ver Benas).
 
 ### Canales: Telegram ahora, WhatsApp intercambiable
 
@@ -226,6 +225,7 @@ La lista completa y comentada está en `.env.example` (manda sobre esta tabla).
 | `APP_VERSION` | vacío | Versión de `/health` (vacío = la del código). |
 | `ZONA_HORARIA` | `Europe/Madrid` | Zona de las fechas y del `.ics`. |
 | `MODERACION_UMBRAL_SPAM` | `0.7` | Umbral del antispam. (`MODERACION_APROBACIONES_SUBIR_NIVEL` ya no se usa: no hay subida automática de nivel.) |
+| `MODERACION_IMPORTADOS_A_BANDEJA` | `true` | D4: lo importado solo (Facebook) va siempre a la bandeja; `false` = se publica si la asociación está en automática. |
 | `NOTIFICACIONES_TIMEOUT_S` / `NOTIFICACIONES_MAX_INTENTOS` | `3` / `5` | Cola de avisos hacia el bot: espera máxima a `/notify` e intentos antes de darlo por fallido. |
 | `NOTIFICACIONES_REINTENTO_S` | `60` | Cada cuántos segundos la api reintenta en segundo plano los avisos pendientes (`0` = desactivado). |
 | `PRECIOS_TOKENS_EUR_MTOK` | JSON por proveedor | Coste de la IA en `/estadisticas` (euros por millón de tokens; lo que no aparece cuenta como gratuito). |
@@ -273,7 +273,7 @@ En la demo: **ni `down -v` ni `demo_reset`**, salvo para empezar de cero antes d
 
 ### Ingesta de Facebook (A2)
 
-`scripts/importar_facebook.py` (solo Python, sin dependencias): páginas de Facebook → «Facebook Posts Scraper» (Apify) → `bot POST /ai/extraer` → `POST /eventos/importar` (origen `facebook`, URL del post, `importado_auto`) → `POST /eventos/{id}/confirmar` (la API decide el estado: asociación «a mano» → bandeja).
+`scripts/importar_facebook.py` (solo Python, sin dependencias): páginas de Facebook → «Facebook Posts Scraper» (Apify) → `bot POST /ai/extraer` → `POST /eventos/importar` (origen `facebook`, URL del post, `importado_auto`) → `POST /eventos/{id}/confirmar` (la API decide el estado: lo importado va siempre a la bandeja, D4).
 
 ```bash
 python scripts/importar_facebook.py --desde-json       # SIN token: importa los posts ya guardados (sin red ni créditos)
