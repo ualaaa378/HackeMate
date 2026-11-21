@@ -30,6 +30,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import API_DIR, crear_motor
+from app.inscripciones import recalcular_plazas
 from app.modelos import (
     Base,
     Evento,
@@ -217,6 +218,9 @@ def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None 
             n += 1
         resumen[clave] = n
 
+    # N6: plazas libres a partir de las inscripciones de la base, no de los números de los fixtures
+    db.flush()
+    resumen["plazas_recalculadas"] = recalcular_plazas(db)
     return resumen
 
 

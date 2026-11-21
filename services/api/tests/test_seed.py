@@ -138,6 +138,10 @@ def _cambios_de_la_demo(db) -> dict:
     ruta = db.get(Evento, RUTA_SOLIDARIA)
     nueva_hora = ruta.fecha_inicio + timedelta(hours=2)
     ruta.fecha_inicio, ruta.plazas_libres = nueva_hora, ruta.plazas_libres - 1  # cambio de hora y alguien se apunta
+    otra = Usuario(nombre="Se apunta")
+    db.add(otra)
+    db.flush()
+    db.add(Inscripcion(evento_id=ruta.id, usuario_id=otra.id, plazas=1, estado="confirmada", canal="web"))
     db.get(Evento, TALLER_GRAFITI).estado = "publicado"  # el moderador lo aprueba
     carmen = db.get(Usuario, CARMEN)
     carmen.nombre = "Carmen (editado)"
@@ -186,3 +190,13 @@ def test_sin_solo_nuevos_vuelve_a_los_fixtures(db):
     db.expire_all()
     assert db.get(Evento, TALLER_GRAFITI).estado == "en_revision"
     assert db.get(Usuario, CARMEN).nombre != "Carmen (editado)"
+
+
+def test_n6_plazas_libres_salen_de_las_inscripciones(db):
+    """N6: la Ruta Solidaria tiene 40 plazas y una inscripción confirmada en los fixtures → 39 libres, no las 8
+    inventadas. Los finalizados guardan su ocupación (estadísticas)."""
+    resumen = _sembrar(db)
+    assert db.get(Evento, RUTA_SOLIDARIA).plazas_libres == 39
+    assert resumen["plazas_recalculadas"] >= 1
+    finalizados = db.scalars(select(Evento).where(Evento.estado == "finalizado", Evento.plazas_totales > 0)).all()
+    assert finalizados and any(e.plazas_libres < e.plazas_totales for e in finalizados)
