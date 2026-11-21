@@ -93,7 +93,7 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 
 | Orden | Quién | Tarea nueva (después de lo establecido, antes de las 00:00) |
 |---|---|---|
-| N1 | Adán (C) | **Agenda en tres zonas.** En el centro, la agenda con **Recuerdos** integrado (los planes pasados dejan de ser una pestaña aparte). A la izquierda, **tus planes** (solo si estás inscrito en alguno) y debajo **sugeridos para ti**: «Para ti» (C2), con tus gustos y los planes parecidos a los que ya fuiste. En el móvil, todo apilado: tus planes, sugeridos y agenda. |
+| N1 | Adán (C) | **Agenda en tres zonas, solo en pantalla grande (web de escritorio).** En el centro, la agenda con **Recuerdos** integrado (los planes pasados dejan de ser una pestaña aparte). A la izquierda, **tus planes** (solo si estás inscrito en alguno) y debajo **sugeridos para ti**: «Para ti» (C2), con tus gustos y los planes parecidos a los que ya fuiste. **En el móvil y en la APK no cambia nada:** la agenda se queda como está y **Recuerdos sigue siendo su pestaña aparte**, porque no hay sitio para tres zonas. El cambio se decide por ancho de pantalla, no por plataforma. |
 | N2 | Adán (C) | **Fondo con vida.** Un mosaico o dibujo suave en SVG en línea (azulejo, monte, olivo), que no baje el contraste del texto y que se vea bien en claro y oscuro. |
 | N3 | Adán (C) | **Mapa solo con próximos.** Los planes pasados desaparecen del mapa, con un filtro por meses (este mes, el que viene, etc.). |
 | N4 | Adán (C) | **Gustos al crear el perfil, opcionales:** 🥾 Deportiva · 🎭 Cultural · 🎉 Fiestas · 🍽 Gastronomía · 🎲 Lúdica · 🛍 Comercio. El contrato ya tiene `usuario.gustos` con estos seis valores: `PATCH /usuarios/me`. Se puede saltar. |
@@ -113,7 +113,7 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 | sáb 19:00 | - [x] **C2.** *(sáb 16:30: hecho. Sección «Para ti» en la agenda con sesión iniciada, `GET /recomendaciones` y el motivo debajo de cada tarjeta; se recarga al volver a la agenda o al deslizar. Sin API, planes con plazas de los mocks.)* Paso 4. |
 | sáb 19:00 | - [x] **Refresco sin recargar** *(sáb 16:30: hecho. Ficha al entrar, al deslizar y cada 20 s; chat cada 12 s; bandeja cada 10 s salvo mientras se decide un plan. Solo con la pestaña visible.)* |
 | sáb 19:00 | - [x] **B3 con Fran.** *(sáb 21/11: hecho, ver B3 en el apartado de Francisco.)* FreeLLMAPI en Docker en la máquina de Adán y ensayo del paso 7 (audios). |
-| dom 00:00 | - [ ] **C9.** APK de debug con Capacitor (`@capacitor/android`, `appId: 'es.hackemate.app'`), con pantalla de ajustes «Dirección del servidor» para pegar la URL nueva del túnel sin reinstalar. Android Studio + JDK 21. El `.apk` va a `C:\Users\aalva\Desktop\Hackaton`. Si a las 23:00 no sale, plan B = C4. |
+| dom 00:00 | - [x] **C9.** APK de debug con Capacitor (`appId: 'es.hackemate.app'`), icono «Pueblos Unidos» y Ajustes → «Dirección del servidor». *(sáb 21/11 19:10: probado en el móvil de Adán contra el túnel, #87 #91 #92. Ojo: Android Studio trae JDK 25 y Gradle 8.14 necesita **JDK 21** aparte; pasos en § «APK de Android».)* |
 | dom 00:00 | - [x] **C4.** *(sáb 18:05: hecho (rama `feat/web-pwa`). `public/sw.js` solo guarda estáticos; `/api/` y `/webhook/` siempre a la red; páginas primero a la red. Iconos HM 192/512/maskable y manifest a `/agenda`. Solo en producción. Falta probar a instalarla en un móvil real (T1).)* PWA instalable: service worker e icono (el `manifest.json` ya existe). **Sin caché de `/api/`**, solo estáticos. |
 | dom 00:00 | - [x] **C6.** *(sáb 18:05: hecho. El panel ya pintaba `pct_importadas_auto` y los tokens por proveedor (NIM sale en cuanto el bot lo usa; añadido a los datos de prueba). Letra grande con el selector A A A y teclado con los botones nativos de Ionic.)* Panel: % de importados de Facebook y coste en tokens con NIM. Accesibilidad: teclado y letra grande en agenda y ficha. |
 | dom 00:00 | - [x] **C10 (D2).** *(sáb 18:05: hecho. Si `POST /auth/whatsapp/codigo` responde `enviado: false`, el alta enseña 3 pasos, «Abrir el bot» (`t.me/HackeMate_bot?start=codigo`) y «Ya lo he hecho, pedir el código»; con `enviado: true` pasa al código como antes.)* Entrar con el código: la web pide el número y llama a `POST /auth/whatsapp/codigo`. Si responde `enviado: false` (aún no ha hablado con el bot), enseña el botón «Abrir el bot» → `https://t.me/HackeMate_bot?start=codigo` y, al volver, «Pedir el código otra vez». Luego `POST /auth/whatsapp/verificar`. |
@@ -457,10 +457,10 @@ Más detalle: [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) (decisiones y canal
 
 ### APK de Android (C9)
 
-El proyecto Android está en `apps/web/android` (Capacitor 8, `appId` `es.hackemate.app`). Hace falta Android Studio (trae el JDK 21 en `jbr`) con el SDK 36 instalado, y **datos del móvil** (la red de la uni bloquea npm y Gradle).
+El proyecto Android está en `apps/web/android` (Capacitor 8, `appId` `es.hackemate.app`). Hace falta Android Studio con el SDK 36 instalado y un **JDK 21** aparte (Temurin; el `jbr` de Android Studio es Java 25 y Gradle 8.14 no lo admite), y **datos del móvil** (la red de la uni bloquea npm y Gradle).
 
 ```powershell
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+$env:JAVA_HOME = "C:\Users\aalva\Desktop\Hackaton\jdk21\<carpeta jdk-21…>"   # JDK 21 (Temurin); el jbr de Android Studio es 25 y no vale
 $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
 cd apps\web
 npm ci
