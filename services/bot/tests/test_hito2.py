@@ -205,12 +205,16 @@ def test_spam_claro_por_reglas_sin_gastar_tokens(monkeypatch):
 def test_spam_dudoso_pregunta_a_la_ia(monkeypatch):
     from app.llm import router
 
-    def ia(tarea, system, texto, salida, reglas):
-        return router.Resultado(salida=salida(es_spam=True, score_spam=0.9, motivo="publicidad ajena"),
+    cadenas = []
+
+    def ia(tarea, system, texto, salida, reglas, cadena=None):
+        cadenas.append(cadena)
+        return router.Resultado(salida=salida(tipo="spam", score_spam=0.9, motivo="publicidad ajena"),
                                 proveedor="freellm:x")
     monkeypatch.setattr(router, "estructurado", ia)
     r = antispam.puntuar("Mira esto que te interesa bit.ly/abc")  # enlace acortado: 0.4, dudoso
-    assert r.es_spam and r.proveedor_ia == "freellm:x" and "publicidad ajena" in r.motivo
+    assert r.es_spam and r.tipo == "spam" and r.proveedor_ia == "freellm:x" and "publicidad ajena" in r.motivo
+    assert cadenas[0][0] == "freellm"  # N9: FreeLLM primero, sin tocar LLM_CADENA
 
 
 def test_endpoint_ai_spam():
@@ -226,3 +230,39 @@ def test_simulador_nunca_escribe_a_un_canal_real(monkeypatch):
     monkeypatch.setattr(canales, "_enviar_meta", lambda *a, **k: pytest.fail("no debe usar Meta"))
     r = cliente.post("/dev/mensaje", json={"de": "+34600000101", "texto": "hola"})
     assert r.status_code == 200 and canales.bandeja_consola
+
+
+# ---------- N9: fraude ----------
+
+FRAUDE_1 = ("URGENTE: el Ayuntamiento de Senés te pide confirmar tu plaza en la Fiesta de la Castaña. Paga por "
+            "adelantado 25 € por Bizum al 611223344 solo hoy o perderás la reserva.")
+FRAUDE_2 = ("Sorteo entre vecinos de Tahal: iPhone 15 por 19 euros. Para reservarlo envía tu número de tarjeta y el "
+            "código de verificación a https://premios-vecinos.xyz/reserva")
+
+
+@pytest.mark.parametrize("texto", [FRAUDE_1, FRAUDE_2])
+def test_fraude_inventado_para_la_demo(texto):
+    r = antispam.puntuar_con_reglas(texto)
+    assert r.tipo == "fraude" and r.es_spam and r.motivo.startswith("posible fraude")
+
+
+def test_inscripcion_por_bizum_de_un_plan_del_pueblo_no_es_fraude_por_reglas():
+    r = antispam.puntuar_con_reglas("Ruta solidaria por la sierra de Velefique el domingo 30 a las 9:00. "
+                                    "Inscripción 5 euros por Bizum a la asociación.")
+    assert r.tipo == "ninguno" and not r.es_spam  # como mucho, duda: decide la IA
+
+
+def test_posts_reales_de_facebook_no_salen_como_spam_ni_fraude():
+    import json
+    from pathlib import Path
+    datos = json.loads((Path(__file__).parents[3] / "contracts/fixtures/facebook_posts.json").read_text("utf-8"))
+    posts = datos.get("posts", datos) if isinstance(datos, dict) else datos
+    assert posts
+    for post in posts:
+        r = antispam.puntuar_con_reglas(post.get("texto") or "")
+        assert r.tipo == "ninguno" and not r.es_spam, (r.motivo, (post.get("texto") or "")[:80])
+
+
+def test_endpoint_ai_spam_devuelve_el_tipo():
+    r = cliente.post("/ai/spam", json={"texto": FRAUDE_1}, headers={"X-Internal-Token": "test"})
+    assert r.status_code == 200 and r.json()["tipo"] == "fraude" and r.json()["es_spam"] is True

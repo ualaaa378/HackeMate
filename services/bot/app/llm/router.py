@@ -43,10 +43,12 @@ def estructurado(
     texto: str,
     salida: type[T],
     reglas: Callable[[str], T],
+    cadena: list[str] | None = None,
 ) -> Resultado:
+    """`cadena`: orden propio de una tarea (p. ej. las N, FreeLLM primero) sin tocar LLM_CADENA."""
     s = get_settings()
     intentos: list[str] = []
-    for nombre in s.proveedores:
+    for nombre in cadena or s.proveedores:
         if nombre == "reglas":
             break
         proveedor = construir(nombre)

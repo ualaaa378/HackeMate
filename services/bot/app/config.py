@@ -73,9 +73,17 @@ class Settings(BaseSettings):
     # URL pública (túnel) del bot. Si está, al arrancar registra el webhook de Telegram él solo
     public_url: str = ""
 
+    # Tareas N (antispam y fraude N9, sugerencias N8): su propia cadena, FreeLLM primero (orden de trabajo del
+    # sábado), sin cambiar LLM_CADENA. Si no hay IA, reglas
+    llm_cadena_tareas_n: str = "freellm,nim,gemini,reglas"
+
     @property
     def proveedores(self) -> list[str]:
         return [p.strip() for p in self.llm_cadena.split(",") if p.strip()]
+
+    @property
+    def proveedores_tareas_n(self) -> list[str]:
+        return [p.strip() for p in self.llm_cadena_tareas_n.split(",") if p.strip()]
 
 
 @lru_cache
