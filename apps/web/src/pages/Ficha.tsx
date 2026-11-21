@@ -6,10 +6,13 @@ import {
   IonHeader,
   IonIcon,
   IonPage,
+  IonRefresher,
+  IonRefresherContent,
   IonSpinner,
   IonTitle,
   IonToast,
   IonToolbar,
+  useIonViewWillEnter,
 } from '@ionic/react';
 import {
   calendarOutline,
@@ -21,7 +24,7 @@ import {
   peopleOutline,
   ticketOutline,
 } from 'ionicons/icons';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { enModoRespaldo, getEvento, inscribirse, urlIcs } from '../api/client';
@@ -50,6 +53,8 @@ const diaDelMes = (iso: string): string =>
 const textoFueron = (n: number): string =>
   n === 0 ? 'Nadie se apuntó por la app' : n === 1 ? 'Se apuntó 1 persona' : `Se apuntaron ${n} personas`;
 
+const REFRESCO_FICHA_MS = 20_000;
+
 const Ficha: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [evento, setEvento] = useState<Evento | null>(null);
@@ -59,12 +64,32 @@ const Ficha: React.FC = () => {
   const [aviso, setAviso] = useState<string | null>(null);
   const { usuario, conCuenta } = useSesion();
 
+  // Plazas, hora y estado cambian por lo que hacen otros (inscripciones, el publicador, el moderador):
+  // se vuelve a pedir al entrar en la ficha, al deslizar hacia abajo y cada poco mientras está abierta.
+  const cargar = useCallback(
+    (primera = false): Promise<void> =>
+      id
+        ? getEvento(id)
+            .then(setEvento)
+            .catch(() => {
+              if (primera) setError('No encontramos este plan.');
+            })
+        : Promise.resolve(),
+    [id],
+  );
+
   useEffect(() => {
-    if (!id) return;
-    getEvento(id)
-      .then(setEvento)
-      .catch(() => setError('No encontramos este plan.'));
-  }, [id]);
+    if (id)
+      getEvento(id)
+        .then(setEvento)
+        .catch(() => setError('No encontramos este plan.'));
+    const reloj = setInterval(() => {
+      if (document.visibilityState === 'visible') void cargar();
+    }, REFRESCO_FICHA_MS);
+    return () => clearInterval(reloj);
+  }, [id, cargar]);
+
+  useIonViewWillEnter(() => void cargar(), [cargar]);
 
   const apuntarme = () => {
     conCuenta(
@@ -104,6 +129,9 @@ const Ficha: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding contenido-lectura">
+        <IonRefresher slot="fixed" onIonRefresh={(ev) => void cargar().then(() => ev.detail.complete())}>
+          <IonRefresherContent />
+        </IonRefresher>
         {!evento && !error && (
           <div className="centrado">
             <IonSpinner aria-label="Cargando" />

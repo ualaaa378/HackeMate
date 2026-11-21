@@ -1752,3 +1752,17 @@ ion-item.tarjeta-evento {
   font-weight: 700;
   color: var(--hm-verde-oscuro);
 }
+
+/* «Para ti»: el motivo va pegado a su tarjeta, en el tono de la marca. */
+.para-ti__lista {
+  background: transparent;
+  padding: 0;
+}
+.para-ti__item {
+  margin-bottom: 8px;
+}
+.para-ti__motivo {
+  margin: -2px 16px 4px;
+  font-size: 0.95rem;
+  color: var(--hm-verde-oscuro);
+}
