@@ -78,32 +78,39 @@ services:
     restart: unless-stopped
 
   web:
-    # App Ionic (Flujo C). VITE_API_URL se incrusta en el build y la usa el navegador,
-    # por eso es la URL pública de la API (localhost:8000 en local), no http://api:8000.
+    # App Ionic (Flujo C) y puerta de entrada pública: su nginx sirve la web en /, pasa /api/ a
+    # api:8000 y /webhook/ a bot:8001 (apps/web/nginx.conf). VITE_API_URL se incrusta en el build:
+    # «/» = la API en el mismo dominio, así funciona en localhost:8080 y en la URL del túnel.
     build:
       context: ../apps/web
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_API_URL: ${VITE_API_URL:-/}
         VITE_USE_MOCKS: ${VITE_USE_MOCKS:-false}
         VITE_CANAL: ${VITE_CANAL:-telegram}
-    # service_started (no healthy): la web es estática y vuelve a los mocks si la api falla
+    # service_started (no healthy): la web arranca aunque api o bot fallen (nginx resuelve
+    # sus nombres en cada petición y solo esas rutas dan 502; la web vuelve a los mocks)
     depends_on:
       api:
         condition: service_started
+      bot:
+        condition: service_started
     ports:
       - "8080:8080"
+    restart: unless-stopped
 
   tunnel:
-    # Túnel rápido de Cloudflare hacia el bot: da la URL https pública para los webhooks
-    # de Telegram (/webhook/telegram, el canal activo) y de Meta/Twilio (/webhook/meta, /webhook/twilio).
-    # La URL sale en:  docker compose --env-file .env -f infra/docker-compose.yml logs tunnel
-    # Con CLOUDFLARE_TUNNEL_TOKEN se podrá usar un túnel con nombre estable (H4.4).
+    # Túnel rápido de Cloudflare (sin cuenta, decisión D3) hacia la web: una sola URL pública
+    # https://<algo>.trycloudflare.com para todo. / → web, /api/ → api, /webhook/ → bot
+    # (Telegram entra por {PUBLIC_URL}/webhook/telegram, igual que antes).
+    # La URL cambia cada vez que se reinicia el túnel. Sale en:
+    #   docker compose --env-file .env -f infra/docker-compose.yml logs tunnel
+    # y hay que pasarla a PUBLIC_URL y WEB_URL del .env y volver a registrar el webhook (script de F1).
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate --url http://bot:8001
+    command: tunnel --no-autoupdate --url http://web:8080
     restart: unless-stopped
     depends_on:
-      bot:
-        condition: service_healthy
+      web:
+        condition: service_started
 
   ingesta:
     <<: *env
