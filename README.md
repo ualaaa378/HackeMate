@@ -119,6 +119,8 @@ Notas: `frase_portada` ya se guarda; si llega vacía la pedirá a `bot POST /ai/
 | sáb 19:00 | - [x] **B8 (D2).** *(sáb 21/11: hecho. `t.me/HackeMate_bot?start=codigo` pide «Compartir mi número» y luego dice «Vuelve a la web y pulsa *Pedir el código*»; si ya lo había compartido, lo dice directamente. De paso, `?start=alta` abre el alta de asociaciones.)* Bot: `/start codigo` (el enlace de la web) pide «Compartir mi número» y, al compartirlo, dice que ya puede pedir el código en la web. |
 | dom 07:00 | - [ ] **B6.** Sección del bot en el README y claves de IA de la demo en el `.env` de Adán (por privado). |
 
+**Idea apuntada, no se hace por ahora (decisión de Francisco, sáb 21/11): automatizar `url_publica.py`.** Comprobado que se puede: `cloudflared` con `--metrics 0.0.0.0:2000` responde en `GET /quicktunnel` `{"hostname": "<algo>.trycloudflare.com"}`, la misma URL de sus logs. Bastaría con una línea en el servicio `tunnel` de `infra/docker-compose.yml` (sin abrir puertos fuera) y una tarea en el bot que lo consulte cada ~15 s y, si cambia, registre el webhook y los enlaces en caliente, activada solo con `TUNEL_AUTO=true` en el `.env` de la máquina de la demo (para que nadie más le quite Telegram). Mientras, tras cada `up` o reinicio del túnel: `python scripts/url_publica.py` (vale desde cualquier carpeta).
+
 Detalle de las llamadas: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
 
 ### Los tres · prueba desde fuera (dom 00:00)
