@@ -1,4 +1,5 @@
 import asyncio
+import hmac
 import json
 import logging
 from collections import OrderedDict
@@ -68,7 +69,7 @@ def _twiml(texto: str | None = None) -> Response:
 
 
 def _comprobar_interno(token: str | None) -> None:
-    if token != get_settings().internal_token:
+    if not hmac.compare_digest((token or "").encode(), get_settings().internal_token.encode()):
         raise HTTPException(401, detail={"code": "token_interno_invalido", "message": "Falta X-Internal-Token"})
 
 
@@ -110,8 +111,7 @@ def _procesar_con_acuse(msg: MensajeEntrante) -> None:
 
 @app.post("/webhook/telegram")
 async def webhook_telegram(request: Request, tareas: BackgroundTasks):
-    s = get_settings()
-    if s.telegram_secret and request.headers.get("X-Telegram-Bot-Api-Secret-Token") != s.telegram_secret:
+    if not telegram.secreto_valido(request.headers.get("X-Telegram-Bot-Api-Secret-Token")):
         raise HTTPException(403, detail={"code": "secreto_telegram_invalido", "message": "Secreto no válido"})
     try:
         update = await request.json()

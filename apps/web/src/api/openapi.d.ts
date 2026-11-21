@@ -759,6 +759,8 @@ export interface paths {
         409: components['responses']['Error'];
         /** @description 422 `mensaje_spam` (details.score_spam y details.motivo), `falta_usuario_id`, `mensaje_no_encontrado` (en_respuesta_a no es de este evento) o `validacion` */
         422: components['responses']['Error'];
+        /** @description 429 `demasiados_mensajes`: más de 8 mensajes por minuto de la misma persona (salvo organizador y moderadores); details.reintentar_en_s */
+        429: components['responses']['Error'];
       };
     };
     delete?: never;

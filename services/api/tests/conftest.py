@@ -48,3 +48,15 @@ def cliente(motor):
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def _limites_a_cero():
+    """Los límites en memoria (intentos de /auth/admin, mensajes por minuto) empiezan vacíos en cada test."""
+    from app.rutas import auth, mensajes
+
+    auth._fallos_admin.clear()
+    mensajes._enviados.clear()
+    yield
+    auth._fallos_admin.clear()
+    mensajes._enviados.clear()

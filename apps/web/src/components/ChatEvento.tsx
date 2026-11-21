@@ -1,7 +1,7 @@
 import { IonButton, IonInput, IonSpinner } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 
-import { enviarMensaje, getMensajes } from '../api/client';
+import { ErrorApi, enviarMensaje, getMensajes } from '../api/client';
 import type { MensajeEvento } from '../api/types';
 import { useSesion } from '../cuenta/sesion';
 
@@ -46,8 +46,13 @@ const ChatEvento: React.FC<{ eventoId: string }> = ({ eventoId }) => {
         await enviarMensaje(eventoId, { texto: t, tipo: 'pregunta' }, u);
         setTexto('');
         await cargar();
-      } catch {
-        setError('No hemos podido enviar tu pregunta. Inténtalo de nuevo.');
+      } catch (e) {
+        // Los errores de la API con motivo (spam, silenciado, demasiado deprisa) se enseñan tal cual.
+        setError(
+          e instanceof ErrorApi && e.status >= 400 && e.status < 500 && e.status !== 401
+            ? e.message
+            : 'No hemos podido enviar tu pregunta. Inténtalo de nuevo.',
+        );
       } finally {
         setEnviando(false);
       }

@@ -23,6 +23,9 @@ umbral (MODERACION_UMBRAL_SPAM) se rechaza con 422 `mensaje_spam` y el motivo: a
 y no queda basura oculta en la base. Los teléfonos del texto se sustituyen por «[teléfono oculto]».
 """
 
+import threading
+import time
+from collections import deque
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header
@@ -122,6 +125,25 @@ def listar_mensajes(
     return paginar(db, consulta, p, mensaje_a_dict)
 
 
+# Inundar el chat: como mucho MENSAJES_POR_MINUTO por persona (en todos los chats) en 60 s; después, 429. En
+# memoria (un solo proceso de la API). El organizador y los moderadores no tienen límite.
+MENSAJES_POR_MINUTO = 8
+_enviados: dict[str, deque[float]] = {}
+_cerrojo_enviados = threading.Lock()
+
+
+def _comprobar_ritmo(usuario_id: str) -> None:
+    ahora_s = time.monotonic()
+    with _cerrojo_enviados:
+        cola = _enviados.setdefault(usuario_id, deque())
+        while cola and cola[0] <= ahora_s - 60:
+            cola.popleft()
+        if len(cola) >= MENSAJES_POR_MINUTO:
+            raise ErrorApi(429, "demasiados_mensajes", "Estás escribiendo muy deprisa: espera un minuto",
+                           {"reintentar_en_s": int(60 - (ahora_s - cola[0])) + 1})
+        cola.append(ahora_s)
+
+
 @router.post("/eventos/{id}/mensajes", status_code=201)
 def publicar_mensaje(
     id: str,
@@ -155,6 +177,8 @@ def publicar_mensaje(
                        {"estado": evento.estado})
     if not gestor and db.get(Silenciado, (evento.id, usuario.id)) is not None:
         raise ErrorApi(403, "usuario_silenciado", "El organizador o un moderador te ha silenciado en este chat")
+    if not gestor:
+        _comprobar_ritmo(usuario.id)
     if datos.tipo == "anuncio" and not gestor:
         raise _prohibido("Solo el organizador del evento o un moderador pueden publicar anuncios")
     imagen_url = (datos.imagen_url or "").strip() or None
