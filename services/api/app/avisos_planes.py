@@ -8,7 +8,9 @@ cada persona que:
 - tiene interés: la categoría está en sus `gustos`, alguna etiqueta del plan está en sus `etiquetas_interes`, o ya
   se apuntó a planes de esa categoría o con esas etiquetas (quien fue a una liga de futbolín se entera de la
   siguiente aunque la IA la clasifique en otra categoría);
+- o es en su **pueblo favorito**: ya fue a 2 o más planes distintos de ese pueblo, aunque nunca de este tipo;
 - está cerca: es en su pueblo o a menos de su `radio_km` (30 km si no tiene). Si no sabemos dónde vive, cuenta;
+  su pueblo favorito cuenta aunque quede más lejos;
 - no es quien lo publica, no está ya apuntada y no ha recibido ya este aviso (máximo uno por persona y plan).
 
 El motivo sale del recomendador (`componer_motivo`) y el formato (texto o audio) del `formato_aviso` de cada
@@ -39,6 +41,8 @@ from app.recomendador import (
     _razon_plazas,
     componer_motivo,
     normalizar,
+    pueblos_favoritos,
+    razon_pueblo,
 )
 from app.rutas.publico import distancia_km
 
@@ -54,17 +58,22 @@ def _cuando(evento: Evento) -> str:
     return texto if (local.hour, local.minute) == (0, 0) else f"{texto} a las {local:%H:%M}"
 
 
-def _historial(db: Session, usuario: Usuario) -> tuple[set[str], set[str], set[str]]:
-    """(eventos a los que está apuntada, categorías y etiquetas normalizadas de los planes a los que fue)."""
+def _historial(db: Session, usuario: Usuario) -> tuple[set[str], set[str], set[str], dict[str, int]]:
+    """(eventos a los que está apuntada, categorías y etiquetas normalizadas de los planes a los que fue, y sus
+    pueblos favoritos: {municipio: nº de planes} donde fue a varios)."""
     filas = db.execute(
-        select(Inscripcion.evento_id, Inscripcion.estado, Evento.categoria, Evento.etiquetas)
+        select(Inscripcion.evento_id, Inscripcion.estado, Evento.categoria, Evento.etiquetas, Evento.municipio)
         .join(Evento, Evento.id == Inscripcion.evento_id)
         .where(Inscripcion.usuario_id == usuario.id)
     ).all()
-    apuntada = {evento_id for evento_id, estado, _, _ in filas if estado != "cancelada"}
-    categorias = {categoria for _, estado, categoria, _ in filas if estado in ESTADOS_HISTORIAL}
-    etiquetas = {normalizar(e) for _, estado, _, ets in filas if estado in ESTADOS_HISTORIAL for e in ets or []}
-    return apuntada, categorias, etiquetas
+    apuntada = {evento_id for evento_id, estado, _, _, _ in filas if estado != "cancelada"}
+    categorias = {categoria for _, estado, categoria, _, _ in filas if estado in ESTADOS_HISTORIAL}
+    etiquetas = {normalizar(e) for _, estado, _, ets, _ in filas if estado in ESTADOS_HISTORIAL for e in ets or []}
+    por_pueblo: dict[str, set[str]] = {}
+    for evento_id, estado, _, _, municipio in filas:
+        if estado in ESTADOS_HISTORIAL:
+            por_pueblo.setdefault(municipio, set()).add(evento_id)
+    return apuntada, categorias, etiquetas, pueblos_favoritos(por_pueblo)
 
 
 def _razon_historial(evento: Evento, categorias: set[str], etiquetas: set[str]) -> Razon | None:
@@ -91,21 +100,23 @@ def interesa(db: Session, usuario: Usuario, evento: Evento, ahora: datetime) -> 
         return None
     if evento.publicador_id and usuario.publicador_id == evento.publicador_id:
         return None
-    apuntada, categorias, etiquetas = _historial(db, usuario)
+    apuntada, categorias, etiquetas, favoritos = _historial(db, usuario)
     if evento.id in apuntada:
         return None
     gustos = _razon_gustos(usuario, evento)
     historial = _razon_historial(evento, categorias, etiquetas)
-    if gustos is None and historial is None:
+    pueblo = razon_pueblo(usuario, evento, favoritos)
+    if gustos is None and historial is None and pueblo is None:
         return None
     origen = _origen(db, usuario)
     km = distancia_km(origen[0], origen[1], evento.lat, evento.lon) if origen else None
     en_su_pueblo = usuario.municipio is not None and usuario.municipio == evento.municipio
-    if km is not None and not en_su_pueblo and km > (usuario.radio_km or RADIO_POR_DEFECTO_KM):
+    # Su pueblo favorito cuenta aunque esté más allá de su radio: ya ha demostrado que va
+    if km is not None and not en_su_pueblo and pueblo is None and km > (usuario.radio_km or RADIO_POR_DEFECTO_KM):
         return None
     if _ya_avisada(db, usuario, evento):
         return None
-    razones = [r for r in (gustos, _razon_distancia(usuario, evento, km), _razon_fecha(evento, ahora),
+    razones = [r for r in (gustos, pueblo, _razon_distancia(usuario, evento, km), _razon_fecha(evento, ahora),
                            _razon_plazas(evento), historial) if r is not None]
     return componer_motivo(razones)
 

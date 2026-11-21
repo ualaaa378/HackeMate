@@ -143,3 +143,19 @@ def test_recomendacion_a_quien_no_acepta_no_sale(db, bot):
     assert n.estado_envio == "fallida" and n.ultimo_error == "no acepta avisos" and not bot.recibidas
     # Los avisos de un plan al que ya está apuntado (cambio de hora…) salen igual
     assert notificaciones.notificar(db, tipo="cambio_evento", texto="Cambio", usuario=beto).estado_envio == "enviada"
+
+
+def test_pueblo_favorito_recibe_el_aviso_aunque_no_le_guste_ese_tipo_ni_viva_cerca(api, db, bot):
+    """Fue a dos planes de Senés (ninguno deportivo) y vive lejos: le avisamos de la liga de Senés."""
+    fan = _vecina(db, "Fan de Senés", telegram_id="502", acepta_avisos=True, municipio=None,
+                  lat=40.42, lon=-3.70, radio_km=20)
+    for i in range(2):
+        ev = Evento(titulo=f"Verbena {i}", categoria="fiestas", municipio="Senés", lat=37.18, lon=-2.36,
+                    fecha_inicio=PASADO, estado="finalizado")
+        db.add(ev)
+        db.flush()
+        db.add(Inscripcion(evento_id=ev.id, usuario_id=fan.id, plazas=1, estado="asistio", canal="telegram"))
+    db.commit()
+    evento = _publicar_como_moderador(api)
+    avisos = _avisos(db, evento["id"])
+    assert fan.id in avisos and "has ido a 2 planes en senés" in avisos[fan.id].texto.lower()
