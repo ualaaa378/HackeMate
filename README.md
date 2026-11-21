@@ -103,7 +103,13 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 | Cloudflare, túnel con nombre | ✅ | **Descartada:** URL fija y sin límites, pero necesita un dominio propio, y no compramos nada. |
 | Vercel (plan Hobby, acepta `Dockerfile`) | ✅ con cuenta | **Descartada para la hackathon:** ejecuta el contenedor como función (se apaga o se duplica entre peticiones), así que el bot perdería las conversaciones a medias que guarda en memoria y la cola que reintenta cada 30 s. Además no aloja nuestro Postgres, no llega a FreeLLMAPI y el plan gratuito es solo para uso no comercial. Migrar llevaría días. Opción para después: la web en Vercel con URL fija y el resto en un servidor del ayuntamiento. |
 
-**Regla de la URL que cambia:** el túnel solo se reinicia si hace falta. Cada vez que cambie, se ejecuta el script de F1 (actualiza el webhook y los enlaces del bot) y, en el APK, se cambia la dirección en sus ajustes (C9), sin reinstalar.
+**Regla de la URL que cambia:** el túnel solo se reinicia si hace falta. Cada vez que cambie (o tras cada `up`), en la máquina de la demo y desde la raíz del repo:
+
+```powershell
+python scripts/url_publica.py
+```
+
+Lee la URL nueva del túnel, la pone en el `.env` (`PUBLIC_URL` y, cuando el túnel ya entre por la web, `WEB_URL`), recrea el bot, comprueba en Telegram que el webhook apunta a ella y la escribe en pantalla para pasarla al grupo. Probado (sáb 21/11): reinicio del túnel → todo funcionando con la URL nueva en **35 s**. `--ver` solo enseña la URL. En el APK, la dirección nueva se cambia en sus ajustes (C9), sin reinstalar.
 
 **Orden:** F1 y C8 (a la vez) → A6 → C9 → T1 y T2 (los tres). Fecha límite: **web fuera de localhost a las 19:00 (CP3)** y **APK a las 00:00 (CP4)**. Si el APK no sale a las 23:00, la app móvil de la demo es la **PWA instalada** desde la URL pública (C4).
 
@@ -114,7 +120,7 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 | Hito | Hasta | Tarea |
 |---|---|---|
 | H3 · CP3 | sáb 13:30 | - [x] **D3.** URL pública: túnel rápido de Cloudflare (decidido arriba). |
-| H3 · CP3 | sáb 19:00 | - [ ] **F1.** Script `scripts/url_publica.ps1` (y `.sh`) para la máquina de la demo (su portátil): lee la URL del túnel de `docker compose … logs tunnel`, la escribe en el `.env` como `PUBLIC_URL` y `WEB_URL`, vuelve a registrar el webhook de Telegram (`POST /admin/webhook-telegram`) y recrea el bot para que los enlaces de las fichas usen la URL nueva. Lo escribe en pantalla para pasarla al grupo y al APK. Comprobar que Telegram entra por la URL nueva. |
+| H3 · CP3 | sáb 19:00 | - [x] **F1.** *(sáb 21/11: hecho, `scripts/url_publica.py`, solo Python estándar, vale en Windows y Linux. Probado reiniciando el túnel: URL nueva, `.env`, bot recreado y webhook de Telegram comprobado en 35 s. `WEB_URL` se actualiza sola en cuanto C8 y C8b estén: el script detecta que `/api/` responde por la URL pública.)* Script para la máquina de la demo (su portátil): lee la URL del túnel de `docker compose … logs tunnel`, la escribe en el `.env` como `PUBLIC_URL` y `WEB_URL`, vuelve a registrar el webhook de Telegram y recrea el bot para que los enlaces de las fichas usen la URL nueva. Lo escribe en pantalla para pasarla al grupo y al APK. |
 | H3 · CP3 | sáb 19:00 | - [ ] **F2.** Que el bot no dependa de `localhost` en nada que vea el usuario: enlaces de ficha, botones «Más info» y avisos. Probarlo con el móvil **con datos, sin wifi**. |
 | H4 · CP4 | dom 00:00 | - [ ] **T1** (con todos). Ver abajo. |
 
