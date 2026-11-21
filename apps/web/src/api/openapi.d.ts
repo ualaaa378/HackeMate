@@ -944,7 +944,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Aprobar, rechazar o retirar un evento */
+    /** Aprobar, rechazar, retirar o restaurar un evento */
     post: {
       parameters: {
         query?: never;
@@ -1120,7 +1120,8 @@ export interface paths {
     /**
      * El moderador aprueba (o rechaza) la entidad
      * @description También sirve para cambiar `nivel_confianza` de un publicador que ya está `aprobado` (con `aprobar: true`):
-     *     la web lo usa para pasarlo a revisión automática (nivel 2) o devolverlo a revisión a mano (nivel 0 o 1).
+     *     la web lo usa para pasarlo a publicación automática (nivel 2) o devolverlo a publicación a mano (nivel 0).
+     *     Solo hay dos modos (ver `enums.md`): el nivel 1 está obsoleto, se acepta por compatibilidad y se guarda como 0.
      *     En un publicador ya aprobado, si no se envía `nivel_confianza`, el nivel no cambia.
      *
      *     Pasar a nivel 2 exige las reglas de `apps/web/src/admin/confianza.ts`, calculadas por la API:
@@ -1129,7 +1130,7 @@ export interface paths {
      *     - ningún plan rechazado en los últimos 60 días (`actividad.rechazados_60_dias = 0`);
      *     - algún plan aprobado en los últimos 90 días (`actividad.ultimo_plan`).
      *     Si falta alguna, 409 `reglas_confianza_no_cumplidas` con `details.faltan` = lista de las que fallan
-     *     (`identidad_verificada`, `planes_60_dias`, `rechazados_60_dias`, `ultimo_plan`). Los niveles 0 y 1 no exigen nada.
+     *     (`identidad_verificada`, `planes_60_dias`, `rechazados_60_dias`, `ultimo_plan`). Pasar a mano (0) no exige nada.
      */
     post: {
       parameters: {
@@ -2696,8 +2697,11 @@ export interface components {
       distancia_km?: number | null;
     };
     Decision: {
-      /** @enum {unknown} */
-      decision: 'aprobar' | 'rechazar' | 'retirar';
+      /**
+       * @description `aprobar` y `rechazar` desde `en_revision`; `retirar` desde `publicado` (pasa a `archivado`); `restaurar` desde `rechazado` (vuelve a `en_revision`, a la bandeja, sin avisar al publicador).
+       * @enum {unknown}
+       */
+      decision: 'aprobar' | 'rechazar' | 'retirar' | 'restaurar';
       /** @description Motivo que se guarda en el evento y se manda al publicador. En `retirar` es opcional (por defecto «Retirado por moderación»). */
       motivo?: string | null;
     };
@@ -3061,9 +3065,12 @@ export interface components {
       telegram_id?: string | null;
       /** @enum {unknown} */
       estado: 'solicitado' | 'whatsapp_verificado' | 'aprobado' | 'rechazado' | 'pausado';
-      /** @enum {unknown} */
+      /**
+       * @description Modo de publicación: 0 = a mano (todo pasa por el moderador) · 2 = automática (solo la da un moderador, con reglas). 1 está obsoleto: la API ya no lo asigna (ver enums.md)
+       * @enum {unknown}
+       */
       nivel_confianza: 0 | 1 | 2;
-      /** @description Eventos aprobados; al llegar al umbral sube de nivel */
+      /** @description Eventos aprobados (acumulado, para estadísticas). Ya no sube de nivel solo */
       aprobaciones?: number;
       automatizaciones_pausadas?: boolean;
       categorias_habituales?: ('deportiva' | 'cultural' | 'fiestas' | 'gastronomia' | 'ludica' | 'comercio')[];
