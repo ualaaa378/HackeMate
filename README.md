@@ -57,271 +57,86 @@ Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **vis
 
 ## 🚧 Estado
 
-**Primera versión completa para probar (sáb 21/11).** La API (flujo A) tiene todos los endpoints del contrato y el guion de la demo funciona de punta a punta con el bot en local. Cómo probarla y qué revisar: [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md).
+**Sáb 21/11, 16:00 (tras la #67).** `develop` tiene los tres flujos y la demo funciona de punta a punta por la URL pública del túnel, con Telegram e IA, en dos máquinas (Francisco y Adán; **solo una a la vez con Telegram**). Tests: api 602, bot 149. Cómo probar la v1: [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md). Etiquetas: `v0.2` en `3496f65` (CP2 cerrado).
 
-**📣 Cambios del flujo A (Benas), sáb 21/11 por la tarde: qué ha cambiado y qué tenéis que hacer**
+**Próximos puntos fijos:** **CP3 sáb 19:00** (pasos 4–7, contratos congelados, `v0.3`) · **CP4 dom 00:00** (feature freeze, `v0.9`) · **REL dom 07:00** (`v1.0` en `main`) · entrega dom 11:00.
 
-| PR | Qué cambia | Qué tenéis que hacer |
-|---|---|---|
-| #49 | **Ingesta de Facebook** (`scripts/importar_facebook.py`): los posts de los Aytos. de Uleila, Lucainena y Senés y de Monte-Sión → IA del bot → bandeja. Servicio `ingesta` del compose (revisión diaria, **apagado por defecto**) y 20 posts reales en `contracts/fixtures/facebook_posts.json` | Solo la máquina de la demo, si quiere la revisión diaria: `FB_SCRAPER_TOKEN` en el `.env` (por privado) y `--profile ingesta up -d ingesta`. Sin token: importar los posts guardados con `--desde-json` |
-| #53 | **El compose lee el `.env` de la raíz** solo con `--env-file .env` (sin él, el bot iba sin IA en Docker) | **Siempre, desde la raíz del repo:** `docker compose --env-file .env -f infra/docker-compose.yml …` (también en `exec`, `logs` y `--profile ingesta`) |
-| #61 | **API detrás del nginx y del túnel:** `uvicorn --proxy-headers` y CORS para el APK (`https://localhost`, `capacitor://localhost`). Arranque con la URL pública (`scripts/url_publica.py`) en el README y en `CLAUDE.md` | Si vuestro `.env` es anterior, copiad la línea `CORS_ORIGENES` de `.env.example` (solo hace falta para el APK) |
-| #63 | **Lo que hace la gente ya no se pierde al reiniciar:** antes, cada arranque de la API devolvía los datos de la demo a los fixtures (horas, decisiones del moderador, gustos) y **volvía a poner las plazas libres aunque hubiera inscritos**. Ahora el seed del arranque solo añade lo que falta. Además, `db` y `api` se levantan solas si se caen y la cola del bot va en el volumen `bot_data` | `git pull` y `up -d --build` **sin `-v`**. En la demo, **ni `down -v` ni `demo_reset`** (borran la base). Qué conserva cada comando: «⚙️ Backend» → «Qué se guarda» |
+**Reglas de arranque para todos** (lo que más ha fallado):
+1. Siempre desde la raíz: `docker compose --env-file .env -f infra/docker-compose.yml …` (también `exec`, `logs`, `--profile ingesta`). Sin `--env-file`, el bot va sin IA (#53).
+2. Tras cada `up` o si cambia el túnel: `python scripts/url_publica.py` (pone `PUBLIC_URL` y `WEB_URL`, pasa la URL al bot en caliente y comprueba el webhook). Si dice «Telegram: REVISAR», `--forzar`.
+3. `.env` sin variables repetidas (Docker usa la última) y con: `VITE_API_URL=/`, `DEMO_MODE=true`, `CORS_ORIGENES` con `https://localhost,capacitor://localhost`, `PUBLIC_URL=` vacío y `WEB_URL=http://localhost:8080` (los rellena el script), `FREELLM_URL_DOCKER=http://host.docker.internal:3001/v1` con **tu** clave de FreeLLM, `NIM_API_KEY` y la `LLM_CADENA` de `.env.example`.
+4. En la demo, **ni `down -v` ni `demo_reset`** (borran la base). `up -d --build` conserva lo que hace la gente (#63). Qué conserva cada comando: «⚙️ Backend» → «Qué se guarda».
+5. La red de la universidad (Fortinet) bloquea `npm`: la imagen `web` y el APK se construyen con datos del móvil. Claves solo por privado y en `.env`, nunca en `*.example`.
 
-**Pendiente que sale de esta revisión** (detalle en «🔗 Pendiente entre flujos»): **Adán**, que la ficha, el chat y la bandeja se refresquen solos (hoy cargan una vez y no se ve lo que hacen los demás) y que el service worker de la PWA no guarde `/api/` en caché. **Fran**, al recrear el bot (lo hace `url_publica.py`) se pierden las conversaciones a medias.
+Arquitectura pública (decisión D3, túnel rápido de Cloudflare, gratis y sin cuenta; la URL cambia al reiniciar el túnel):
 
-**Progreso sáb 21/11 14:30 · segunda máquina de demo lista (Adán):** con `develop` hasta la #62, en el portátil de Adán funcionan la URL pública (`scripts/url_publica.py`), Telegram con IA (Gemini y FreeLLM en Docker) y, **desde el móvil**, la web por la URL del túnel y un post por Telegram que llega a la bandeja. Así hay dos máquinas capaces de hacer la demo (Francisco y Adán); **solo una a la vez puede tener Telegram**. Siguiente: APK (C9) y T1.
-
-**Checklist del `.env` para que todos tengamos lo mismo** (lo que falló en el de Adán):
-1. `git pull origin develop` y comparar con `.env.example`: **ninguna variable repetida** (si una sale dos veces, Docker usa la última) y añadir las nuevas (`FB_*`, `COLA_*`, `NOTIFICACIONES_*`, `VITE_CANAL`…).
-2. `VITE_API_URL=/`, `DEMO_MODE=true` y `CORS_ORIGENES` con `https://localhost,capacitor://localhost`.
-3. `PUBLIC_URL=` vacío y `WEB_URL=http://localhost:8080`: los rellena `url_publica.py`. Nunca dejar el texto de ejemplo `https://<lo-que-sea>.trycloudflare.com`.
-4. IA: `FREELLM_URL_DOCKER=http://host.docker.internal:3001/v1` y en `FREELLM_API_KEY` **la clave unificada de tu propio** FreeLLM (http://localhost:3001 → *Keys*). `GEMINI_API_KEY` puede ser la de Google de `freellmapi.config.json`.
-5. Arrancar siempre con `--env-file .env` (#53). Si `url_publica.py` dice «Telegram: REVISAR», el bot aún arrancaba: `python scripts/url_publica.py --forzar`.
-
-**Progreso sáb 21/11 11:45 (punto de partida común para corregir y seguir):**
-- ✅ **Prueba completa en Docker con PostgreSQL** en la máquina de Adán (`down -v` + `up --build`, `CANAL=console`, sin IA): `smoke_test.ps1` en verde, `scripts/simular_chat.py` de punta a punta, `/admin` contra la API real (aprobar, rechazar y ver lo aprobado en la agenda) y la web (ficha, apuntarse, Recuerdos, Proponer un plan con el código de alta que sale en `docker compose … logs bot`). Detalle en la PR #48.
-- ✅ **Arreglado en la web:** tras reiniciar la base, la sesión vieja ya no rompe la ficha (la web la cierra sola y repite sin token).
-- ✅ **Nuevo: restaurar un plan rechazado.** En `/admin` → Planes → Rechazados, el moderador pulsa «Restaurar» y el plan vuelve a la bandeja para decidir otra vez. Contrato: `Decision.decision` acepta `restaurar` (solo desde `rechazado`, pasa a `en_revision` y no avisa al publicador).
-- ⏳ **Falta (a las 11:45):** Telegram real con IA y audios. *(Actualizado: pasos 1–3 con Telegram hechos en el portátil de Francisco (C1, `v0.2`) y Telegram con IA también en el de Adán a las 14:20; «este finde» arreglado en la #52.)*
-- 🔑 **Un solo `.env` en la raíz para Docker:** las claves del bot que solo estaban en `services/bot/.env` no llegaban a Docker. Adán pasa por privado el `.env` unificado (con `DEMO_MODE=true`); el `INTERNAL_TOKEN` de ese archivo es el de todo el equipo.
-
-👉 **Para hoy:** propuesta de cómo trabajamos, revisión conjunta de la v1 a las 10:00 y decisiones pendientes en [`docs/SINCRONIZACION_SABADO.md`](docs/SINCRONIZACION_SABADO.md). Para revisarla entre los tres.
+```
+móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──> web:8080 (nginx)
+                                     ├── /          → la web
+                                     ├── /api/      → api:8000
+                                     └── /webhook/  → bot:8001
+```
 
 ## 🔗 Pendiente entre flujos
 
-Revisado el 21/11/2026 a las 11:00. Todo esto ya lo usa la app web (flujo C) o el bot (flujo B), pero depende de otro flujo. Mientras no esté, **la web vuelve sola a los datos de prueba (mocks) y el bot guarda la petición en cola**, así que nada se rompe, pero la demo no usa datos reales. Al cerrar cada punto, se borra de esta lista.
+> **Regla del equipo (ver `CLAUDE.md`):** cada flujo apunta aquí, bajo el flujo responsable, lo que necesita de los demás, y lo borra al resolverlo. Cada uno marca `[x]` en el mismo commit en que termina. Mientras algo falte, la web cae a mocks y el bot guarda en cola: nada se rompe. Formato de los hallazgos: `docs/SINCRONIZACION_SABADO.md` §3.
 
-> **Regla del equipo (ver `CLAUDE.md`):** cada flujo apunta aquí, bajo el flujo responsable, lo que necesita de los demás. Antes de empezar una tarea, revisa tu apartado.
+### Adán (flujo C) · web, APK y entrega
 
-### 🚨 PRIORIDAD (sáb 21/11, 13:30): la app fuera de `localhost` y la app móvil
+| Hasta | Tarea |
+|---|---|
+| sáb 19:00 | - [ ] **C2.** «Para ti» en la agenda con `GET /recomendaciones` y el motivo legible (Carmen ve la II Ruta Solidaria la primera). Paso 4. |
+| sáb 19:00 | - [ ] **Refresco sin recargar** (pedido por Benas): **Ficha** (`src/pages/Ficha.tsx`) con `useIonViewWillEnter` + `IonRefresher`; **chat** (`src/components/ChatEvento.tsx`) pide `GET /eventos/{id}/mensajes` cada 10–15 s (paso 5); **bandeja** (`src/pages/admin/Bandeja.tsx`) cada 10 s (paso 3). |
+| sáb 19:00 | - [ ] **B3 con Fran.** FreeLLMAPI en Docker en la máquina de Adán y ensayo del paso 7 (audios). |
+| dom 00:00 | - [ ] **C9.** APK de debug con Capacitor (`@capacitor/android`, `appId: 'es.hackemate.app'`), con pantalla de ajustes «Dirección del servidor» para pegar la URL nueva del túnel sin reinstalar. Android Studio + JDK 21. El `.apk` va a `C:\Users\aalva\Desktop\Hackaton`. Si a las 23:00 no sale, plan B = C4. |
+| dom 00:00 | - [ ] **C4.** PWA instalable: service worker e icono (el `manifest.json` ya existe). **Sin caché de `/api/`**, solo estáticos. |
+| dom 00:00 | - [ ] **C6.** Panel: % de importados de Facebook y coste en tokens con NIM. Accesibilidad: teclado y letra grande en agenda y ficha. |
+| dom 07:00 | - [ ] **C7.** Vídeo de respaldo, sección web del README con capturas, dos ensayos seguidos del guion y `v1.0` en `main`. |
 
-Acordado tras la prueba completa en el portátil de Francisco (todo en Docker, bot por Telegram real). **Esto va antes que cualquier otra tarea del reparto.** Para los tres y para vuestros Claudes: leed el apartado entero; cada uno marca `[x]` en el mismo commit en que termina.
+Opcional (lo pide el bot, plan C de la demo): un chat simulado en la web que llame a `bot POST /dev/mensaje`.
 
-**Por qué:** hoy todo funciona, pero **solo en el portátil donde corre Docker**. Desde el móvil del jurado o desde un APK:
-- la web lleva `VITE_API_URL=http://localhost:8000` incrustado en el build, así que no encuentra la API y **cae a los mocks** sin avisar;
-- el túnel (`tunnel` en `infra/docker-compose.yml`) solo expone el bot, y su URL **cambia cada vez que se reinicia**;
-- los enlaces que manda el bot (`WEB_URL`) apuntan a `http://localhost:8080`;
-- no hay proyecto Android (`apps/web/android` no existe ni está `@capacitor/android`).
+### Benas (flujo A) · API, en remoto y sin Docker
 
-**La solución, en una línea:** una sola URL pública, `https://<algo>.trycloudflare.com`, que entra por el `nginx` de la web y reparte: `/` → la web, `/api/` → `api:8000`, `/webhook/` → `bot:8001`. La web llama a la API en su mismo dominio (sin CORS ni `localhost`), Telegram entra por la misma URL y el APK apunta a ella.
+| Hasta | Tarea |
+|---|---|
+| dom 00:00 | - [ ] **A4.** `GET /estadisticas`: que el % de importadas cuente las de Facebook (llegan con `importado_auto`). |
+| dom 07:00 | - [ ] **A5.** Arreglos `fix/*` de los ensayos y repaso de la sección del backend del README. |
+| — | - [ ] **D4 (decidir con Adán).** Lo importado de Facebook de los ayuntamientos (modo «automática») hoy se publica sin revisión; pasarlo siempre por la bandeja son dos líneas en `decidir_estado`, sin tocar el contrato. Además, los Aytos. de Uleila y Senés no son publicadores: sus posts llegan «Sin publicador identificado» (van a revisión). |
 
-```
-móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──> túnel ──> web:8080 (nginx)
-                                                                                 ├── /          → la web (estáticos)
-                                                                                 ├── /api/      → api:8000
-                                                                                 └── /webhook/  → bot:8001
-```
+Notas: `frase_portada` ya se guarda; si llega vacía la pedirá a `bot POST /ai/frase` cuando exista. Un vecino sin asociación que propone un plan solo ve sus `datos_ayuntamiento` en la respuesta del alta.
 
-**✅ Decisión D3 (sáb 21/11, Francisco): el túnel rápido de Cloudflare que ya usamos.** Criterio: gratis **y sin restricciones que afecten a la demo**. Revisado en la documentación oficial:
+### Francisco (flujo B) · bot e IA
 
-| Opción | Gratis | Por qué sí / por qué no |
-|---|---|---|
-| **Cloudflare, túnel rápido** (`trycloudflare.com`, el de ahora) | ✅ sin cuenta | **Elegida.** Sin página de aviso, sin cuota de datos. Límites: 200 peticiones a la vez (nos sobra), sin garantía de disponibilidad, sin SSE (no lo usamos) y **la URL cambia cada vez que se reinicia el túnel**: las tareas de abajo lo resuelven. |
-| ngrok, plan gratuito | ✅ con cuenta | **Descartada:** enseña una página de aviso a cada navegador nuevo y tiene 1 GB de datos al mes y cuotas mensuales. |
-| Tailscale Funnel | ✅ con cuenta | **Descartada:** está en beta, tiene límites de ancho de banda que no publican y hay que instalar Tailscale en la máquina de la demo. |
-| Cloudflare, túnel con nombre | ✅ | **Descartada:** URL fija y sin límites, pero necesita un dominio propio, y no compramos nada. |
-| Vercel (plan Hobby, acepta `Dockerfile`) | ✅ con cuenta | **Descartada para la hackathon:** ejecuta el contenedor como función (se apaga o se duplica entre peticiones), así que el bot perdería las conversaciones a medias que guarda en memoria y la cola que reintenta cada 30 s. Además no aloja nuestro Postgres, no llega a FreeLLMAPI y el plan gratuito es solo para uso no comercial. Migrar llevaría días. Opción para después: la web en Vercel con URL fija y el resto en un servidor del ayuntamiento. |
+| Hasta | Tarea |
+|---|---|
+| sáb 19:00 | - [ ] **B3.** Pasar por privado a Adán `freellmapi.config.json` y `.env` de `services/bot/freellmapi/` y ensayar juntos el paso 7 en su máquina. |
+| dom 00:00 | - [ ] **B5b.** Solo si sobra tiempo: `POST /ai/frase` (primero en el contrato, antes de CP3): frase breve y alegre (≤ 90 letras, sin inventar datos) a partir de título, categoría y pueblo. Mientras, la web pone una frase fija por tipo de plan. |
+| dom 07:00 | - [ ] **B6.** Sección del bot en el README y claves de IA de la demo en el `.env` de Adán (por privado). |
 
-**Regla de la URL que cambia:** el túnel solo se reinicia si hace falta. Cada vez que cambie (o tras cada `up`), en la máquina de la demo y desde la raíz del repo:
+Detalle de las llamadas: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
 
-```powershell
-python scripts/url_publica.py
-```
+### Los tres · prueba desde fuera (dom 00:00)
 
-Lee la URL nueva del túnel, la pone en el `.env` (`PUBLIC_URL` y, cuando el túnel ya entre por la web, `WEB_URL`), se la pasa al bot **en caliente, sin reiniciarlo** (no se pierden las conversaciones a medias), comprueba en Telegram que el webhook apunta a ella y la escribe en pantalla para pasarla al grupo. Probado (sáb 21/11): reinicio del túnel → todo funcionando con la URL nueva en **35 s**. `--ver` solo enseña la URL. En el APK, la dirección nueva se cambia en sus ajustes (C9), sin reinstalar.
+- [ ] **T1.** Máquina de la demo encendida y **los tres móviles con datos (sin wifi de la uni)**: URL pública, agenda con datos reales, ficha, inscripción, chat, `/admin`, los 7 pasos por Telegram y el APK. Lo que falle, a la tabla del flujo que lo arregla.
+- [ ] **T2.** Reinicio en frío cronometrado: `down` (sin `-v`) y `up -d`, `url_publica.py`, y comprobar Telegram, enlaces del bot, web y APK (cambiando solo su dirección).
 
-**Orden:** F1 y C8 (a la vez) → A6 → C9 → T1 y T2 (los tres). Fecha límite: **web fuera de localhost a las 19:00 (CP3)** y **APK a las 00:00 (CP4)**. Si el APK no sale a las 23:00, la app móvil de la demo es la **PWA instalada** desde la URL pública (C4).
+### Decisiones abiertas
 
-*Fuentes de la decisión D3: [límites del túnel rápido de Cloudflare](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/), [límites del plan gratuito de ngrok](https://ngrok.com/docs/pricing-limits/free-plan-limits), [Tailscale Funnel](https://tailscale.com/kb/1223/tailscale-funnel), [Vercel: Dockerfile como función](https://vercel.com/changelog/bring-your-dockerfile-to-vercel-functions) y [plan Hobby](https://vercel.com/docs/plans/hobby).*
+- **D1 · aplazada por Adán (sáb 13:20), A3 + B4.** Avisos a quien solo usa Telegram (paso 6): el bot ya lee `contacto` en `POST /notify`, pero `schemas/notificacion.json` y el bot exigen `telefono`, y sin él la API deja el aviso como `fallida`. Quitar el `required` no es aditivo. **Mientras, en la demo todos los inscritos comparten su número.**
+- **D2 · código de acceso por mensajería** (solo si sobra tiempo; el login con Google está recortado y la demo entra con `/auth/demo`). `POST /auth/whatsapp/codigo` debe pedir al bot que mande el código; con Telegram, antes hay que vincular el número (`t.me/HackeMate_bot?start=alta` → «Compartir mi número»). Un campo `canal`, si hace falta, opcional y con `contract-change`.
+- **D4** · Facebook de los ayuntamientos con o sin bandeja (ver Benas).
 
-**Francisco (flujo B) · máquina de la demo, URL pública y bot**
+### Canales: Telegram ahora, WhatsApp intercambiable
 
-| Hito | Hasta | Tarea |
-|---|---|---|
-| H3 · CP3 | sáb 13:30 | - [x] **D3.** URL pública: túnel rápido de Cloudflare (decidido arriba). |
-| H3 · CP3 | sáb 19:00 | - [x] **F1.** *(sáb 21/11: hecho, `scripts/url_publica.py`, solo Python estándar, vale en Windows y Linux. Probado reiniciando el túnel: URL nueva, `.env`, bot recreado y webhook de Telegram comprobado en 35 s. `WEB_URL` se actualiza sola en cuanto C8 y C8b estén: el script detecta que `/api/` responde por la URL pública.)* Script para la máquina de la demo (su portátil): lee la URL del túnel de `docker compose … logs tunnel`, la escribe en el `.env` como `PUBLIC_URL` y `WEB_URL`, vuelve a registrar el webhook de Telegram y recrea el bot para que los enlaces de las fichas usen la URL nueva. Lo escribe en pantalla para pasarla al grupo y al APK. |
-| H3 · CP3 | sáb 19:00 | - [x] **F2.** *(sáb 21/11: hecho en el portátil de Francisco con C8, C8b y A6. `url_publica.py` detecta que el túnel entra por la web y pone `PUBLIC_URL` y `WEB_URL`. Probado por la URL pública, pasando por Cloudflare: web y `/admin` 200; API con 19 planes; el JS de la web sin `localhost:8000`; la ficha llama a `/api/v1/…` en el mismo dominio; `/webhook/telegram` llega al bot por el nginx (403 sin la clave secreta, como debe); el enlace que manda el bot es `https://<túnel>/evento/…` y abre la ficha (200); Telegram OK. **Para cada uno:** `VITE_API_URL=/` y los `CORS_ORIGENES` nuevos en el `.env`. Falta la prueba con el móvil con datos, que va en T1.)* Que el bot no dependa de `localhost` en nada que vea el usuario: enlaces de ficha, botones «Más info» y avisos. Probarlo con el móvil **con datos, sin wifi**. |
-| H4 · CP4 | dom 00:00 | - [ ] **T1** (con todos). Ver abajo. |
+Regla en `CLAUDE.md` § «Canales de mensajería». Bot: Telegram con `TELEGRAM_TOKEN` (contactos `tg:<chat_id>`), WhatsApp con `CANAL=meta|twilio|console`; pueden ir a la vez. API: guarda `telefono` y `telegram_id` (`services/api/app/canales.py`) sin suponer canal. Web: `VITE_CANAL=telegram|whatsapp` (`apps/web/src/canal.ts`).
 
-**Adán (flujo C) · web detrás del proxy y APK**
+### Hecho (resumen; el detalle está en cada PR)
 
-| Hito | Hasta | Tarea |
-|---|---|---|
-| H3 · CP3 | sáb 19:00 | - [x] **C8** (sustituye a C3). *(sáb 13:30: hecho. `nginx.conf` pasa `/api/` a `api:8000` y `/webhook/` a `bot:8001`, resolviendo los nombres en cada petición para que la web arranque aunque api o bot estén caídos (502 solo en esas rutas). `VITE_API_URL=/` = API en el mismo dominio; vacío sigue siendo mocks. El `Dockerfile` usa `/` por defecto, pero el compose y `.env.example` aún pasan `http://localhost:8000`: lo cambia C8b.)* `apps/web/nginx.conf`: `location /api/ { proxy_pass http://api:8000; }` y `location /webhook/ { proxy_pass http://bot:8001; }`, con `proxy_set_header Host`, `X-Forwarded-For` y `X-Forwarded-Proto`. `apps/web/src/api/client.ts`: que la web pueda llamar a la API **en su mismo dominio**. Hoy `VITE_API_URL` vacío significa «mocks», así que hace falta un valor explícito (p. ej. `VITE_API_URL=/` → rutas relativas `/api/v1/…`) sin romper los tests. Build de Docker con ese valor por defecto. |
-| H3 · CP3 | sáb 19:00 | - [x] **C8b.** *(sáb 13:30: hecho, PR #60 fusionada por Adán; Benas puede revisarla después (A7). Ahora, **cada uno cambia en su `.env` `VITE_API_URL=/`** (el `.env` manda sobre el compose; con `http://localhost:8000` la web sigue sin funcionar fuera), y en la máquina de la demo `PUBLIC_URL` y `WEB_URL` pasan a ser la URL del túnel (F1). Después: `up --build` y probar desde el móvil con datos.)* `infra/docker-compose.yml` (PR que revisa Benas): el servicio `tunnel` apunta a `web:8080` en vez de a `bot:8001` (sigue siendo el túnel rápido, sin cuenta). La web `depends_on` de `api` y `bot` para que el proxy los encuentre. |
-| H4 · CP4 | dom 00:00 | - [ ] **C9** (sustituye a C5). APK de debug: `npm i @capacitor/android`, `npx cap add android`, `capacitor.config.ts` con `appId: 'es.hackemate.app'` y `appName: 'HackeMate'`. Como la URL del túnel cambia al reiniciar, **la app no la lleva fija**: una pantalla de ajustes («Dirección del servidor») la guarda en el móvil, con la del build como valor por defecto, y la API se llama con esa dirección. Si el túnel cambia, se pega la nueva ahí, sin reinstalar. Hace falta Android Studio con JDK 21 en su portátil. Instalarlo en un móvil real con datos y probar agenda, ficha, inscripción y chat. El `.apk` va a `C:\Users\aalva\Desktop\Hackaton`. |
-| H4 · CP4 | dom 00:00 | - [ ] **C4** (plan B del APK, ya estaba). PWA instalable desde la URL pública: service worker e icono. |
-
-**Benas (flujo A) · API detrás del proxy, revisión de infra**
-
-| Hito | Hasta | Tarea |
-|---|---|---|
-| H3 · CP3 | sáb 19:00 | - [x] **A6.** *(sáb 21/11: hecho. CORS con `https://localhost` y `capacitor://localhost`, `uvicorn --proxy-headers --forwarded-allow-ips='*'` y ninguna respuesta con `localhost`; tests en `tests/test_despliegue.py`)* API lista para servirse detrás de `nginx` y desde el APK: añadir a `CORS_ORIGENES` (`.env.example` y valor por defecto) los orígenes de Capacitor, `https://localhost` y `capacitor://localhost` (la web pública no lo necesita: va por el mismo dominio); `uvicorn` con `--proxy-headers --forwarded-allow-ips='*'` en el `Dockerfile` para que vea `https`; revisar que ninguna respuesta lleve URLs absolutas a `localhost` (`.ics`, imágenes, enlaces). Tests sin Docker. |
-| H3 · CP3 | sáb 19:00 | - [x] **A7.** *(sáb 21/11: C8b revisada después del merge (#60), correcta: túnel a `web:8080`, la web arranca aunque api o bot fallen, nginx con `X-Forwarded-Proto` y 20 MB de cuerpo. Arranque con la URL pública en el README y en `CLAUDE.md`)* Revisar y fusionar la PR de C8b (el compose es de A). Actualizar en el README y en `CLAUDE.md` cómo se arranca con la URL pública. |
-| H4 · CP4 | dom 00:00 | - [ ] **T1** (con todos). Ver abajo. |
-
-**Los tres · prueba de verdad desde fuera**
-
-- [ ] **T1** (dom 00:00). Con la máquina de la demo encendida y **los tres móviles con datos (sin el wifi de la universidad)**: abrir la URL pública, agenda con datos reales (no los mocks), ficha, inscripción, chat, `/admin` (aprobar y rechazar), los 7 pasos del guion por Telegram y el APK instalado. Apuntar lo que falle en el apartado del flujo que lo tiene que arreglar.
-- [ ] **T2** (dom 00:00). Reinicio en frío: `docker compose --env-file .env -f infra/docker-compose.yml down` y `up -d`, el script de F1, y comprobar que Telegram, los enlaces del bot y la web funcionan con la URL nueva, y que el APK vuelve a funcionar cambiando solo la dirección en sus ajustes. Cronometrarlo: es lo que habría que hacer si algo se cae en mitad de la demo.
-
-**Avisos que ya sabemos:**
-- La red de la universidad (Fortinet) bloquea `npm`: para construir la imagen `web` o el APK hay que usar los datos del móvil.
-- El bot de Telegram solo puede estar en **una** máquina: la que tenga `PUBLIC_URL`. Las demás, vacío.
-- Las claves (Telegram, FreeLLMAPI, Apify) van por privado y solo en `.env`, nunca en `*.example`, ni en el grupo, ni en `capacitor.config.ts`.
-
-### 📋 Reparto del sábado 21/11 (11:00) · hasta la entrega
-
-Acordado por Adán el sábado a las 11:00, después de revisar todo `develop` (tras las PR #41, #43 y #44). **Para los tres y para vuestros Claudes:** antes de empezar, leed este apartado entero y vuestra parte. Cada uno marca `[x]` en el mismo commit en que termina la tarea y apunta los fallos que encuentre en el apartado del flujo que los tiene que arreglar (más abajo), con el formato de `docs/SINCRONIZACION_SABADO.md` §3.
-
-#### Dónde estamos (sáb 11:00)
-
-- **El código va por delante del plan.** La API tiene todas las rutas del contrato (568 tests), el bot funciona con Telegram (108 tests) y la web tiene H0, H1 y H2 contra la API real.
-- **Docker probado (sáb 11:30, ver «Estado»).** Falta el `up --build` con Telegram, la tabla del §5 de `SINCRONIZACION_SABADO.md` está en blanco y no hay ninguna etiqueta (`v0.1`, `v0.2`).
-- **Web, H3 a medias:** ya están la inscripción, el `.ics` y el chat. Faltan «Para ti» (recomendaciones), el login y el service worker de la PWA. H4: el panel, el coste y la letra grande van a medias, y falta el APK.
-
-#### Riesgos que ordenan el reparto (de más a menos grave)
-
-1. **El jurado no puede usar la web desde fuera.** El túnel (`infra/docker-compose.yml`, servicio `tunnel`) solo expone `bot:8001`, y la web lleva `VITE_API_URL=http://localhost:8000` incrustado en el build. Desde el móvil del jurado o desde el APK, `localhost` no es nuestra API y la web cae a los mocks. → Tarea C3.
-2. **El paso 7 (audios) depende del portátil de Fran.** La transcripción solo va por FreeLLM (`services/bot/app/agentes/medios.py`). Si su portátil o su red fallan, no hay plan B. → Tarea B3.
-3. **Sin IA, la demo se ve floja** (títulos largos, el spam sin fecha no llega al antispam). → Tareas B1 y B2.
-4. **Ningún checkpoint cerrado.** → Tarea C1 y la puesta en común de las 13:00.
-
-#### Decisión nueva: eventos de Facebook con «Facebook Posts Scraper» y NVIDIA NIM
-
-Para el paso 1 de la demo («post → ficha») y para llenar la agenda con datos reales. **No hace falta cambiar el contrato:** `POST /eventos/importar` ya acepta `origen.canal="facebook"`, `origen.url` y `origen.importado_auto`.
-
-```
-Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai/extraer (NVIDIA NIM) ──> api POST /eventos/importar ──> bandeja del moderador ──> agenda web
-     (páginas de los Aytos)        (A, Benas)                    (B, Francisco)                         (ya existe)
-```
-
-- **Páginas con Facebook activo:** Ayuntamientos de Uleila del Campo, Lucainena de las Torres y Senés, y Monte-Sión (ver `contracts/fixtures/FUENTES.md`).
-- **Reglas que se mantienen:** solo el bot habla con la IA (NIM va en el `llm_router` del bot, nunca en el script ni en la API). Solo la API decide estados: lo importado de una asociación «a mano» pasa por la bandeja. Coste 0: plan gratuito del scraper y de NIM, claves solo en `.env` (nunca en `*.example`), y **cada ejecución guarda los posts en un JSON** para poder repetir la importación sin red ni créditos.
-- Las descargas (APK, vídeos, exportaciones del scraper) van a `C:\Users\aalva\Desktop\Hackaton`.
-
-#### Hitos y tareas por persona
-
-**Adán (flujo C) · máquina de la demo, web y entrega**
-
-| Hito | Hasta | Tarea |
-|---|---|---|
-| H2 · CP2 | sáb 13:00 | - [x] **C1.** *(sáb 13:20: CP2 cerrado. Docker, smoke test, guion y `/admin` en verde en la máquina de Adán; pasos 1–3 con Telegram real en el portátil de Francisco. Etiqueta `v0.2` sobre `develop` en `3496f65`.)* `docker compose --env-file .env -f infra/docker-compose.yml down -v`, `up --build`, `scripts/smoke_test.sh` en verde y pasos 1–3 con Telegram (`DEMO_MODE=true`). |
-| H3 · CP3 | sáb 19:00 | - [ ] **C2.** «Para ti» en la agenda con `GET /recomendaciones` y el motivo legible (Carmen ve la II Ruta Solidaria la primera). |
-| H3 · CP3 | sáb 19:00 | - [-] **C3.** *(sustituida por C8 y C8b en «🚨 PRIORIDAD», arriba)* **URL pública de la web:** que el `nginx.conf` de la web pase `/api/` a `api:8000`, que la web use una URL relativa (`VITE_API_URL` vacío) y un segundo túnel a `web:8080`. Es infra de A: lo hace Adán porque Benas no puede ejecutar Docker, en una PR que mira Benas. |
-| H3 · CP3 | sáb 19:00 | - [ ] **C4.** PWA instalable: service worker e icono (el `manifest.json` ya existe). |
-| H3 | — | - [-] **Login con Google: recortado.** En la demo se entra con el modo demo (`/auth/demo`). El código por Telegram, solo si sobra tiempo (D2). |
-| H4 · CP4 | dom 00:00 | - [-] **C5.** *(sustituida por C9 en «🚨 PRIORIDAD», arriba)* APK de debug con Capacitor que apunta a la URL de C3. Si en 30 min no sale, la demo va con la PWA instalada. |
-| H4 · CP4 | dom 00:00 | - [ ] **C6.** Panel: % de eventos importados de Facebook y coste en tokens con NIM incluido (cuando A2 y B2 estén). Accesibilidad: teclado y letra grande en agenda y ficha. |
-| H5 | dom 07:00 | - [ ] **C7.** Vídeo de respaldo, sección de la web en el README con capturas, dos ensayos seguidos del guion y `v1.0` en `main`. |
-
-**Benas (flujo A) · API e ingesta de Facebook, en remoto y sin Docker**
-
-| Hito | Hasta | Tarea |
-|---|---|---|
-| H2 · CP2 | sáb 13:00 | - [x] **A1.** Arreglar lo que salga de la prueba con Docker de Adán (apartado «Flujo A» de abajo). *(sáb: el único hallazgo de A, los duplicados en la bandeja, ya lo resolvía la #43; test añadido)* |
-| H3 · CP3 | sáb 19:00 | - [x] **A2.** *(sáb 21/11: hecho. Primera descarga real de las 4 páginas: 20 posts guardados en `facebook_posts.json`. Revisión diaria con `--cada 24` o el servicio `ingesta` del compose, apagado por defecto)* **`scripts/importar_facebook.py`** (solo Python, sin Docker): 1) lanza «Facebook Posts Scraper» sobre las páginas de `FUENTES.md` (token en `.env`, por ejemplo `FB_SCRAPER_TOKEN`, y la variable en `.env.example` vacía); 2) guarda los posts en `contracts/fixtures/facebook_posts.json`; 3) por cada post llama a `bot POST /ai/extraer` con `X-Internal-Token`; 4) manda el resultado a `POST /eventos/importar` con `origen.canal="facebook"`, `origen.url` del post e `importado_auto=true`. Opción `--desde-json` para repetirlo sin red. Si el bot no responde, el post se queda en el JSON y no se inventa nada. |
-| Aplazada | — | - [ ] **A3.** *(sáb 13:20, Adán: **D1 aplazada**, se retoma más tarde y ya no tiene la fecha límite de las 19:00. Mientras, en la demo los inscritos comparten su número)* Decidir **D1** con Francisco (quitar o no el `required` de `telefono` en `schemas/notificacion.json` para avisar a quien solo usa Telegram). |
-| H4 · CP4 | dom 00:00 | - [ ] **A4.** `GET /estadisticas`: que el % de importadas cuente las de Facebook (ya llegan con `importado_auto`). Revisar la PR de C3 (nginx y túnel). |
-| H5 | dom 07:00 | - [ ] **A5.** Arreglos `fix/*` de los ensayos y repasar la sección del backend del README. |
-
-**Francisco (flujo B) · bot e IA**
-
-| Hito | Hasta | Tarea |
-|---|---|---|
-| H2 · CP2 | sáb 13:00 | - [x] **B1.** Los tres hallazgos sin IA, que afectan a los pasos 1, 3 y 5: título por reglas, pregunta por chat privado y post de spam sin fecha. *(sáb 21/11: hecho y probado contra la API con la IA caída. «Taller de esparto en Senés el sábado…» → título «Taller de esparto»; «¿A qué hora empieza la ruta solidaria?» por privado → «Empieza el 29/11 a las 09:00» (lo que no está en la ficha va al chat del evento); el post de apuestas sin fecha lo para el antispam del bot en vez de preguntar la fecha. Además: el bot ya no contesta en francés a «apúntame a la ruta» y apunta al plan que se nombra.)* |
-| H3 · CP3 | sáb 19:00 | - [x] **B2.** *(sáb 21/11: hecho. Proveedor `nim` en `app/llm/proveedores.py` (comparte código con FreeLLM, los dos son compatibles con OpenAI), cadena por defecto `gemini,nim,freellm,claude,reglas` y `NIM_URL`, `NIM_API_KEY`, `NIM_MODELOS`, `NIM_TIMEOUT_INTENTO_S` en los dos `.env.example`. Modelo medido con el plan gratuito: `nvidia/nemotron-3.5-bolt-e4b`, 1–3 s por ficha, descarta avisos y pésames y detecta el spam; los grandes pasaban de 25 s. Probado con el bot: `/ai/extraer` responde con `nim:…` y sus tokens salen en `/metrics`. **Cada uno pone su clave en `NIM_API_KEY`** (la de NVIDIA de `freellmapi.config.json` vale) y `LLM_CADENA` nueva en su `.env`.)* **NVIDIA NIM como proveedor del `llm_router`**, en el orden Gemini → NIM → FreeLLM → Claude → reglas. NIM es compatible con OpenAI, así que basta con otra instancia como la de `FreeLLM` en `app/llm/proveedores.py`, con `NIM_URL`, `NIM_API_KEY` y `NIM_MODELO` en `.env.example` (vacías). Que `/ai/extraer` lo use para A2 y que sus tokens salgan en `/metrics` y en `/metrics/tokens` de la API. |
-| H3 · CP3 | sáb 19:00 | - [ ] **B3.** **Audios fuera del portátil de Fran.** Decidido (sáb 21/11): **FreeLLMAPI con Docker en la máquina de Adán**, sin plan B dentro del bot. Fran le pasa por privado `freellmapi.config.json` y `.env` de `services/bot/freellmapi/`; Adán hace `docker compose up -d` allí y pone en el `.env` de la raíz `FREELLM_URL_DOCKER=http://host.docker.internal:3001/v1` y **su** clave unificada en `FREELLM_API_KEY` (ver `services/bot/freellmapi/README.md`). Falta ensayar el paso 7 juntos en su máquina. |
-| Aplazada | — | - [ ] **B4.** Decidir **D1** con Benas (ver A3, aplazada por Adán el sáb 13:20). |
-| H4 · CP4 | dom 00:00 | - [~] **B5.** Solo si sobra tiempo: `POST /ai/frase` (primero en el contrato) y pedir nombre, DNI y residencia en el alta de asociaciones. *(sáb 21/11: **el alta, hecha.** «Quiero dar de alta mi asociación» (también «registrar mi bar», «quiero ser publicador») → nombre, tipo (con botones), pueblo, responsable, DNI o NIE (comprueba la letra al momento) y dónde vive → resumen con el DNI enmascarado → `POST /publicadores` con `responsable`. En Telegram pide antes «Compartir mi número». El DNI solo vive en memoria durante el alta: no va a los logs ni a la cola en disco. Probado contra la API real: queda `solicitado`, nivel 0, con el responsable, y la API avisa a los moderadores. **`/ai/frase`, no:** necesita un cambio de contrato antes de las 19:00 y que la API lo llame; la web ya pone una frase fija por tipo de plan.)* |
-| H5 | dom 07:00 | - [ ] **B6.** Escribir la sección del bot del README y tener las claves de IA de la demo en el `.env` de Adán (por privado). |
-
-#### ⏰ Puesta en común · sáb 13:00 (CP2), llamada de 30 min
-
-Los tres, a las 13:00. Orden del día:
-
-1. Adán enseña los pasos 1–3 en Docker con Telegram (C1). Si salen, se pone `v0.2`.
-2. Cada uno dice en una frase cómo va con su tarea y si algo le bloquea más de 20 minutos (si es así, se recorta).
-3. Benas y Francisco confirman cómo va la ingesta de Facebook (A2 + B2) (D1 queda aplazada: ver A3).
-4. Se actualiza este apartado: se marca lo hecho y se mueve lo que no llegue.
-
-Siguientes puntos fijos: **CP3 sáb 19:00** (pasos 4–7, contratos congelados, `v0.3`), **CP4 dom 00:00** (feature freeze, `v0.9`), **REL dom 07:00** (`v1.0` en `main`). La entrega a la organización es el domingo a las 11:00.
-
-### Flujo A · API (Benas)
-
-Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen en la API (ninguna queda con `x-implementado: false`).
-
-- **Frase de portada automática:** `frase_portada` ya se guarda y se devuelve (`POST`/`PATCH /eventos`, confirmar). Si llega vacía, la API se la pedirá al bot cuando exista `POST /ai/frase` (ver flujo B); mientras, la web pone una frase fija por tipo de plan.
-- **Una propuesta de un vecino sin asociación:** entra en revisión y el moderador ve sus `datos_ayuntamiento`, pero el vecino solo los ve en la respuesta del alta (la API no guarda quién propuso el plan si no es un publicador).
-
-- **Ingesta de Facebook (A2): falta decidir** si lo importado de los ayuntamientos (que están en «automática») se publica directamente o pasa siempre por la bandeja. Hoy la API lo trata igual que un post enviado por el bot, así que lo de los ayuntamientos se publicaría sin revisión. Pasarlo siempre por la bandeja son dos líneas en `decidir_estado`, sin tocar el contrato. Además, los Aytos. de Uleila del Campo y Senés no están dados de alta como publicadores: sus posts llegan como «Sin publicador identificado» (van a revisión).
-- **Revisar la PR de la URL pública (C3):** Adán cambia el `nginx.conf` de la web y añade un segundo túnel en `infra/docker-compose.yml` porque Benas no puede ejecutar Docker. Como el compose es de A, la mira Benas antes de fusionarla.
-
-### Flujos A y B · a acordar (Benas + Francisco)
-
-- **Avisos a quien solo usa Telegram (paso 6 de la demo) · D1, aplazada por Adán (sáb 13:20):** el bot ya lee `contacto` en `POST /notify`, pero el contrato (`schemas/notificacion.json`) y el modelo del bot siguen exigiendo `telefono`. Un vecino que entró por Telegram sin «Compartir mi número» no tiene teléfono y la API deja su aviso como `fallida` («sin telefono»). Quitar el `required` no es un cambio aditivo: hay que decidirlo juntos. Mientras tanto, en la demo, todos los inscritos tienen que haber compartido su número.
-
-- **Código de acceso por mensajería (Telegram y WhatsApp):** `POST /auth/whatsapp/codigo` tiene que pedir al bot (`POST /notify`) que mande el código. El nombre de la ruta no se cambia (el contrato no renombra), pero vale para los dos canales. Con Telegram, el bot no puede escribir a un móvil que nunca le ha hablado. Hace falta acordar el paso previo: por ejemplo, que la web enseñe el enlace `t.me/HackeMate_bot?start=alta` y el vecino comparta su número con «Compartir mi número» (`POST /usuarios/vincular`) antes de pedir el código. Si hace falta un campo `canal` en la petición, se añade como opcional con `contract-change`.
-
-### Todos · Telegram ahora, WhatsApp más adelante
-
-Regla en `CLAUDE.md` § «Canales de mensajería». Cómo se elige el canal hoy, sin tocar código:
-- **Bot (B):** Telegram se activa con `TELEGRAM_TOKEN`, y los contactos `tg:<chat_id>` salen por ahí. WhatsApp sale por `CANAL` (`meta`, `twilio` o `console`). Los dos pueden funcionar a la vez.
-- **API (A):** guarda los dos contactos (`telefono` E.164 y `telegram_id`) y los distingue en `services/api/app/canales.py`. Nada de la API puede dar por hecho un canal concreto.
-- **Web (C):** `VITE_CANAL=telegram|whatsapp` (en `.env.example`, el compose y el `Dockerfile`) elige qué canal nombra la web en el alta y en los avisos (`apps/web/src/canal.ts`).
-
-### Flujo C · web (Adán)
-
-- **Que lo que hace uno se vea en los demás móviles sin recargar** (revisión del despliegue, sáb 21/11, Benas). La API ya lo guarda todo y lo devuelve al momento (comprobado con dos «móviles» contra la misma API), pero hay pantallas que cargan una sola vez:
-  - **Ficha** (`src/pages/Ficha.tsx`): carga con `useEffect` al cambiar el `id`; al volver a la misma ficha, las plazas libres, la hora o el estado no se actualizan. Propuesta: `useIonViewWillEnter` y deslizar para recargar (`IonRefresher`), como en la Agenda.
-  - **Chat del evento** (`src/components/ChatEvento.tsx`): no se ven las preguntas ni las respuestas de los demás hasta recargar (paso 5). Propuesta: volver a pedir `GET /eventos/{id}/mensajes` cada 10–15 s mientras la ficha está abierta.
-  - **Bandeja del moderador** (`src/pages/admin/Bandeja.tsx`): los posts nuevos que llegan por el bot o por Facebook no aparecen hasta recargar (paso 3). Propuesta: refresco cada 10 s, como el Panel, y `useIonViewWillEnter`.
-  - **PWA (C4):** cuando se añada el service worker, que **no guarde en caché `/api/`** (solo los estáticos), o los móviles verán datos viejos.
-- **URL pública de la web (C3):** hoy la web solo funciona en la máquina de la demo (`VITE_API_URL=http://localhost:8000` y el túnel solo al bot). Lo necesitan el jurado, el APK (C5) y cualquiera que pruebe desde fuera.
-- **«Para ti» (C2):** la API ya da `GET /recomendaciones`; falta enseñarlo en la agenda para el paso 4.
-- **La imagen `web` no se construye en la red de la universidad** (ensayo del sáb 21/11 en el portátil de Francisco): `npm ci` falla con `UNABLE_TO_VERIFY_LEAF_SIGNATURE` porque el cortafuegos (Fortinet) intercepta `registry.npmjs.org`. GitHub y PyPI sí funcionan. Para el día de la demo: construir la imagen antes en otra red (datos del móvil) y no borrarla, o tener el `dist/` ya generado. No se desactiva la comprobación de certificados.
-
-Lo que pide el bot:
-- Opcional, como plan C de la demo: un chat simulado en la web que llame a `bot POST /dev/mensaje`.
-
-### Flujo B · bot (Francisco), NVIDIA NIM y audios
-
-- **Audios sin depender del portátil de Fran (B3):** la transcripción va por FreeLLM, que ya corre en Docker (`services/bot/freellmapi/`). En la demo, Adán levanta su propio FreeLLMAPI en su máquina con la configuración que le pasa Fran por privado. Lo necesita el paso 7.
-
-### Flujo B · bot (Francisco), frase de portada con IA
-
-- **`POST /ai/frase`** (o el nombre que se acuerde, primero en el contrato): a partir del título, la categoría y el pueblo, devolver una frase breve, espontánea y alegre (máx. 90 letras, sin inventar datos del plan) para la portada del carrusel. La llama la API cuando el publicador no escribe la suya. Mientras no exista, la web elige una frase fija por tipo de plan y la marca como «✨ Frase automática».
-
-Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
-
-### Ya resuelto
-
-- **Alta de asociaciones por chat con los datos del responsable** (B5, pedido por Benas para el nivel 2): el bot pide nombre, tipo, pueblo, responsable, DNI o NIE y residencia y llama a `POST /publicadores` con `responsable`. Funciona igual por Telegram y por WhatsApp (`services/bot/app/alta.py`). Para probarlo: escribir al bot «quiero dar de alta mi asociación».
-
-- **NVIDIA NIM en el `llm_router` (B2)**, para la ingesta de Facebook de Benas (A2) y el panel de Adán (C6): `/ai/extraer` lo usa antes que FreeLLM y sus tokens salen en `/metrics` y `/metrics/tokens` como `nim`. Ver B2 en el reparto.
-- **«Este finde» recomendaba planes de otras semanas** (hallazgo de Adán, paso 4): resuelto en la #52; las recomendaciones se filtran por el periodo pedido.
-
-- **Cambiar la URL del túnel ya no reinicia el bot** (pedido en la revisión del despliegue de Benas, sáb 21/11). `scripts/url_publica.py` se la pasa en caliente (`POST /admin/webhook-telegram` con `public_url` y `web_url`): el bot vuelve a registrar el webhook y cambia los enlaces de las fichas sin perder las conversaciones a medias (un publicador a mitad de confirmar sigue donde estaba). El `.env` se actualiza igual, para el siguiente arranque. Solo recrea el bot si no responde o con `--forzar`. Probado con un publicador a medias: tras el cambio, contesta la fecha y sigue a «¿Lo publico así?». Test en `services/bot/tests/test_robustez.py`.
-
-- **Lo que hace la gente ya no se pierde al reiniciar** (revisión del despliegue, sáb 21/11, Benas). El contenedor `api` ejecutaba el seed en cada arranque y **sobrescribía con los fixtures** los datos de la demo: un `up --build` o cualquier reinicio deshacía el cambio de hora, las decisiones del moderador, los gustos guardados y **volvía a poner las plazas libres aunque hubiera inscritos** (Carmen inscrita y otra vez 8 plazas: se podía vender su plaza). Ahora arranca con `seed --solo-nuevos` (solo añade lo que falte). Comprobado con dos «móviles» contra la misma API y un reinicio simulado. Además, en el compose: `restart: unless-stopped` en `db` y `api` (si la API se cae, vuelve sola) y volumen `bot_data` con `COLA_PATH` para que la cola del bot sobreviva a recrearlo.
-
-- **El compose no leía las variables `${…}` del `.env` de la raíz** (encontrado por Francisco en su ensayo con Docker): todos los comandos llevan ahora `--env-file .env` (cabecera del compose, README, `CLAUDE.md`, `PLAN.md`, `PLAN_FLUJO_A.md`, `PRUEBAS_V1.md` y `scripts/demo_reset.sh`). Desde la raíz del repo: `docker compose --env-file .env -f infra/docker-compose.yml up --build`. Sin él, `FREELLM_URL_DOCKER`, `VITE_*`, `WEB_URL` y `POSTGRES_*` se quedaban con su valor por defecto y el bot caía a reglas.
-- **Restaurar un plan rechazado** (pedido por Adán, 21/11): `POST /moderacion/{id}/decision` con `decision: restaurar` (contrato, API con tests y botón en `/admin` → Planes → Rechazados).
-- **Sesión caducada tras reiniciar la base** (C): la web cierra la sesión ante 401 `token_invalido`/`token_caducado` y repite la petición sin token.
-- **Duplicados en la bandeja (prueba en Docker de Adán, sáb 11:15):** ya lo resuelve la #43. Antes, un plan que iba a revisión por otro motivo no se marcaba como duplicado; ahora el segundo envío del mismo post llega a la bandeja con el motivo «Posible duplicado de «Taller de esparto»». Comprobado a mano con `simular_chat.py` dos veces (bot y API de `develop`) y con un test nuevo (`test_mismo_post_dos_veces_del_mismo_publicador_avisa_duplicado`). Si en Docker sigue saliendo, es una imagen anterior: `docker compose --env-file .env -f infra/docker-compose.yml up --build`.
-
-- **Solo dos modos de publicación (a mano y automática), sin semiautomático** (decisión del equipo, 21/11): la API ya no usa el nivel 1 (si llega, lo guarda como 0) ni sube de nivel sola; la migración 0008 pasa a «a mano» los que estaban en 1, y en el seed las asociaciones son «a mano» y los ayuntamientos y el bar, «automática». Un posible duplicado de una asociación «a mano» llega a la bandeja con el motivo «Posible duplicado de…». La web ya manda `nivel_confianza: 0` para «a mano» (`cambiarRevision` en `apps/web/src/api/admin.ts`).
-
-- La web (flujo C, H2) ya usa la API real en la zona del ayuntamiento: bandeja (`/moderacion/*`), publicadores (`/aprobar`, `/pausar`, `/verificar-identidad`), planes con JWT, `GET /estadisticas`, panel del bot y «Proponer un plan» con `datos_ayuntamiento`. Los botones de la demo en `/admin` entran con `POST /auth/demo`, así que la API tiene que arrancar con `DEMO_MODE=true` en el `.env` (si no, la web vuelve a los mocks y lo marca como «modo demo»).
-
-- Docker compose arranca el bot real de `services/bot` (PR #23, probado en Docker).
-- El aviso al vecino usa el contacto que tenga: la API manda `contacto` en `POST /notify` (`tg:<telegram_id>` si existe, si no `telefono`) en vez de suponer WhatsApp.
-- `POST /eventos` y `PATCH /eventos/{id}` con sesión (JWT): la web «Proponer» y el organizador o el moderador editan sin token interno.
-- `PATCH /usuarios/{id}` (preferencias que guarda el bot).
-- Panel del bot por la API: `GET /admin/bot/metricas` y `POST /admin/bot/simular-caida` con la sesión del moderador.
-- `POST /publicadores/{id}/verificar-identidad` (DNI/NIE y residencia del responsable comprobados).
-- Filtro por estado en `GET /eventos`: `publicado` y `finalizado` («Recuerdos») para todos; los demás estados, el moderador (todos) y el publicador (solo los suyos), con sesión.
+- **Infra y despliegue:** URL pública por la web (C8 #59, C8b #60, A6/A7 #61, F1/F2 `url_publica.py`), cambio de túnel en caliente sin perder conversaciones, `--env-file .env` (#53), seed `--solo-nuevos`, `restart: unless-stopped` y volumen `bot_data` (#63), segunda máquina de demo (#65).
+- **API:** todas las rutas del contrato; dos modos de publicación (a mano y automática, sin nivel 1, #43); restaurar un plan rechazado; duplicados a la bandeja; `contacto` en `/notify` (`tg:` o teléfono); filtro por estado en `GET /eventos` (Recuerdos); verificar identidad del responsable.
+- **Ingesta de Facebook (A2, #49):** `scripts/importar_facebook.py`, 20 posts reales en `contracts/fixtures/facebook_posts.json`, servicio `ingesta` apagado por defecto (`--desde-json` sin red).
+- **Bot:** hallazgos sin IA (B1), NVIDIA NIM en la cadena `gemini,nim,freellm,claude,reglas` (B2, #66), «este finde» filtrado (#52), alta de asociaciones por chat con nombre, DNI/NIE y residencia (B5, #67: «quiero dar de alta mi asociación»).
+- **Web:** H0–H2 contra la API real, `/admin` con `/auth/demo`, Recuerdos, Proponer, inscripción, `.ics`, chat, rediseño de agenda y ficha (#64), cierre de sesión ante 401.
 
 ---
 
