@@ -1487,3 +1487,268 @@ ion-card-content {
   background: var(--hm-naranja);
   border-color: #fff;
 }
+
+/* =====================================================================
+   Rediseño 21/11: agenda por días con hoja de taco de calendario,
+   tarjetas de plan más legibles, ficha ordenada y ancho de lectura en escritorio.
+   ===================================================================== */
+
+/* Ancho máximo en pantallas grandes: el contenido no se estira de lado a lado */
+ion-content.contenido-lectura::part(scroll) {
+  padding-inline: max(16px, calc((100% - 760px) / 2));
+}
+ion-content.contenido-agenda::part(scroll) {
+  padding-inline: max(0px, calc((100% - 1040px) / 2));
+}
+
+/* ---------- Hoja de taco: el mes arriba en naranja, el día grande ---------- */
+.hoja-dia {
+  flex: none;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  width: 56px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--hm-borde);
+  box-shadow: 0 2px 0 var(--hm-borde);
+  text-align: center;
+  line-height: 1;
+}
+.hoja-dia__mes {
+  padding: 4px 0 3px;
+  background: var(--hm-naranja);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.hoja-dia__num {
+  padding: 6px 0 7px;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--hm-texto);
+}
+.hoja-dia--peque {
+  width: 48px;
+}
+.hoja-dia--peque .hoja-dia__num {
+  font-size: 1.2rem;
+  padding: 4px 0 5px;
+}
+
+/* ---------- Cabecera de cada día: pegada arriba al hacer scroll ---------- */
+.agenda-dias {
+  padding: 4px 12px 24px;
+}
+.grupo-dia + .grupo-dia {
+  margin-top: 8px;
+}
+.cabecera-dia {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 4px;
+  background: var(--ion-background-color);
+}
+.cabecera-dia__texto {
+  margin: 0;
+  display: grid;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--hm-verde-oscuro);
+  line-height: 1.25;
+}
+.cabecera-dia__relativo {
+  font-size: 0.8rem;
+  color: var(--hm-naranja-oscuro);
+}
+
+/* ---------- Tarjeta de plan ---------- */
+.grupo-dia__planes {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+}
+/* En escritorio, la hoja del día queda en un margen a la izquierda, como en una agenda de papel */
+@media (min-width: 900px) {
+  .grupo-dia {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+  .grupo-dia + .grupo-dia {
+    margin-top: 18px;
+  }
+  .grupo-dia .cabecera-dia {
+    top: 12px;
+    align-items: flex-start;
+    padding: 0;
+  }
+}
+ion-item.tarjeta-evento {
+  --background: #fff;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --border-radius: var(--hm-radio);
+  border: 1px solid var(--hm-borde);
+  border-radius: var(--hm-radio);
+}
+.tarjeta-evento__cuerpo {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  padding: 12px;
+}
+.tarjeta-evento .miniatura-plan {
+  width: 84px;
+  height: 84px;
+  margin: 0;
+}
+.tarjeta-evento__texto {
+  min-width: 0;
+  flex: 1;
+}
+.tarjeta-evento h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tarjeta-evento__meta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  color: var(--hm-texto-suave);
+  font-size: 0.9rem;
+}
+.tarjeta-evento__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.tarjeta-evento__meta ion-icon {
+  flex: none;
+  font-size: 1.05em;
+  color: var(--hm-verde);
+}
+.tarjeta-evento__chapas {
+  margin: 8px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chapa {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.chapa--gratis {
+  background: var(--hm-verde-claro);
+  color: var(--hm-verde-oscuro);
+}
+.chapa--precio {
+  background: #eceff1;
+  color: var(--hm-texto);
+}
+.chapa--gente {
+  background: var(--hm-naranja-claro);
+  color: var(--hm-naranja-oscuro);
+}
+.chapa--aviso {
+  background: #fff4d6;
+  color: #5c4100;
+}
+
+/* ---------- Ficha ---------- */
+.ficha {
+  padding: 18px 4px 8px;
+}
+.ficha__categoria {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.ficha__titulo {
+  margin: 10px 0 4px;
+  font-size: clamp(1.45rem, 1.1rem + 1.6vw, 2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--hm-verde-oscuro);
+}
+.ficha__organiza {
+  margin: 0;
+  color: var(--hm-texto-suave);
+}
+.ficha__datos {
+  margin: 18px 0 0;
+  display: grid;
+  gap: 2px;
+  border-top: 1px solid var(--hm-borde);
+}
+.ficha__datos > div {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hm-borde);
+}
+.ficha__datos dt {
+  display: grid;
+  place-items: center;
+}
+.ficha__datos dt:has(ion-icon) {
+  justify-self: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--hm-verde-claro);
+  color: var(--hm-verde-oscuro);
+}
+.ficha__datos dt ion-icon {
+  font-size: 24px;
+}
+.ficha__datos dd {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+}
+.ficha__datos dd span {
+  color: var(--hm-texto-suave);
+}
+.ficha__nota {
+  font-size: 0.9rem;
+}
+.ficha .descripcion {
+  margin-top: 16px;
+}
+.foto-plan--ficha {
+  margin-top: 0;
+}
+
+/* Títulos de las cajas de Perfil con el mismo peso que el resto de títulos */
+.titulo-caja {
+  font-weight: 700;
+  color: var(--hm-verde-oscuro);
+}

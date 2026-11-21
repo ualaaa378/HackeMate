@@ -4,8 +4,6 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
-  IonItemDivider,
-  IonLabel,
   IonList,
   IonPage,
   IonRefresher,
@@ -29,9 +27,39 @@ import SelectorLetra from '../components/SelectorLetra';
 import TarjetaEvento from '../components/TarjetaEvento';
 import TusPlanes from '../components/TusPlanes';
 import { useSesion } from '../cuenta/sesion';
-import { agruparPorDia, fechaLarga, yaPaso } from '../utils/formato';
+import { agruparPorDia, claveDia, fechaLarga, yaPaso } from '../utils/formato';
 
 const DESTACADOS = 5;
+
+/** «Hoy» o «Mañana» cuando toca: es lo primero que busca quien mira la agenda. */
+function diaRelativo(dia: string): string | null {
+  const hoy = new Date();
+  const manana = new Date(hoy);
+  manana.setDate(hoy.getDate() + 1);
+  if (dia === claveDia(hoy.toISOString())) return 'Hoy';
+  if (dia === claveDia(manana.toISOString())) return 'Mañana';
+  return null;
+}
+
+/* Cabecera de cada día con una hoja de taco de calendario, como el que cuelga en la cocina. */
+const CabeceraDia: React.FC<{ dia: string; iso: string }> = ({ dia, iso }) => {
+  const fecha = new Date(iso);
+  const mes = fecha.toLocaleDateString('es-ES', { month: 'short', timeZone: 'Europe/Madrid' }).replace('.', '');
+  const num = fecha.toLocaleDateString('es-ES', { day: 'numeric', timeZone: 'Europe/Madrid' });
+  const relativo = diaRelativo(dia);
+  return (
+    <header className="cabecera-dia">
+      <span className="hoja-dia" aria-hidden="true">
+        <span className="hoja-dia__mes">{mes}</span>
+        <span className="hoja-dia__num">{num}</span>
+      </span>
+      <h2 id={`dia-${dia}`} className="cabecera-dia__texto">
+        {relativo && <span className="cabecera-dia__relativo">{relativo}</span>}
+        <span className="dia">{fechaLarga(iso)}</span>
+      </h2>
+    </header>
+  );
+};
 
 const Agenda: React.FC = () => {
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -71,6 +99,7 @@ const Agenda: React.FC = () => {
   // También al volver de la ficha tras apuntarse («Tus planes») o de la bandeja tras aprobar un plan (la agenda).
   useIonViewWillEnter(() => void Promise.all([cargar(), cargarTodos()]), [cargar, cargarTodos]);
 
+  const proximos = eventos.filter((e) => !yaPaso(e));
   const mios = misPlanes();
   const tusPlanes = todos.filter((e) => mios.has(e.id));
   const destacados = todos.slice(0, DESTACADOS);
@@ -90,7 +119,7 @@ const Agenda: React.FC = () => {
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
+      <IonContent className="contenido-agenda">
         <IonRefresher
           slot="fixed"
           onIonRefresh={(ev) => void Promise.all([cargar(), cargarTodos()]).then(() => ev.detail.complete())}
@@ -135,22 +164,22 @@ const Agenda: React.FC = () => {
             <p className="ion-padding">{error}</p>
           </IonText>
         )}
-        {!cargando && !error && eventos.length === 0 && (
+        {!cargando && !error && proximos.length === 0 && (
           <p className="ion-padding">No hay planes con estos filtros. Prueba con otro pueblo o categoría.</p>
         )}
 
-        <IonList>
-          {agruparPorDia(eventos).map(([dia, delDia]) => (
-            <div key={dia}>
-              <IonItemDivider sticky color="light">
-                <IonLabel className="dia">{fechaLarga(delDia[0].fecha_inicio)}</IonLabel>
-              </IonItemDivider>
-              {delDia.map((e) => (
-                <TarjetaEvento key={e.id} evento={e} />
-              ))}
-            </div>
+        <div className="agenda-dias">
+          {agruparPorDia(proximos).map(([dia, delDia]) => (
+            <section key={dia} className="grupo-dia" aria-labelledby={`dia-${dia}`}>
+              <CabeceraDia dia={dia} iso={delDia[0].fecha_inicio} />
+              <IonList lines="none" className="grupo-dia__planes">
+                {delDia.map((e) => (
+                  <TarjetaEvento key={e.id} evento={e} />
+                ))}
+              </IonList>
+            </section>
           ))}
-        </IonList>
+        </div>
       </IonContent>
     </IonPage>
   );
