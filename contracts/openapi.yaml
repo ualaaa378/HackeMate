@@ -253,6 +253,41 @@ paths:
         "409": { $ref: "#/components/responses/Error", description: "409 `estado_invalido` (el evento no está en `pendiente_confirmacion`)" }
         "422": { $ref: "#/components/responses/Error", description: "422 `faltan_campos` (details.faltan), `validacion`, `municipio_no_encontrado` o `fechas_invalidas`" }
 
+  /api/v1/eventos/{id}/apelacion:
+    post:
+      tags: [moderacion]
+      summary: "P3a: el organizador pide que se revise otra vez un plan rechazado (una sola vez)"
+      description: |
+        Solo quien propuso el plan: el responsable de su publicador o el vecino que lo propuso (con su sesión), o el
+        bot en su nombre (`X-Internal-Token` + `usuario_id`). Solo si el plan está `rechazado` y **una vez**: el
+        plan vuelve a `en_revision`, a la bandeja, con el motivo «Apelación: {motivo}» y guarda `apelacion` en el
+        evento. El moderador decide con los botones de siempre; un segundo rechazo es definitivo (no se puede
+        volver a apelar). El aviso de rechazo al publicador lleva `evento_id`, para que el bot ponga [Apelar].
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motivo]
+              properties:
+                motivo: { type: string, minLength: 10, maxLength: 500, description: "Por qué debería publicarse" }
+                usuario_id: { type: string, format: uuid, description: "Obligatorio con X-Internal-Token (el bot): quién apela" }
+      responses:
+        "200":
+          description: El plan vuelve a la bandeja
+          content:
+            application/json:
+              schema: { $ref: "./schemas/evento.json" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (no es quien propuso el plan)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `estado_invalido` (no está rechazado) o `apelacion_usada` (ya apeló una vez)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` (motivo de menos de 10 o más de 500 caracteres)" }
+
   /api/v1/eventos/{id}/inscripciones:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -1709,6 +1744,7 @@ components:
             nombre: { type: string, maxLength: 120 }
             dni: { type: string, maxLength: 20, description: DNI o NIE }
             residencia: { type: string, maxLength: 200, description: Pueblo o dirección donde vive }
+            edad: { type: [integer, "null"], minimum: 14, maximum: 120, description: "P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion`" }
 
     UsuarioCrear:
       type: object
@@ -1717,6 +1753,7 @@ components:
         telefono: { $ref: "#/components/schemas/Telefono" }
         nombre: { type: string }
         municipio: { type: [string, "null"] }
+        edad: { type: [integer, "null"], minimum: 14, maximum: 120, description: "P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion`" }
 
     UsuarioVincular:
       type: object
@@ -1727,6 +1764,7 @@ components:
         contacto: { $ref: "#/components/schemas/Contacto" }
         nombre: { type: string, description: Solo se usa si se crea el usuario }
         municipio: { type: [string, "null"], description: Solo se usa si se crea el usuario }
+        edad: { type: [integer, "null"], minimum: 14, maximum: 120, description: "P4a. Solo se usa si se crea el usuario. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion`" }
 
     UsuarioEditar:
       type: object
@@ -1741,6 +1779,7 @@ components:
         acepta_avisos: { type: boolean }
         radio_km: { type: [number, "null"], minimum: 0 }
         telefono: { $ref: "#/components/schemas/Telefono" }
+        edad: { type: [integer, "null"], minimum: 14, maximum: 120, description: "P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion`" }
 
     Token:
       type: object

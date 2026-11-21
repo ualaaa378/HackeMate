@@ -21,6 +21,7 @@
     "formato_aviso": { "enum": ["texto", "audio"] },
     "acepta_avisos": { "type": "boolean" },
     "radio_km": { "type": ["number", "null"], "minimum": 0 },
+    "edad": { "type": ["integer", "null"], "minimum": 14, "maximum": 120, "description": "P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion`. Los usuarios anteriores quedan en null" },
     "publicador_id": { "type": ["string", "null"], "format": "uuid" },
     "creado_en": { "type": "string", "format": "date-time" }
   }

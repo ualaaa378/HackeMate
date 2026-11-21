@@ -41,6 +41,7 @@
         "nombre": { "type": "string", "maxLength": 120 },
         "dni": { "type": "string", "maxLength": 20, "description": "DNI o NIE. La web lo enseña oculto salvo los 4 últimos caracteres" },
         "residencia": { "type": "string", "maxLength": 200, "description": "Pueblo o dirección donde vive" },
+        "edad": { "type": ["integer", "null"], "minimum": 14, "maximum": 120, "description": "P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion`" },
         "identidad_verificada": { "type": "boolean", "description": "Un moderador ha comprobado el DNI y la residencia (POST /publicadores/{id}/verificar-identidad)" }
       }
     },
