@@ -13,8 +13,9 @@ import ComentariosRecuerdo from './ComentariosRecuerdo';
 const VISIBLES = 3;
 const MAXIMO = 9;
 
-/** N1: Recuerdos dentro de la agenda en pantalla grande. En el móvil siguen en su pestaña. */
-const RecuerdosAgenda: React.FC = () => {
+/** N1: Recuerdos dentro de la agenda en pantalla grande. En el móvil siguen en su pestaña.
+ * `compacto`: lista en fila (foto pequeña a la izquierda) para la columna lateral. */
+const RecuerdosAgenda: React.FC<{ compacto?: boolean }> = ({ compacto = false }) => {
   const [planes, setPlanes] = useState<Evento[] | null>(null);
   const [todos, setTodos] = useState(false);
   const [abierto, setAbierto] = useState<Evento | null>(null);
@@ -46,7 +47,10 @@ const RecuerdosAgenda: React.FC = () => {
   if (!planes || planes.length === 0) return null;
   const mostrados = todos ? planes : planes.slice(0, VISIBLES);
   return (
-    <section className="recuerdos-agenda" aria-labelledby="t-recuerdos-agenda">
+    <section
+      className={compacto ? 'recuerdos-agenda recuerdos-agenda--compacto' : 'recuerdos-agenda'}
+      aria-labelledby="t-recuerdos-agenda"
+    >
       <div className="recuerdos-agenda__cabecera">
         <h2 id="t-recuerdos-agenda" className="titulo-seccion">
           📸 Recuerdos
@@ -82,7 +86,7 @@ const RecuerdosAgenda: React.FC = () => {
                   }
                 >
                   <IonIcon slot="start" icon={chatbubbleEllipses} aria-hidden="true" />
-                  {n > 0 ? `Fotos y comentarios (${n})` : 'Fotos y comentarios'}
+                  {`${compacto ? 'Ver fotos' : 'Fotos y comentarios'}${n > 0 ? ` (${n})` : ''}`}
                 </IonButton>
               </div>
             </li>

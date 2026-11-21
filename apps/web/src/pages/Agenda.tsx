@@ -16,7 +16,7 @@ import {
   useIonViewWillEnter,
 } from '@ionic/react';
 import { addCircleOutline } from 'ionicons/icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getEventos, misPlanes, MUNICIPIOS } from '../api/client';
 import type { Categoria, Evento } from '../api/types';
@@ -83,6 +83,14 @@ const Agenda: React.FC = () => {
   const grande = usePantallaGrande();
   // Sube al volver a la agenda o al deslizar: «Para ti» cambia cuando la persona se apunta a algo.
   const [recarga, setRecarga] = useState(0);
+  const contenido = useRef<HTMLIonContentElement>(null);
+  // El logo vuelve al inicio: sin filtros ni búsqueda y arriba del todo.
+  const irAlInicio = () => {
+    setMunicipio(undefined);
+    setCategoria(undefined);
+    setBusqueda('');
+    void contenido.current?.scrollToTop(300);
+  };
 
   const cargar = useCallback(
     () =>
@@ -206,7 +214,7 @@ const Agenda: React.FC = () => {
       <IonHeader>
         <IonToolbar color="secondary">
           <IonTitle>
-            <Marca />
+            <Marca onInicio={irAlInicio} />
           </IonTitle>
           <IonButtons slot="end">
             <IonButton routerLink="/proponer" fill="outline" className="boton-proponer" aria-label="Proponer un plan">
@@ -216,7 +224,7 @@ const Agenda: React.FC = () => {
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent className={grande ? 'contenido-agenda contenido-agenda--zonas' : 'contenido-agenda'}>
+      <IonContent ref={contenido} className={grande ? 'contenido-agenda contenido-agenda--zonas' : 'contenido-agenda'}>
         <IonRefresher
           slot="fixed"
           onIonRefresh={(ev) => {
@@ -232,6 +240,7 @@ const Agenda: React.FC = () => {
             <aside className="agenda-zonas__lateral" aria-label="Tus planes y sugeridos">
               <TusPlanes eventos={tusPlanes} />
               <Sugeridos usuario={usuario} proximos={todos} mios={mios} recarga={recarga} />
+              <RecuerdosAgenda compacto />
             </aside>
             <div className="agenda-zonas__centro">
               <div className="inicio">
@@ -239,9 +248,6 @@ const Agenda: React.FC = () => {
                 {carrusel}
               </div>
               {agenda}
-              <div className="inicio">
-                <RecuerdosAgenda />
-              </div>
             </div>
           </div>
         ) : (
