@@ -341,3 +341,68 @@ def test_sin_recomendaciones_en_el_finde_dice_que_no_hay_y_ofrece_mas_adelante(a
     agenda.agenda = [lejos]
     r = conversacion.procesar(_msg("¿Qué planes hay este finde?"))
     assert "Te recomiendo este fin de semana" not in r[0] and "más adelante" in r[0]
+
+
+# ---------- Búsqueda con lenguaje natural ----------
+
+SABADO_TARDE = datetime(2026, 11, 21, 19, 0, tzinfo=TZ)
+
+
+@pytest.mark.parametrize("texto,esperado", [
+    ("algo para ir con niños el domingo por la tarde cerca de Tahal",
+     "para ir con niños el domingo 22/11 por la tarde cerca de Tahal"),
+    ("Busco algo tranquilo para ir con mis nietos el sábado por la mañana cerca de Lucainena",
+     "para ir con niños tranquilos el sábado 28/11 por la mañana cerca de Lucainena de las Torres"),
+    ("algo gratis al aire libre en Senés", "al aire libre gratis los próximos días en Senés"),
+    ("rutas mañana por Velefique", "mañana cerca de Velefique"),
+])
+def test_busqueda_entiende_lo_que_se_pide(texto, esperado):
+    assert busqueda.interpretar(texto, SABADO_TARDE).descripcion() == esperado
+
+
+def test_algo_con_ninos_es_una_busqueda_y_un_anuncio_largo_no():
+    assert intencion.detectar("algo para ir con niños el domingo por la tarde cerca de Tahal").tipo == "buscar"
+    assert intencion.detectar("Concierto de la banda el domingo por la tarde en la plaza de Tahal con los niños "
+                              "del colegio y sus familias").tipo == "publicar"
+
+
+def test_con_ninos_la_ia_elige_y_explica(agenda, monkeypatch):
+    from app.llm import router
+    agenda.agenda[1]["descripcion"] = "Migas para todas las familias, con juegos para los peques."
+    monkeypatch.setattr(api_cliente_mod(), "coordenadas_municipio", lambda n: (37.1, -2.4))
+    cadenas = []
+
+    def ia(tarea, system, texto, salida, reglas, cadena=None):
+        cadenas.append(cadena)
+        from app.agentes.busqueda import _Elegido
+        return router.Resultado(proveedor="freellm:x", salida=salida(elegidos=[
+            _Elegido(evento_id="e2", motivo="Pensado para familias, con juegos para los peques"),
+            _Elegido(evento_id="inventado", motivo="x")]))
+    monkeypatch.setattr(router, "estructurado", ia)
+    r = conversacion.procesar(_msg("algo para ir con niños por la mañana"))
+    assert r[0].startswith("Planes para ir con niños") and "por la mañana" in r[0]
+    assert "Migas solidarias" in r[1] and "juegos para los peques" in r[1] and len(r) == 2
+    assert cadenas[0][0] == "freellm"
+
+
+def test_sin_ia_busca_palabras_clave_y_si_nada_encaja_lo_dice(agenda, monkeypatch):
+    agenda.agenda[1]["descripcion"] = "Migas para todas las familias."
+    r = conversacion.procesar(_msg("algo para ir con niños por la mañana"))  # sin IA: reglas
+    assert "Migas solidarias" in " ".join(r) and "Ruta por la sierra" not in " ".join(r)
+    r = conversacion.procesar(_msg("algo para ir con niños por la noche"))  # todos son a las 11:00
+    assert r[0].startswith("No hay planes para ir con niños") and "Pero" in r[0]
+
+
+def api_cliente_mod():
+    from app import api_cliente
+    return api_cliente
+
+
+def test_si_no_hay_nada_ese_dia_lo_dice_y_ensena_mas_adelante(agenda, monkeypatch):
+    """«el domingo por la tarde» sin nada ese día: no se presenta un plan de otro día como si fuera ese."""
+    agenda.agenda[1]["descripcion"] = "Migas para todas las familias."
+    lejos = (datetime.now(TZ) + timedelta(days=12)).replace(hour=11, minute=0, second=0, microsecond=0)
+    agenda.agenda = [dict(agenda.agenda[1], fecha_inicio=lejos.isoformat())]
+    dia = busqueda.DIAS[(datetime.now(TZ).weekday() + 3) % 7]  # dentro de 3 días: no hay nada
+    r = conversacion.procesar(_msg(f"algo para ir con niños el {dia} por la mañana"))
+    assert r[0].startswith("No hay nada para ir con niños") and "Más adelante" in r[0]

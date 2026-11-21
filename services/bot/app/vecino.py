@@ -138,8 +138,13 @@ def buscar(msg: MensajeEntrante, texto: str, usuario: dict | None,
                                   pedir_ubicacion=True)]
             return ["¿En qué pueblo estás? (Lucainena, Senés, Velefique, Uleila o Tahal)"]
 
+    if c.cerca_de:
+        c.centro = api_cliente.coordenadas_municipio(c.cerca_de)
+        if c.centro is None:  # sin coordenadas, al menos ese pueblo
+            c.municipio, c.cerca_de = c.cerca_de, None
+
     gustos = _gustos(msg.de, usuario)
-    generico = not (c.municipio or c.categorias or c.cerca)
+    generico = not (c.municipio or c.categorias or c.cerca or c.detallada)
     if generico and usuario and usuario.get("id"):
         try:
             recos = api_cliente.recomendaciones(usuario["id"], limite=10)
@@ -152,10 +157,12 @@ def buscar(msg: MensajeEntrante, texto: str, usuario: dict | None,
             return _presentar(msg, [r["evento"] for r in recos], f"Te recomiendo {c.periodo}:",
                               motivos={r["evento"]["id"]: r.get("motivo") for r in recos})
 
+    ampliado = False  # no había nada en esas fechas y se ha mirado más adelante
     try:
         eventos = api_cliente.buscar_eventos(c.parametros(lat, lon))
         cabecera = f"Esto es lo que hay {c.periodo}" + (f" en {c.municipio}" if c.municipio else "") + ":"
         if not eventos and (c.hasta and (c.hasta - c.desde).days < 25):
+            ampliado = True
             c.hasta = None  # nada en esas fechas: miramos más adelante
             eventos = api_cliente.buscar_eventos(c.parametros(lat, lon))
             cabecera = f"No hay nada {c.periodo}" + (f" en {c.municipio}" if c.municipio else "") + \
@@ -165,6 +172,8 @@ def buscar(msg: MensajeEntrante, texto: str, usuario: dict | None,
 
     if len(c.categorias) > 1:
         eventos = [e for e in eventos if e.get("categoria") in c.categorias]
+    if c.detallada:  # búsqueda con lenguaje natural: franja, gratis y criterios blandos (con IA)
+        return _buscar_detallada(msg, texto, c, eventos, ampliado)
     if not eventos:
         return ["No he encontrado planes con esa búsqueda 😕 Prueba con otro pueblo o con «¿qué hay este mes?»."]
     # Primero lo que le gusta; dentro, por fecha
@@ -172,6 +181,26 @@ def buscar(msg: MensajeEntrante, texto: str, usuario: dict | None,
     motivos = {e["id"]: f"Te gusta: {NOMBRE_CATEGORIA.get(e['categoria'], e['categoria'])}"
                for e in eventos if e.get("categoria") in gustos}
     return _presentar(msg, eventos, cabecera, motivos)
+
+
+def _buscar_detallada(msg: MensajeEntrante, texto: str, c: busqueda.Consulta, eventos: list[dict],
+                      ampliado: bool = False) -> list:
+    """«algo para ir con niños el domingo por la tarde cerca de Tahal»: lo concreto filtra; lo blando, la IA."""
+    tz = ZoneInfo(get_settings().zona_horaria)
+    candidatos = [e for e in eventos if busqueda.en_franja(e, c.franja, tz) and (not c.gratis or busqueda.es_gratis(e))]
+    elegidos, motivos, _ = busqueda.afinar(texto, candidatos, c)
+    if elegidos:
+        if ampliado:  # se dice que no es lo que pidió: es de otro día
+            return _presentar(msg, elegidos, f"No hay nada {c.descripcion()} 😕 Más adelante hay esto:", motivos)
+        return _presentar(msg, elegidos, f"Planes {c.descripcion()}:", motivos)
+    # Nada encaja del todo: se dice y se enseña lo más cercano a lo que pidió, sin fingir que encaja
+    pedido = c.descripcion()
+    if candidatos:
+        return [f"No he encontrado planes {pedido} que lo digan claramente 🤔 Esto es lo que hay que se acerca más:"] \
+            + _presentar(msg, candidatos, "", {})[1:]
+    if eventos:
+        return [f"No hay planes {pedido} 😕 Pero {c.periodo} hay esto:"] + _presentar(msg, eventos, "", {})[1:]
+    return [f"No he encontrado planes {pedido} 😕 Prueba con otro día o con «¿qué hay este mes?»."]
 
 
 def _presentar(msg: MensajeEntrante, eventos: list[dict], cabecera: str, motivos: dict | None = None) -> list:

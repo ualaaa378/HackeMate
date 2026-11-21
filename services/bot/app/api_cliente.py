@@ -285,3 +285,17 @@ def _despues_de_reintentar(item: dict, res: dict | None) -> None:
 def crear_publicador(cuerpo: dict) -> dict | None:
     """POST /publicadores con el responsable (dato personal): nunca se encola en disco."""
     return _peticion("POST", "/api/v1/publicadores", cuerpo)
+
+
+_municipios: dict[str, tuple[float, float]] = {}
+
+
+def coordenadas_municipio(nombre: str) -> tuple[float, float] | None:
+    """Lat/lon de un pueblo (GET /municipios, una vez). Para «cerca de Tahal»."""
+    if not _municipios:
+        try:
+            for m in _peticion("GET", "/api/v1/municipios") or []:
+                _municipios[m["nombre"]] = (m["lat"], m["lon"])
+        except (ApiNoDisponible, ErrorApi, KeyError, TypeError):
+            return None
+    return _municipios.get(nombre)
