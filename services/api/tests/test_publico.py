@@ -328,3 +328,66 @@ def test_cors_permite_la_app(cliente):
         headers={"Origin": "http://localhost:5173", "Access-Control-Request-Method": "GET"},
     )
     assert r.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
+
+# --- Editar un plan publicado vuelve a pasar el antispam y el antifraude -----------------------------
+
+CARMEN = "5a5e0000-0000-4000-8000-000000000001"
+
+
+def _organizadora(db) -> dict:
+    from app.modelos import Evento
+    from app.seguridad import emitir_jwt
+
+    db.get(Evento, RUTA_SOLIDARIA).propuesto_por_id = CARMEN
+    db.commit()
+    return {"Authorization": f"Bearer {emitir_jwt(CARMEN, 'vecino')}"}
+
+
+def _bot_spam(monkeypatch, resultado):
+    from app import moderacion
+
+    monkeypatch.setattr(moderacion, "_llamar_bot_spam", lambda *a: resultado)
+
+
+def test_editar_publicado_con_fraude_vuelve_a_la_bandeja(api, db, monkeypatch):
+    _bot_spam(monkeypatch, (0.95, "Posible fraude: pago por Bizum por adelantado"))
+    cuerpo = {"descripcion": "Reserva tu plaza pagando 20 euros por Bizum a este número"}
+    r = api.patch(f"/api/v1/eventos/{RUTA_SOLIDARIA}", json=cuerpo, headers=_organizadora(db))
+    assert r.status_code == 200, r.text
+    assert r.json()["estado"] == "en_revision"
+    assert r.json()["moderacion"]["motivo"].startswith("Editado después de publicarse. Posible fraude")
+    assert RUTA_SOLIDARIA not in {e["id"] for e in _todos(api)}
+
+
+def test_editar_publicado_sin_problemas_sigue_publicado(api, db, monkeypatch):
+    _bot_spam(monkeypatch, (0.05, "IA: normal"))
+    r = api.patch(f"/api/v1/eventos/{RUTA_SOLIDARIA}", json={"titulo": "Ruta Solidaria (nuevo recorrido)"},
+                  headers=_organizadora(db))
+    assert r.status_code == 200 and r.json()["estado"] == "publicado"
+
+
+def test_cambiar_la_hora_no_vuelve_a_moderar(api, db, monkeypatch):
+    def no_llamar(*a):
+        raise AssertionError("no debe consultar el antispam")
+
+    from app import moderacion
+
+    monkeypatch.setattr(moderacion, "clasificar_spam", no_llamar)
+    r = api.patch(f"/api/v1/eventos/{RUTA_SOLIDARIA}", json={"fecha_inicio": "2026-11-29T10:00:00+01:00"},
+                  headers=_organizadora(db))
+    assert r.status_code == 200 and r.json()["estado"] == "publicado"
+
+
+def test_el_bot_o_el_moderador_editan_sin_volver_a_moderar(api, monkeypatch):
+    _bot_spam(monkeypatch, (0.95, "Posible fraude: Bizum"))
+    r = api.patch(f"/api/v1/eventos/{RUTA_SOLIDARIA}", json={"descripcion": "Pago por Bizum"}, headers=TOKEN)
+    assert r.status_code == 200 and r.json()["estado"] == "publicado"
+
+
+def test_origen_url_que_no_es_http_no_sale(api, db):
+    from app.modelos import Evento
+
+    db.get(Evento, RUTA_SOLIDARIA).origen_url = "javascript:alert(1)"
+    db.commit()
+    assert api.get(f"/api/v1/eventos/{RUTA_SOLIDARIA}").json()["origen"]["url"] is None

@@ -22,6 +22,11 @@ def _zona() -> ZoneInfo:
     return ZoneInfo(get_settings().zona_horaria)
 
 
+def _url_segura(url: str | None) -> str | None:
+    """Solo enlaces http(s): la web lo pinta como `href` y un «javascript:…» ejecutaría código al pulsarlo."""
+    return url if url and url.lower().startswith(("http://", "https://")) else None
+
+
 def fecha_iso(valor: datetime | None) -> str | None:
     return valor.astimezone(_zona()).isoformat() if valor else None
 
@@ -88,7 +93,7 @@ def evento_a_dict(e: Evento, inscritos: int = 0, privados: bool = False) -> dict
         "publicador_nombre": e.publicador.nombre if e.publicador else None,
         "imagen_url": e.imagen_url,
         "frase_portada": e.frase_portada,
-        "origen": {"canal": e.origen_canal, "url": e.origen_url, "importado_auto": e.importado_auto},
+        "origen": {"canal": e.origen_canal, "url": _url_segura(e.origen_url), "importado_auto": e.importado_auto},
         "moderacion": {"motivo": e.motivo_moderacion, "score_spam": e.score_spam, "revisado_por": e.revisado_por},
         "creado_en": fecha_iso(e.creado_en),
         "actualizado_en": fecha_iso(e.actualizado_en),
