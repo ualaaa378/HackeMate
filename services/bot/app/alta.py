@@ -45,8 +45,10 @@ PREGUNTAS = {
                     "¿Nombre y apellidos del responsable?"),
     "dni": "¿DNI o NIE del responsable? (por ejemplo, 12345678Z)",
     "residencia": "¿En qué pueblo vive el responsable?",
+    "edad": "¿Cuántos años tiene el responsable? (opcional: pulsa *Saltar* si no quieres decirlo)",
 }
-PASOS = ["nombre", "tipo", "municipio", "responsable", "dni", "residencia"]
+PASOS = ["nombre", "tipo", "municipio", "responsable", "dni", "residencia", "edad"]
+BOTON_SALTAR = [("alta_saltar", "⏭️ Saltar")]
 BOTONES_TIPO = [(f"alta_tipo:{k}", v) for k, v in TIPOS.items()]
 BOTONES_CONFIRMAR = [("alta_si", "Sí, enviar"), ("alta_no", "No, cancelar")]
 _LETRAS_DNI = "TRWAGMYFPDXBNJZSQVHLCKE"
@@ -99,6 +101,8 @@ def _enmascarar(dni: str) -> str:
 def _pregunta(alta: Alta) -> Respuesta:
     if alta.paso == "tipo":
         return Respuesta(PREGUNTAS["tipo"], BOTONES_TIPO)
+    if alta.paso == "edad":
+        return Respuesta(PREGUNTAS["edad"], BOTON_SALTAR)
     return Respuesta(PREGUNTAS[alta.paso])
 
 
@@ -107,7 +111,8 @@ def _resumen(alta: Alta) -> Respuesta:
     return Respuesta(
         "Esto es lo que voy a enviar al ayuntamiento:\n"
         f"🏷️ {d['nombre']} ({TIPOS[d['tipo']]})\n📍 {d['municipio']}\n"
-        f"👤 Responsable: {d['responsable']}, {_enmascarar(d['dni'])}, vive en {d['residencia']}\n\n"
+        f"👤 Responsable: {d['responsable']}, {_enmascarar(d['dni'])}, vive en {d['residencia']}"
+        f"{', ' + str(d['edad']) + ' años' if d.get('edad') else ''}\n\n"
         "¿Lo envío?", BOTONES_CONFIRMAR)
 
 
@@ -158,7 +163,8 @@ def responder(msg: MensajeEntrante, texto: str) -> list:
 
     error = _guardar(alta, texto, boton)
     if error:
-        return [Respuesta(error, BOTONES_TIPO if alta.paso == "tipo" else None)]
+        botones = BOTONES_TIPO if alta.paso == "tipo" else BOTON_SALTAR if alta.paso == "edad" else None
+        return [Respuesta(error, botones)]
     siguiente = PASOS.index(alta.paso) + 1
     if siguiente < len(PASOS):
         alta.paso = PASOS[siguiente]
@@ -198,6 +204,31 @@ def _guardar(alta: Alta, texto: str, boton: str) -> str | None:
         if len(t) < 2:
             return PREGUNTAS["residencia"]
         alta.datos["residencia"] = t[:200]
+    elif alta.paso == "edad":  # P4b: opcional
+        if boton == "alta_saltar" or re.match(r"^(saltar|paso|no)\b", _normalizar(t)):
+            alta.datos.pop("edad", None)
+            return None
+        error = error_edad(t)
+        if error:
+            return error
+        alta.datos["edad"] = leer_edad(t)
+    return None
+
+
+def leer_edad(texto: str) -> int | None:
+    numero = re.search(r"\d{1,3}", texto)
+    return int(numero.group()) if numero else None
+
+
+def error_edad(texto: str) -> str | None:
+    """P4a: de 14 a 120 años (en España hace falta tener 14 para dar el consentimiento de datos)."""
+    edad = leer_edad(texto)
+    if edad is None:
+        return "Escríbeme solo los años con números (por ejemplo, 45), o pulsa *Saltar*."
+    if edad < 14:
+        return "Para registrarse hace falta tener al menos 14 años 🙏 Escribe otra edad o pulsa *Saltar*."
+    if edad > 120:
+        return "Esa edad no me cuadra 😅 Escríbela otra vez o pulsa *Saltar*."
     return None
 
 
@@ -209,6 +240,8 @@ def _enviar(msg: MensajeEntrante, alta: Alta) -> list:
                 "asociación» y lo intentamos de nuevo."]
     cuerpo = {"nombre": d["nombre"], "tipo": d["tipo"], "municipio": d["municipio"], "telefono": alta.telefono,
               "responsable": {"nombre": d["responsable"], "dni": d["dni"], "residencia": d["residencia"]}}
+    if d.get("edad"):
+        cuerpo["responsable"]["edad"] = d["edad"]
     try:
         api_cliente.crear_publicador(cuerpo)
     except ApiNoDisponible:
