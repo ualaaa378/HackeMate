@@ -13,7 +13,14 @@ _GUSTOS = r"\bme (gusta|gustan|encanta|encantan|interesa|interesan|chifla|chifla
 _INSCRIBIR = r"\b(apuntame|apuntarme|me apunto|inscribeme|inscribirme|reservame|quiero ir|vamos a ir|me quiero apuntar)\b"
 _BUSCAR = (r"\b(que hay|que se hace|que planes?|planes|algo que hacer|que puedo hacer|que hacer|actividades|agenda|"
            r"eventos?|donde (ir|salir)|alguna (fiesta|ruta|actividad)|hay algo|recomiendame|recomendacion(es)?)\b")
-_INTERROGATIVO = r"^\s*(¿|que|cuando|donde|cuanto|cuanta|como|hay|a que hora|quien|se puede|puedo)\b"
+# Mensajes cortos tipo «rutas este fin de semana», «conciertos mañana», «algo para el finde»
+_TIPO_DE_PLAN = (r"\b(rutas?|senderismo|excursion(es)?|conciertos?|fiestas?|talleres?|teatro|cine|mercados?|"
+                 r"mercadillos?|deportes?|torneos?|musica|cultura|gastronomia|comidas?|cenas?|bailes?|charlas?|"
+                 r"exposicion(es)?|actividades|juegos|ninos|peques|mayores)\b")
+_CUANDO = (r"\b(este fin de semana|el fin de semana|fin de semana|este finde|el finde|finde|hoy|manana|pasado manana|"
+           r"esta semana|la semana que viene|esta tarde|esta noche|este (lunes|martes|miercoles|jueves|viernes|"
+           r"sabado|domingo)|el (sabado|domingo)|en navidad|este mes)\b")
+_INTERROGATIVO =r"^\s*(¿|que|cuando|donde|cuanto|cuanta|como|hay|a que hora|quien|se puede|puedo)\b"
 _FECHA_U_HORA = r"\b\d{1,2}\s+de\s+[a-z]+|\b\d{1,2}[:.h]\d{2}\b|\ba las \d"
 
 
@@ -40,6 +47,10 @@ def detectar(texto: str, mirando_evento: bool = False) -> Intencion:
     # Un post largo con fecha u hora es alguien publicando, aunque lleve un «¿te apuntas?»
     if len(texto) > 60 and re.search(_FECHA_U_HORA, t) and not re.search(r"\b(que hay|hay algo|que se hace)\b", t):
         return Intencion("publicar")
+    # Corto y sin fecha ni hora concretas: busca planes. Con fecha u hora es alguien publicando
+    if (len(texto) <= 60 and not mirando_evento and not re.search(_FECHA_U_HORA, t)
+            and (re.search(_TIPO_DE_PLAN, t) or re.search(_CUANDO, t))):
+        return Intencion("buscar")
     if mirando_evento and pregunta and not re.search(_BUSCAR, t):
         return Intencion("pregunta_evento")
     if re.search(_BUSCAR, t) or pregunta:
