@@ -1836,3 +1836,16 @@ ion-item.tarjeta-evento {
   font-weight: 600;
   --border-radius: var(--hm-radio);
 }
+
+/* ---------- N2: fondo con vida ----------
+   Azulejo suave en SVG (rombo, flor de cuatro pétalos, ramita de olivo y dos puntos naranjas).
+   Trazo verde al 9 % y puntos naranjas al 10 %: el texto suave sigue por encima de 6:1. Solo en las páginas, no en los modales. */
+:root {
+  --hm-mosaico: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'><g fill='none' stroke='%2314451a' stroke-opacity='.09' stroke-width='1.2'><path d='M48 0 96 48 48 96 0 48Z'/><path d='M48 34q7 14 0 28q-7-14 0-28ZM34 48q14 7 28 0q-14-7-28 0Z'/><circle cx='48' cy='48' r='4'/><circle cx='0' cy='0' r='11'/><circle cx='96' cy='0' r='11'/><circle cx='0' cy='96' r='11'/><circle cx='96' cy='96' r='11'/><path d='M14 30q4-6 10-6M24 24q-1 6-6 9M82 66q-4 6-10 6M72 72q1-6 6-9'/></g><g fill='%23b93c0b' fill-opacity='.10'><circle cx='24' cy='72' r='2.2'/><circle cx='72' cy='24' r='2.2'/></g></svg>");
+}
+
+ion-content.contenido-agenda,
+ion-content.contenido-lectura,
+ion-content.contenido-admin {
+  --background: var(--hm-fondo) var(--hm-mosaico) repeat;
+}
