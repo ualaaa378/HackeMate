@@ -34,11 +34,18 @@ class Settings(BaseSettings):
 
     # Proveedores de IA, en el orden en que se prueban. Primero los gratuitos;
     # Claude (de pago) solo se usa si hay clave y fallan los demás.
-    llm_cadena: str = "gemini,freellm,claude,reglas"
+    llm_cadena: str = "gemini,nim,freellm,claude,reglas"
     llm_timeout_s: float = 25.0
     llm_simular_caida: bool = False  # para la demo de robustez
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
+    # NVIDIA NIM (build.nvidia.com, plan gratuito, clave propia). Sin NIM_API_KEY se salta
+    nim_url: str = "https://integrate.api.nvidia.com/v1"
+    nim_api_key: str = ""
+    # Medido el 21/11 con el plan gratuito: nemotron-3.5-bolt-e4b responde en 1-3 s con la ficha completa, descarta
+    # avisos y pésames y detecta el spam; los modelos grandes (gemma-4-31b, glm-5.3-flash…) pasaban de 25 s
+    nim_modelos: str = "nvidia/nemotron-3.5-bolt-e4b"
+    nim_timeout_intento_s: float = 10.0
     freellm_url: str = "http://127.0.0.1:31415/v1"
     freellm_api_key: str = ""
     # Se prueban en orden; "auto" deja elegir al proxy. Ver GET /v1/models del proxy

@@ -314,19 +314,25 @@ def ver_metricas():
 
 class UrlPublica(BaseModel):
     public_url: Optional[str] = None
+    web_url: Optional[str] = None  # enlaces a las fichas que manda el bot ({web_url}/evento/{id})
 
 
 @app.post("/admin/webhook-telegram")
 def webhook_telegram_admin(u: UrlPublica, x_internal_token: str | None = Header(None)):
-    """Si cambia la URL del túnel: se vuelve a registrar sin reiniciar el bot."""
+    """Si cambia la URL del túnel: se vuelve a registrar el webhook y se cambian los enlaces SIN reiniciar el bot,
+    para no perder las conversaciones a medias que guarda en memoria (scripts/url_publica.py lo llama)."""
     _comprobar_interno(x_internal_token)
     s = get_settings()
+    if u.web_url:
+        s.web_url = u.web_url
     if u.public_url:
         s.public_url = u.public_url
     if not (s.public_url and s.telegram_token):
+        if u.web_url and not u.public_url:  # solo los enlaces (máquina sin Telegram)
+            return {"url": None, "ok": True, "web_url": s.web_url}
         raise HTTPException(422, detail={"code": "falta_configuracion",
                                          "message": "Hace falta TELEGRAM_TOKEN y una public_url"})
-    return registrar_webhook_telegram()
+    return {**registrar_webhook_telegram(), "web_url": s.web_url}
 
 
 @app.post("/admin/reintentar-cola")

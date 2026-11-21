@@ -107,23 +107,22 @@ class Gemini:
         return obj, entrada, salida_tokens
 
 
-class FreeLLM:
-    """FreeLLMAPI: proxy local que reparte entre los planes gratuitos de varios
-    proveedores detrás de un endpoint compatible con OpenAI (/v1/chat/completions).
+class CompatibleOpenAI:
+    """Cualquier endpoint compatible con OpenAI (/v1/chat/completions): FreeLLMAPI o NVIDIA NIM.
 
     Los planes gratuitos son muy irregulares (el mismo modelo tarda 0,5 s o 12 s, o
     devuelve 429), así que probamos varios modelos con un timeout corto cada uno."""
 
-    nombre = "freellm"
+    nombre = ""
+    modo_json = True  # pedir response_format json_object (no todos los endpoints lo aceptan)
 
-    def __init__(self):
-        s = get_settings()
-        self.url = s.freellm_url.rstrip("/")
-        self.api_key = s.freellm_api_key
-        self.modelos = [m.strip() for m in s.freellm_modelos.split(",") if m.strip()]
+    def __init__(self, url: str, api_key: str, modelos: str, timeout_intento: float):
+        self.url = url.rstrip("/")
+        self.api_key = api_key
+        self.modelos = [m.strip() for m in modelos.split(",") if m.strip()]
         self.modelo = ",".join(self.modelos)
-        self.timeout_intento = s.freellm_timeout_intento_s
-        self.timeout = s.llm_timeout_s
+        self.timeout_intento = timeout_intento
+        self.timeout = get_settings().llm_timeout_s
 
     def disponible(self) -> bool:
         return bool(self.api_key and self.url and self.modelos)
@@ -147,8 +146,9 @@ class FreeLLM:
             restante = limite - time.monotonic()
             if restante < 1:
                 break
-            cuerpo = {"model": modelo, "messages": mensajes, "response_format": {"type": "json_object"},
-                      "temperature": 0}
+            cuerpo = {"model": modelo, "messages": mensajes, "temperature": 0}
+            if self.modo_json:
+                cuerpo["response_format"] = {"type": "json_object"}
             try:
                 r = httpx.post(f"{self.url}/chat/completions", json=cuerpo,
                                headers={"Authorization": f"Bearer {self.api_key}"},
@@ -167,7 +167,29 @@ class FreeLLM:
             self.modelo = r.headers.get("X-Routed-Via", modelo)
             uso = datos.get("usage") or {}
             return obj, uso.get("prompt_tokens", 0), uso.get("completion_tokens", 0)
-        raise ErrorProveedor("freellm: " + "; ".join(errores or ["sin tiempo"]))
+        raise ErrorProveedor(f"{self.nombre}: " + "; ".join(errores or ["sin tiempo"]))
+
+
+class FreeLLM(CompatibleOpenAI):
+    """FreeLLMAPI: proxy local que reparte entre los planes gratuitos de varios proveedores."""
+
+    nombre = "freellm"
+
+    def __init__(self):
+        s = get_settings()
+        super().__init__(s.freellm_url, s.freellm_api_key, s.freellm_modelos, s.freellm_timeout_intento_s)
+
+
+class Nim(CompatibleOpenAI):
+    """NVIDIA NIM (build.nvidia.com), plan gratuito con clave propia. Directo, sin pasar por FreeLLMAPI:
+    si el proxy o el portátil donde corre fallan, la IA sigue (tarea B2; la usa la ingesta de Facebook)."""
+
+    nombre = "nim"
+    modo_json = False  # no todos los modelos de NIM aceptan response_format: el JSON se pide en el prompt
+
+    def __init__(self):
+        s = get_settings()
+        super().__init__(s.nim_url, s.nim_api_key, s.nim_modelos, s.nim_timeout_intento_s)
 
 
 def _quitar_markdown(texto: str) -> str:
@@ -180,4 +202,4 @@ def _quitar_markdown(texto: str) -> str:
 
 
 def construir(nombre: str) -> Proveedor | None:
-    return {"claude": Claude, "gemini": Gemini, "freellm": FreeLLM}.get(nombre, lambda: None)()
+    return {"claude": Claude, "gemini": Gemini, "nim": Nim, "freellm": FreeLLM}.get(nombre, lambda: None)()
