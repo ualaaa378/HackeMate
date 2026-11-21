@@ -43,6 +43,25 @@ describe('client con la API real', () => {
     expect(String(fetch.mock.calls[0][0])).toContain('/api/v1/recomendaciones?usuario_id=u1');
   });
 
+  it('si ya estaba apuntado guarda la inscripción y permite desapuntarse', async () => {
+    localStorage.clear();
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementationOnce(() =>
+        respuesta(409, {
+          error: { code: 'ya_inscrito', message: 'Ya estás apuntado', details: { inscripcion_id: 'i9' } },
+        }),
+      )
+      .mockImplementationOnce(() => respuesta(200, { id: 'i9', estado: 'cancelada' }));
+    const { inscribirse, desapuntarse, miInscripcion, meApunte } = await cargarCliente();
+    await expect(inscribirse('e1')).rejects.toMatchObject({ code: 'ya_inscrito' });
+    expect(miInscripcion('e1')).toBe('i9');
+    await desapuntarse('e1');
+    expect(fetch.mock.calls[1][0]).toBe('http://api.test/api/v1/eventos/e1/inscripciones/i9');
+    expect(fetch.mock.calls[1][1]?.method).toBe('DELETE');
+    expect(meApunte('e1')).toBe(false);
+  });
+
   it('vuelve a los mocks si la API no responde', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
     const { getEventos, enModoRespaldo } = await cargarCliente();
