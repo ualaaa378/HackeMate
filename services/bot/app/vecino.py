@@ -106,6 +106,20 @@ def _gustos(contacto: str, usuario: dict | None) -> list[str]:
     return list((usuario or {}).get("gustos") or [])
 
 
+def _en_periodo(ev: dict, c: busqueda.Consulta) -> bool:
+    try:
+        inicio = datetime.fromisoformat(ev["fecha_inicio"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    fin = inicio
+    try:
+        fin = datetime.fromisoformat(ev["fecha_fin"]) if ev.get("fecha_fin") else inicio
+    except (TypeError, ValueError):
+        pass
+    # Un plan que ya ha empezado y sigue en marcha también vale (p. ej. un mercado de todo el día)
+    return (not c.hasta or inicio <= c.hasta) and (not c.desde or fin >= c.desde)
+
+
 def buscar(msg: MensajeEntrante, texto: str, usuario: dict | None,
            consulta: busqueda.Consulta | None = None) -> list:
     c = consulta or busqueda.interpretar(texto, _ahora())
@@ -128,9 +142,12 @@ def buscar(msg: MensajeEntrante, texto: str, usuario: dict | None,
     generico = not (c.municipio or c.categorias or c.cerca)
     if generico and usuario and usuario.get("id"):
         try:
-            recos = api_cliente.recomendaciones(usuario["id"], limite=MAX_TARJETAS)
+            recos = api_cliente.recomendaciones(usuario["id"], limite=10)
         except (ApiNoDisponible, ErrorApi):
             recos = None
+        # Solo las del periodo que pidió («este finde» no es el 13/12). Si no queda ninguna, la búsqueda
+        # normal dice «No hay nada este fin de semana, pero más adelante…»
+        recos = [r for r in recos or [] if _en_periodo(r.get("evento") or {}, c)]
         if recos:
             return _presentar(msg, [r["evento"] for r in recos], f"Te recomiendo {c.periodo}:",
                               motivos={r["evento"]["id"]: r.get("motivo") for r in recos})
