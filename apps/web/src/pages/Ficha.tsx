@@ -5,6 +5,7 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
+  IonActionSheet,
   IonAlert,
   IonPage,
   IonRefresher,
@@ -22,6 +23,7 @@ import {
   locationOutline,
   logoFacebook,
   mapOutline,
+  shareSocialOutline,
   peopleOutline,
   ticketOutline,
 } from 'ionicons/icons';
@@ -30,10 +32,12 @@ import { useParams } from 'react-router-dom';
 
 import { desapuntarse, enModoRespaldo, ErrorApi, getEvento, inscribirse, miInscripcion, urlIcs } from '../api/client';
 import { CATEGORIAS, type Evento } from '../api/types';
+import { NOMBRE_CANAL } from '../canal';
 import ChatEvento from '../components/ChatEvento';
 import FotoPlan from '../components/FotoPlan';
 import RecuerdoPlan from '../components/RecuerdoPlan';
 import { useSesion } from '../cuenta/sesion';
+import { enlaceComoLlegar, enlaceEnviarPorCanal } from '../utils/compartir';
 import {
   claveDia,
   fechaEstimada,
@@ -70,6 +74,7 @@ const Ficha: React.FC = () => {
     id && id in estados ? estados[id] : id && miInscripcion(id) ? 'apuntado' : null;
   const setInscrito = (e: EstadoInscripcion | null) => id && setEstados((xs) => ({ ...xs, [id]: e }));
   const [aviso, setAviso] = useState<string | null>(null);
+  const [menuCompartir, setMenuCompartir] = useState(false);
   const { usuario, conCuenta } = useSesion();
 
   // Plazas, hora y estado cambian por lo que hacen otros (inscripciones, el publicador, el moderador):
@@ -142,9 +147,32 @@ const Ficha: React.FC = () => {
   };
 
   const pasado = !!evento && yaPaso(evento);
-  const enlaceMapa = evento
-    ? `https://www.openstreetmap.org/?mlat=${evento.lat}&mlon=${evento.lon}#map=16/${evento.lat}/${evento.lon}`
-    : '#';
+  const enlaceMapa = evento ? enlaceComoLlegar(evento.lat, evento.lon) : '#';
+  const textoCompartir = evento ? `${evento.titulo} · ${fechaLarga(evento.fecha_inicio)} en ${evento.municipio}` : '';
+
+  // P1: el menú del móvil para compartir si existe; si no (ordenador), el canal configurado o copiar el enlace.
+  const compartir = async () => {
+    if (!evento) return;
+    const url = window.location.href;
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: evento.titulo, text: textoCompartir, url });
+      } catch {
+        /* la persona cerró el menú sin compartir */
+      }
+      return;
+    }
+    setMenuCompartir(true);
+  };
+
+  const copiarEnlace = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setAviso('Enlace copiado. Pégalo donde quieras.');
+    } catch {
+      setAviso('No hemos podido copiar el enlace. Cópialo de la barra de direcciones.');
+    }
+  };
 
   return (
     <IonPage>
@@ -307,6 +335,25 @@ const Ficha: React.FC = () => {
                 </IonButton>
               </>
             )}
+            <IonButton expand="block" fill="clear" onClick={() => void compartir()}>
+              <IonIcon slot="start" icon={shareSocialOutline} aria-hidden="true" />
+              Compartir este plan
+            </IonButton>
+            <IonActionSheet
+              isOpen={menuCompartir}
+              onDidDismiss={() => setMenuCompartir(false)}
+              header="Compartir este plan"
+              buttons={[
+                {
+                  text: `Enviar por ${NOMBRE_CANAL}`,
+                  handler: () => {
+                    window.open(enlaceEnviarPorCanal(textoCompartir, window.location.href), '_blank', 'noopener');
+                  },
+                },
+                { text: 'Copiar enlace', handler: () => void copiarEnlace() },
+                { text: 'Cancelar', role: 'cancel' },
+              ]}
+            />
             {evento.origen.url && (
               <IonButton expand="block" fill="clear" href={evento.origen.url} target="_blank" rel="noopener">
                 <IonIcon
