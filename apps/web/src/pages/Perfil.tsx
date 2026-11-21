@@ -10,6 +10,7 @@ import {
   IonToolbar,
 } from '@ionic/react';
 
+import { NOMBRE_CANAL } from '../canal';
 import { useSesion } from '../cuenta/sesion';
 
 // Bloque 3 (H3.1): gustos, pueblo, tipo de avisos y vincular WhatsApp/Telegram.
@@ -29,7 +30,7 @@ const Perfil: React.FC = () => {
               <h2 className="titulo-caja">Hola, {usuario.nombre}</h2>
               <p>
                 {usuario.telefono
-                  ? 'Te avisaremos por WhatsApp de los planes a los que te apuntes.'
+                  ? `Te avisaremos por ${NOMBRE_CANAL} de los planes a los que te apuntes.`
                   : 'Has entrado con tu cuenta.'}
               </p>
               <IonButton expand="block" fill="outline" onClick={salir}>

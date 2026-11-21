@@ -4,6 +4,7 @@
 // Con la API configurada, si no responde o el endpoint aún no existe, se vuelve a los mocks
 // para que la demo no se caiga. Los errores de negocio de la API sí llegan a la pantalla.
 
+import { NOMBRE_CANAL } from '../canal';
 import eventosMock from '../mocks/eventos.json';
 import { yaPaso } from '../utils/formato';
 
@@ -209,7 +210,8 @@ export function urlIcs(eventoId: string): string {
 }
 
 // ---------- cuenta ----------
-// La cuenta se crea verificando el móvil con un código que llega por WhatsApp.
+// La cuenta se crea verificando el móvil con un código que llega por el canal de mensajería (VITE_CANAL).
+// La ruta del contrato se llama /auth/whatsapp/* por historia; la web la usa con los dos canales.
 // Sin API (o con /auth aún sin implementar) cualquier código de 6 cifras vale: modo demo.
 
 /** Pasa «600 12 34 56» o «+34600123456» a E.164. Devuelve null si no es un móvil válido. */
@@ -336,7 +338,7 @@ export function enviarMensaje(
         return esperar({ mensaje: nuevo, respuesta_ia: null });
       }
       const ia = mensajeMock(eventoId, {
-        texto: 'Gracias por preguntar. Se lo pasamos a la organización y te contestamos aquí y por WhatsApp.',
+        texto: `Gracias por preguntar. Se lo pasamos a la organización y te contestamos aquí y por ${NOMBRE_CANAL}.`,
         tipo: 'respuesta',
         autor_nombre: 'Asistente',
         autor_rol: 'ia',
