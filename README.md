@@ -61,7 +61,7 @@ El proyecto está **en sus primeras fases**. Iremos actualizando este README a m
 
 ## 🔗 Pendiente entre flujos
 
-Revisado el 21/11/2026 a las 00:15. Todo esto ya lo usa la app web (flujo C) o el bot (flujo B), pero depende de otro flujo. Mientras no esté, **la web vuelve sola a los datos de prueba (mocks) y el bot guarda la petición en cola**, así que nada se rompe, pero la demo no usa datos reales. Al cerrar cada punto, se borra de esta lista.
+Revisado el 21/11/2026 a las 01:55. Todo esto ya lo usa la app web (flujo C) o el bot (flujo B), pero depende de otro flujo. Mientras no esté, **la web vuelve sola a los datos de prueba (mocks) y el bot guarda la petición en cola**, así que nada se rompe, pero la demo no usa datos reales. Al cerrar cada punto, se borra de esta lista.
 
 > **Regla del equipo (ver `CLAUDE.md`):** cada flujo apunta aquí, bajo el flujo responsable, lo que necesita de los demás. Antes de empezar una tarea, revisa tu apartado.
 
@@ -98,6 +98,8 @@ Otros puntos de la API:
   - Actividad reciente en el publicador (`planes_60_dias`, `rechazados_60_dias`, `ultimo_plan`), calculada por la API. Hoy la web la tiene en `ActividadPublicador` con mocks.
   - Que `POST /publicadores/{id}/aprobar` acepte cambiar `nivel_confianza` en un publicador ya aprobado (la web lo usa para pasar a automática o volver a mano), y que la API rechace el nivel 2 si no se cumplen las reglas.
 
+- **Frase de portada del plan (lo pide la web, Inicio → «Próximos planes»):** quien publica puede escribir una frase corta (máx. 90 letras) que sale bajo la foto del carrusel. Hace falta el campo opcional `frase_portada` en `evento` y `EventoCrear` (PR con etiqueta `contract-change`). Hoy la web la guarda en `DatosAyuntamiento` y la lee de `evento.frase_portada` si llega (`apps/web/src/eventos/frases.ts`). Si viene vacía, la API pide la frase al bot (ver flujo B) y la guarda.
+
 ### Flujos A y B · a acordar (Benas + Francisco)
 
 - **`PATCH /usuarios/{id}`:** el bot lo usa para guardar los gustos de la vecina (`services/bot/app/api_cliente.py`, `guardar_preferencias`), pero no está en el contrato, que solo tiene `PATCH /usuarios/me`. O se añade al contrato con `X-Internal-Token`, o el bot pasa a usar otra ruta.
@@ -120,6 +122,10 @@ Pendiente: Benas y Francisco, que el aviso al vecino use el contacto que tenga (
 ### Flujo B · bot (Francisco), alta de asociaciones
 
 - **Datos del responsable al dar de alta una asociación:** cuando alguien pide publicar por Telegram (y por WhatsApp cuando Meta lo permita, con el mismo flujo de conversación), el bot tiene que pedir el nombre, el DNI y el pueblo donde vive el responsable, y mandarlos a la API en el alta (cuando el campo `responsable` esté en el contrato, ver flujo A). Sin esos datos la asociación nunca podrá publicar sin revisión.
+
+### Flujo B · bot (Francisco), frase de portada con IA
+
+- **`POST /ai/frase`** (o el nombre que se acuerde, primero en el contrato): a partir del título, la categoría y el pueblo, devolver una frase breve, espontánea y alegre (máx. 90 letras, sin inventar datos del plan) para la portada del carrusel. La llama la API cuando el publicador no escribe la suya. Mientras no exista, la web elige una frase fija por tipo de plan y la marca como «✨ Frase automática».
 
 ### Flujo B · bot (Francisco), opcional en el compose
 

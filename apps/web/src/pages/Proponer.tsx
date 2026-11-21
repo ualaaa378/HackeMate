@@ -72,6 +72,7 @@ const Proponer: React.FC = () => {
     seguro_rc: 'nose' as DatosAyuntamiento['seguro_rc'],
     observaciones: '',
     imagen: null as string | null,
+    frase: '',
   });
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -123,6 +124,7 @@ const Proponer: React.FC = () => {
             necesidades: f.necesidades,
             seguro_rc: f.seguro_rc,
             observaciones: f.observaciones.trim() || undefined,
+            frase_portada: f.frase.trim() || undefined,
           },
         );
         setEnviada(r);
@@ -219,6 +221,17 @@ const Proponer: React.FC = () => {
                 onIonInput={texto('descripcion')}
               />
               <SelectorImagen valor={f.imagen} onCambio={(v) => poner('imagen', v)} />
+              <IonInput
+                label="Frase para la portada (opcional)"
+                labelPlacement="stacked"
+                fill="outline"
+                maxlength={90}
+                counter
+                placeholder="Ej.: ¡Trae a tu vecina, que esto no se repite!"
+                value={f.frase}
+                onIonInput={texto('frase')}
+                helperText="Sale bajo la foto en Inicio. Si la dejas vacía, ponemos una frase automática."
+              />
             </fieldset>
 
             <fieldset>

@@ -158,7 +158,7 @@ export function getEvento(id: string): Promise<Evento> {
 // Planes a los que se ha apuntado este usuario en este dispositivo. Sirve para saber si puede subir fotos
 // cuando el plan termine; la API lo comprueba igualmente.
 const CLAVE_MIS_PLANES = 'hm-mis-planes';
-function misPlanes(): Set<string> {
+export function misPlanes(): Set<string> {
   try {
     return new Set(JSON.parse(localStorage.getItem(CLAVE_MIS_PLANES) ?? '[]') as string[]);
   } catch {
@@ -284,6 +284,7 @@ export async function proponerEvento(datos: EventoCrear, ayuntamiento: DatosAyun
     estado: 'en_revision',
     origen: { canal: 'web', importado_auto: false },
     inscritos: 0,
+    ...(ayuntamiento.frase_portada ? { frase_portada: ayuntamiento.frase_portada } : {}),
   };
   const p = { evento, ayuntamiento, demo: true };
   propuestasMock.push(p);

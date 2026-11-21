@@ -53,6 +53,8 @@ export interface DatosAyuntamiento {
   necesidades: Necesidad[];
   seguro_rc: 'si' | 'no' | 'nose';
   observaciones?: string;
+  /** Frase corta y pública para la portada del plan. Pendiente de contract-change (flujo A) como `frase_portada` de EventoCrear. */
+  frase_portada?: string;
 }
 export type Publicador = Esquemas['publicador'];
 export type Pendiente = Esquemas['Pendiente'];

@@ -10,10 +10,11 @@ import {
   IonToolbar,
 } from '@ionic/react';
 
-import { NOMBRE_CANAL } from '../canal';
+import { CONTACTO_CANAL, ENLACE_CANAL, NOMBRE_CANAL } from '../canal';
+import SelectorLetra from '../components/SelectorLetra';
 import { useSesion } from '../cuenta/sesion';
 
-// Bloque 3 (H3.1): gustos, pueblo, tipo de avisos y vincular WhatsApp/Telegram.
+// Bloque 3 (H3.1): gustos, pueblo, tipo de avisos y vincular el canal de mensajería (Telegram o WhatsApp).
 const Perfil: React.FC = () => {
   const { usuario, abrirCuenta, salir } = useSesion();
   return (
@@ -24,6 +25,7 @@ const Perfil: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
+        <SelectorLetra />
         {usuario ? (
           <IonCard>
             <IonCardContent>
@@ -52,6 +54,32 @@ const Perfil: React.FC = () => {
             </IonCardContent>
           </IonCard>
         )}
+        <IonCard>
+          <IonCardContent>
+            <h2 className="titulo-caja">Usarlo solo con {NOMBRE_CANAL}</h2>
+            <p>
+              Manda un audio diciendo qué te apetece hacer y te contestamos con los planes.
+              {CONTACTO_CANAL && (
+                <>
+                  {' '}
+                  Búscanos como <strong>{CONTACTO_CANAL}</strong>.
+                </>
+              )}
+            </p>
+            {ENLACE_CANAL && (
+              <IonButton
+                expand="block"
+                fill="outline"
+                color="tertiary"
+                href={ENLACE_CANAL}
+                target="_blank"
+                rel="noopener"
+              >
+                Abrir {NOMBRE_CANAL}
+              </IonButton>
+            )}
+          </IonCardContent>
+        </IonCard>
         <IonCard>
           <IonCardContent>
             <h2 className="titulo-caja">¿Tienes una idea para tu pueblo?</h2>

@@ -4,33 +4,38 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
 <style>
-/* Layout: portal municipal (barra marina + cabecera clara + rejillas de accesos y tarjetas) llevado a app con pestañas en móvil.
-   Tema claro único a propósito: es el de la plantilla y así controlamos el contraste. */
+/* Layout: portal municipal (barra + cabecera clara + rejillas de accesos y tarjetas) llevado a app con pestañas en móvil.
+   Paleta del campo almeriense: verde de monte, naranja de tierra y blanco de cal, con azul solo para enlaces e información.
+   Tema claro único a propósito: así controlamos el contraste. Los nombres --azul-* se mantienen por compatibilidad. */
 :root {
   color-scheme: light;
-  --azul-barra: #1f3d63;   /* barra superior, pie, cabecera de la app (11:1 con blanco) */
-  --azul: #1d5a8c;         /* color principal (7,3:1) */
-  --azul-oscuro: #123b5e;  /* marca, títulos, pulsado (11,6:1) */
-  --gris-cabecera: #e9ecef;
-  --fondo: #f4f6f8;
+  --azul-barra: #14451a;   /* verde oscuro: barra superior y pie (11:1 con blanco) */
+  --azul: #1b5e20;         /* verde principal: menú, chips, botones (7,9:1) */
+  --azul-oscuro: #14451a;  /* verde oscuro: marca y títulos */
+  --naranja: #b93c0b;      /* acciones principales: Apuntarme, Enviar (5,6:1 con blanco) */
+  --naranja-oscuro: #9a3412;
+  --naranja-claro: #fdf0e6;
+  --azul-info: #1d5a8c;    /* enlaces e información (7,3:1) */
+  --gris-cabecera: #e8f1e4; /* verde muy claro para chapas y separadores */
+  --fondo: #f6f8f1;        /* blanco cálido */
   --superficie: #ffffff;
-  --texto: #1f2933;        /* 13,6:1 */
-  --texto-suave: #4a5560;  /* 7,6:1 */
-  --borde: #d5dbe1;
+  --texto: #1f2a1f;        /* 13,9:1 */
+  --texto-suave: #4a5560;  /* 7,1:1 sobre el fondo */
+  --borde: #d3dccd;
   --foco: #ffbf47;
   --verde: #2e7d32;
   --whatsapp: #128c4a;
 
   --letra: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
-  --tam: 18px;
+  --tam: 20px;
   --radio: 8px;
   --hueco: 14px;
   --toque: 52px;
   --ancho: 1200px;
 }
 html { font-size: var(--tam); }
-html[data-letra="grande"] { --tam: 21px; }
-html[data-letra="enorme"] { --tam: 24px; }
+html[data-letra="grande"] { --tam: 24px; }
+html[data-letra="enorme"] { --tam: 28px; }
 body { background: var(--fondo); color: var(--texto); font-family: var(--letra); font-size: 1rem; line-height: 1.5; }
 * { box-sizing: border-box; }
 a { color: inherit; }
@@ -50,11 +55,11 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .letra span { margin-right: 4px; }
 .letra button { min-width: 44px; min-height: 40px; border: 1px solid rgba(255,255,255,.4); background: transparent; color: #fff; border-radius: 6px; cursor: pointer; font-weight: 700; }
 .letra button[aria-pressed="true"] { background: #fff; color: var(--azul-barra); }
-.letra button:nth-of-type(2) { font-size: 1.15em; }
-.letra button:nth-of-type(3) { font-size: 1.3em; }
+.letra button:nth-of-type(2) { font-size: 1.25em; }
+.letra button:nth-of-type(3) { font-size: 1.5em; }
 
 /* ---------- Cabecera ---------- */
-.cabecera { background: var(--gris-cabecera); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; border-bottom: 1px solid var(--borde); }
+.cabecera { background: var(--superficie); box-shadow: inset 0 -4px 0 var(--naranja); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; border-bottom: 1px solid var(--borde); }
 .cabecera .contenedor { display: flex; align-items: center; gap: 24px; min-height: 80px; }
 .marca { display: flex; align-items: center; gap: 12px; color: var(--azul-oscuro); text-decoration: none; }
 .marca__logo { flex: none; width: 42px; height: 50px; border: 2px solid var(--azul-oscuro); border-radius: 4px 4px 18px 18px; display: grid; place-items: center; font-size: .7rem; font-weight: 700; letter-spacing: .05em; }
@@ -62,7 +67,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .marca__sub { display: block; font-size: .65rem; text-transform: uppercase; letter-spacing: .05em; color: var(--texto-suave); }
 .menu { margin-left: auto; display: flex; gap: 4px; list-style: none; margin-block: 0; padding: 0; }
 .menu a { display: flex; align-items: center; gap: 8px; min-height: var(--toque); padding: 0 14px; color: var(--azul-oscuro); text-decoration: none; border-radius: var(--radio); font-weight: 700; }
-.menu a:hover { background: rgba(29,90,140,.08); }
+.menu a:hover { background: var(--gris-cabecera); }
 .menu a[aria-current="page"] { background: var(--azul); color: #fff; }
 .menu svg { width: 22px; height: 22px; }
 
@@ -74,7 +79,7 @@ main { padding-block: 20px 40px; }
 .vista { display: grid; gap: 28px; }
 .titulo-seccion { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
 .titulo-seccion h2 { margin: 0; font-size: 1.35rem; color: var(--azul-oscuro); }
-.enlace { color: var(--azul); font-weight: 700; text-underline-offset: 3px; }
+.enlace { color: var(--azul-info); font-weight: 700; text-underline-offset: 3px; }
 .saludo h1 { margin: 0 0 4px; font-size: 1.75rem; color: var(--azul-oscuro); }
 .saludo p { margin: 0; color: var(--texto-suave); }
 
@@ -83,7 +88,8 @@ main { padding-block: 20px 40px; }
 .rapido { display: flex; align-items: center; gap: 12px; min-height: 76px; padding: 12px 14px; border-radius: var(--radio); color: #fff; background: linear-gradient(135deg, var(--azul), var(--azul-oscuro)); text-decoration: none; font-weight: 700; line-height: 1.2; border: 0; cursor: pointer; text-align: left; transition: transform .15s; }
 .rapido:hover { transform: translateY(-2px); }
 .rapido svg { flex: none; width: 28px; height: 28px; }
-.rapido--wa { background: linear-gradient(135deg, var(--whatsapp), #0b5e31); }
+.rapido--wa { background: linear-gradient(135deg, var(--azul-info), #123b5e); }
+.rapido--naranja { background: linear-gradient(135deg, var(--naranja), var(--naranja-oscuro)); }
 
 /* Tarjetas de pueblos */
 .pueblos { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--hueco); }
@@ -115,17 +121,28 @@ main { padding-block: 20px 40px; }
 .diapo[hidden] { display: none !important; }
 .diapo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0) 70%); }
 .diapo__cuerpo { position: relative; max-width: 90%; }
+.diapo__foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.diapo::before { z-index: 1; }
+.diapo__cuerpo, .diapo__emoji { z-index: 2; }
+.diapo::before { background: linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.55) 45%, rgba(0,0,0,.05) 80%) !important; }
+.diapo__frase { margin: 10px 0 0 !important; font-size: 1.05rem; font-style: italic; }
+.diapo__frase small { display: block; font-style: normal; font-size: .75rem; opacity: .9; margin-top: 2px; }
+.carrusel__pausa { margin-left: 4px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: rgba(255,255,255,.92); color: #000; font-weight: 700; cursor: pointer; }
+.carrusel { min-height: 360px; }
 .diapo__emoji { position: absolute; top: 20px; right: 24px; font-size: 4.5rem; line-height: 1; z-index: 1; }
-.etiqueta { display: inline-block; font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; padding: 3px 9px; border-radius: 4px; background: rgba(255,255,255,.95); color: var(--azul-oscuro); margin-bottom: 8px; }
+.etiqueta { display: inline-block; max-width: 100%; font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; padding: 3px 9px; border-radius: 4px; background: rgba(255,255,255,.95); color: var(--azul-oscuro); margin-bottom: 8px; }
 .diapo h3 { margin: 0 0 6px; font-size: 1.45rem; }
 .diapo p { margin: 0; opacity: .95; }
-.carrusel__controles { position: absolute; z-index: 2; left: 20px; right: 20px; bottom: 14px; display: flex; align-items: center; gap: 10px; }
+.carrusel__controles { position: absolute; z-index: 3; left: 20px; right: 20px; bottom: 14px; display: flex; align-items: center; gap: 10px; }
 .carrusel__btn { width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255,255,255,.92); color: #000; font-size: 1.3rem; cursor: pointer; display: grid; place-items: center; }
 .carrusel__puntos { display: flex; gap: 8px; margin-left: auto; }
 .carrusel__puntos button { width: 14px; height: 14px; padding: 0; border: 2px solid #fff; border-radius: 50%; background: transparent; cursor: pointer; }
 .carrusel__puntos button[aria-current="true"] { background: #fff; }
 
 .proximos { display: grid; gap: 10px; align-content: start; }
+.mis-planes { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
+.mis-planes .evento { border-left: 6px solid var(--naranja); }
+@media (max-width: 600px) { .mis-planes { grid-template-columns: 1fr; } }
 
 /* Lista de eventos */
 .lista { display: grid; gap: 10px; }
@@ -168,15 +185,15 @@ main { padding-block: 20px 40px; }
 .ficha__desc { padding: 0 24px 24px; margin: 0; max-width: 65ch; }
 .acciones { display: grid; gap: 10px; }
 .boton { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 60px; padding: 0 18px; border-radius: var(--radio); font-weight: 700; font-size: 1.05rem; text-decoration: none; cursor: pointer; border: 2px solid var(--azul); background: var(--superficie); color: var(--azul); }
-.boton--principal { background: var(--azul); color: #fff; font-size: 1.2rem; min-height: 68px; }
+.boton--principal { background: var(--naranja); border-color: var(--naranja); color: #fff; font-size: 1.2rem; min-height: 68px; }
 .boton--hecho { background: var(--verde); border-color: var(--verde); color: #fff; }
-.boton--wa { border-color: var(--whatsapp); color: var(--whatsapp); }
+.boton--wa { border-color: var(--azul-info); color: var(--azul-info); }
 .boton svg { width: 24px; height: 24px; }
 .nota { font-size: .85rem; color: var(--texto-suave); margin: 0; }
 .chat { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: 16px; display: grid; gap: 10px; }
 .chat h2 { margin: 0; font-size: 1.1rem; color: var(--azul-oscuro); }
 .burbuja { padding: 10px 12px; border-radius: 12px 12px 12px 4px; background: var(--fondo); max-width: 90%; }
-.burbuja--yo { justify-self: end; border-radius: 12px 12px 4px 12px; background: #dbe9f5; }
+.burbuja--yo { justify-self: end; border-radius: 12px 12px 4px 12px; background: var(--naranja-claro); }
 .burbuja b { display: block; font-size: .8rem; color: var(--azul-oscuro); }
 .chat form { display: flex; gap: 8px; }
 .chat input { flex: 1; min-width: 0; min-height: var(--toque); padding: 0 12px; font: inherit; border: 2px solid var(--borde); border-radius: var(--radio); }
@@ -202,7 +219,7 @@ main { padding-block: 20px 40px; }
 .cuenta { display: flex; align-items: center; gap: 8px; min-height: var(--toque); padding: 0 14px; border-radius: var(--radio); border: 2px solid var(--azul); background: var(--superficie); color: var(--azul); font-weight: 700; text-decoration: none; cursor: pointer; white-space: nowrap; }
 .cuenta svg { width: 22px; height: 22px; }
 .cuenta--dentro { border-color: transparent; background: transparent; color: var(--azul-oscuro); }
-.fondo-modal { position: fixed; inset: 0; z-index: 30; background: rgba(18,59,94,.55); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
+.fondo-modal { position: fixed; inset: 0; z-index: 30; background: rgba(20,69,26,.55); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
 .fondo-modal[hidden] { display: none; }
 .modal { width: 100%; max-width: 460px; background: var(--superficie); border-radius: 12px; padding: 24px; display: grid; gap: 14px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
 .modal h2 { margin: 0; font-size: 1.35rem; color: var(--azul-oscuro); }
@@ -276,10 +293,10 @@ main { padding-block: 20px 40px; }
   .cabecera .contenedor { min-height: 68px; }
   .letra span { display: none; }
   .pestanas { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--superficie); border-top: 1px solid var(--borde); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
-  .pestanas a { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 70px; text-decoration: none; font-size: .75rem; font-weight: 700; color: var(--texto-suave); }
+  .pestanas a { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 70px; text-decoration: none; font-size: .7rem; min-width: 0; overflow-wrap: anywhere; text-align: center; font-weight: 700; color: var(--texto-suave); }
   .pestanas svg { width: 28px; height: 28px; }
   .pestanas a[aria-current="page"] { color: var(--azul); }
-  .pestanas a[aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 22%; right: 22%; height: 4px; border-radius: 0 0 4px 4px; background: var(--azul); }
+  .pestanas a[aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 22%; right: 22%; height: 4px; border-radius: 0 0 4px 4px; background: var(--naranja); }
   main { padding-bottom: 110px; }
   .pie { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
 }
@@ -326,7 +343,7 @@ body.en-recuerdos .pie { display: none; }
 
 <header>
   <div class="barra"><div class="contenedor">
-    <a class="barra__wa" href="#perfil"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2s.2-1.1.1-1.2l-.4-.2z"/></svg><span>También por WhatsApp, con audios</span></a>
+    <a class="barra__wa" href="#perfil"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2s.2-1.1.1-1.2l-.4-.2z"/></svg><span id="barra-canal">También por Telegram, con audios</span></a>
     <div class="letra" role="group" aria-label="Tamaño de letra">
       <span>Tamaño de letra</span>
       <button type="button" data-letra="normal" aria-label="Letra normal">A</button>
@@ -390,16 +407,39 @@ const FOTOS_PLANES = {"procesion": {"alt": "Procesión de Semana Santa con nazar
 const REGLAS_FOTO = [[/burro/, "burro"], [/cabalgata/, "cabalgata"], [/halloween|disfraces/, "halloween"], [/mantecados|navide/, "mantecados"], [/tapa|postre|menu|restaurante|gastronom/, "tapas"], [/carrera|trail/, "carrera"], [/senderis|ruta_|excursion/, "senderismo"], [/flamenco/, "flamenco"], [/bachata|salsa/, "bachata"], [/sevillanas|baile/, "sevillanas"], [/teatro/, "teatro"], [/romeria/, "romeria"], [/procesion|religioso|semana_santa|besamanos/, "procesion"], [/flores|cruces_de_mayo|cruz/, "cruces"], [/ecomercado|mercad|artesan/, "mercado"], [/pueblos_mas_bonitos/, "plaza"], [/verbena|feria|fiesta_patronal|fuegos/, "fuegos"]];
 const FOTO_CATEGORIA = { deportiva: "senderismo", cultural: "teatro", fiestas: "fuegos", gastronomia: "tapas", ludica: "sevillanas", comercio: "mercado" };
 
+const NUMERO_WA = "+34 600 000 000"; // número del bot de WhatsApp (cuando Meta lo habilite)
+// Canal de mensajería activo. Hoy es Telegram; para volver a WhatsApp basta con cambiar CANAL.
+const CANALES = {
+  telegram: { nombre: "Telegram", contacto: "@HackeMate_bot", enlace: "https://t.me/HackeMate_bot" },
+  whatsapp: { nombre: "WhatsApp", contacto: NUMERO_WA, enlace: null }
+};
+const CANAL = CANALES.telegram;
 const RAPIDOS = [
   { texto: "Planes de hoy",       icono: "sol",      accion: () => irAgenda({ cuando: "hoy" }) },
   { texto: "Este fin de semana",  icono: "calendario", accion: () => irAgenda({ cuando: "finde" }) },
   { texto: "Planes gratis",       icono: "euro",     accion: () => irAgenda({ gratis: true }) },
   { texto: "Ver en el mapa",      icono: "mapa",     accion: () => (location.hash = "mapa") },
-  { texto: "Proponer un plan",    icono: "mas",      accion: () => (location.hash = "proponer") },
-  { texto: "Escríbenos por WhatsApp", icono: "wa",   accion: () => mostrarWhatsapp(), clase: "rapido--wa" }
+  { texto: "Proponer un plan",    icono: "mas",      accion: () => (location.hash = "proponer"), clase: "rapido--naranja" },
+  { texto: `Escríbenos por ${CANAL.nombre}`, icono: "wa", accion: () => mostrarWhatsapp(), clase: "rapido--wa" }
 ];
 
-const NUMERO_WA = "+34 600 000 000"; // número del bot (sustituir por el de Twilio)
+
+// Frase de portada: la escribe quien publica (opcional). Si no hay, la propone la IA del bot.
+// En el prototipo se simula con frases cortas por tipo de plan.
+const FRASES_IA = {
+  cultural: ["Una tarde de las que se recuerdan.", "Cultura de la buena, a dos pasos de casa.", "Trae a tu vecina, que esto no se repite."],
+  fiestas: ["¡Que no falte nadie en la plaza!", "Música, gente y buen ambiente.", "Fiesta como las de antes."],
+  gastronomia: ["Ven con hambre, te vas rodando.", "Sabor de pueblo en cada bocado.", "Tapa a tapa se hace el camino."],
+  deportiva: ["Zapatillas puestas y a por el monte.", "Aire puro y piernas a tope.", "El mejor gimnasio es la sierra."],
+  ludica: ["Diversión para chicos y grandes.", "¡Ponte el disfraz y sal a la calle!", "Risas garantizadas, palabra."],
+  comercio: ["Lo de aquí, hecho con cariño.", "Un detalle de tu pueblo para regalar.", "Compra cerca, vive mejor."]
+};
+function fraseIA(e) {
+  const l = FRASES_IA[e.categoria] || FRASES_IA.fiestas;
+  let h = 0; for (const c of e.id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return l[h % l.length];
+}
+const frasePortada = e => e.frase_portada ? { texto: e.frase_portada, autor: e.publicador_nombre ? `— ${e.publicador_nombre}` : "— La organización" } : { texto: fraseIA(e), autor: "✨ Sugerida por la IA" };
 
 /* =========================================================
    UTILIDADES
@@ -506,13 +546,17 @@ function vistaInicio() {
       <div><h3>${esc(pu.nombre)}</h3><p>${esc(pu.lema)}</p></div></a>`;
   }).join("");
   const diapos = destacados.map((e, i) => {
-    const c = CATEGORIAS[e.categoria];
-    return `<a class="diapo" href="#evento-${e.id}" ${i === estado.diapo ? "" : "hidden"} style="--fondo-diapo:linear-gradient(135deg, ${c.color}, #1f3d63)" aria-roledescription="diapositiva" aria-label="${i + 1} de ${destacados.length}">
-      <span class="diapo__emoji" aria-hidden="true">${c.emoji}</span>
-      <span class="diapo__cuerpo"><span class="etiqueta">${c.etiqueta} · ${esc(e.municipio)}</span><h3>${esc(e.titulo)}</h3><p>${fechaLarga(e.fecha_inicio)} · ${horaEvento(e)}</p></span></a>`;
+    const c = CATEGORIAS[e.categoria], f = fotoPlan(e), fr = frasePortada(e);
+    return `<a class="diapo" href="#evento-${e.id}" ${i === estado.diapo ? "" : "hidden"} style="--fondo-diapo:${c.color}" aria-roledescription="diapositiva" aria-label="${i + 1} de ${destacados.length}: ${esc(e.titulo)}">
+      <img class="diapo__foto" src="${f.src}" ${f.srcset ? `srcset="${f.srcset}" sizes="(min-width: 1100px) 700px, 100vw"` : ""} alt="" decoding="async" ${i ? 'loading="lazy"' : ""}>
+      <span class="diapo__cuerpo"><span class="etiqueta">${c.emoji} ${c.etiqueta} · ${esc(e.municipio)}</span><h3>${esc(e.titulo)}</h3><p>${fechaLarga(e.fecha_inicio)} · ${horaEvento(e)}</p>
+        <p class="diapo__frase">«${esc(fr.texto)}»<small>${esc(fr.autor)}</small></p></span></a>`;
   }).join("");
+  const mios = estado.usuario ? proximos().filter(e => estado.inscritos.has(e.id)) : [];
   return `<div class="vista">
-    <section class="saludo"><h1>¿Qué hacemos hoy en el pueblo?</h1><p>Fiestas, rutas, talleres y comercios de cinco pueblos de Almería, en un solo sitio.</p></section>
+    <section class="saludo"><h1>${estado.usuario ? `¡Hola, ${esc(estado.usuario.nombre.split(" ")[0])}! ` : ""}¿Qué hacemos hoy en el pueblo?</h1><p>Fiestas, rutas, talleres y comercios de cinco pueblos de Almería, en un solo sitio.</p></section>
+    ${mios.length ? `<section aria-labelledby="t-mios"><div class="titulo-seccion"><h2 id="t-mios">Tus planes</h2><a class="enlace" href="#perfil">Ver todos</a></div>
+      <div class="mis-planes">${mios.map(tarjetaEvento).join("")}</div></section>` : ""}
     <section aria-labelledby="t-rapidos"><h2 class="oculto" id="t-rapidos">Accesos rápidos</h2>
       <div class="rapidos">${RAPIDOS.map((r, i) => `<button type="button" class="rapido ${r.clase || ""}" data-rapido="${i}">${icono(r.icono)}<span>${r.texto}</span></button>`).join("")}</div></section>
     <section aria-labelledby="t-pueblos"><div class="titulo-seccion"><h2 id="t-pueblos">Elige tu pueblo</h2><a class="enlace" href="#mapa">Verlos en el mapa</a></div>
@@ -523,6 +567,7 @@ function vistaInicio() {
           <div class="carrusel__controles">
             <button class="carrusel__btn" type="button" data-diapo="-1" aria-label="Plan anterior">‹</button>
             <button class="carrusel__btn" type="button" data-diapo="1" aria-label="Plan siguiente">›</button>
+            <button class="carrusel__pausa" type="button" data-pausa aria-pressed="${estado.carruselPausado}">${estado.carruselPausado ? "▶ Seguir" : "⏸ Pausar"}</button>
             <div class="carrusel__puntos">${destacados.map((_, i) => `<button type="button" data-ir="${i}" aria-label="Ir al plan ${i + 1}" aria-current="${i === estado.diapo}"></button>`).join("")}</div>
           </div></div>
         <div class="proximos">${prox.slice(4, 7).map(tarjetaEvento).join("")}</div>
@@ -577,9 +622,9 @@ function vistaFicha(id) {
       </article>
       <aside class="acciones" aria-label="Qué puedo hacer">
         <button type="button" class="boton boton--principal ${apuntado ? "boton--hecho" : ""}" data-apuntar="${e.id}">${apuntado ? `${icono("check")} Ya estás apuntado` : "🙋 Apuntarme"}</button>
-        ${apuntado ? `<p class="nota">Te avisaremos por WhatsApp si cambia la hora o el sitio. Toca otra vez para desapuntarte.</p>` : !estado.usuario ? `<p class="candado">🔒 Para apuntarte te pediremos crear una cuenta. Solo se tarda un momento.</p>` : ""}
+        ${apuntado ? `<p class="nota">Te avisaremos por ${CANAL.nombre} si cambia la hora o el sitio. Toca otra vez para desapuntarte.</p>` : !estado.usuario ? `<p class="candado">🔒 Para apuntarte te pediremos crear una cuenta. Solo se tarda un momento.</p>` : ""}
         <a class="boton" href="https://www.openstreetmap.org/search?query=${encodeURIComponent((e.lugar ? e.lugar + ", " : "") + e.municipio)}" target="_blank" rel="noopener">${icono("mapa")} Cómo llegar</a>
-        <button type="button" class="boton boton--wa" data-wa>${icono("wa")} Preguntar por WhatsApp</button>
+        <button type="button" class="boton boton--wa" data-wa>${icono("wa")} Preguntar por ${CANAL.nombre}</button>
         ${e.fuente ? `<a class="boton" href="${esc(e.fuente)}" target="_blank" rel="noopener">Ver el anuncio original</a>` : ""}
         <section class="chat" aria-label="Chat del plan">
           <h2>Preguntas sobre el plan</h2>
@@ -719,6 +764,8 @@ function vistaProponer() {
             <div><label for="p-pueblo">Pueblo</label><select id="p-pueblo">${PUEBLOS.map(p => `<option>${esc(p.nombre)}</option>`).join("")}</select></div>
           </div>
           <div><label for="p-desc">¿En qué consiste? <span class="ayuda">Qué se hará, qué hay que llevar…</span></label><textarea id="p-desc"></textarea></div>
+          <div><label for="p-frase">Frase para la portada <span class="ayuda">(opcional, sale bajo la foto)</span></label><input type="text" id="p-frase" maxlength="90" placeholder="Ej.: ¡Trae a tu vecina, que esto no se repite!">
+            <p class="nota">Si la dejas vacía, la IA escribe una frase corta y alegre a partir del plan.</p></div>
           <div class="selector-imagen"><span class="etq">Foto o cartel del plan <span class="ayuda">(opcional, hace el plan más llamativo)</span></span>
             <input type="file" id="p-imagen" accept="image/*" class="oculto" tabindex="-1" aria-hidden="true">
             <div id="p-vista" hidden><img id="p-vista-img" alt="Vista previa de la foto elegida para el plan"><button type="button" class="boton" data-quitar-imagen>Quitar la foto</button></div>
@@ -769,10 +816,10 @@ function vistaProponer() {
         <section class="caja"><h2>Cómo funciona</h2>
           <ol class="pasos">
             <li><b>Rellenas la propuesta.</b> Tarda unos 3 minutos.</li>
-            <li><b>El ayuntamiento la revisa</b> y te escribe por WhatsApp si falta algo o hay que pedir permisos.</li>
+            <li><b>El ayuntamiento la revisa</b> y te escribe por ${CANAL.nombre} si falta algo o hay que pedir permisos.</li>
             <li><b>Si la aprueba, sale en la agenda</b> y los vecinos se pueden apuntar.</li>
           </ol></section>
-        <section class="caja"><h2>¿Prefieres hacerlo hablando?</h2><p>Manda un audio por WhatsApp contando el plan y te ayudamos a rellenarlo.</p><button type="button" class="boton boton--wa" data-wa>${icono("wa")} Proponer por WhatsApp</button></section>
+        <section class="caja"><h2>¿Prefieres hacerlo hablando?</h2><p>Manda un audio por ${CANAL.nombre} contando el plan y te ayudamos a rellenarlo.</p><button type="button" class="boton boton--wa" data-wa>${icono("wa")} Proponer por ${CANAL.nombre}</button></section>
       </aside>
     </div></div>`;
 }
@@ -781,9 +828,10 @@ function vistaPropuestaEnviada(pr) {
   return `<div class="vista">
     <div class="titulo-seccion"><h2>Propuesta enviada</h2></div>
     <section class="caja resumen">
-      <p><strong style="color:var(--verde)">${icono("check")} El ayuntamiento de ${esc(pr.pueblo)} ya tiene tu propuesta.</strong> Te escribiremos por WhatsApp al ${esc(pr.telefono)} cuando la revisen.</p>
+      <p><strong style="color:var(--verde)">${icono("check")} El ayuntamiento de ${esc(pr.pueblo)} ya tiene tu propuesta.</strong> Te escribiremos por ${CANAL.nombre} al ${esc(pr.telefono)} cuando la revisen.</p>
       <dl>
         <dt>Plan</dt><dd>${esc(pr.titulo)}</dd>
+        <dt>Portada</dt><dd>«${esc(pr.frase || fraseIA({ id: pr.titulo, categoria: pr.categoria }))}»${pr.frase ? "" : " <small>(✨ sugerida por la IA)</small>"}</dd>
         <dt>Cuándo</dt><dd>${fechaLarga(pr.fecha + "T12:00:00+01:00")}, de ${pr.hora}${pr.fin ? " a " + pr.fin : ""}</dd>
         <dt>Dónde</dt><dd>${esc(pr.lugar)}, ${esc(pr.pueblo)}</dd>
         <dt>Público</dt><dd>${PUBLICOS[pr.publico]}</dd>
@@ -803,16 +851,16 @@ function vistaPerfil() {
     <div class="titulo-seccion"><h2>Mi perfil</h2></div>
     <div class="perfil">
       ${estado.usuario
-        ? `<section class="caja"><h2>Hola, ${esc(estado.usuario.nombre)}</h2><p>${estado.usuario.telefono ? `Te avisamos por WhatsApp al ${esc(estado.usuario.telefono)}.` : "Has entrado con Google."}</p><button type="button" class="boton" data-salir>Cerrar sesión</button></section>`
+        ? `<section class="caja"><h2>Hola, ${esc(estado.usuario.nombre)}</h2><p>${estado.usuario.telefono ? `Te avisamos por ${CANAL.nombre} al ${esc(estado.usuario.telefono)}.` : "Has entrado con Google."}</p><button type="button" class="boton" data-salir>Cerrar sesión</button></section>`
         : `<section class="caja"><h2>Tu cuenta</h2><p>Para mirar la agenda no hace falta cuenta. La necesitas para apuntarte a un plan o preguntar a la organización.</p><button type="button" class="boton boton--principal" data-entrar>Crear cuenta o entrar</button></section>`}
       <section class="caja"><h2>Mis planes</h2>${!estado.usuario ? `<p>Cuando tengas cuenta, aquí verás los planes a los que te apuntes.</p>` : mios.length ? `<div class="lista">${mios.map(tarjetaEvento).join("")}</div>` : `<p>Todavía no te has apuntado a nada. Abre un plan y toca «Apuntarme».</p>`}</section>
       <section class="caja"><h2>Mis propuestas</h2>${estado.propuestas.length ? estado.propuestas.map(p => `<p><strong style="color:var(--texto)">${esc(p.titulo)}</strong><br>${esc(p.pueblo)} · <span class="chapa chapa--gente">En revisión</span></p>`).join("") : "<p>¿Tienes una idea para tu pueblo? Propón un plan y el ayuntamiento lo revisa.</p>"}<a class="boton" href="#proponer">Proponer un plan</a></section>
-      <section class="caja"><h2>Avisos por WhatsApp</h2>
+      <section class="caja"><h2>Avisos por ${CANAL.nombre}</h2>
         <label class="interruptor" for="av-cambios">Si cambia un plan al que voy<input type="checkbox" id="av-cambios" checked></label>
         <label class="interruptor" for="av-recom">Planes que me pueden gustar<input type="checkbox" id="av-recom" checked></label>
         <label class="interruptor" for="av-audio">Recibir los avisos en audio<input type="checkbox" id="av-audio"></label></section>
-      <section class="caja"><h2>Usarlo solo con WhatsApp</h2><p>Manda un audio diciendo qué te apetece hacer y te contestamos con los planes. No hace falta instalar nada.</p>
-        <p><strong style="color:var(--texto);font-size:1.2rem">${NUMERO_WA}</strong></p><button type="button" class="boton boton--wa" data-copiar>${icono("wa")} Copiar el número</button></section>
+      <section class="caja"><h2>Usarlo solo con ${CANAL.nombre}</h2><p>Manda un audio diciendo qué te apetece hacer y te contestamos con los planes. No hace falta instalar nada.</p>
+        <p><strong style="color:var(--texto);font-size:1.2rem">${CANAL.contacto}</strong></p><button type="button" class="boton boton--wa" data-copiar>${icono("wa")} Copiar ${CANAL.nombre === "WhatsApp" ? "el número" : "el contacto"}</button></section>
     </div></div>`;
 }
 
@@ -838,13 +886,33 @@ function pintar() {
   const v = h.startsWith("evento-") ? vistaFicha(h.slice(7)) : { inicio: vistaInicio, agenda: vistaAgenda, mapa: vistaMapa, perfil: vistaPerfil, recuerdos: vistaRecuerdos, proponer: vistaProponer, creditos: vistaCreditos }[actual]();
   document.body.classList.toggle("en-recuerdos", actual === "recuerdos");
   $("#principal").innerHTML = v;
+  if (actual === "inicio" && !h.startsWith("evento-")) arrancarCarrusel(); else clearInterval(temporizadorCarrusel);
+}
+
+/* Avance automático cada 6 s. Se para al pasar el ratón o el foco y con el botón (WCAG 2.2.2);
+   si el sistema pide menos movimiento, empieza parado. */
+let temporizadorCarrusel = null;
+estado.carruselPausado = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } })();
+function moverDiapo(n) {
+  const total = document.querySelectorAll(".diapo").length; if (!total) return;
+  estado.diapo = (n + total) % total;
+  document.querySelectorAll(".diapo").forEach((s, i) => (s.hidden = i !== estado.diapo));
+  document.querySelectorAll(".carrusel__puntos button").forEach((b, i) => b.setAttribute("aria-current", i === estado.diapo));
+}
+function arrancarCarrusel() {
+  clearInterval(temporizadorCarrusel);
+  const c = $(".carrusel"); if (!c) return;
+  let encima = false;
+  c.addEventListener("mouseenter", () => (encima = true)); c.addEventListener("mouseleave", () => (encima = false));
+  c.addEventListener("focusin", () => (encima = true)); c.addEventListener("focusout", () => (encima = false));
+  temporizadorCarrusel = setInterval(() => { if (!estado.carruselPausado && !encima && !document.hidden) moverDiapo(estado.diapo + 1); }, 6000);
 }
 
 function irAgenda(f) { Object.assign(estado, { municipio: "", categoria: "", cuando: "", gratis: false }, f); location.hash === "#agenda" ? pintar() : (location.hash = "agenda"); window.scrollTo(0, 0); }
 
 let avisoT;
 function avisar(t) { const a = $("#aviso"); a.textContent = t; a.hidden = false; clearTimeout(avisoT); avisoT = setTimeout(() => (a.hidden = true), 2800); }
-function mostrarWhatsapp() { avisar(`Escribe o manda un audio al ${NUMERO_WA}`); }
+function mostrarWhatsapp() { avisar(`Escribe o manda un audio a ${CANAL.contacto} en ${CANAL.nombre}`); }
 
 /* ---------- Cuenta: solo hace falta para apuntarse o preguntar ---------- */
 let trasEntrar = null, focoAntes = null;
@@ -858,8 +926,8 @@ function pedirCuenta(motivo, despues) {
     <div class="separador">o con tu nombre y móvil</div>
     <form id="form-cuenta" novalidate>
       <div><label for="c-nombre">Tu nombre</label><input type="text" id="c-nombre" autocomplete="name" required></div>
-      <div><label for="c-tel">Móvil (para avisarte por WhatsApp)</label><input type="tel" id="c-tel" autocomplete="tel" inputmode="tel" placeholder="600 123 456" required></div>
-      <label class="casilla" for="c-acepto"><input type="checkbox" id="c-acepto" required> Acepto que me avisen por WhatsApp de los planes a los que me apunte. Puedo darme de baja cuando quiera.</label>
+      <div><label for="c-tel">Móvil (para avisarte por ${CANAL.nombre})</label><input type="tel" id="c-tel" autocomplete="tel" inputmode="tel" placeholder="600 123 456" required></div>
+      <label class="casilla" for="c-acepto"><input type="checkbox" id="c-acepto" required> Acepto que me avisen por ${CANAL.nombre} de los planes a los que me apunte. Puedo darme de baja cuando quiera.</label>
       <p class="error" id="c-error" role="alert" hidden></p>
       <button type="submit" class="boton boton--principal">Crear cuenta</button>
     </form>
@@ -879,12 +947,12 @@ function entrar(usuario) {
 function apuntar(id) {
   const ya = estado.inscritos.has(id);
   ya ? estado.inscritos.delete(id) : estado.inscritos.add(id);
-  guardar(); pintar(); avisar(ya ? "Te has desapuntado" : "¡Plaza confirmada! Te llegará un WhatsApp.");
+  guardar(); pintar(); avisar(ya ? "Te has desapuntado" : `¡Plaza confirmada! Te llegará un mensaje por ${CANAL.nombre}.`);
 }
 function enviarPregunta(id, texto) {
   const chat = estado.chats[id] ||= [{ quien: "Organización", texto: "¡Hola! Si tenéis dudas sobre el plan, preguntad por aquí." }];
   chat.push({ quien: estado.usuario.nombre.split(" ")[0], texto, yo: true });
-  chat.push({ quien: "Asistente", texto: "Gracias por preguntar. Se lo paso a la organización y te contestamos aquí y por WhatsApp." });
+  chat.push({ quien: "Asistente", texto: `Gracias por preguntar. Se lo paso a la organización y te contestamos aquí y por ${CANAL.nombre}.` });
   pintar(); document.getElementById("chat-" + id)?.focus();
 }
 document.addEventListener("keydown", ev => { if (ev.key === "Escape" && !$("#modal").hidden) cerrarModal(); });
@@ -903,17 +971,13 @@ document.addEventListener("click", ev => {
   if (q?.dataset.elegirImagen != null) return $("#p-imagen").click();
   if (q?.dataset.comentarios) return abrirComentarios(q.dataset.comentarios);
   if (q) { estado.imagenPropuesta = null; $("#p-vista").hidden = true; $("#p-elegir").textContent = "📷 Añadir una foto"; return; }
-  const t = ev.target.closest("[data-rapido],[data-pueblo],[data-diapo],[data-ir],[data-cat],[data-gratis],[data-apuntar],[data-wa],[data-copiar],[data-letra]");
+  const t = ev.target.closest("[data-rapido],[data-pueblo],[data-diapo],[data-ir],[data-pausa],[data-cat],[data-gratis],[data-apuntar],[data-wa],[data-copiar],[data-letra]");
   if (!t) return;
   const d = t.dataset;
   if (d.rapido != null) RAPIDOS[+d.rapido].accion();
   else if (d.pueblo != null) { ev.preventDefault(); irAgenda({ municipio: d.pueblo }); }
-  else if (d.diapo != null || d.ir != null) {
-    const n = proximos().slice(0, 4).length;
-    estado.diapo = d.ir != null ? +d.ir : (estado.diapo + +d.diapo + n) % n;
-    document.querySelectorAll(".diapo").forEach((s, i) => (s.hidden = i !== estado.diapo));
-    document.querySelectorAll(".carrusel__puntos button").forEach((b, i) => b.setAttribute("aria-current", i === estado.diapo));
-  }
+  else if (d.diapo != null || d.ir != null) moverDiapo(d.ir != null ? +d.ir : estado.diapo + +d.diapo);
+  else if (d.pausa != null) { estado.carruselPausado = !estado.carruselPausado; t.setAttribute("aria-pressed", estado.carruselPausado); t.textContent = estado.carruselPausado ? "▶ Seguir" : "⏸ Pausar"; }
   else if (d.cat != null) { estado.categoria = estado.categoria === d.cat ? "" : d.cat; pintar(); }
   else if (d.gratis != null) { estado.gratis = !estado.gratis; pintar(); }
   else if (d.apuntar) {
@@ -921,7 +985,7 @@ document.addEventListener("click", ev => {
     estado.usuario ? apuntar(id) : pedirCuenta("Para apuntarte a este plan necesitas una cuenta. Así la organización sabe quién va y te avisamos si algo cambia.", () => apuntar(id));
   }
   else if (d.wa != null) mostrarWhatsapp();
-  else if (d.copiar != null) { navigator.clipboard?.writeText(NUMERO_WA).then(() => avisar("Número copiado"), () => avisar(`El número es ${NUMERO_WA}`)); }
+  else if (d.copiar != null) { navigator.clipboard?.writeText(CANAL.contacto).then(() => avisar("Copiado"), () => avisar(`Es ${CANAL.contacto} en ${CANAL.nombre}`)); }
   else if (d.letra) ponerLetra(d.letra);
 });
 
@@ -936,7 +1000,7 @@ document.addEventListener("submit", ev => {
   if (ev.target.id === "form-cuenta") {
     ev.preventDefault();
     const nombre = $("#c-nombre").value.trim(), tel = $("#c-tel").value.replace(/\s/g, ""), err = $("#c-error");
-    const fallo = !nombre ? "Escribe tu nombre." : !/^(\+34)?[67]\d{8}$/.test(tel) ? "Escribe un móvil español de 9 cifras, por ejemplo 600 123 456." : !$("#c-acepto").checked ? "Marca la casilla para poder avisarte por WhatsApp." : "";
+    const fallo = !nombre ? "Escribe tu nombre." : !/^(\+34)?[67]\d{8}$/.test(tel) ? "Escribe un móvil español de 9 cifras, por ejemplo 600 123 456." : !$("#c-acepto").checked ? `Marca la casilla para poder avisarte por ${CANAL.nombre}.` : "";
     if (fallo) { err.textContent = fallo; err.hidden = false; return; }
     return entrar({ nombre, telefono: tel.replace(/^(\+34)?(\d{3})(\d{3})(\d{3})$/, "$2 $3 $4") });
   }
@@ -945,7 +1009,7 @@ document.addEventListener("submit", ev => {
     const v = id => $("#" + id).value.trim(), radio = n => document.querySelector(`input[name="${n}"]:checked`)?.value;
     const pr = { titulo: v("p-titulo"), categoria: v("p-cat"), pueblo: v("p-pueblo"), descripcion: v("p-desc"), fecha: v("p-fecha"), hora: v("p-hora"), fin: v("p-fin"), lugar: v("p-lugar"),
       publico: radio("publico"), plazas: v("p-plazas"), pago: radio("pago"), precio: v("p-precio"), responsable: v("p-resp"), telefono: v("p-tel"), entidad: v("p-entidad"), entidadNombre: v("p-nombre-ent"),
-      necesidades: [...document.querySelectorAll(".necesidades input:checked")].map(i => i.value), seguro: radio("seguro"), observaciones: v("p-obs"), imagen_url: estado.imagenPropuesta || null };
+      necesidades: [...document.querySelectorAll(".necesidades input:checked")].map(i => i.value), seguro: radio("seguro"), observaciones: v("p-obs"), frase: v("p-frase"), imagen_url: estado.imagenPropuesta || null };
     const faltan = [["titulo", "el nombre del plan", "p-titulo"], ["fecha", "el día", "p-fecha"], ["hora", "la hora de inicio", "p-hora"], ["lugar", "el lugar", "p-lugar"], ["responsable", "la persona responsable", "p-resp"], ["telefono", "un teléfono de contacto", "p-tel"]].filter(([k]) => !pr[k]);
     const err = $("#p-error");
     if (pr.pago === "si" && !pr.precio) faltan.push(["precio", "el precio", "p-precio"]);
@@ -991,4 +1055,3 @@ window.addEventListener("hashchange", () => { if (!$("#modal").hidden) cerrarMod
 pintar();
 </script>
 
-</body></html>

@@ -1,6 +1,15 @@
 /* Letra grande por defecto: buena parte del público es mayor (WCAG 2.1 AA). */
 html {
-  font-size: 18px;
+  font-size: 20px;
+}
+
+/* Tamaño de letra elegido por la persona (botones A A A en Inicio y Perfil) */
+html[data-letra='grande'] {
+  font-size: 24px;
+}
+
+html[data-letra='enorme'] {
+  font-size: 28px;
 }
 
 body {
@@ -19,7 +28,12 @@ ion-chip.ion-focused {
 
 /* ---------- Cabecera ---------- */
 ion-toolbar {
-  --min-height: 64px;
+  --min-height: 68px;
+}
+
+/* Raya naranja bajo la cabecera verde, como en la web */
+ion-header ion-toolbar:first-child {
+  border-bottom: 4px solid var(--hm-naranja);
 }
 
 ion-toolbar ion-title {
@@ -48,14 +62,14 @@ ion-toolbar ion-title {
 
 .marca__nombre {
   display: block;
-  font-size: 1.15rem;
+  font-size: min(1.15rem, 23px);
   font-weight: 700;
   line-height: 1.15;
 }
 
 .marca__sub {
   display: block;
-  font-size: 0.75rem;
+  font-size: min(0.75rem, 15px);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -65,12 +79,13 @@ ion-toolbar ion-title {
 /* ---------- Barra de pestañas: botones grandes ---------- */
 ion-tab-bar {
   height: 68px;
-  border-top: 1px solid var(--hm-gris-cabecera);
+  border-top: 1px solid var(--hm-borde);
 }
 
 ion-tab-button {
   position: relative;
-  font-size: 0.9rem;
+  /* Tope en px: con la letra más grande, las cinco pestañas tienen que seguir cabiendo */
+  font-size: min(0.9rem, 17px);
   font-weight: 600;
 }
 
@@ -84,9 +99,9 @@ ion-tab-button.tab-selected::before {
   top: 0;
   left: 20%;
   right: 20%;
-  height: 4px;
+  height: 5px;
   border-radius: 0 0 4px 4px;
-  background: var(--hm-azul);
+  background: var(--hm-naranja);
 }
 
 /* ---------- Botones y elementos táctiles ---------- */
@@ -166,7 +181,7 @@ ion-item {
 
 ion-item-divider.dia,
 ion-item-divider {
-  --color: var(--hm-azul-oscuro);
+  --color: var(--hm-verde-oscuro);
   font-size: 1rem;
 }
 
@@ -214,7 +229,7 @@ ion-item-divider {
 .contador-apuntados {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--hm-azul-oscuro);
+  color: var(--hm-verde-oscuro);
   background: var(--ion-color-light);
   border-radius: 999px;
   padding: 2px 8px;
@@ -238,7 +253,7 @@ ion-card-header ion-chip {
 
 ion-card-title {
   font-size: 1.5rem;
-  color: var(--hm-azul-oscuro);
+  color: var(--hm-verde-oscuro);
 }
 
 ion-card-subtitle {
@@ -295,7 +310,7 @@ ion-card-content {
 .titulo-caja {
   font-size: 1.2rem;
   font-weight: 700;
-  color: var(--hm-azul-oscuro);
+  color: var(--hm-verde-oscuro);
   margin: 0 0 8px;
 }
 
@@ -310,7 +325,7 @@ ion-card-content {
 .chat-evento h2 {
   margin: 0 0 12px;
   font-size: 1.15rem;
-  color: var(--hm-azul-oscuro);
+  color: var(--hm-verde-oscuro);
 }
 
 .chat-evento .nota {
@@ -328,13 +343,13 @@ ion-card-content {
 .burbuja--yo {
   margin-left: auto;
   border-radius: 12px 12px 4px 12px;
-  background: #dbe9f5;
+  background: var(--hm-verde-claro);
 }
 
 .burbuja b {
   display: block;
   font-size: 0.8rem;
-  color: var(--hm-azul-oscuro);
+  color: var(--hm-verde-oscuro);
 }
 
 .chat-form {
@@ -362,7 +377,7 @@ ion-card-content {
   display: grid;
   gap: 14px;
   background: #fff;
-  border: 1px solid var(--hm-gris-cabecera);
+  border: 1px solid var(--hm-borde);
   border-radius: var(--hm-radio);
 }
 
@@ -370,7 +385,7 @@ ion-card-content {
   padding: 0 6px;
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--hm-azul-oscuro);
+  color: var(--hm-verde-oscuro);
 }
 
 .form-propuesta ion-input,
@@ -430,8 +445,8 @@ ion-card-content {
   justify-content: space-between;
   gap: 8px;
   padding: 4px 8px 4px 16px;
-  background: #dbe9f5;
-  color: var(--hm-azul-oscuro);
+  background: var(--hm-verde-claro);
+  color: var(--hm-verde-oscuro);
   font-weight: 600;
   font-size: 0.95rem;
 }
@@ -458,7 +473,7 @@ ion-card-content {
 }
 
 .pendiente {
-  border-left: 6px solid var(--hm-azul);
+  border-left: 6px solid var(--hm-naranja);
 }
 
 .pendiente--spam {
@@ -523,7 +538,7 @@ ion-card-content {
 .propuesta summary {
   cursor: pointer;
   font-weight: 700;
-  color: var(--hm-azul-oscuro);
+  color: var(--hm-verde-oscuro);
   min-height: 32px;
 }
 
@@ -590,7 +605,7 @@ ion-card-content {
 .cifra__valor {
   font-size: 1.7rem;
   font-weight: 700;
-  color: var(--hm-azul-oscuro);
+  color: var(--hm-verde-oscuro);
 }
 
 .cifra__texto {
@@ -609,7 +624,7 @@ ion-card-content {
 .barra__pista {
   height: 14px;
   border-radius: 999px;
-  background: var(--hm-gris-cabecera);
+  background: var(--hm-borde);
   overflow: hidden;
 }
 
@@ -642,7 +657,7 @@ ion-card-content {
 .tabla-tokens th,
 .tabla-tokens td {
   padding: 8px 6px;
-  border-bottom: 1px solid var(--hm-gris-cabecera);
+  border-bottom: 1px solid var(--hm-borde);
   text-align: right;
   white-space: nowrap;
 }
@@ -681,7 +696,7 @@ ion-card-content {
   border: 3px solid transparent;
   border-radius: var(--hm-radio);
   overflow: hidden;
-  background: var(--hm-azul-barra);
+  background: var(--hm-verde-oscuro);
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
@@ -699,15 +714,15 @@ ion-card-content {
   inset: auto 0 0 0;
   padding: 22px 10px 8px;
   color: #fff;
-  font-size: 0.95rem;
+  font-size: min(0.95rem, 20px);
   font-weight: 700;
   line-height: 1.2;
   text-align: left;
-  background: linear-gradient(to top, rgba(10, 25, 45, 0.92) 55%, rgba(10, 25, 45, 0));
+  background: linear-gradient(to top, rgba(12, 32, 14, 0.92) 55%, rgba(12, 32, 14, 0));
 }
 
 .tarjeta-pueblo--elegida {
-  border-color: var(--hm-azul);
+  border-color: var(--hm-naranja);
 }
 
 .cabecera-pueblo {
@@ -715,7 +730,7 @@ ion-card-content {
   margin: 0;
   max-height: 260px;
   overflow: hidden;
-  background: var(--hm-azul-barra);
+  background: var(--hm-verde-oscuro);
 }
 
 .cabecera-pueblo img {
@@ -774,7 +789,7 @@ ion-card-content {
   gap: var(--hm-hueco);
   align-items: flex-start;
   padding: var(--hm-hueco) 0;
-  border-bottom: 1px solid var(--hm-gris-cabecera);
+  border-bottom: 1px solid var(--hm-borde);
 }
 
 .lista-creditos img {
@@ -807,7 +822,7 @@ ion-card-content {
   margin: 4px 0;
   border-radius: var(--hm-radio);
   overflow: hidden;
-  background: var(--hm-gris-cabecera);
+  background: var(--hm-borde);
 }
 
 .miniatura-plan img {
@@ -833,7 +848,7 @@ ion-card-content {
   position: relative;
   margin: 0;
   overflow: hidden;
-  background: var(--hm-azul-barra);
+  background: var(--hm-verde-oscuro);
 }
 
 .foto-plan img {
@@ -981,7 +996,7 @@ ion-card-content {
 .hoja-comentarios__plan {
   margin-top: 0;
   font-weight: 700;
-  color: var(--hm-azul-oscuro);
+  color: var(--hm-verde-oscuro);
 }
 
 /* ---------- Foto opcional al crear un plan ---------- */
@@ -1028,7 +1043,7 @@ ion-card-content {
 .titulo-creditos {
   margin-top: 28px;
   font-size: 1.25rem;
-  color: var(--hm-azul-oscuro);
+  color: var(--hm-verde-oscuro);
 }
 
 /* Plan pasado: aviso, galería de fotos de quienes fueron y comentarios */
@@ -1126,7 +1141,7 @@ ion-card-content {
   margin: 0 0 6px;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--hm-azul-oscuro);
+  color: var(--hm-verde-oscuro);
 }
 
 .confianza h3 + .requisitos,
@@ -1221,4 +1236,254 @@ ion-card-content {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+/* ---------- Inicio: saludo, tamaño de letra, «Tus planes» y carrusel (tema verde y naranja, 21/11) ---------- */
+.inicio {
+  padding: 12px 16px 4px;
+}
+
+.saludo {
+  margin: 8px 0 12px;
+  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  color: var(--hm-verde-oscuro);
+}
+
+.titulo-seccion {
+  margin: 18px 0 10px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--hm-verde-oscuro);
+}
+
+.selector-letra {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.selector-letra__texto {
+  font-size: 0.85rem;
+  color: var(--hm-texto-suave);
+  margin-right: 4px;
+}
+
+.selector-letra__btn {
+  min-width: 48px;
+  min-height: 48px;
+  border: 2px solid var(--hm-verde);
+  border-radius: var(--hm-radio);
+  background: #fff;
+  color: var(--hm-verde-oscuro);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.selector-letra__btn--0 {
+  font-size: 18px;
+}
+
+.selector-letra__btn--1 {
+  font-size: 22px;
+}
+
+.selector-letra__btn--2 {
+  font-size: 26px;
+}
+
+.selector-letra__btn[aria-pressed='true'] {
+  background: var(--hm-verde);
+  color: #fff;
+}
+
+.tus-planes ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.tus-planes__plan {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--hm-borde);
+  border-left: 6px solid var(--hm-naranja);
+  border-radius: var(--hm-radio);
+  background: #fff;
+  color: var(--hm-texto);
+  text-decoration: none;
+  min-height: var(--hm-toque);
+}
+
+.tus-planes__plan img {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.tus-planes__plan > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.tus-planes__plan strong {
+  font-size: 1.05rem;
+  color: var(--hm-verde-oscuro);
+}
+
+.tus-planes__plan > span:nth-child(2) > span {
+  font-size: 0.9rem;
+  color: var(--hm-texto-suave);
+}
+
+.tus-planes__plan > span:nth-child(2) > .tus-planes__ok {
+  justify-self: start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--hm-verde-claro);
+  color: var(--hm-verde-oscuro);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--hm-verde-oscuro);
+}
+
+.carrusel {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--hm-verde-oscuro);
+}
+
+.carrusel__marco {
+  position: relative;
+}
+
+/* La diapositiva crece con el texto: con la letra muy grande no se corta */
+.diapo {
+  position: relative;
+  min-height: 340px;
+  display: flex;
+  align-items: flex-end;
+  color: #fff;
+  text-decoration: none;
+}
+
+.diapo[hidden] {
+  display: none;
+}
+
+.diapo__foto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.diapo__cuerpo {
+  position: relative;
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  padding: 70px 16px 16px;
+  background: linear-gradient(to top, rgba(12, 32, 14, 0.95) 60%, rgba(12, 32, 14, 0));
+}
+
+.diapo__etiqueta {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.diapo__titulo {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.diapo__cuando {
+  font-size: 0.95rem;
+}
+
+.diapo__frase {
+  margin-top: 4px;
+  font-size: 1rem;
+  font-style: italic;
+}
+
+.diapo__frase small {
+  display: block;
+  font-style: normal;
+  font-size: 0.8rem;
+  opacity: 0.95;
+}
+
+.carrusel__controles {
+  padding: 10px 12px;
+  background: var(--hm-verde-oscuro);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.carrusel__btn,
+.carrusel__pausa {
+  min-width: 48px;
+  min-height: 48px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.carrusel__btn {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.carrusel__pausa {
+  padding: 0 14px;
+  font-size: 0.9rem;
+}
+
+.carrusel__puntos {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.carrusel__puntos button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.carrusel__puntos button::after {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+.carrusel__puntos button[aria-current='true']::after {
+  background: var(--hm-naranja);
+  border-color: #fff;
 }
