@@ -97,4 +97,26 @@ def test_endpoints_de_administracion(api, monkeypatch):
     get_settings.cache_clear()
     monkeypatch.setattr(telegram, "configurar_webhook", lambda url: True)
     r = cliente.post("/admin/webhook-telegram", json={"public_url": "https://nueva.trycloudflare.com"}, headers=CAB)
-    assert r.json() == {"url": "https://nueva.trycloudflare.com/webhook/telegram", "ok": True}
+    assert r.json() == {"url": "https://nueva.trycloudflare.com/webhook/telegram", "ok": True,
+                        "web_url": get_settings().web_url}
+
+
+def test_url_publica_nueva_sin_reiniciar_no_pierde_la_conversacion(api, monkeypatch):
+    """Cambiar la URL del túnel (url_publica.py) no debe tirar lo que un publicador tiene a medias."""
+    from app import conversacion, vecino
+    from app.config import get_settings
+    from app.schemas import MensajeEntrante
+    monkeypatch.setenv("TELEGRAM_TOKEN", "123:abc")
+    get_settings.cache_clear()
+    monkeypatch.setattr(telegram, "configurar_webhook", lambda url: True)
+    conversacion.procesar(MensajeEntrante(canal="whatsapp", de="+34600000101",
+                                          texto="Fiesta de la castaña en Tahal con castañas asadas y música para "
+                                                "toda la familia en la plaza del pueblo"))
+    assert conversacion.estados["+34600000101"].borrador is not None  # a medias: le falta la fecha
+
+    r = TestClient(app).post("/admin/webhook-telegram", headers=CAB,
+                             json={"public_url": "https://otra.trycloudflare.com",
+                                   "web_url": "https://otra.trycloudflare.com"})
+    assert r.json()["ok"] and r.json()["web_url"] == "https://otra.trycloudflare.com"
+    assert conversacion.estados["+34600000101"].borrador is not None  # sigue a medias
+    assert vecino._enlace("ev-1") == "https://otra.trycloudflare.com/evento/ev-1"

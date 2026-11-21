@@ -129,7 +129,7 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 python scripts/url_publica.py
 ```
 
-Lee la URL nueva del túnel, la pone en el `.env` (`PUBLIC_URL` y, cuando el túnel ya entre por la web, `WEB_URL`), recrea el bot, comprueba en Telegram que el webhook apunta a ella y la escribe en pantalla para pasarla al grupo. Probado (sáb 21/11): reinicio del túnel → todo funcionando con la URL nueva en **35 s**. `--ver` solo enseña la URL. En el APK, la dirección nueva se cambia en sus ajustes (C9), sin reinstalar.
+Lee la URL nueva del túnel, la pone en el `.env` (`PUBLIC_URL` y, cuando el túnel ya entre por la web, `WEB_URL`), se la pasa al bot **en caliente, sin reiniciarlo** (no se pierden las conversaciones a medias), comprueba en Telegram que el webhook apunta a ella y la escribe en pantalla para pasarla al grupo. Probado (sáb 21/11): reinicio del túnel → todo funcionando con la URL nueva en **35 s**. `--ver` solo enseña la URL. En el APK, la dirección nueva se cambia en sus ajustes (C9), sin reinstalar.
 
 **Orden:** F1 y C8 (a la vez) → A6 → C9 → T1 y T2 (los tres). Fecha límite: **web fuera de localhost a las 19:00 (CP3)** y **APK a las 00:00 (CP4)**. Si el APK no sale a las 23:00, la app móvil de la demo es la **PWA instalada** desde la URL pública (C4).
 
@@ -299,13 +299,11 @@ Lo que pide el bot:
 
 - **`POST /ai/frase`** (o el nombre que se acuerde, primero en el contrato): a partir del título, la categoría y el pueblo, devolver una frase breve, espontánea y alegre (máx. 90 letras, sin inventar datos del plan) para la portada del carrusel. La llama la API cuando el publicador no escribe la suya. Mientras no exista, la web elige una frase fija por tipo de plan y la marca como «✨ Frase automática».
 
-### Flujo B · bot (Francisco), reinicios y URL pública
-
-- **Conversaciones a medias:** `scripts/url_publica.py` recrea el bot cada vez que cambia la URL del túnel, y las conversaciones que el bot guarda en memoria (un publicador a mitad de confirmar, por ejemplo) se pierden. La cola ya no (volumen `bot_data`, ver «Ya resuelto»). Si da tiempo, guardar también ese estado en `/srv/data`; si no, evitar cambiar la URL en mitad de la demo.
-
 Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
 
 ### Ya resuelto
+
+- **Cambiar la URL del túnel ya no reinicia el bot** (pedido en la revisión del despliegue de Benas, sáb 21/11). `scripts/url_publica.py` se la pasa en caliente (`POST /admin/webhook-telegram` con `public_url` y `web_url`): el bot vuelve a registrar el webhook y cambia los enlaces de las fichas sin perder las conversaciones a medias (un publicador a mitad de confirmar sigue donde estaba). El `.env` se actualiza igual, para el siguiente arranque. Solo recrea el bot si no responde o con `--forzar`. Probado con un publicador a medias: tras el cambio, contesta la fecha y sigue a «¿Lo publico así?». Test en `services/bot/tests/test_robustez.py`.
 
 - **Lo que hace la gente ya no se pierde al reiniciar** (revisión del despliegue, sáb 21/11, Benas). El contenedor `api` ejecutaba el seed en cada arranque y **sobrescribía con los fixtures** los datos de la demo: un `up --build` o cualquier reinicio deshacía el cambio de hora, las decisiones del moderador, los gustos guardados y **volvía a poner las plazas libres aunque hubiera inscritos** (Carmen inscrita y otra vez 8 plazas: se podía vender su plaza). Ahora arranca con `seed --solo-nuevos` (solo añade lo que falte). Comprobado con dos «móviles» contra la misma API y un reinicio simulado. Además, en el compose: `restart: unless-stopped` en `db` y `api` (si la API se cae, vuelve sola) y volumen `bot_data` con `COLA_PATH` para que la cola del bot sobreviva a recrearlo.
 
@@ -348,7 +346,7 @@ Una sola URL, la del túnel rápido de Cloudflare (decisión D3), que entra por 
 
 ```bash
 python scripts/url_publica.py          # con el compose en marcha: lee la URL del túnel, la pone en PUBLIC_URL y WEB_URL,
-                                       # recrea el bot (registra el webhook de Telegram) y la escribe para el grupo
+                                       # se la pasa al bot sin reiniciarlo (webhook y enlaces) y la escribe para el grupo
 python scripts/url_publica.py --ver    # solo enseña la URL actual
 ```
 
@@ -434,7 +432,8 @@ Todo pasa por la misma API y la misma base de datos (PostgreSQL en el volumen `d
 |---|---|
 | `docker compose … restart`, `down` + `up`, `up --build` tras un `git pull`, que la API se caiga y vuelva | ✅ Sí: el seed del arranque solo añade lo que falte (`--solo-nuevos`) |
 | Reiniciar el túnel | ✅ Los datos sí, pero **cambia la URL**: `python scripts/url_publica.py` y pasar la nueva |
-| Recrear el bot (lo hace `url_publica.py`) | ✅ La cola sí (`bot_data`); las conversaciones a medias del bot, no |
+| Cambiar la URL con `url_publica.py` | ✅ Todo: el bot no se reinicia (webhook y enlaces en caliente) |
+| Recrear o reiniciar el bot (`--forzar`, `up --build`) | ✅ La cola sí (`bot_data`); las conversaciones a medias del bot, no |
 | `docker compose … down -v` | ❌ **Borra la base entera** (y la cola del bot) |
 | `scripts/demo_reset.sh` | ❌ **Borra todo lo creado** y vuelve a los datos iniciales de la demo |
 

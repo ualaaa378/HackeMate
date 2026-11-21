@@ -6,7 +6,9 @@ que se reinicia. Este script, en la máquina de la demo y desde la raíz del rep
   1. lee la URL de `docker compose … logs tunnel` (espera a que el túnel la publique y responda);
   2. la escribe en el .env de la raíz como PUBLIC_URL (webhook de Telegram) y, si el túnel ya entra por la web
      (C8 y C8b: /api/ responde a través de la URL), también como WEB_URL (enlaces de las fichas que manda el bot);
-  3. recrea el bot, que al arrancar registra solo el webhook en PUBLIC_URL/webhook/telegram;
+  3. se la pasa al bot EN CALIENTE (POST /admin/webhook-telegram con public_url y web_url): registra el webhook
+     y cambia los enlaces sin reiniciar, así no se pierden las conversaciones a medias. Solo si el bot no responde
+     (o con --forzar) lo recrea, y al arrancar se registra solo con el .env nuevo;
   4. comprueba en Telegram que el webhook apunta a la URL nueva y la escribe en pantalla para el grupo y el APK.
 
 Uso (con el compose ya en marcha):
@@ -121,6 +123,27 @@ def recrear_bot() -> None:
     sys.exit("ERROR: el bot no responde en :8001 tras recrearlo. Mira `… logs bot`.")
 
 
+def avisar_al_bot(cambios: dict[str, str], env: dict[str, str]) -> bool:
+    """Sin reiniciar: el bot cambia PUBLIC_URL y WEB_URL en memoria y vuelve a registrar el webhook."""
+    cuerpo = {"public_url": cambios["PUBLIC_URL"]}
+    if "WEB_URL" in cambios:
+        cuerpo["web_url"] = cambios["WEB_URL"]
+    estado, respuesta = peticion(f"{BOT_LOCAL}/admin/webhook-telegram", "POST", cuerpo,
+                                 {"X-Internal-Token": env.get("INTERNAL_TOKEN", "")}, timeout=30)
+    if estado != 200:
+        print(f"· El bot no aceptó el cambio en caliente (HTTP {estado or 'sin respuesta'}): se recrea.")
+        return False
+    try:
+        datos = json.loads(respuesta)
+    except ValueError:
+        return False
+    if "WEB_URL" in cambios and datos.get("web_url") != cambios["WEB_URL"]:
+        print("· El bot es de una versión anterior (no cambia WEB_URL en caliente): se recrea.")
+        return False
+    print("· Bot actualizado en caliente, sin reiniciar: las conversaciones a medias siguen.")
+    return True  # si Telegram falló, comprobar_webhook lo reintenta: recrear no lo arreglaría
+
+
 def comprobar_webhook(url: str, env: dict[str, str]) -> bool:
     """Pregunta a Telegram adónde manda los mensajes. Si no es la URL nueva, se lo pide al bot otra vez."""
     token = env.get("TELEGRAM_TOKEN")
@@ -170,7 +193,9 @@ def main() -> None:
         print("· .env actualizado: " + ", ".join(cambios))
     else:
         print("· El .env ya tenía esta URL.")
-    if cambia or args.forzar:
+    if args.forzar:
+        recrear_bot()
+    elif cambia and not avisar_al_bot(cambios, env):
         recrear_bot()
     ok = comprobar_webhook(url, leer_env())
 
