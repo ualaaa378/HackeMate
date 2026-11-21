@@ -46,6 +46,14 @@ export async function entrarDemo(rol: 'moderador' | 'publicador'): Promise<Token
   }
 }
 
+/**
+ * Acceso de la moderación del ayuntamiento con usuario y contraseña (`POST /auth/admin`; en la API,
+ * ADMIN_USUARIO / ADMIN_CONTRASENA del .env). Lanza ErrorApi `credenciales_invalidas` si no coinciden.
+ */
+export function entrarAdmin(usuario: string, contrasena: string): Promise<Token> {
+  return peticion<Token>('/auth/admin', { method: 'POST', body: JSON.stringify({ usuario, contrasena }) });
+}
+
 let demo = true;
 /** La pone el proveedor de acceso: true si se entra con el selector de rol de la demo. */
 export function setAdminDemo(valor: boolean): void {

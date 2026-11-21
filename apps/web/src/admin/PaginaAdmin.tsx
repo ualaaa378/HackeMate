@@ -5,6 +5,8 @@ import {
   IonCardContent,
   IonContent,
   IonHeader,
+  IonInput,
+  IonItem,
   IonPage,
   IonTitle,
   IonToolbar,
@@ -16,7 +18,7 @@ import { NOMBRE_CANAL } from '../canal';
 import SelectorLetra from '../components/SelectorLetra';
 import { useSesion } from '../cuenta/sesion';
 
-import { type RolAdmin, useAcceso } from './acceso';
+import { type ResultadoAcceso, type RolAdmin, useAcceso } from './acceso';
 
 /** Marco de todas las pantallas de /admin. Sin rol de moderador o publicador enseña la puerta de entrada. */
 const PaginaAdmin: React.FC<{
@@ -54,6 +56,70 @@ const PaginaAdmin: React.FC<{
   );
 };
 
+const MENSAJES: Record<Exclude<ResultadoAcceso, 'ok'>, string> = {
+  credenciales: 'Usuario o contraseña incorrectos.',
+  sin_api: 'Ahora no se puede comprobar el acceso. Inténtalo de nuevo en un momento.',
+};
+
+/** Moderación del ayuntamiento: usuario y contraseña (POST /auth/admin). */
+const AccesoModeracion: React.FC = () => {
+  const { entrarAdmin } = useAcceso();
+  const [usuario, setUsuario] = useState('');
+  const [contrasena, setContrasena] = useState('');
+  const [entrando, setEntrando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const enviar = (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!usuario.trim() || !contrasena) {
+      setError('Escribe el usuario y la contraseña.');
+      return;
+    }
+    setEntrando(true);
+    setError(null);
+    void entrarAdmin(usuario.trim(), contrasena)
+      .then((r) => {
+        if (r !== 'ok') {
+          setError(MENSAJES[r]);
+          setContrasena('');
+        }
+      })
+      .finally(() => setEntrando(false));
+  };
+  return (
+    <form className="acceso-moderacion" onSubmit={enviar} noValidate>
+      <h3>🏛️ Moderación del ayuntamiento</h3>
+      <IonItem>
+        <IonInput
+          label="Usuario"
+          labelPlacement="stacked"
+          autocomplete="username"
+          autocapitalize="off"
+          value={usuario}
+          onIonInput={(ev) => setUsuario(ev.detail.value ?? '')}
+        />
+      </IonItem>
+      <IonItem>
+        <IonInput
+          label="Contraseña"
+          labelPlacement="stacked"
+          type="password"
+          autocomplete="current-password"
+          value={contrasena}
+          onIonInput={(ev) => setContrasena(ev.detail.value ?? '')}
+        />
+      </IonItem>
+      {error && (
+        <p className="error-acceso" role="alert">
+          {error}
+        </p>
+      )}
+      <IonButton expand="block" size="large" type="submit" disabled={entrando}>
+        {entrando ? 'Comprobando…' : 'Entrar'}
+      </IonButton>
+    </form>
+  );
+};
+
 const Puerta: React.FC<{ rolActual: RolAdmin | null }> = ({ rolActual }) => {
   const { entrarDemo } = useAcceso();
   const { abrirCuenta } = useSesion();
@@ -75,13 +141,12 @@ const Puerta: React.FC<{ rolActual: RolAdmin | null }> = ({ rolActual }) => {
               Aquí se revisan los planes que llegan por {NOMBRE_CANAL} o la web, se aprueban las asociaciones y se ven
               las cifras de la agenda.
             </p>
-            <IonButton expand="block" size="large" onClick={abrirCuenta}>
+            <AccesoModeracion />
+            <p className="nota-demo">Asociaciones: entra con tu móvil.</p>
+            <IonButton expand="block" fill="outline" onClick={abrirCuenta}>
               Entrar con mi móvil
             </IonButton>
-            <p className="nota-demo">Para la demo, entra sin cuenta con uno de estos papeles:</p>
-            <IonButton expand="block" fill="outline" disabled={entrando} onClick={() => entrar('moderador')}>
-              🏛️ Moderación del ayuntamiento
-            </IonButton>
+            <p className="nota-demo">Para la demo, entra sin cuenta como asociación:</p>
             <IonButton expand="block" fill="outline" disabled={entrando} onClick={() => entrar('publicador')}>
               🤝 Asociación (Amigos de Velefique)
             </IonButton>

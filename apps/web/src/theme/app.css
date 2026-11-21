@@ -472,6 +472,22 @@ ion-card-content {
   margin-top: 10px;
 }
 
+/* Acceso de la moderación con usuario y contraseña */
+.acceso-moderacion {
+  margin: 8px 0 20px;
+}
+
+.acceso-moderacion ion-item {
+  --background: transparent;
+  font-size: 1.1rem;
+}
+
+.error-acceso {
+  margin: 10px 0 0;
+  color: var(--ion-color-danger, #b3261e);
+  font-weight: 600;
+}
+
 .pendiente {
   border-left: 6px solid var(--hm-naranja);
 }

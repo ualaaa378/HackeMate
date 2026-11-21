@@ -11,6 +11,8 @@ _ENV_FILES = ((_rutas[3] / ".env",) if len(_rutas) > 3 else ()) + (".env",)
 
 # Valor de ejemplo de JWT_SECRET (.env.example). Con él cualquiera puede firmar sesiones válidas.
 JWT_SECRET_POR_DEFECTO = "cambia-esto-tambien"
+# Acceso a la zona del ayuntamiento (POST /auth/admin). Provisional para la demo: se cambia en el .env.
+ADMIN_CONTRASENA_POR_DEFECTO = "1234"
 
 log = logging.getLogger(__name__)
 
@@ -29,6 +31,8 @@ class Settings(BaseSettings):
     google_timeout_s: float = 5.0
     # Solo para la demo: POST /auth/demo da sesión como cualquier usuario sin contraseña. Nunca en producción.
     demo_mode: bool = False
+    admin_usuario: str = "admin"
+    admin_contrasena: str = ADMIN_CONTRASENA_POR_DEFECTO
     bot_url: str = "http://bot:8001"
     zona_horaria: str = "Europe/Madrid"
     app_version: str | None = None
@@ -72,6 +76,9 @@ def avisar_configuracion_insegura(ajustes: Settings | None = None) -> list[str]:
             "JWT_SECRET tiene el valor de ejemplo: cualquiera podría firmar sesiones válidas. "
             "Pon un secreto aleatorio en .env (p. ej. python -c \"import secrets; print(secrets.token_urlsafe(32))\")."
         )
+    if not ajustes.demo_mode and ajustes.admin_contrasena in (ADMIN_CONTRASENA_POR_DEFECTO, ""):
+        avisos.append("ADMIN_CONTRASENA tiene el valor de ejemplo (1234): cualquiera podría entrar en la moderación. "
+                      "Pon otra en .env.")
     for aviso in avisos:
         log.warning(aviso)
     return avisos
