@@ -1849,3 +1849,142 @@ ion-content.contenido-lectura,
 ion-content.contenido-admin {
   --background: var(--hm-fondo) var(--hm-mosaico) repeat;
 }
+
+/* ---------- N1: agenda en tres zonas, solo en pantalla grande ----------
+   Izquierda: «Tus planes» y debajo «Sugeridos para ti» (fija al bajar). Centro: Recuerdos y la agenda.
+   El cambio lo decide el ancho (CONSULTA_PANTALLA_GRANDE en utils/pantalla.ts): en el móvil y la APK no cambia nada. */
+ion-content.contenido-agenda--zonas::part(scroll) {
+  padding-inline: max(16px, calc((100% - 1400px) / 2));
+}
+
+.agenda-zonas {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  padding-top: 12px;
+}
+
+.agenda-zonas__lateral {
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  display: grid;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid var(--hm-borde);
+  border-radius: var(--hm-radio);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.agenda-zonas__lateral .titulo-seccion {
+  margin-top: 0;
+}
+
+.agenda-zonas__centro .inicio {
+  padding-inline: 0;
+}
+
+.agenda-zonas__centro .grupo-dia {
+  grid-template-columns: 170px minmax(0, 1fr);
+}
+
+.sugeridos ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.sugeridos__plan {
+  border-left-color: var(--hm-verde);
+}
+
+.tus-planes__plan > span:nth-child(2) > .sugeridos__motivo {
+  color: var(--hm-verde-oscuro);
+  font-weight: 600;
+}
+
+.sugeridos__vacio {
+  margin: 0;
+  color: var(--hm-texto-suave);
+}
+
+.recuerdos-agenda {
+  margin: 8px 0 20px;
+}
+
+.recuerdos-agenda__cabecera p {
+  margin: -4px 0 10px;
+  color: var(--hm-texto-suave);
+}
+
+.recuerdos-agenda__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.recuerdo-mini {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--hm-borde);
+  border-radius: var(--hm-radio);
+  background: #fff;
+}
+
+.recuerdo-mini img {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  filter: saturate(0.85);
+}
+
+.recuerdo-mini__texto {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px 12px;
+}
+
+.recuerdo-mini__chapa {
+  justify-self: start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.recuerdo-mini__titulo {
+  color: var(--hm-verde-oscuro);
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+}
+
+.recuerdo-mini__titulo:hover {
+  text-decoration: underline;
+}
+
+.recuerdo-mini__lugar {
+  font-size: 0.9rem;
+  color: var(--hm-texto-suave);
+}
+
+.recuerdo-mini ion-button {
+  justify-self: start;
+  margin: 4px 0 0;
+}
+
+/* En pantalla grande Recuerdos vive dentro de la agenda (N1) */
+@media (min-width: 1100px) {
+  ion-tab-button.tab-recuerdos {
+    display: none;
+  }
+}

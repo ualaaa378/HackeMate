@@ -1,21 +1,11 @@
-import {
-  IonButton,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonModal,
-  IonPage,
-  IonSpinner,
-  IonTitle,
-  IonToolbar,
-} from '@ionic/react';
-import { chatbubbleEllipses, close, informationCircle } from 'ionicons/icons';
+import { IonContent, IonHeader, IonIcon, IonPage, IonSpinner, IonTitle, IonToolbar } from '@ionic/react';
+import { chatbubbleEllipses, informationCircle } from 'ionicons/icons';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { getEventosPasados, getMensajes } from '../api/client';
 import { CATEGORIAS, type Evento } from '../api/types';
-import RecuerdoPlan from '../components/RecuerdoPlan';
+import ComentariosRecuerdo from '../components/ComentariosRecuerdo';
 import { imagenPlan } from '../eventos/imagenes';
 import { fechaLarga } from '../utils/formato';
 
@@ -82,7 +72,7 @@ const Recuerdos: React.FC = () => {
             ))}
           </div>
         )}
-        <Comentarios evento={abierto} onCerrar={() => setAbierto(null)} onNuevo={actualizarCuenta} />
+        <ComentariosRecuerdo evento={abierto} onCerrar={() => setAbierto(null)} onNuevo={actualizarCuenta} />
       </IonContent>
     </IonPage>
   );
@@ -137,41 +127,6 @@ const TarjetaRecuerdo: React.FC<{
         </Link>
       </div>
     </article>
-  );
-};
-
-const Comentarios: React.FC<{
-  evento: Evento | null;
-  onCerrar: () => void;
-  onNuevo: (eventoId: string, total: number) => void;
-}> = ({ evento, onCerrar, onNuevo }) => {
-  const id = evento?.id;
-  const alCambiar = useCallback((n: number) => id && onNuevo(id, n), [id, onNuevo]);
-  return (
-    <IonModal
-      isOpen={!!evento}
-      onDidDismiss={onCerrar}
-      initialBreakpoint={0.75}
-      breakpoints={[0, 0.5, 0.75, 1]}
-      className="hoja-comentarios"
-    >
-      <IonHeader>
-        <IonToolbar color="secondary">
-          <IonTitle>Fotos y comentarios</IonTitle>
-          <IonButton slot="end" fill="clear" color="light" onClick={onCerrar} aria-label="Cerrar">
-            <IonIcon icon={close} aria-hidden="true" />
-          </IonButton>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent className="ion-padding">
-        {evento && (
-          <>
-            <p className="hoja-comentarios__plan">{evento.titulo}</p>
-            <RecuerdoPlan evento={evento} onTotal={alCambiar} />
-          </>
-        )}
-      </IonContent>
-    </IonModal>
   );
 };
 

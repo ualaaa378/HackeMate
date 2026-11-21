@@ -114,7 +114,7 @@ const Navegacion: React.FC = () => {
             <IonIcon aria-hidden="true" icon={map} />
             <IonLabel>Mapa</IonLabel>
           </IonTabButton>
-          <IonTabButton tab="recuerdos" href="/recuerdos">
+          <IonTabButton tab="recuerdos" href="/recuerdos" className="tab-recuerdos">
             <IonIcon aria-hidden="true" icon={images} />
             <IonLabel>Recuerdos</IonLabel>
           </IonTabButton>
