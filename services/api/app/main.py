@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__, errores
-from app.config import get_settings
+from app.config import avisar_configuracion_insegura, get_settings
 from app.notificaciones import ciclo_reintentos
 from app.rutas import (
     auth,
@@ -40,6 +40,7 @@ async def bucle_reintentos(intervalo: float) -> None:
 
 @asynccontextmanager
 async def ciclo_de_vida(_: FastAPI):
+    avisar_configuracion_insegura()
     intervalo = get_settings().notificaciones_reintento_s
     tarea = asyncio.create_task(bucle_reintentos(intervalo)) if intervalo > 0 else None
     try:

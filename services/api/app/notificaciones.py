@@ -11,6 +11,14 @@
   respondido. Así el bot nunca recibe un aviso de un cambio que luego se deshace, y un bot caído no hace esperar
   a quien llama. Con `enviar=True` (por defecto) se intenta en el acto, antes del commit.
 
+Sin avisos duplicados: `enviar_avisos` (segundo plano) y el bucle de reintentos pueden coger el mismo aviso a la
+vez. Antes de cada POST el aviso se reserva con un UPDATE condicional sobre `intentos`
+(`intentos = intentos + 1 WHERE id = :id AND estado_envio = 'pendiente' AND intentos = :leidos`) y se hace commit;
+solo quien consigue la reserva (`rowcount == 1`) llama al bot. Se usa `intentos` y no un estado intermedio
+(«enviando») para no tocar el CHECK de `estado_envio` ni el contrato. El commit es inmediato para no retener el
+bloqueo de escritura de SQLite mientras se espera al bot. Si el proceso muere tras reservar, el aviso sigue
+`pendiente` con ese intento ya contado y el siguiente ciclo lo recoge.
+
 Destino (contracts/schemas/notificacion.json): `telefono` E.164 es obligatorio y `contacto` (`tg:<chat_id>`) va
 aparte; si viene, el bot envía ahí. Un usuario solo de Telegram (sin telefono) no se puede avisar con el contrato
 actual: su aviso se guarda como `fallida` con `ultimo_error = "sin telefono"`.
@@ -21,9 +29,10 @@ from collections.abc import Iterable
 
 import httpx
 from fastapi import BackgroundTasks
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm.attributes import set_committed_value
 
 from app.canales import contacto_de, reconocer_contacto
 from app.config import get_settings
@@ -92,12 +101,14 @@ def _post_notify(n: Notificacion) -> tuple[str | None, bool]:
     return None, False
 
 
-def _intentar(n: Notificacion) -> tuple[bool, bool]:
-    """Un intento de envío; actualiza estado_envio, intentos y ultimo_error. (ha salido, el bot no responde)."""
+def _intentar(n: Notificacion, ya_contado: bool = False) -> tuple[bool, bool]:
+    """Un intento de envío; actualiza estado_envio, intentos y ultimo_error. (ha salido, el bot no responde).
+    `ya_contado`: el intento ya se ha sumado al reservarlo (`_reservar`)."""
     if not n.telefono:
         n.estado_envio, n.ultimo_error = "fallida", SIN_TELEFONO
         return False, False
-    n.intentos = (n.intentos or 0) + 1
+    if not ya_contado:
+        n.intentos = (n.intentos or 0) + 1
     error, bot_caido = _post_notify(n)
     if error is None:
         n.estado_envio, n.ultimo_error, n.enviada_en = "enviada", None, ahora()
@@ -200,7 +211,8 @@ def reintentar_pendientes(db: Session, limite: int = 50) -> int:
     """Reenvía hasta `limite` avisos pendientes (los más antiguos primero). Devuelve cuántos han salido.
     Si el bot no responde (caído, timeout o 5xx), para ahí: los demás fallarían igual y cada uno esperaría el
     timeout. Un aviso que el bot rechaza (4xx) no frena la cola.
-    No lanza; no hace commit."""
+    No lanza. Hace commit de cada reserva (ver arriba): usar con una sesión propia, nunca la de una petición.
+    Si algo falla, deja la sesión limpia (rollback) para que quien llama pueda seguir y hacer commit."""
     enviadas = 0
     try:
         pendientes = db.scalars(
@@ -212,17 +224,42 @@ def reintentar_pendientes(db: Session, limite: int = 50) -> int:
         enviadas = _enviar_lote(db, pendientes)
     except Exception:  # noqa: BLE001
         log.exception("fallo al reintentar los avisos pendientes")
+        try:
+            db.rollback()
+        except Exception:  # noqa: BLE001
+            log.exception("no se pudo deshacer la sesión tras el fallo")
     return enviadas
+
+
+def _reservar(db: Session, n: Notificacion) -> bool:
+    """Reserva el siguiente intento de `n` (UPDATE condicional sobre `intentos`) y hace commit. True si esta
+    llamada lo ha conseguido; False si otro envío se ha adelantado o ya no está pendiente."""
+    leidos = n.intentos or 0
+    resultado = db.execute(
+        update(Notificacion)
+        .where(Notificacion.id == n.id, Notificacion.estado_envio == "pendiente", Notificacion.intentos == leidos)
+        .values(intentos=leidos + 1)
+        .execution_options(synchronize_session=False)
+    )
+    db.commit()
+    if resultado.rowcount != 1:
+        db.expire(n)
+        return False
+    set_committed_value(n, "intentos", leidos + 1)
+    return True
 
 
 def _enviar_lote(db: Session, avisos: Iterable[Notificacion]) -> int:
     """Intenta los avisos `pendiente` en orden; para en cuanto el bot no responde (caído, timeout o 5xx): los
-    demás fallarían igual y cada uno esperaría el timeout. Devuelve cuántos han salido. No hace commit."""
+    demás fallarían igual y cada uno esperaría el timeout. Devuelve cuántos han salido. Cada aviso se reserva
+    antes del POST (commit de la reserva); el resultado del último queda en la sesión para el commit de quien llama."""
     enviadas = 0
     for n in avisos:
         if n.estado_envio != "pendiente":
             continue
-        enviada, bot_caido = _intentar(n)
+        if n.telefono and not _reservar(db, n):
+            continue  # otro envío lo tiene
+        enviada, bot_caido = _intentar(n, ya_contado=bool(n.telefono))
         enviadas += enviada
         if bot_caido:
             break

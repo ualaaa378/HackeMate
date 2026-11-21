@@ -318,3 +318,66 @@ def test_bucle_de_fondo_sobrevive_a_excepciones(monkeypatch):
 
     asyncio.run(asyncio.wait_for(probar(), 5))
     assert len(llamadas) >= 3
+
+
+# --- Robustez de la cola ---------------------------------------------------------------------------
+
+
+def test_reintentar_tras_un_fallo_de_base_deja_la_sesion_usable(db, bot, monkeypatch, caplog):
+    """Si algo falla a mitad (p. ej. un flush roto), se hace rollback: el commit de ciclo_reintentos no lanza
+    PendingRollbackError y la sesión sigue sirviendo."""
+    from sqlalchemy.orm import sessionmaker
+
+    from app.notificaciones import ciclo_reintentos
+
+    def _lote_roto(sesion, avisos):
+        sesion.add(Usuario(nombre=None))  # NOT NULL: el flush falla y la sesión queda pendiente de rollback
+        sesion.flush()
+
+    monkeypatch.setattr(notificaciones, "_enviar_lote", _lote_roto)
+    assert reintentar_pendientes(db) == 0
+    db.commit()  # sin PendingRollbackError
+    assert db.scalars(select(Notificacion)).all() is not None
+
+    caplog.clear()
+    assert ciclo_reintentos(sessionmaker(bind=db.get_bind(), expire_on_commit=False)) == 0
+    assert not [r for r in caplog.records if "ciclo de reintento" in r.getMessage()]
+
+
+def test_dos_envios_a_la_vez_del_mismo_aviso_salen_una_vez(db, motor, bot, monkeypatch):
+    """enviar_avisos (segundo plano) y el bucle de reintentos cogen el mismo aviso a la vez: gracias a la reserva
+    sobre `intentos`, el bot lo recibe una sola vez."""
+    import threading
+
+    from sqlalchemy.orm import sessionmaker
+
+    from app.notificaciones import ciclo_reintentos
+
+    n = notificar(db, tipo="anuncio", texto="Hola", telefono="+34600000201", enviar=False)
+    db.commit()
+
+    salida = threading.Barrier(2)
+    reservar = notificaciones._reservar
+
+    def _reservar_a_la_vez(sesion, aviso):
+        assert aviso.intentos == 0  # los dos lo han leído pendiente y sin intentos
+        salida.wait(10)
+        return reservar(sesion, aviso)
+
+    monkeypatch.setattr(notificaciones, "_reservar", _reservar_a_la_vez)
+    resultados = []
+    hilos = [
+        threading.Thread(target=lambda: resultados.append(notificaciones.enviar_avisos(motor, [n.id]))),
+        threading.Thread(target=lambda: resultados.append(
+            ciclo_reintentos(sessionmaker(bind=motor, expire_on_commit=False)))),
+    ]
+    for h in hilos:
+        h.start()
+    for h in hilos:
+        h.join(30)
+
+    assert sorted(resultados) == [0, 1]
+    assert len(bot.recibidas) == 1
+    db.expire_all()
+    guardada = db.get(Notificacion, n.id)
+    assert guardada.estado_envio == "enviada" and guardada.intentos == 1

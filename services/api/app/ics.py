@@ -4,7 +4,9 @@
 - Eventos con la etiqueta `sin_hora`: de día completo (`VALUE=DATE`, en la fecha de Madrid), porque la hora
   guardada no es real.
 - Sin `fecha_fin`: dura 2 horas.
-- Textos escapados (`\\ ; , salto de línea`) y líneas plegadas a 75 octetos con CRLF.
+- Textos escapados (`\\ ; , salto de línea`) y líneas plegadas a 75 octetos con CRLF. Ningún valor puede
+  meter un `\r` o `\n` sin escapar (inyectaría propiedades o componentes nuevos): en TEXT (SUMMARY, LOCATION,
+  DESCRIPTION…) se escapan como `\n` y el resto de caracteres de control se quitan; en URL se quitan.
 """
 
 import re
@@ -23,10 +25,21 @@ DOMINIO_UID = "hackemate"
 ESTADOS_ICS = {"cancelado": "CANCELLED"}
 
 
+# Caracteres de control que TEXT no admite (RFC 5545 §3.3.11): todos menos el tabulador; los saltos se escapan antes.
+_CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
+_SALTOS = re.compile(r"[\r\n\u0085\u2028\u2029]")
+
+
 def escapar(texto: str) -> str:
     """TEXT de RFC 5545 §3.3.11."""
     texto = texto.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
-    return texto.replace("\r\n", "\\n").replace("\r", "\\n").replace("\n", "\\n")
+    texto = texto.replace("\r\n", "\\n").replace("\r", "\\n").replace("\n", "\\n")
+    return _CONTROL.sub("", texto.replace("\u2028", "\\n").replace("\u2029", "\\n").replace("\u0085", "\\n"))
+
+
+def limpiar_uri(valor: str) -> str:
+    """URI (RFC 5545 §3.3.13): no se escapa; se quitan saltos de línea, caracteres de control y espacios."""
+    return re.sub(r"\s+", "", _CONTROL.sub("", _SALTOS.sub("", valor)))
 
 
 def plegar(linea: str) -> str:
@@ -101,8 +114,9 @@ def vevento(evento: Evento, dtstamp: datetime) -> list[str]:
     descripcion = _descripcion(evento)
     if descripcion:
         lineas.append(f"DESCRIPTION:{escapar(descripcion)}")
-    if evento.origen_url:
-        lineas.append(f"URL:{evento.origen_url}")
+    url = limpiar_uri(evento.origen_url or "")
+    if url:
+        lineas.append(f"URL:{url}")
     if evento.actualizado_en:
         lineas.append(f"LAST-MODIFIED:{_utc(evento.actualizado_en)}")
     lineas.append("END:VEVENT")

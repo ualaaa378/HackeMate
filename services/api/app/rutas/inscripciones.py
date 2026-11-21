@@ -16,10 +16,11 @@ from sqlalchemy.orm import Session, selectinload
 from app.db import get_db
 from app.errores import ErrorApi
 from app.inscripciones import (
-    devolver_plazas,
+    ACTIVAS,
+    cambiar_estado,
+    cancelar,
     inscripcion_a_dict,
-    promocionar,
-    renumerar_espera,
+    reactivar,
     siguiente_posicion,
     tomar_plazas,
 )
@@ -118,18 +119,19 @@ def inscribirse(
     inscripcion = db.scalar(
         select(Inscripcion).where(Inscripcion.evento_id == evento.id, Inscripcion.usuario_id == usuario.id)
     )
-    if inscripcion is not None and inscripcion.estado != "cancelada":
-        raise ErrorApi(409, "ya_inscrito", "Ya estás apuntado a este evento",
-                       {"inscripcion_id": inscripcion.id, "estado": inscripcion.estado})
-    if tomar_plazas(db, evento, datos.plazas):
-        estado, posicion = "confirmada", None
+    if inscripcion is not None:
+        # Vuelve a apuntarse tras cancelar: cambio condicional, así dos peticiones a la vez no toman dos plazas.
+        if inscripcion.estado != "cancelada" or not reactivar(db, evento, inscripcion, datos.plazas, canal):
+            raise ErrorApi(409, "ya_inscrito", "Ya estás apuntado a este evento",
+                           {"inscripcion_id": inscripcion.id, "estado": inscripcion.estado})
     else:
-        estado, posicion = "lista_espera", siguiente_posicion(db, evento.id)
-    if inscripcion is None:
-        inscripcion = Inscripcion(evento_id=evento.id, usuario_id=usuario.id)
+        if tomar_plazas(db, evento, datos.plazas):
+            estado, posicion = "confirmada", None
+        else:
+            estado, posicion = "lista_espera", siguiente_posicion(db, evento.id)
+        inscripcion = Inscripcion(evento_id=evento.id, usuario_id=usuario.id, estado=estado,
+                                  posicion_espera=posicion, plazas=datos.plazas, canal=canal)
         db.add(inscripcion)
-    inscripcion.estado, inscripcion.posicion_espera = estado, posicion
-    inscripcion.plazas, inscripcion.canal = datos.plazas, canal
     try:
         db.commit()
     except IntegrityError:
@@ -152,21 +154,12 @@ def cancelar_inscripcion(
     propia = quien.usuario is not None and quien.usuario.id == inscripcion.usuario_id
     if not propia and not puede_gestionar(quien, evento):
         raise _prohibido("Solo puede cancelarla quien se apuntó, el organizador o un moderador")
-    if inscripcion.estado == "cancelada":
-        return _respuesta(db, inscripcion)
-    if inscripcion.estado not in ("confirmada", "lista_espera"):
+    # Si otra petición se adelanta y la cancela, `cancelar` no toca plazas y se responde con el estado actual.
+    _, avisos = cancelar(db, evento, inscripcion)
+    if inscripcion.estado not in ("cancelada", *ACTIVAS):
+        db.rollback()
         raise ErrorApi(409, "inscripcion_cerrada", "Ya se ha marcado la asistencia: no se puede cancelar",
                        {"estado": inscripcion.estado})
-
-    tenia_plaza = inscripcion.estado == "confirmada"
-    inscripcion.estado, inscripcion.posicion_espera = "cancelada", None
-    db.flush()
-    avisos = []
-    if tenia_plaza:
-        devolver_plazas(db, evento, inscripcion.plazas)
-        avisos = promocionar(db, evento)
-    else:
-        renumerar_espera(db, evento.id)
     db.commit()
     enviar_en_segundo_plano(background_tasks, db, avisos)
     return _respuesta(db, inscripcion)
@@ -180,9 +173,14 @@ def marcar_asistencia(
     if not puede_gestionar(quien, evento):
         raise _prohibido("Solo el organizador del evento o un moderador marcan la asistencia")
     inscripcion = _inscripcion(db, evento, insc_id)
-    if inscripcion.estado not in ("confirmada", "asistio", "no_asistio"):
-        raise ErrorApi(409, "inscripcion_sin_plaza", "Solo se marca la asistencia de quien tenía plaza",
-                       {"estado": inscripcion.estado})
-    inscripcion.estado = datos.estado
+    for _ in range(3):  # condicional: si a la vez la cancelan, no se marca la asistencia de una plaza devuelta
+        leido = inscripcion.estado
+        if leido not in ("confirmada", "asistio", "no_asistio"):
+            raise ErrorApi(409, "inscripcion_sin_plaza", "Solo se marca la asistencia de quien tenía plaza",
+                           {"estado": leido})
+        if cambiar_estado(db, inscripcion, leido, estado=datos.estado):
+            break
+    else:
+        raise ErrorApi(409, "inscripcion_sin_plaza", "La inscripción ha cambiado a la vez: vuelve a intentarlo")
     db.commit()
     return _respuesta(db, inscripcion)

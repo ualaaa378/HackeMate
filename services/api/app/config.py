@@ -1,3 +1,4 @@
+import logging
 from functools import lru_cache
 from pathlib import Path
 
@@ -8,6 +9,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _rutas = Path(__file__).resolve().parents
 _ENV_FILES = ((_rutas[3] / ".env",) if len(_rutas) > 3 else ()) + (".env",)
 
+# Valor de ejemplo de JWT_SECRET (.env.example). Con él cualquiera puede firmar sesiones válidas.
+JWT_SECRET_POR_DEFECTO = "cambia-esto-tambien"
+
+log = logging.getLogger(__name__)
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=_ENV_FILES, extra="ignore")
@@ -16,7 +22,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./hackemate.db"
     internal_token: str = "cambia-esto"
     # Login (app/seguridad.py y app/rutas/auth.py)
-    jwt_secret: str = "cambia-esto-tambien"
+    jwt_secret: str = JWT_SECRET_POR_DEFECTO
     jwt_expira_min: int = 1440
     google_client_id: str = ""
     google_tokeninfo_url: str = "https://oauth2.googleapis.com/tokeninfo"
@@ -49,6 +55,21 @@ class Settings(BaseSettings):
     @property
     def lista_cors(self) -> list[str]:
         return [o.strip() for o in self.cors_origenes.split(",") if o.strip()]
+
+
+def avisar_configuracion_insegura(ajustes: Settings | None = None) -> list[str]:
+    """Registra un WARNING por cada ajuste peligroso fuera del modo demo. No bloquea el arranque (la demo y el
+    compose dependen de que la API arranque). Devuelve los avisos."""
+    ajustes = ajustes or get_settings()
+    avisos = []
+    if not ajustes.demo_mode and ajustes.jwt_secret in (JWT_SECRET_POR_DEFECTO, ""):
+        avisos.append(
+            "JWT_SECRET tiene el valor de ejemplo: cualquiera podría firmar sesiones válidas. "
+            "Pon un secreto aleatorio en .env (p. ej. python -c \"import secrets; print(secrets.token_urlsafe(32))\")."
+        )
+    for aviso in avisos:
+        log.warning(aviso)
+    return avisos
 
 
 @lru_cache

@@ -122,6 +122,29 @@ def test_evento_sin_fin_dura_dos_horas_y_titulo_escapado():
     assert desescapar(vevent["LOCATION"]) == "Plaza, Senés"
 
 
+def test_saltos_de_linea_no_inyectan_propiedades():
+    """Ni el título, ni el lugar, ni la descripción, ni la URL pueden colar líneas nuevas en el .ics."""
+    inicio = datetime(2026, 12, 1, 18, 0, tzinfo=timezone.utc)
+    evento = Evento(
+        id="00000000-0000-4000-8000-000000000124", titulo="Fiesta\r\nEND:VEVENT\rBEGIN:VEVENT X",
+        categoria="cultural", etiquetas=[], municipio="Senés", lugar="Plaza\nATTENDEE:mailto:x@y.z\x00\x07",
+        lat=37.1, lon=-2.3, fecha_inicio=inicio, estado="publicado", es_gratuito=True,
+        descripcion="Hola\r\nORGANIZER:mailto:malo@x.y\u0085fin",
+        origen_url="https://ejemplo.es/evento\r\nATTENDEE:mailto:x@y.z\n?a=1",
+    )
+    ics = calendario([evento], dtstamp=VIERNES)
+    assert "\r" not in ics.replace("\r\n", "") and "\n" not in ics.replace("\r\n", "")
+    assert not any(c in ics for c in "\x00\x07 \u0085")
+    lineas = desplegar(ics)
+    assert sum(l == "BEGIN:VEVENT" for l in lineas) == 1 and sum(l == "END:VEVENT" for l in lineas) == 1
+    assert not any(l.startswith(("ATTENDEE", "ORGANIZER")) for l in lineas)
+    (vevent,) = componentes(lineas)
+    assert desescapar(vevent["SUMMARY"]) == "Fiesta\nEND:VEVENT\nBEGIN:VEVENT\nX"
+    assert desescapar(vevent["LOCATION"]) == "Plaza\nATTENDEE:mailto:x@y.z, Senés"
+    assert desescapar(vevent["DESCRIPTION"]).startswith("Hola\nORGANIZER:mailto:malo@x.y\nfin")
+    assert vevent["URL"] == "https://ejemplo.es/eventoATTENDEE:mailto:x@y.z?a=1"
+
+
 def test_evento_sin_hora_es_de_dia_completo_en_fecha_de_madrid():
     # 00:00 en Madrid = 23:00 UTC del día anterior: el día que vale es el de Madrid.
     inicio = datetime(2027, 1, 4, 23, 0, tzinfo=timezone.utc)

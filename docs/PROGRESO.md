@@ -92,7 +92,7 @@
 - [x] Login con Google (OAuth → JWT) y roles *(JWT propio, código por el bot, Google y login demo con DEMO_MODE)*
 - [x] Inscripciones con plazas y lista de espera
 - [x] Exportación `.ics` (evento y usuario)
-- [x] Chat del evento (mensajes, anuncios fijados, permisos por rol) *(respuesta automática por reglas mientras el bot no tenga `/ai/responder-ficha`; silenciar pendiente de contrato)*
+- [x] Chat del evento (mensajes, anuncios fijados, permisos por rol) *(respuesta automática por reglas mientras el bot no tenga `/ai/responder-ficha`; silenciar autores con `silenciar_autor`)*
 - [x] Cambio de hora → `POST /notify` a todos los inscritos + anuncio fijado en el chat
 - [x] Recomendador con motivo legible (gustos + distancia + fecha/plazas + historial) *(sin embeddings)*
 

@@ -290,6 +290,30 @@ def test_pregunta_con_bot_usa_la_ia(api, db, bot):
     assert cuerpo["pregunta"] == "¿Hay recorrido corto?" and cuerpo["evento"]["id"] == e.id
 
 
+def test_se_pregunta_al_bot_antes_de_escribir_en_la_base(api, db, bot, motor, monkeypatch):
+    """Mientras se espera a /ai/responder-ficha, la sesión no ha escrito nada: otra conexión puede escribir
+    (en SQLite, sin esperar al bloqueo de escritura) y el mensaje aún no está en la base."""
+    e = _evento(db)
+    falso = bot({"puede_responder": True, "respuesta": "Sí, hay recorrido corto.", "proveedor_ia": "falso"})
+    vistos = []
+    original = falso.__call__
+
+    def _mira_la_base(url, json=None, headers=None, timeout=None):
+        if url.endswith("/ai/responder-ficha"):
+            with motor.connect() as c:
+                c.exec_driver_sql("PRAGMA busy_timeout = 0")  # si hubiera un bloqueo de escritura, falla ya
+                c.exec_driver_sql("UPDATE eventos SET titulo = titulo WHERE id = ?", (e.id,))
+                c.commit()
+                vistos.append(c.exec_driver_sql("SELECT count(*) FROM mensajes_evento WHERE evento_id = ?",
+                                                (e.id,)).scalar())
+        return original(url, json=json, headers=headers, timeout=timeout)
+
+    monkeypatch.setattr(httpx, "post", _mira_la_base)
+    respuesta = _publicar(api, e.id, CARMEN, texto="¿Hay recorrido corto?", tipo="pregunta")["respuesta_ia"]
+    assert respuesta is not None
+    assert vistos == [0]
+
+
 def test_bot_no_sabe_avisa_al_organizador(api, db, bot):
     e = _evento(db)
     bot({"puede_responder": False, "respuesta": None})
@@ -357,6 +381,20 @@ def test_autor_oculta_el_suyo_pero_no_lo_fija(api, db):
     _error(api.patch(_url(e.id, m["id"]), json={"fijado": True}, headers=_bearer(CARMEN)), 403, "prohibido")
     r = api.patch(_url(e.id, m["id"]), json={"oculto": True}, headers=_bearer(CARMEN))
     assert r.status_code == 200 and r.json()["oculto"] is True
+
+
+def test_autor_no_vuelve_a_mostrar_un_mensaje_ocultado_por_moderacion(api, db):
+    e = _evento(db)
+    m = _publicar(api, e.id, CARMEN, texto="Comentario que la moderadora oculta")["mensaje"]
+    r = api.patch(_url(e.id, m["id"]), json={"oculto": True}, headers=_bearer(LUCIA))
+    assert r.status_code == 200 and r.json()["oculto"] is True
+
+    _error(api.patch(_url(e.id, m["id"]), json={"oculto": False}, headers=_bearer(CARMEN)), 403, "prohibido")
+    _error(api.patch(_url(e.id, m["id"]), json={"oculto": True, "fijado": False}, headers=_bearer(CARMEN)), 403,
+           "prohibido")
+    _error(api.patch(_url(e.id, m["id"]), json={}, headers=_bearer(CARMEN)), 403, "prohibido")
+    assert _listar(api, e.id) == []
+    assert _listar(api, e.id, _bearer(LUCIA))[0]["oculto"] is True
 
 
 def test_patch_mensaje_404(api, db):

@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
 from app.config import get_settings
-from app.inscripciones import fecha_corta, tomar_plazas
+from app.inscripciones import cancelar, fecha_corta, reactivar, tomar_plazas
 from app.modelos import Evento, Inscripcion, Notificacion
 from app.seed import sembrar
 from app.seguridad import emitir_jwt
@@ -263,6 +263,92 @@ def test_hilos_a_la_vez_por_la_ultima_plaza(api, db, motor):
         h.join(30)
     assert sorted(resultados) == [False, False, False, False, True]
     assert _plazas_libres(api, id) == 0
+
+
+def _a_la_vez(motor, n: int, accion) -> list:
+    """Lanza `accion(sesion)` en `n` hilos que salen a la vez (cada uno con su sesión) y hace commit."""
+    fabrica = sessionmaker(bind=motor, expire_on_commit=False)
+    salida = threading.Barrier(n)
+    resultados = []
+
+    def _hilo():
+        with fabrica() as s:
+            preparado = accion(s, None)  # lee el estado antes de la salida, como haría cada petición
+            salida.wait()
+            resultados.append(accion(s, preparado))
+            s.commit()
+
+    hilos = [threading.Thread(target=_hilo) for _ in range(n)]
+    for h in hilos:
+        h.start()
+    for h in hilos:
+        h.join(30)
+    return resultados
+
+
+def test_hilos_cancelan_a_la_vez_la_misma_inscripcion(api, db, motor):
+    id = _evento(db, plazas=3)
+    insc = _inscribir(api, id, CARMEN)
+    assert _plazas_libres(api, id) == 2
+
+    def _cancelar(s, preparado):
+        if preparado is None:
+            evento, inscripcion = s.get(Evento, id), s.get(Inscripcion, insc["id"])
+            assert inscripcion.estado == "confirmada"
+            return evento, inscripcion
+        return cancelar(s, *preparado)[0]
+
+    resultados = _a_la_vez(motor, 6, _cancelar)
+    assert sorted(resultados) == [False] * 5 + [True]
+    assert _plazas_libres(api, id) == 3  # una sola plaza devuelta
+
+
+def test_peticiones_delete_repetidas_devuelven_200_y_una_plaza(api, db):
+    id = _evento(db, plazas=3)
+    insc = _inscribir(api, id, CARMEN)
+    for _ in range(3):
+        r = api.delete(_url(id, insc["id"]), headers=_bearer(CARMEN))
+        assert r.status_code == 200, r.text
+        assert r.json()["estado"] == "cancelada"
+    assert _plazas_libres(api, id) == 3
+
+
+def test_hilos_se_reinscriben_a_la_vez_tras_cancelar(api, db, motor):
+    id = _evento(db, plazas=6)
+    insc = _inscribir(api, id, CARMEN)
+    api.delete(_url(id, insc["id"]), headers=_bearer(CARMEN))
+    assert _plazas_libres(api, id) == 6
+
+    def _reactivar(s, preparado):
+        if preparado is None:
+            evento, inscripcion = s.get(Evento, id), s.get(Inscripcion, insc["id"])
+            assert inscripcion.estado == "cancelada"
+            return evento, inscripcion
+        return reactivar(s, *preparado, plazas=1, canal="web")
+
+    resultados = _a_la_vez(motor, 6, _reactivar)
+    assert sorted(resultados) == [False] * 5 + [True]
+    assert _plazas_libres(api, id) == 5  # una sola plaza descontada
+    r = api.post(_url(id), headers=_bearer(CARMEN))
+    assert r.status_code == 409 and r.json()["error"]["code"] == "ya_inscrito"
+
+
+def test_hilos_cancelan_y_promocionan_a_una_sola_de_la_espera(api, db, motor):
+    id = _evento(db, plazas=1)
+    carmen = _inscribir(api, id, CARMEN)
+    assert _inscribir(api, id, JOSE)["estado"] == "lista_espera"
+
+    def _cancelar(s, preparado):
+        if preparado is None:
+            return s.get(Evento, id), s.get(Inscripcion, carmen["id"])
+        return cancelar(s, *preparado)[0]
+
+    _a_la_vez(motor, 4, _cancelar)
+    db.expire_all()
+    jose = db.scalar(select(Inscripcion).where(Inscripcion.evento_id == id, Inscripcion.usuario_id == JOSE))
+    assert jose.estado == "confirmada"
+    assert _plazas_libres(api, id) == 0
+    assert len(_avisos(db, "confirmacion", id)) == 1
 
 
 # --- Cambios en el evento (H3.5) ------------------------------------------------------------------

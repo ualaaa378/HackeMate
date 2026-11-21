@@ -6,7 +6,8 @@ Permisos (diapositiva 17):
 - Escribir: usuario con sesión, o el bot con X-Internal-Token y `usuario_id`. Un vecino solo escribe en eventos
   publicados; el organizador y los moderadores, en cualquiera visible.
 - Anuncios (salen fijados): solo el organizador del evento o un moderador.
-- PATCH: fijar/desfijar y ocultar/mostrar, organizador o moderador (o el bot). El autor puede ocultar el suyo.
+- PATCH: fijar/desfijar y ocultar/mostrar, organizador o moderador (o el bot). El autor solo puede ocultar el
+  suyo (`oculto: true`); no puede volver a mostrar un mensaje ocultado por moderación.
 - Silenciar (PATCH con `silenciar_autor`): organizador o moderador (o el bot). `true` impide al autor del mensaje
   volver a escribir en el chat de ese evento (403 `usuario_silenciado`); `false` se lo vuelve a permitir. No se
   puede silenciar al organizador ni a un moderador, ni a un mensaje sin autor (la IA): 409 `no_silenciable`.
@@ -151,6 +152,13 @@ def publicar_mensaje(
     if not texto:
         raise ErrorApi(422, "validacion", "El mensaje está vacío", {"campo": "texto"})
 
+    # La respuesta del asistente (bot /ai/responder-ficha) se pide antes de escribir nada en la sesión: así no se
+    # retiene el bloqueo de escritura de SQLite mientras se espera al bot.
+    texto_ia = None
+    if datos.tipo == "pregunta" and not gestor:
+        inscritos = inscritos_por_evento(db, [evento.id]).get(evento.id, 0)
+        texto_ia = respuesta_automatica(evento, texto, inscritos)
+
     nombre, rol = autor_en_evento(usuario, evento, organizador)
     mensaje = MensajeEvento(
         evento_id=evento.id, autor_id=usuario.id, autor_nombre=nombre, autor_rol=rol, tipo=datos.tipo,
@@ -162,8 +170,6 @@ def publicar_mensaje(
 
     avisos, respuesta_ia = [], None
     if datos.tipo == "pregunta" and not gestor:
-        inscritos = inscritos_por_evento(db, [evento.id]).get(evento.id, 0)
-        texto_ia = respuesta_automatica(evento, texto, inscritos)
         if texto_ia:
             respuesta_ia = MensajeEvento(
                 evento_id=evento.id, autor_id=None, autor_nombre=NOMBRE_ASISTENTE, autor_rol="ia",
@@ -204,9 +210,11 @@ def editar_mensaje(
     cambios = datos.model_dump(exclude_none=True)
     silenciar = cambios.pop("silenciar_autor", None)
     if not puede_gestionar(quien, evento):
+        # El autor solo puede ocultar el suyo: ni fijar, ni silenciar, ni volver a mostrar uno ocultado por moderación.
         es_autor = quien.usuario is not None and mensaje.autor_id == quien.usuario.id
-        if not es_autor or "fijado" in cambios or silenciar is not None:
-            raise _prohibido("Solo el organizador del evento o un moderador pueden fijar, ocultar o silenciar")
+        if not es_autor or cambios != {"oculto": True} or silenciar is not None:
+            raise _prohibido("Solo el organizador del evento o un moderador pueden fijar, mostrar u ocultar "
+                             "mensajes ajenos o silenciar; el autor solo puede ocultar el suyo")
     if silenciar is not None:
         _silenciar(db, evento, mensaje, silenciar, quien)
     for campo, valor in cambios.items():
