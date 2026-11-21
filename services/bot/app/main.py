@@ -10,7 +10,7 @@ from fastapi import BackgroundTasks, FastAPI, Form, Header, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
-from app import __version__, api_cliente, canales, conversacion, meta, metrics, telegram, vecino
+from app import __version__, api_cliente, apelacion, canales, conversacion, meta, metrics, telegram, vecino
 from app.agentes import antispam, asistente, extractor, preferencias, sugerencias, voz
 from app.config import get_settings
 from app.llm import router
@@ -293,6 +293,8 @@ def notify(n: Notificacion, x_internal_token: str | None = Header(None)):
     elif n.evento_id and n.tipo == "anuncio":
         # Recordatorio o anuncio de un plan al que ya está apuntado: [Apuntarme] no pinta nada
         botones = [(f"info:{n.evento_id}", "ℹ️ Ver el plan")]
+    elif n.evento_id and apelacion.es_aviso_de_rechazo(n.tipo, n.texto):
+        botones = [apelacion.boton(n.evento_id)]  # P3b
     elif n.botones:
         botones = [(b, b) for b in n.botones[:3]]
     if n.plantilla:
