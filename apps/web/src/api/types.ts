@@ -102,10 +102,10 @@ export interface Pagina<T> {
 export type FiltrosEventos = NonNullable<paths['/api/v1/eventos']['get']['parameters']['query']>;
 
 export const CATEGORIAS: Record<Categoria, { etiqueta: string; emoji: string; color: string }> = {
-  deportiva: { etiqueta: 'Deportiva', emoji: '🥾', color: '#2e7d32' },
-  cultural: { etiqueta: 'Cultural', emoji: '🎭', color: '#6a1b9a' },
-  fiestas: { etiqueta: 'Fiestas', emoji: '🎉', color: '#c62828' },
-  gastronomia: { etiqueta: 'Gastronomía', emoji: '🍽️', color: '#ef6c00' },
-  ludica: { etiqueta: 'Lúdica', emoji: '🎲', color: '#1565c0' },
-  comercio: { etiqueta: 'Comercio', emoji: '🛍️', color: '#00838f' },
+  deportiva: { etiqueta: 'Deportiva', emoji: '🥾', color: '#316143' },
+  cultural: { etiqueta: 'Cultural', emoji: '🎭', color: '#246063' },
+  fiestas: { etiqueta: 'Fiestas', emoji: '🎉', color: '#9b5530' },
+  gastronomia: { etiqueta: 'Gastronomía', emoji: '🍽️', color: '#735228' },
+  ludica: { etiqueta: 'Lúdica', emoji: '🎲', color: '#4e5d28' },
+  comercio: { etiqueta: 'Comercio', emoji: '🛍️', color: '#6b3a4a' },
 };
