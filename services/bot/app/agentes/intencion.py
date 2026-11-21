@@ -17,6 +17,13 @@ _INTERROGATIVO = r"^\s*(¿|que|cuando|donde|cuanto|cuanta|como|hay|a que hora|qu
 _FECHA_U_HORA = r"\b\d{1,2}\s+de\s+[a-z]+|\b\d{1,2}[:.h]\d{2}\b|\ba las \d"
 
 
+def es_pregunta_concreta(texto: str) -> bool:
+    """Una pregunta que no pide planes («¿hay que llevar agua?», no «¿qué hay este finde?»)."""
+    t = _normalizar(texto).replace("¿", " ").strip()
+    pregunta = "?" in texto or bool(re.search(_INTERROGATIVO, _normalizar(texto)))
+    return pregunta and not re.search(_BUSCAR, t)
+
+
 @dataclass
 class Intencion:
     tipo: Tipo

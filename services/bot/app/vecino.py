@@ -267,16 +267,39 @@ def _sin_tildes(texto: str) -> str:
     return unicodedata.normalize("NFKD", texto.lower()).encode("ascii", "ignore").decode()
 
 
-def _por_nombre(texto: str, titulos: dict[str, str]) -> str | None:
-    """«apúntame al taller de esparto» → el id del plan mostrado cuyo título encaja mejor (sin empates)."""
+def _por_nombre(texto: str, titulos: dict[str, str], minimo: int = 1) -> str | None:
+    """«apúntame al taller de esparto» → el id del plan cuyo título encaja mejor (sin empates)."""
     dichas = set(re.findall(r"[a-z0-9]+", _sin_tildes(texto))) - _VACIAS
     puntos = {i: len(dichas & (set(re.findall(r"[a-z0-9]+", _sin_tildes(t))) - _VACIAS)) for i, t in titulos.items()}
     if not puntos:
         return None
     mejor = max(puntos, key=puntos.get)
-    if puntos[mejor] == 0 or list(puntos.values()).count(puntos[mejor]) > 1:
+    if puntos[mejor] < minimo or list(puntos.values()).count(puntos[mejor]) > 1:
         return None
     return mejor
+
+
+def plan_nombrado(msg: MensajeEntrante, texto: str) -> bool:
+    """«¿Hay que llevar agua a la ruta solidaria?» por el chat privado: si nombra un plan (de los que acaba de
+    ver o de la agenda), lo abre para que la pregunta vaya a su ficha en vez de hacer una búsqueda."""
+    v = _v(msg.de)
+    evento_id = _por_nombre(texto, v.titulos)
+    if not evento_id:
+        try:
+            agenda = api_cliente.buscar_eventos({"size": 50})
+        except (ApiNoDisponible, ErrorApi):
+            return False
+        # En toda la agenda hay más parecidos: pedimos al menos dos palabras del título
+        evento_id = _por_nombre(texto, {e["id"]: e.get("titulo") or "" for e in agenda}, minimo=2)
+    if not evento_id:
+        return False
+    try:
+        ev = api_cliente.evento(evento_id)
+    except (ApiNoDisponible, ErrorApi):
+        return False
+    if ev:
+        v.evento_activo = ev
+    return bool(ev)
 
 
 def inscribir(msg: MensajeEntrante, evento_id: str | None, usuario: dict | None) -> list:

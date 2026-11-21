@@ -110,6 +110,39 @@ def _hora(t: str) -> tuple[int, int] | None:
     return (h, mi) if 0 <= h < 24 and 0 <= mi < 60 else None
 
 
+_DIAS = r"(?:lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo|dia|día|\d)"
+_PUEBLOS = "|".join(re.escape(m.split()[0]) for m in MUNICIPIOS) + "|" + "|".join(
+    re.escape(_normalizar(m).split()[0]) for m in MUNICIPIOS)
+# Dónde termina el nombre del plan: « en Senés», « el sábado», « este domingo», « a las 11», «, …»
+_DIA_SEMANA = r"(?:lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo)"
+_FIN_TITULO = re.compile(rf"\s+en\s+(?:{_PUEBLOS})\b|\s+(?:el|este|esta|los|las|del|de este)\s+{_DIAS}|"
+                         rf"\s+{_DIA_SEMANA}\b|\s+a las\s+\d|\s+[-–—]\s+|,\s", re.IGNORECASE)
+# «Este sábado…», «Mañana a las 10…»: el cuándo va delante del qué
+_CUANDO_DELANTE = re.compile(rf"^(?:(?:este|esta|el|el proximo|el próximo)\s+{_DIA_SEMANA}|mañana|manana|hoy|"
+                             rf"este fin de semana|este finde)\s*(?:,?\s*a las\s+[\d:.]+(?:\s*h)?)?\s*,?\s*",
+                             re.IGNORECASE)
+_SALUDO = re.compile(r"^(hola|buenas|buenos dias|buenos días|buenas tardes|atención|atencion|ojo|aviso)\b",
+                     re.IGNORECASE)
+
+
+def titulo_por_reglas(texto: str) -> str | None:
+    """Sin IA: el nombre del plan, no el post entero. Primera frase de la primera línea, cortada antes
+    del pueblo, el día o la hora. «Taller de esparto en Senés el sábado 28…» → «Taller de esparto»."""
+    linea = next((l.strip() for l in texto.splitlines() if l.strip()), "")
+    frases = [f.strip(" .!¡¿?") for f in re.split(r"(?<=[.!?])\s+", linea) if f.strip(" .!¡¿?")]
+    while len(frases) > 1 and (_SALUDO.match(frases[0]) and len(frases[0]) < 25):
+        frases.pop(0)  # «¡Hola vecinos! Taller de…»
+    frase = _CUANDO_DELANTE.sub("", frases[0] if frases else "")
+    for m in _FIN_TITULO.finditer(frase):
+        if len(frase[:m.start()].strip()) >= 6:  # que no se quede en una palabra suelta
+            frase = frase[:m.start()]
+            break
+    frase = frase.strip(" .,:;-")
+    if len(frase) > 80:
+        frase = frase[:80].rsplit(" ", 1)[0]
+    return (frase[:1].upper() + frase[1:]) if frase else None
+
+
 def extraer_con_reglas(texto: str, hoy: date, tz: ZoneInfo) -> FichaLLM:
     t = _normalizar(texto)
     dudosos: list[str] = []
@@ -138,8 +171,7 @@ def extraer_con_reglas(texto: str, hoy: date, tz: ZoneInfo) -> FichaLLM:
     if m := re.search(r"\b(\d+)\s+plazas\b", t) or re.search(r"\bplazas\s*:?\s*(\d+)\b", t):
         plazas = int(m[1])
 
-    primera_linea = next((l.strip() for l in texto.splitlines() if l.strip()), "")
-    titulo = primera_linea[:80] or None
+    titulo = titulo_por_reglas(texto)
     if titulo:
         dudosos.append("titulo")
 
