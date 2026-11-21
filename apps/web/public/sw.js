@@ -1,5 +1,5 @@
 // Service worker de la PWA (C4). Solo guarda los estáticos de la web; /api/ y /webhook/ van siempre a la red.
-const CACHE = 'hm-estaticos-v1';
+const CACHE = 'hm-estaticos-v2'; // v2: iconos con el logo «Pueblos Unidos» (P2)
 
 self.addEventListener('install', (ev) => {
   ev.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/manifest.json', '/favicon.png'])));

@@ -1,9 +1,7 @@
-// Logo y nombre de la plataforma, al estilo de la cabecera de la plantilla.
+// Logo «Pueblos Unidos» y nombre de la plataforma (el mismo emblema que el icono de la APK y de la PWA).
 const Marca: React.FC = () => (
   <div className="marca">
-    <span className="marca__logo" aria-hidden="true">
-      HM
-    </span>
+    <img className="marca__logo" src="/icons/logo-cabecera.png" alt="" width={44} height={44} decoding="async" />
     <span>
       <span className="marca__nombre">Reactiva tu pueblo</span>
       <span className="marca__sub">5 pueblos de Almería</span>
