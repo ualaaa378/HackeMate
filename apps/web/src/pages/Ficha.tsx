@@ -2,25 +2,25 @@ import {
   IonBackButton,
   IonButton,
   IonButtons,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardSubtitle,
-  IonCardTitle,
-  IonChip,
   IonContent,
   IonHeader,
   IonIcon,
-  IonItem,
-  IonLabel,
-  IonList,
   IonPage,
   IonSpinner,
   IonTitle,
   IonToast,
   IonToolbar,
 } from '@ionic/react';
-import { calendarOutline, checkmarkCircle, globeOutline, logoFacebook, mapOutline } from 'ionicons/icons';
+import {
+  calendarOutline,
+  checkmarkCircle,
+  globeOutline,
+  locationOutline,
+  logoFacebook,
+  mapOutline,
+  peopleOutline,
+  ticketOutline,
+} from 'ionicons/icons';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -41,6 +41,11 @@ import {
   textoApuntados,
   yaPaso,
 } from '../utils/formato';
+
+const mesCorto = (iso: string): string =>
+  new Date(iso).toLocaleDateString('es-ES', { month: 'short', timeZone: 'Europe/Madrid' }).replace('.', '');
+const diaDelMes = (iso: string): string =>
+  new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', timeZone: 'Europe/Madrid' });
 
 const textoFueron = (n: number): string =>
   n === 0 ? 'Nadie se apuntó por la app' : n === 1 ? 'Se apuntó 1 persona' : `Se apuntaron ${n} personas`;
@@ -98,7 +103,7 @@ const Ficha: React.FC = () => {
           <IonTitle>Plan</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
+      <IonContent className="ion-padding contenido-lectura">
         {!evento && !error && (
           <div className="centrado">
             <IonSpinner aria-label="Cargando" />
@@ -113,58 +118,78 @@ const Ficha: React.FC = () => {
                 📸 Este plan ya pasó. Ya no se puede apuntar nadie, pero puedes ver las fotos y dejar un comentario.
               </p>
             )}
-            <IonCard>
-              <IonCardHeader>
-                <IonChip style={{ background: CATEGORIAS[evento.categoria].color, color: '#fff' }}>
-                  {CATEGORIAS[evento.categoria].emoji} {CATEGORIAS[evento.categoria].etiqueta}
-                </IonChip>
-                <IonCardTitle>{evento.titulo}</IonCardTitle>
-                {evento.publicador_nombre && <IonCardSubtitle>Organiza: {evento.publicador_nombre}</IonCardSubtitle>}
-              </IonCardHeader>
-              <IonCardContent>
-                <IonList lines="none">
-                  <IonItem>
-                    <IonLabel>
-                      📅 {fechaLarga(evento.fecha_inicio)}
-                      {sinHora(evento) ? ' · hora por confirmar' : `, a las ${hora(evento.fecha_inicio)}`}
+            <article className="ficha" aria-labelledby="ficha-titulo">
+              <span className="ficha__categoria" style={{ background: CATEGORIAS[evento.categoria].color }}>
+                {CATEGORIAS[evento.categoria].emoji} {CATEGORIAS[evento.categoria].etiqueta}
+              </span>
+              <h1 id="ficha-titulo" className="ficha__titulo">
+                {evento.titulo}
+              </h1>
+              {evento.publicador_nombre && <p className="ficha__organiza">Organiza {evento.publicador_nombre}</p>}
+
+              <dl className="ficha__datos">
+                <div>
+                  <dt>
+                    <span className="hoja-dia hoja-dia--peque" aria-hidden="true">
+                      <span className="hoja-dia__mes">{mesCorto(evento.fecha_inicio)}</span>
+                      <span className="hoja-dia__num">{diaDelMes(evento.fecha_inicio)}</span>
+                    </span>
+                    <span className="oculto-visual">Cuándo</span>
+                  </dt>
+                  <dd>
+                    <strong className="dia">{fechaLarga(evento.fecha_inicio)}</strong>
+                    <span>
+                      {sinHora(evento) ? 'Hora por confirmar' : `A las ${hora(evento.fecha_inicio)}`}
                       {evento.fecha_fin &&
                         (claveDia(evento.fecha_fin) !== claveDia(evento.fecha_inicio)
-                          ? ` hasta el ${fechaLarga(evento.fecha_fin)}`
-                          : !sinHora(evento) && ` (hasta las ${hora(evento.fecha_fin)})`)}
-                    </IonLabel>
-                  </IonItem>
-                  {fechaEstimada(evento) && (
-                    <IonItem>
-                      <IonLabel className="ion-text-wrap">
-                        📌 Fecha estimada según el calendario de fiestas; pendiente de confirmar
-                      </IonLabel>
-                    </IonItem>
-                  )}
-                  <IonItem>
-                    <IonLabel>
-                      📍 {evento.lugar ? `${evento.lugar}, ` : ''}
-                      {evento.municipio}
-                    </IonLabel>
-                  </IonItem>
-                  {!pasado && (
-                    <IonItem>
-                      <IonLabel>💶 {precio(evento)}</IonLabel>
-                    </IonItem>
-                  )}
-                  <IonItem>
-                    <IonLabel className="contador-ficha">
-                      👥 {pasado ? textoFueron(evento.inscritos ?? 0) : textoApuntados(evento)}
-                    </IonLabel>
-                  </IonItem>
-                  {!pasado && plazas(evento) && (
-                    <IonItem>
-                      <IonLabel>🎟️ {plazas(evento)}</IonLabel>
-                    </IonItem>
-                  )}
-                </IonList>
-                {evento.descripcion && <p className="descripcion">{evento.descripcion}</p>}
-              </IonCardContent>
-            </IonCard>
+                          ? `, hasta el ${fechaLarga(evento.fecha_fin)}`
+                          : !sinHora(evento) && `, hasta las ${hora(evento.fecha_fin)}`)}
+                    </span>
+                    {fechaEstimada(evento) && (
+                      <span className="ficha__nota">
+                        Fecha estimada según el calendario de fiestas, pendiente de confirmar
+                      </span>
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt>
+                    <IonIcon icon={locationOutline} aria-hidden="true" />
+                    <span className="oculto-visual">Dónde</span>
+                  </dt>
+                  <dd>
+                    <strong>{evento.lugar ?? evento.municipio}</strong>
+                    {evento.lugar && <span>{evento.municipio}</span>}
+                  </dd>
+                </div>
+                {!pasado && (
+                  <div>
+                    <dt>
+                      <IonIcon icon={ticketOutline} aria-hidden="true" />
+                      <span className="oculto-visual">Precio</span>
+                    </dt>
+                    <dd>
+                      <strong>
+                        {evento.es_gratuito || evento.precio_eur != null ? precio(evento) : 'Precio por confirmar'}
+                      </strong>
+                      {plazas(evento) && <span>{plazas(evento)}</span>}
+                    </dd>
+                  </div>
+                )}
+                <div>
+                  <dt>
+                    <IonIcon icon={peopleOutline} aria-hidden="true" />
+                    <span className="oculto-visual">Gente</span>
+                  </dt>
+                  <dd>
+                    <strong className="contador-ficha">
+                      {pasado ? textoFueron(evento.inscritos ?? 0) : textoApuntados(evento)}
+                    </strong>
+                  </dd>
+                </div>
+              </dl>
+              {evento.descripcion && <p className="descripcion">{evento.descripcion}</p>}
+            </article>
 
             {!pasado && (
               <>

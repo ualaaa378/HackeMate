@@ -146,7 +146,7 @@ const Proponer: React.FC = () => {
           <IonTitle>Proponer un plan</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
+      <IonContent className="ion-padding contenido-lectura">
         {enviada ? (
           <IonCard className="propuesta-ok">
             <IonCardContent>

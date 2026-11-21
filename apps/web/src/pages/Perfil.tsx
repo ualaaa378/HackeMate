@@ -24,7 +24,7 @@ const Perfil: React.FC = () => {
           <IonTitle>👤 Mi perfil</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
+      <IonContent className="ion-padding contenido-lectura">
         <SelectorLetra />
         {usuario ? (
           <IonCard>

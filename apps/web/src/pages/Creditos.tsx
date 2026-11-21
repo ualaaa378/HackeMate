@@ -13,7 +13,7 @@ const Creditos: React.FC = () => (
         <IonTitle>Créditos de las fotos</IonTitle>
       </IonToolbar>
     </IonHeader>
-    <IonContent className="ion-padding">
+    <IonContent className="ion-padding contenido-lectura">
       <p>
         Las fotos de los pueblos son de Wikimedia Commons y tienen licencia libre. Gracias a quienes las hicieron y las
         compartieron. Las hemos reducido y pasado a formato WebP para que la web cargue rápido.
