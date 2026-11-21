@@ -41,7 +41,7 @@ export const USAR_MOCKS =
   (ES_APP_NATIVA && !direccionGuardada());
 
 let token: string | null = null;
-export function setToken(nuevo: string | null) {
+export function setToken(nuevo: string | null): void {
   token = nuevo;
 }
 
@@ -147,7 +147,7 @@ export function distanciaKm(lat1: number, lon1: number, lat2: number, lon2: numb
 const USUARIO_MOCK_ID = '00000000-0000-4000-8000-000000000001';
 // Exportados solo para src/api/admin.ts: aprobar en la bandeja publica el evento en la agenda de mocks.
 export const mockEventos = eventosMock as Evento[];
-export const esperar = <T>(valor: T, ms = 250) => new Promise<T>((r) => setTimeout(() => r(valor), ms));
+export const esperar = <T>(valor: T, ms = 250): Promise<T> => new Promise<T>((r) => setTimeout(() => r(valor), ms));
 
 function filtrarMock(f: FiltrosEventos): Pagina<Evento> {
   let items = mockEventos.filter((e) => e.estado === 'publicado');

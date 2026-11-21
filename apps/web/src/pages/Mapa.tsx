@@ -11,9 +11,9 @@ import {
   useIonRouter,
   useIonViewDidEnter,
 } from '@ionic/react';
+import { locate } from 'ionicons/icons';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { locate } from 'ionicons/icons';
 import { useEffect, useRef, useState } from 'react';
 import { Circle, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 
