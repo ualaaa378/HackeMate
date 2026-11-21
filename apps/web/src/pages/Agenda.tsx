@@ -24,11 +24,14 @@ import FiltrosEventos from '../components/FiltrosEventos';
 import { CabeceraPueblo, TarjetasPueblos } from '../components/FotosPueblo';
 import Marca from '../components/Marca';
 import ParaTi from '../components/ParaTi';
+import RecuerdosAgenda from '../components/RecuerdosAgenda';
 import SelectorLetra from '../components/SelectorLetra';
+import Sugeridos from '../components/Sugeridos';
 import TarjetaEvento from '../components/TarjetaEvento';
 import TusPlanes from '../components/TusPlanes';
 import { useSesion } from '../cuenta/sesion';
 import { agruparPorDia, claveDia, fechaLarga, yaPaso } from '../utils/formato';
+import { usePantallaGrande } from '../utils/pantalla';
 
 const DESTACADOS = 5;
 
@@ -71,6 +74,8 @@ const Agenda: React.FC = () => {
   // Todos los próximos planes, sin filtros: alimentan «Tus planes» y el carrusel.
   const [todos, setTodos] = useState<Evento[]>([]);
   const { usuario } = useSesion();
+  // N1: en pantalla grande, tres zonas; en el móvil y en la APK la agenda se queda como estaba.
+  const grande = usePantallaGrande();
   // Sube al volver a la agenda o al deslizar: «Para ti» cambia cuando la persona se apunta a algo.
   const [recarga, setRecarga] = useState(0);
 
@@ -116,6 +121,66 @@ const Agenda: React.FC = () => {
   const tusPlanes = todos.filter((e) => mios.has(e.id));
   const destacados = todos.slice(0, DESTACADOS);
 
+  const saludo = (
+    <>
+      <SelectorLetra />
+      <h1 className="saludo">
+        {usuario ? `¡Hola, ${usuario.nombre.split(' ')[0]}! ` : ''}¿Qué hacemos hoy en el pueblo?
+      </h1>
+    </>
+  );
+
+  const carrusel = destacados.length > 0 && (
+    <>
+      <h2 className="titulo-seccion">Próximos planes</h2>
+      <CarruselPlanes eventos={destacados} />
+    </>
+  );
+
+  const agenda = (
+    <>
+      {municipio ? (
+        <CabeceraPueblo municipio={municipio} />
+      ) : (
+        <TarjetasPueblos municipio={municipio} onMunicipio={setMunicipio} />
+      )}
+
+      <FiltrosEventos
+        municipio={municipio}
+        categoria={categoria}
+        onMunicipio={setMunicipio}
+        onCategoria={setCategoria}
+      />
+
+      {cargando && (
+        <div className="centrado">
+          <IonSpinner aria-label="Cargando" />
+        </div>
+      )}
+      {error && (
+        <IonText color="danger">
+          <p className="ion-padding">{error}</p>
+        </IonText>
+      )}
+      {!cargando && !error && proximos.length === 0 && (
+        <p className="ion-padding">No hay planes con estos filtros. Prueba con otro pueblo o categoría.</p>
+      )}
+
+      <div className="agenda-dias">
+        {agruparPorDia(proximos).map(([dia, delDia]) => (
+          <section key={dia} className="grupo-dia" aria-labelledby={`dia-${dia}`}>
+            <CabeceraDia dia={dia} iso={delDia[0].fecha_inicio} />
+            <IonList lines="none" className="grupo-dia__planes">
+              {delDia.map((e) => (
+                <TarjetaEvento key={e.id} evento={e} />
+              ))}
+            </IonList>
+          </section>
+        ))}
+      </div>
+    </>
+  );
+
   return (
     <IonPage>
       <IonHeader>
@@ -131,7 +196,7 @@ const Agenda: React.FC = () => {
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="contenido-agenda">
+      <IonContent className={grande ? 'contenido-agenda contenido-agenda--zonas' : 'contenido-agenda'}>
         <IonRefresher
           slot="fixed"
           onIonRefresh={(ev) => {
@@ -142,60 +207,32 @@ const Agenda: React.FC = () => {
           <IonRefresherContent />
         </IonRefresher>
 
-        <div className="inicio">
-          <SelectorLetra />
-          <h1 className="saludo">
-            {usuario ? `¡Hola, ${usuario.nombre.split(' ')[0]}! ` : ''}¿Qué hacemos hoy en el pueblo?
-          </h1>
-          <TusPlanes eventos={tusPlanes} />
-          {usuario && <ParaTi usuarioId={usuario.id} recarga={recarga} />}
-          {destacados.length > 0 && (
-            <>
-              <h2 className="titulo-seccion">Próximos planes</h2>
-              <CarruselPlanes eventos={destacados} />
-            </>
-          )}
-        </div>
-
-        {municipio ? (
-          <CabeceraPueblo municipio={municipio} />
-        ) : (
-          <TarjetasPueblos municipio={municipio} onMunicipio={setMunicipio} />
-        )}
-
-        <FiltrosEventos
-          municipio={municipio}
-          categoria={categoria}
-          onMunicipio={setMunicipio}
-          onCategoria={setCategoria}
-        />
-
-        {cargando && (
-          <div className="centrado">
-            <IonSpinner aria-label="Cargando" />
+        {grande ? (
+          <div className="agenda-zonas">
+            <aside className="agenda-zonas__lateral" aria-label="Tus planes y sugeridos">
+              <TusPlanes eventos={tusPlanes} />
+              <Sugeridos usuario={usuario} proximos={todos} mios={mios} recarga={recarga} />
+            </aside>
+            <div className="agenda-zonas__centro">
+              <div className="inicio">
+                {saludo}
+                <RecuerdosAgenda />
+                {carrusel}
+              </div>
+              {agenda}
+            </div>
           </div>
+        ) : (
+          <>
+            <div className="inicio">
+              {saludo}
+              <TusPlanes eventos={tusPlanes} />
+              {usuario && <ParaTi usuarioId={usuario.id} recarga={recarga} />}
+              {carrusel}
+            </div>
+            {agenda}
+          </>
         )}
-        {error && (
-          <IonText color="danger">
-            <p className="ion-padding">{error}</p>
-          </IonText>
-        )}
-        {!cargando && !error && proximos.length === 0 && (
-          <p className="ion-padding">No hay planes con estos filtros. Prueba con otro pueblo o categoría.</p>
-        )}
-
-        <div className="agenda-dias">
-          {agruparPorDia(proximos).map(([dia, delDia]) => (
-            <section key={dia} className="grupo-dia" aria-labelledby={`dia-${dia}`}>
-              <CabeceraDia dia={dia} iso={delDia[0].fecha_inicio} />
-              <IonList lines="none" className="grupo-dia__planes">
-                {delDia.map((e) => (
-                  <TarjetaEvento key={e.id} evento={e} />
-                ))}
-              </IonList>
-            </section>
-          ))}
-        </div>
       </IonContent>
     </IonPage>
   );

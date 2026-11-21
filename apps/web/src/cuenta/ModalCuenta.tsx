@@ -22,8 +22,9 @@ import {
   pedirCodigo,
   verificarCodigo,
 } from '../api/client';
-import type { Token } from '../api/types';
+import type { Categoria, Token } from '../api/types';
 import { ENLACE_CANAL, NOMBRE_CANAL } from '../canal';
+import SelectorGustos from '../components/SelectorGustos';
 
 interface Props {
   abierto: boolean;
@@ -38,6 +39,7 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
   const [nombre, setNombre] = useState('');
   const [movil, setMovil] = useState('');
   const [acepto, setAcepto] = useState(false);
+  const [gustos, setGustos] = useState<Categoria[]>([]);
   const [codigo, setCodigo] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -84,7 +86,11 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
       const t = await verificarCodigo(tel, codigo.trim());
       let usuario = t.usuario;
       try {
-        usuario = await actualizarPerfil({ nombre: nombre.trim(), acepta_avisos: true });
+        usuario = await actualizarPerfil({
+          nombre: nombre.trim(),
+          acepta_avisos: true,
+          ...(gustos.length > 0 && { gustos }),
+        });
       } catch {
         usuario = { ...usuario, nombre: nombre.trim() };
       }
@@ -136,6 +142,7 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
               value={movil}
               onIonInput={(e) => setMovil(e.detail.value ?? '')}
             />
+            <SelectorGustos gustos={gustos} onCambio={setGustos} />
             <IonCheckbox
               checked={acepto}
               onIonChange={(e) => setAcepto(e.detail.checked)}
