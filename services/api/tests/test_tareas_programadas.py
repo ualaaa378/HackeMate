@@ -116,3 +116,29 @@ def test_ciclo_crea_y_envia_al_bot(base, motor, bot):
     assert enviados >= 1
     cuerpo = next(c for c in bot.cuerpos() if c.get("texto", "").startswith("⏰"))
     assert cuerpo["contacto"] == f"tg:{ana.telegram_id}" and cuerpo["tipo"] == "anuncio"
+
+
+# --- Idea 7: «quedan pocas plazas» -------------------------------------------------------------------------------
+
+def test_quedan_pocas_plazas_a_quien_le_interesa_y_no_esta_apuntado(base):
+    ana = _vecina(base, "Ana", municipio="Senés", acepta_avisos=True, gustos=["cultural"])
+    beto = _vecina(base, "Beto", municipio="Senés", gustos=["cultural"])  # no acepta avisos
+    carla = _vecina(base, "Carla", municipio="Senés", acepta_avisos=True, gustos=["cultural"])
+    taller = _plan(base, "Taller de esparto", AHORA + timedelta(days=3), plazas_totales=15, plazas_libres=2)
+    _plan(base, "Concierto", AHORA + timedelta(days=3), plazas_totales=100, plazas_libres=60)  # aún hay sitio
+    _apuntar(base, carla, taller)
+    avisos = [n for n in tareas.pocas_plazas(base, AHORA) if n.usuario_id in (ana.id, beto.id, carla.id)]
+    base.commit()
+    assert [n.usuario_id for n in avisos] == [ana.id]
+    assert avisos[0].tipo == "recomendacion" and avisos[0].evento_id == taller.id
+    assert avisos[0].texto.startswith("⏳ Quedan 2 plazas para «Taller de esparto» en Senés")
+    # Una sola vez por persona y plan
+    assert all(n.usuario_id != ana.id for n in tareas.pocas_plazas(base, AHORA + timedelta(hours=1)))
+
+
+def test_pocas_plazas_no_avisa_de_planes_llenos_ni_lejanos(base):
+    ana = _vecina(base, "Ana", municipio="Senés", acepta_avisos=True, gustos=["cultural"])
+    _plan(base, "Lleno", AHORA + timedelta(days=3), plazas_totales=10, plazas_libres=0)
+    _plan(base, "Dentro de un mes", AHORA + timedelta(days=30), plazas_totales=10, plazas_libres=1)
+    _plan(base, "Sin aforo", AHORA + timedelta(days=3))
+    assert all(n.usuario_id != ana.id for n in tareas.pocas_plazas(base, AHORA))

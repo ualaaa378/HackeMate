@@ -65,6 +65,9 @@ Lo que hemos añadido más allá de los mínimos (decir **para qué sirve en el 
 - **Tareas automáticas:** recordatorio 24 h antes, «¿qué tal fue?» al terminar (la respuesta queda como comentario del plan) y resumen semanal por pueblo.
 - **Organizador:** pestaña «Mis planes propuestos» y «modificar plan» por el bot, también para **vecinos sin asociación**.
 - **Apelaciones:** quien ve rechazado su plan puede pedir **una** revisión, desde la web o con el botón [✍️ Apelar] del aviso.
+- **Asistente del moderador:** la bandeja le resume qué hay («1 posible fraude, 1 apelación…»), le sugiere qué hacer con cada plan y, al rechazar, **la IA redacta un mensaje amable** para quien lo propuso, que el moderador revisa antes de enviarlo.
+- **«Quedan pocas plazas»:** cuando a un plan le quedan pocas plazas, avisa automáticamente a quien le puede interesar y aún no se ha apuntado, con [✋ Apuntarme].
+- **Traducción automática:** si un visitante o un residente extranjero escribe en otro idioma, el bot lo entiende y le contesta en su idioma.
 - **Robustez en directo:** botón «Simular caída de la IA» en el panel: el bot sigue funcionando con reglas.
 
 ## 4. Arquitectura, APIs e IA · criterio 1.3 (10,5 %)
@@ -145,6 +148,12 @@ Enseñar un diagrama de una diapositiva: **web/APK ↔ nginx ↔ API ↔ base de
 | Asistente del moderador en el chat y calendario «Mis planes» compartible | 1.2 · 2.2 | Pendiente |
 | Despliegue en la nube de la Diputación (VPS o Render) con copias de seguridad | 1.6 | Pendiente |
 | Rotar todas las claves usadas durante la hackathon y cambiar la contraseña de moderación | 1.5 | Tras la hackathon |
+| Asistente del moderador (resumen, sugerencias y motivo de rechazo con IA) | 1.2 · 1.5 | **Hecho** (dom 22/11) |
+| Aviso automático «quedan pocas plazas» | 1.2 · 1.4 | **Hecho** (dom 22/11) |
+| Aviso de choque entre pueblos al publicar, con fecha alternativa propuesta por la IA | 1.2 · 1.6 | Propuesta |
+| «La radio del pueblo»: resumen semanal en audio | 1.2 · 2.1 | Propuesta |
+| Compartir coche entre vecinos que van al mismo plan (con doble consentimiento) | 1.2 · 1.6 | Propuesta |
+| Informe mensual para el alcalde redactado por la IA | 1.2 · 1.6 | Propuesta |
 | _(añadir aquí lo que se suba al repositorio después de las 00:00)_ | | |
 
 ## 11. Preguntas que nos pueden hacer (respuesta corta)

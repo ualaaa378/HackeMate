@@ -8,6 +8,10 @@ se mira si ya existe uno igual (mismo usuario, plan y marca al principio del tex
    empieza dentro de 22–26 h. «⏰ Mañana a las 9:00 tienes «Ruta…» en Velefique (Plaza de la iglesia).»
 2. **«¿Qué tal fue?»** (`anuncio`, con `evento_id`): a quien fue (`confirmada` o `asistio`) a un plan que terminó
    en las últimas 24 h. El bot pone botones y deja la respuesta como comentario del plan.
+4. **«Quedan pocas plazas»** (`recomendacion`, con `evento_id`: el bot pone [Apuntarme]; solo a quien acepta avisos):
+   un plan publicado de los próximos 14 días al que le quedan pocas plazas (`POCAS_PLAZAS`: 3 o menos, o el 20 % o
+   menos del aforo) avisa una vez a quien le interesa (mismos criterios que el aviso de plan nuevo, A10) y aún no está
+   apuntado. «⏳ Quedan 2 plazas para «Ruta…» en Velefique, el sábado 28 a las 9:00. Te gustan las rutas.»
 3. **Resumen semanal por pueblo** (`recomendacion`, sin `evento_id`; solo a quien acepta avisos, D1): el día y hora
    de `RESUMEN_DIA_SEMANA`/`RESUMEN_HORA`, los planes de los próximos 7 días en su pueblo (o en su pueblo
    favorito, o cerca de donde vive), como mucho 5.
@@ -31,6 +35,9 @@ log = logging.getLogger(__name__)
 MARCA_RECORDATORIO = "⏰"
 MARCA_QUE_TAL = "¿Qué tal fue"  # el bot la reconoce para poner los botones de valoración
 MARCA_RESUMEN = "📅 Esta semana"
+MARCA_POCAS_PLAZAS = "⏳"  # «⏳ Quedan 3 plazas…» o «⏳ Queda 1 plaza…»
+POCAS_PLAZAS_MIN, POCAS_PLAZAS_PCT = 3, 0.2
+POCAS_PLAZAS_DIAS = 14
 DURACION_POR_DEFECTO = timedelta(hours=3)  # si el plan no tiene fecha_fin
 MAX_PLANES_RESUMEN = 5
 DIAS = ("lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo")
@@ -144,6 +151,39 @@ def resumen_semanal(db: Session, ahora: datetime) -> list[Notificacion]:
     return avisos
 
 
+def _pocas(evento: Evento) -> bool:
+    if not evento.plazas_totales or evento.plazas_libres is None or evento.plazas_libres <= 0:
+        return False
+    return evento.plazas_libres <= max(POCAS_PLAZAS_MIN, int(evento.plazas_totales * POCAS_PLAZAS_PCT))
+
+
+def pocas_plazas(db: Session, ahora: datetime) -> list[Notificacion]:
+    """Idea 7: a quien le interesa un plan casi lleno y no se ha apuntado, una vez por persona y plan."""
+    from app.avisos_planes import _cuando, interesa
+
+    eventos = [e for e in db.scalars(select(Evento).where(
+        Evento.estado == "publicado", Evento.fecha_inicio >= ahora + timedelta(hours=2),
+        Evento.fecha_inicio <= ahora + timedelta(days=POCAS_PLAZAS_DIAS),
+    )).all() if _pocas(e)]
+    if not eventos:
+        return []
+    usuarios = db.scalars(select(Usuario).where(Usuario.acepta_avisos.is_(True)).order_by(Usuario.creado_en)).all()
+    avisos = []
+    for evento in eventos:
+        quedan = "Queda 1 plaza" if evento.plazas_libres == 1 else f"Quedan {evento.plazas_libres} plazas"
+        for usuario in usuarios:
+            if _ya_avisado(db, usuario.id, evento.id, MARCA_POCAS_PLAZAS):
+                continue
+            motivo = interesa(db, usuario, evento, ahora, repetir=True)
+            if motivo is None:
+                continue
+            texto = (f"{MARCA_POCAS_PLAZAS} {quedan} para «{evento.titulo}» en {evento.municipio}, {_cuando(evento)}. {motivo}. "
+                     "Si te apetece, apúntate antes de que se acaben.")
+            avisos.append(notificar(db, tipo="recomendacion", texto=texto, usuario=usuario, evento_id=evento.id,
+                                    enviar=False))
+    return avisos
+
+
 def ciclo_tareas(fabrica=None, ahora: datetime | None = None) -> int:
     """Una vuelta: crea los avisos que toquen, hace commit y los envía. No lanza nunca. Devuelve cuántos salen."""
     from app.modelos import ahora as ahora_utc
@@ -155,7 +195,8 @@ def ciclo_tareas(fabrica=None, ahora: datetime | None = None) -> int:
             fabrica = _fabrica_sesiones()
         momento = ahora or ahora_utc()
         with fabrica() as db:
-            avisos = recordatorios(db, momento) + que_tal_fue(db, momento) + resumen_semanal(db, momento)
+            avisos = (recordatorios(db, momento) + que_tal_fue(db, momento) + resumen_semanal(db, momento)
+                      + pocas_plazas(db, momento))
             db.commit()
             ids = [n.id for n in avisos if n is not None and n.estado_envio == "pendiente"]
             if avisos:

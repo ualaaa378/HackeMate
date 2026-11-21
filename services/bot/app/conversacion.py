@@ -16,7 +16,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from app import alta, api_cliente, apelacion, avisos, canales, organizador, telegram, vecino
-from app.agentes import antispam, extractor, idiomas, intencion, medios, voz
+from app.agentes import antispam, moderador, extractor, idiomas, intencion, medios, voz
 from app.api_cliente import ApiNoDisponible, ErrorApi
 from app.config import get_settings
 from app.respuestas import Respuesta
@@ -177,8 +177,16 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
     if texto and not msg.boton_id and alta.quiere_alta(texto):
         return alta.empezar(msg, _usuario(msg.de))
 
+    if t.startswith("mod:rechazar:") and msg.boton_id:  # idea 5: primero el motivo, luego el rechazo
+        if not _es_moderador(msg):
+            return ["Esa opción es solo para moderadores 🙂"]
+        return _proponer_rechazo(msg, msg.boton_id.split(":", 2)[2])
     if t.startswith("mod:"):
         return _decidir(msg, t)
+    if msg.boton_id and (t.startswith(("modrz_ok:", "modrz_otro:")) or t == "modrz_no"):
+        return _rechazo(msg, msg.boton_id)
+    if texto and not msg.boton_id and (_rechazos.get(msg.de) or {}).get("escribiendo") and _es_moderador(msg):
+        return _decidir(msg, f"mod:rechazar:{_rechazos[msg.de]['evento_id']}", motivo=texto[:500])
     # P3b: apelar un plan rechazado (botón del aviso, el motivo que espera o «quiero apelar»)
     if msg.boton_id and t.startswith("apelar:"):
         return apelacion.empezar(msg.de, msg.boton_id.split(":", 1)[1], _usuario(msg.de))
@@ -527,7 +535,9 @@ def _bandeja(msg: MensajeEntrante) -> list[str | Respuesta]:
     eventos = [i for i in items if i.get("tipo") == "evento" and i.get("evento")]
     if not eventos:
         return ["No hay nada pendiente de revisar ✅"]
-    respuestas: list[str | Respuesta] = [f"Tienes {len(eventos)} pendiente(s):"]
+    # Idea 5: resumen de la bandeja y una sugerencia por plan (reglas, sin tokens)
+    respuestas: list[str | Respuesta] = [moderador.resumen([i.get("motivo") for i in eventos])]
+    _vista_bandeja[msg.de] = {i["evento"]["id"]: i for i in eventos}
     for item in eventos:
         ev = item["evento"]
         try:
@@ -536,21 +546,70 @@ def _bandeja(msg: MensajeEntrante) -> list[str | Respuesta]:
             fecha = ""
         spam = f" · spam {item['score_spam']:.0%}" if item.get("score_spam") is not None else ""
         respuestas.append(Respuesta(
-            f"🔎 *{ev.get('titulo', '')}*\n📍 {ev.get('municipio', '')} · 📅 {fecha}{spam}\nMotivo: {item.get('motivo', '')}",
+            f"🔎 *{ev.get('titulo', '')}*\n📍 {ev.get('municipio', '')} · 📅 {fecha}{spam}\nMotivo: {item.get('motivo', '')}"
+            f"\n{moderador.sugerencia(item.get('motivo'))}",
             [(f"mod:aprobar:{ev['id']}", "✅ Aprobar"), (f"mod:rechazar:{ev['id']}", "❌ Rechazar")],
         ))
     return respuestas
 
 
-def _decidir(msg: MensajeEntrante, accion: str) -> list[str]:
+# ---------- Idea 5: el rechazo lleva un motivo amable que redacta la IA y revisa el moderador ----------
+
+_vista_bandeja: dict[str, dict[str, dict]] = {}  # moderador -> {evento_id: item de la bandeja}
+_rechazos: dict[str, dict] = {}  # moderador -> {evento_id, titulo, texto, escribiendo}
+
+
+def _botones_rechazo(evento_id: str) -> list:
+    return [(f"modrz_ok:{evento_id}", "✅ Enviar y rechazar"), (f"modrz_otro:{evento_id}", "✏️ Escribir otro"),
+            ("modrz_no", "↩️ No rechazar")]
+
+
+def _proponer_rechazo(msg: MensajeEntrante, evento_id: str) -> list:
+    item = _vista_bandeja.get(msg.de, {}).get(evento_id)
+    titulo, motivo = None, None
+    if item:
+        titulo, motivo = item["evento"].get("titulo"), item.get("motivo")
+    else:
+        try:
+            ev = api_cliente.evento(evento_id) or {}
+            titulo, motivo = ev.get("titulo"), ev.get("motivo_moderacion")
+        except (ApiNoDisponible, ErrorApi):
+            pass
+    titulo = titulo or "este plan"
+    texto, _ = moderador.motivo_rechazo(titulo, motivo)
+    _rechazos[msg.de] = {"evento_id": evento_id, "titulo": titulo, "texto": texto, "escribiendo": False}
+    return [Respuesta(f"Voy a rechazar *{titulo}*. Le enviaré este mensaje a quien lo propuso:\n\n«{texto}»",
+                      _botones_rechazo(evento_id))]
+
+
+def _rechazo(msg: MensajeEntrante, boton: str) -> list:
+    if not _es_moderador(msg):
+        return ["Esa opción es solo para moderadores 🙂"]
+    if boton == "modrz_no":
+        _rechazos.pop(msg.de, None)
+        return ["Vale, no lo rechazo. Sigue en la bandeja 👍"]
+    borrador = _rechazos.get(msg.de)
+    evento_id = boton.split(":", 1)[1]
+    if not borrador or borrador["evento_id"] != evento_id:
+        return _proponer_rechazo(msg, evento_id)
+    if boton.startswith("modrz_otro:"):
+        borrador["escribiendo"] = True
+        return [Respuesta("Escríbeme el motivo con tus palabras y se lo envío al rechazarlo.",
+                          [("modrz_no", "↩️ No rechazar")])]
+    return _decidir(msg, f"mod:rechazar:{evento_id}", motivo=borrador["texto"])
+
+
+def _decidir(msg: MensajeEntrante, accion: str, motivo: str | None = None) -> list[str]:
     partes = accion.split(":", 2)
     if len(partes) != 3 or partes[1] not in ("aprobar", "rechazar", "retirar"):
         return ["No he entendido esa opción."]
     if not _es_moderador(msg):
         return ["Esa opción es solo para moderadores 🙂"]
     _, decision, evento_id = partes
+    if decision == "rechazar":
+        _rechazos.pop(msg.de, None)
     try:
-        evento = api_cliente.decidir(evento_id, decision, motivo=f"Decidido por chat ({_canal(msg)})")
+        evento = api_cliente.decidir(evento_id, decision, motivo=motivo or f"Decidido por chat ({_canal(msg)})")
     except ApiNoDisponible:
         return ["No he podido guardar la decisión. Inténtalo en un minuto 🙏"]
     except ErrorApi as e:
