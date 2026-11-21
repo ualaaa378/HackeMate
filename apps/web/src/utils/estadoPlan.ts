@@ -10,7 +10,10 @@ export interface EstadoPlan {
 }
 
 /** Cómo ve su plan quien lo propuso (P5c). Un plan publicado cuya fecha ya pasó cuenta como «ya hecho». */
-export function estadoPlan(e: Pick<Evento, 'estado' | 'fecha_inicio' | 'fecha_fin'>, ahora = new Date()): EstadoPlan {
+export function estadoPlan(
+  e: Pick<Evento, 'estado' | 'fecha_inicio' | 'fecha_fin' | 'apelacion'>,
+  ahora = new Date(),
+): EstadoPlan {
   switch (e.estado) {
     case 'rechazado':
       return { texto: '❌ No publicado', clase: 'rechazado', modificable: false };
@@ -24,6 +27,17 @@ export function estadoPlan(e: Pick<Evento, 'estado' | 'fecha_inicio' | 'fecha_fi
         ? { texto: '📸 Ya hecho', clase: 'hecho', modificable: false }
         : { texto: '✅ Publicado', clase: 'publicado', modificable: true };
     default:
+      if (e.apelacion) return { texto: '🔁 Apelado, en revisión', clase: 'revision', modificable: true };
       return { texto: '⏳ En revisión', clase: 'revision', modificable: true };
   }
 }
+
+/** P3c: un plan rechazado se puede apelar una sola vez, y solo si aún no ha pasado. */
+export function puedeApelar(
+  e: Pick<Evento, 'estado' | 'fecha_inicio' | 'fecha_fin' | 'apelacion'>,
+  ahora = new Date(),
+): boolean {
+  return e.estado === 'rechazado' && !e.apelacion && !yaPaso(e, ahora);
+}
+
+export const MOTIVO_APELACION = { min: 10, max: 500 } as const;

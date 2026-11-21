@@ -4,6 +4,7 @@ import {
   IonCardContent,
   IonContent,
   IonHeader,
+  IonInput,
   IonPage,
   IonRouterLink,
   IonText,
@@ -18,6 +19,7 @@ import { CONTACTO_CANAL, ENLACE_CANAL, NOMBRE_CANAL } from '../canal';
 import SelectorGustos from '../components/SelectorGustos';
 import SelectorLetra from '../components/SelectorLetra';
 import { useSesion } from '../cuenta/sesion';
+import { leerEdad } from '../utils/edad';
 
 /** Se guarda en cuanto se toca un gusto: no hay botón de guardar que olvidar. */
 const TusGustos: React.FC<{ usuario: Usuario; onGuardado: (u: Usuario) => void }> = ({ usuario, onGuardado }) => {
@@ -38,6 +40,43 @@ const TusGustos: React.FC<{ usuario: Usuario; onGuardado: (u: Usuario) => void }
       <p role="status" className="estado-gustos">
         {estado === 'guardado' && 'Guardado. «Para ti» te sugerirá planes con estos gustos.'}
         {estado === 'error' && <IonText color="danger">No hemos podido guardarlo. Inténtalo otra vez.</IonText>}
+      </p>
+    </>
+  );
+};
+
+/** P4b: la edad es opcional y se guarda al salir del campo. */
+const TuEdad: React.FC<{ usuario: Usuario; onGuardado: (u: Usuario) => void }> = ({ usuario, onGuardado }) => {
+  const [texto, setTexto] = useState(usuario.edad != null ? String(usuario.edad) : '');
+  const [estado, setEstado] = useState<{ ok: boolean; texto: string } | null>(null);
+  const guardar = () => {
+    const r = leerEdad(texto);
+    if ('error' in r) return setEstado({ ok: false, texto: r.error });
+    if (r.edad === (usuario.edad ?? null)) return;
+    actualizarPerfil({ edad: r.edad })
+      .then((u) => {
+        onGuardado({ ...usuario, ...u, edad: r.edad });
+        setEstado({ ok: true, texto: 'Edad guardada.' });
+      })
+      .catch(() => setEstado({ ok: false, texto: 'No hemos podido guardarla. Inténtalo otra vez.' }));
+  };
+  return (
+    <>
+      <IonInput
+        className="campo-edad"
+        label="Tu edad (opcional)"
+        labelPlacement="stacked"
+        fill="outline"
+        type="text"
+        inputmode="numeric"
+        maxlength={3}
+        placeholder="Por ejemplo: 67"
+        value={texto}
+        onIonInput={(e) => setTexto(e.detail.value ?? '')}
+        onIonBlur={guardar}
+      />
+      <p role="status" className="estado-gustos">
+        {estado && (estado.ok ? estado.texto : <IonText color="danger">{estado.texto}</IonText>)}
       </p>
     </>
   );
@@ -65,6 +104,7 @@ const Perfil: React.FC = () => {
                   : 'Has entrado con tu cuenta.'}
               </p>
               <TusGustos key={usuario.id} usuario={usuario} onGuardado={actualizarUsuario} />
+              <TuEdad key={`edad-${usuario.id}`} usuario={usuario} onGuardado={actualizarUsuario} />
               <IonButton expand="block" fill="outline" onClick={salir}>
                 Cerrar sesión
               </IonButton>
