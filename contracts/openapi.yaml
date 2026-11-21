@@ -1217,6 +1217,13 @@ paths:
                   es_spam: { type: boolean }
                   motivo: { type: [string, "null"] }
                   proveedor_ia: { type: string }
+                  tipo:
+                    enum: [ninguno, spam, fraude]
+                    description: |
+                      (N9, opcional) Qué es: `spam` (publicidad ajena, apuestas, cadenas, enlaces sospechosos) o
+                      `fraude` (pide pago por adelantado, Bizum o datos bancarios, precios irreales, suplanta a un
+                      ayuntamiento o asociación…). `ninguno` si es legítimo. `es_spam` es true en los dos casos, así
+                      que quien no lea este campo sigue funcionando igual. El moderador ve el tipo en el motivo.
 
   /ai/responder-ficha:
     servers: [{ url: http://localhost:8001 }]
@@ -1245,6 +1252,67 @@ paths:
                 properties:
                   puede_responder: { type: boolean, description: false = no está en la ficha, se deriva al organizador }
                   respuesta: { type: [string, "null"] }
+                  proveedor_ia: { type: string }
+
+  /ai/sugerir-eventos:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: (N8) Propone planes nuevos a partir de los que más participación tuvieron
+      description: |
+        La llama la API (N7) con los planes con más participación (ocupación, inscritos, lista de espera, preguntas
+        en el chat). Devuelve de 1 a `maximo` propuestas para los administradores, que deciden si crean el borrador.
+        La IA solo propone y no inventa datos: cada propuesta dice en qué planes se basa (`basado_en`) y por qué.
+        IA con FreeLLM primero; sin IA, propuestas por reglas (repetir el plan que más se llenó).
+      security: [{ interno: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planes]
+              properties:
+                planes:
+                  type: array
+                  minItems: 1
+                  maxItems: 20
+                  items:
+                    type: object
+                    required: [titulo, categoria, municipio, fecha_inicio, inscritos]
+                    properties:
+                      evento_id: { type: string, format: uuid }
+                      titulo: { type: string }
+                      categoria: { $ref: "#/components/schemas/Categoria" }
+                      municipio: { type: string }
+                      fecha_inicio: { type: string, format: date-time }
+                      plazas_totales: { type: [integer, "null"], minimum: 0 }
+                      inscritos: { type: integer, minimum: 0 }
+                      lista_espera: { type: integer, minimum: 0, default: 0 }
+                      preguntas_chat: { type: integer, minimum: 0, default: 0 }
+                maximo: { type: integer, minimum: 1, maximum: 3, default: 3 }
+      responses:
+        "200":
+          description: Propuestas (puede venir vacía si nada destaca)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [propuestas]
+                properties:
+                  propuestas:
+                    type: array
+                    maxItems: 3
+                    items:
+                      type: object
+                      required: [titulo, categoria, municipio, motivo]
+                      properties:
+                        titulo: { type: string, maxLength: 120 }
+                        categoria: { $ref: "#/components/schemas/Categoria" }
+                        municipio: { type: string }
+                        fecha_aproximada: { type: [string, "null"], description: "Texto libre: «primavera», «mayo de 2027», «el próximo puente»" }
+                        motivo: { type: string, description: "Por qué, con datos de los planes recibidos (se llenó, 6 en lista de espera…)" }
+                        basado_en: { type: array, items: { type: string, format: uuid }, description: "evento_id de los planes en que se basa" }
                   proveedor_ia: { type: string }
 
   /ai/preferencias:
