@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { NOMBRE_CANAL } from '../canal';
+import { LogoInicio } from '../components/Marca';
 import SelectorLetra from '../components/SelectorLetra';
 import { useSesion } from '../cuenta/sesion';
 
@@ -33,6 +34,9 @@ const PaginaAdmin: React.FC<{
     <IonPage>
       <IonHeader>
         <IonToolbar color="secondary">
+          <IonButtons slot="start">
+            <LogoInicio destino="/admin" />
+          </IonButtons>
           <IonTitle>{titulo}</IonTitle>
           <IonButtons slot="end">{permitido && acciones}</IonButtons>
         </IonToolbar>

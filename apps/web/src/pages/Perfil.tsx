@@ -2,6 +2,7 @@ import {
   IonButton,
   IonCard,
   IonCardContent,
+  IonButtons,
   IonContent,
   IonHeader,
   IonInput,
@@ -16,6 +17,7 @@ import { useState } from 'react';
 import { actualizarPerfil } from '../api/client';
 import type { Categoria, Usuario } from '../api/types';
 import { CONTACTO_CANAL, ENLACE_CANAL, NOMBRE_CANAL } from '../canal';
+import { LogoInicio } from '../components/Marca';
 import SelectorGustos from '../components/SelectorGustos';
 import SelectorLetra from '../components/SelectorLetra';
 import { useSesion } from '../cuenta/sesion';
@@ -89,6 +91,9 @@ const Perfil: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar color="secondary">
+          <IonButtons slot="start">
+            <LogoInicio />
+          </IonButtons>
           <IonTitle>👤 Mi perfil</IonTitle>
         </IonToolbar>
       </IonHeader>

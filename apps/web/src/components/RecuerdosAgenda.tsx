@@ -10,12 +10,12 @@ import { fechaLarga } from '../utils/formato';
 
 import ComentariosRecuerdo from './ComentariosRecuerdo';
 
-const VISIBLES = 3;
 const MAXIMO = 9;
 
 /** N1: Recuerdos dentro de la agenda en pantalla grande. En el móvil siguen en su pestaña.
- * `compacto`: lista en fila (foto pequeña a la izquierda) para la columna lateral. */
+ * `compacto`: versión para la columna lateral (una columna, foto pequeña, dos visibles). */
 const RecuerdosAgenda: React.FC<{ compacto?: boolean }> = ({ compacto = false }) => {
+  const VISIBLES = compacto ? 2 : 3;
   const [planes, setPlanes] = useState<Evento[] | null>(null);
   const [todos, setTodos] = useState(false);
   const [abierto, setAbierto] = useState<Evento | null>(null);
@@ -55,7 +55,7 @@ const RecuerdosAgenda: React.FC<{ compacto?: boolean }> = ({ compacto = false })
         <h2 id="t-recuerdos-agenda" className="titulo-seccion">
           📸 Recuerdos
         </h2>
-        <p>Planes que ya pasaron: mira las fotos y deja tu comentario.</p>
+        {!compacto && <p>Planes que ya pasaron: mira las fotos y deja tu comentario.</p>}
       </div>
       <ul className="recuerdos-agenda__lista">
         {mostrados.map((e) => {

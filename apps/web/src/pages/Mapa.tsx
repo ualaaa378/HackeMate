@@ -22,6 +22,7 @@ import { Circle, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import { distanciaKm, getEventos } from '../api/client';
 import { CATEGORIAS, type Categoria, type Evento } from '../api/types';
 import FiltrosEventos from '../components/FiltrosEventos';
+import { LogoInicio } from '../components/Marca';
 import { fechaLarga, hora } from '../utils/formato';
 import { delMes, mesesConPlanes, nombreMes, proximos } from '../utils/meses';
 
@@ -86,6 +87,9 @@ const Mapa: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar color="secondary">
+          <IonButtons slot="start">
+            <LogoInicio />
+          </IonButtons>
           <IonTitle>🗺️ Mapa de planes</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={cercaDeMi} aria-label="Planes cerca de mí">

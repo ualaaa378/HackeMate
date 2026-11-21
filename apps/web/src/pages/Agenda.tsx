@@ -237,10 +237,10 @@ const Agenda: React.FC = () => {
 
         {grande ? (
           <div className="agenda-zonas">
-            <aside className="agenda-zonas__lateral" aria-label="Tus planes y sugeridos">
+            <aside className="agenda-zonas__lateral" aria-label="Tus planes, recuerdos y sugeridos">
               <TusPlanes eventos={tusPlanes} />
-              <Sugeridos usuario={usuario} proximos={todos} mios={mios} recarga={recarga} />
               <RecuerdosAgenda compacto />
+              <Sugeridos usuario={usuario} proximos={todos} mios={mios} recarga={recarga} />
             </aside>
             <div className="agenda-zonas__centro">
               <div className="inicio">
