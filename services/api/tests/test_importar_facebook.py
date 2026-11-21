@@ -181,3 +181,84 @@ def test_desde_json_procesa_los_guardados(monkeypatch, tmp_path, args, capsys):
     monkeypatch.setattr(fb, "procesar_post", lambda post, *a, **k: {"resultado": "en_revision", "titulo": post["url"]})
     assert fb.main(args + ["--json", str(ruta)]) == 0
     assert "en_revision 1" in capsys.readouterr().out
+
+
+# --- revisión periódica ---------------------------------------------------------------------------
+
+def test_guardar_conserva_la_ultima_descarga(tmp_path):
+    ruta = tmp_path / "posts.json"
+    fb.guardar_posts([POST], [PAGINA], ruta, ultima_descarga="2026-11-21T10:00:00")
+    fb.guardar_posts([], [PAGINA], ruta)  # p. ej. --desde-json no la cambia
+    assert fb.leer_json(ruta)["ultima_descarga"] == "2026-11-21T10:00:00"
+
+
+def test_desde_cuando_solo_lo_nuevo_en_la_revision_periodica(tmp_path):
+    ruta = tmp_path / "posts.json"
+    env = {"FB_DESDE": "7 days"}
+    assert fb.desde_cuando(env, ruta, solo_nuevos=True) == "7 days"  # primera vez
+    fb.guardar_posts([POST], [PAGINA], ruta, ultima_descarga="2026-11-21T10:00:00")
+    assert fb.desde_cuando(env, ruta, solo_nuevos=True) == "2026-11-21T10:00:00"
+    assert fb.desde_cuando(env, ruta, solo_nuevos=False) == "7 days"  # a mano, la ventana de siempre
+    assert fb.desde_cuando({}, tmp_path / "otro.json", solo_nuevos=False) == "30 days"
+
+
+def test_quitar_posts_que_no_son_planes(tmp_path):
+    ruta = tmp_path / "posts.json"
+    otro = {**POST, "url": POST["url"] + "0"}
+    fb.guardar_posts([POST, otro], [PAGINA], ruta, ultima_descarga="2026-11-21T10:00:00")
+    assert fb.quitar_posts({otro["url"]}, ruta) == 1
+    datos = fb.leer_json(ruta)
+    assert [p["url"] for p in datos["posts"]] == [POST["url"]]
+    assert datos["ultima_descarga"] == "2026-11-21T10:00:00"
+
+
+def test_desde_json_quita_lo_que_no_es_plan_salvo_guardar_todo(monkeypatch, tmp_path):
+    ruta = tmp_path / "posts.json"
+    otro = {**POST, "url": POST["url"] + "0"}
+    fb.guardar_posts([POST, otro], [PAGINA], ruta)
+    monkeypatch.setattr(fb, "leer_env", lambda: {})
+    resultados = {POST["url"]: "en_revision", otro["url"]: "no_es_evento"}
+    monkeypatch.setattr(fb, "procesar_post", lambda post, *a, **k: {"resultado": resultados[post["url"]]})
+    assert fb.main(["--desde-json", "--guardar-todo", "--json", str(ruta)]) == 0
+    assert len(fb.cargar_posts(ruta)) == 2
+    assert fb.main(["--desde-json", "--json", str(ruta)]) == 0
+    assert [p["url"] for p in fb.cargar_posts(ruta)] == [POST["url"]]
+
+
+def test_cada_pide_horas_positivas_y_no_va_con_desde_json():
+    with pytest.raises(SystemExit):
+        fb.main(["--cada", "0"])
+    with pytest.raises(SystemExit):
+        fb.main(["--cada", "24", "--desde-json"])
+
+
+def test_cada_repite_aunque_falle_y_pide_solo_lo_nuevo(monkeypatch, tmp_path):
+    ruta = tmp_path / "posts.json"
+    fb.guardar_posts([], [PAGINA], ruta, ultima_descarga="2026-11-21T10:00:00")
+    monkeypatch.setattr(fb, "leer_env", lambda: {"FB_SCRAPER_TOKEN": "t", "FB_PAGINAS": PAGINA["url"]})
+    monkeypatch.setattr(fb, "paginas_de_la_api", lambda *a: [])
+    pedidos = []
+
+    def descargar(paginas, token, actor, max_posts, desde):
+        pedidos.append(desde)
+        if len(pedidos) == 1:
+            raise fb.ErrorHttp(None, None, "Apify caído")  # la primera vuelta falla
+        return []
+
+    class Parar(Exception):
+        pass
+
+    esperas = []
+
+    def dormir(segundos):
+        esperas.append(segundos)
+        if len(esperas) == 2:
+            raise Parar
+
+    monkeypatch.setattr(fb, "descargar_posts", descargar)
+    monkeypatch.setattr(fb.time, "sleep", dormir)
+    with pytest.raises(Parar):
+        fb.main(["--cada", "24", "--json", str(ruta)])
+    assert esperas == [24 * 3600, 24 * 3600]
+    assert pedidos[0] == "2026-11-21T10:00:00"  # solo lo publicado desde la última descarga
+    assert pedidos[1] == "2026-11-21T10:00:00"  # la vuelta fallida no avanzó la fecha

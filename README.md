@@ -117,7 +117,7 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 | Hito | Hasta | Tarea |
 |---|---|---|
 | H2 · CP2 | sáb 13:00 | - [ ] **A1.** Arreglar lo que salga de la prueba con Docker de Adán (apartado «Flujo A» de abajo). |
-| H3 · CP3 | sáb 19:00 | - [~] **A2.** *(script hecho y probado con API y bot locales desde JSON; falta la primera descarga real: token de Apify y URL de las páginas)* **`scripts/importar_facebook.py`** (solo Python, sin Docker): 1) lanza «Facebook Posts Scraper» sobre las páginas de `FUENTES.md` (token en `.env`, por ejemplo `FB_SCRAPER_TOKEN`, y la variable en `.env.example` vacía); 2) guarda los posts en `contracts/fixtures/facebook_posts.json`; 3) por cada post llama a `bot POST /ai/extraer` con `X-Internal-Token`; 4) manda el resultado a `POST /eventos/importar` con `origen.canal="facebook"`, `origen.url` del post e `importado_auto=true`. Opción `--desde-json` para repetirlo sin red. Si el bot no responde, el post se queda en el JSON y no se inventa nada. |
+| H3 · CP3 | sáb 19:00 | - [x] **A2.** *(sáb 21/11: hecho. Primera descarga real de las 4 páginas: 20 posts guardados en `facebook_posts.json`. Revisión diaria con `--cada 24` o el servicio `ingesta` del compose, apagado por defecto)* **`scripts/importar_facebook.py`** (solo Python, sin Docker): 1) lanza «Facebook Posts Scraper» sobre las páginas de `FUENTES.md` (token en `.env`, por ejemplo `FB_SCRAPER_TOKEN`, y la variable en `.env.example` vacía); 2) guarda los posts en `contracts/fixtures/facebook_posts.json`; 3) por cada post llama a `bot POST /ai/extraer` con `X-Internal-Token`; 4) manda el resultado a `POST /eventos/importar` con `origen.canal="facebook"`, `origen.url` del post e `importado_auto=true`. Opción `--desde-json` para repetirlo sin red. Si el bot no responde, el post se queda en el JSON y no se inventa nada. |
 | H3 · CP3 | sáb 19:00 | - [ ] **A3.** Decidir **D1** con Francisco antes de que se congelen los contratos a las 19:00 (quitar o no el `required` de `telefono` en `schemas/notificacion.json` para avisar a quien solo usa Telegram). |
 | H4 · CP4 | dom 00:00 | - [ ] **A4.** `GET /estadisticas`: que el % de importadas cuente las de Facebook (ya llegan con `importado_auto`). Revisar la PR de C3 (nginx y túnel). |
 | H5 | dom 07:00 | - [ ] **A5.** Arreglos `fix/*` de los ensayos y repasar la sección del backend del README. |
@@ -151,7 +151,7 @@ Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen 
 - **Frase de portada automática:** `frase_portada` ya se guarda y se devuelve (`POST`/`PATCH /eventos`, confirmar). Si llega vacía, la API se la pedirá al bot cuando exista `POST /ai/frase` (ver flujo B); mientras, la web pone una frase fija por tipo de plan.
 - **Una propuesta de un vecino sin asociación:** entra en revisión y el moderador ve sus `datos_ayuntamiento`, pero el vecino solo los ve en la respuesta del alta (la API no guarda quién propuso el plan si no es un publicador).
 
-- **Ingesta de Facebook (A2), primera descarga real:** el script `scripts/importar_facebook.py` ya está hecho y probado sin red (`--desde-json`). Para descargar de verdad faltan dos cosas: el **token de Apify** (`FB_SCRAPER_TOKEN` en el `.env`, por privado) y las **URL de las páginas de Facebook** de los Ayuntamientos de Uleila del Campo, Lucainena de las Torres y Senés, y de Monte-Sión (`FUENTES.md` las nombra pero no da las direcciones). Lo mejor es darlas de alta como fuentes de su publicador (`POST /publicadores/{id}/fuentes`), y así cada post queda asociado a su ayuntamiento; también valen `--pagina` o `FB_PAGINAS`. **A decidir el equipo:** los ayuntamientos están en «automática», así que lo que se importe de sus páginas se publica sin pasar por el moderador (la API decide igual que con un post enviado por el bot). Si preferís que todo lo importado automáticamente pase por la bandeja, es un cambio de dos líneas en la API (`decidir_estado`), sin tocar el contrato.
+- **Ingesta de Facebook (A2): falta decidir** si lo importado de los ayuntamientos (que están en «automática») se publica directamente o pasa siempre por la bandeja. Hoy la API lo trata igual que un post enviado por el bot, así que lo de los ayuntamientos se publicaría sin revisión. Pasarlo siempre por la bandeja son dos líneas en `decidir_estado`, sin tocar el contrato. Además, los Aytos. de Uleila del Campo y Senés no están dados de alta como publicadores: sus posts llegan como «Sin publicador identificado» (van a revisión).
 - **Revisar la PR de la URL pública (C3):** Adán cambia el `nginx.conf` de la web y añade un segundo túnel en `infra/docker-compose.yml` porque Benas no puede ejecutar Docker. Como el compose es de A, la mira Benas antes de fusionarla.
 
 ### Flujos A y B · a acordar (Benas + Francisco)
@@ -311,19 +311,30 @@ Modos de publicación: solo dos, **a mano** (`nivel_confianza` 0, todo pasa por 
 
 ### Ingesta de Facebook (A2)
 
-`scripts/importar_facebook.py` (solo Python, sin Docker ni dependencias): páginas de Facebook → «Facebook Posts Scraper» (Apify) → `bot POST /ai/extraer` → `POST /eventos/importar` (origen `facebook`, URL del post, `importado_auto`) → `POST /eventos/{id}/confirmar` (la API decide: asociación «a mano» → bandeja).
+`scripts/importar_facebook.py` (solo Python, sin dependencias): páginas de Facebook → «Facebook Posts Scraper» (Apify) → `bot POST /ai/extraer` → `POST /eventos/importar` (origen `facebook`, URL del post, `importado_auto`) → `POST /eventos/{id}/confirmar` (la API decide el estado: asociación «a mano» → bandeja).
 
 ```bash
-python scripts/importar_facebook.py                    # descarga (FB_SCRAPER_TOKEN) e importa; guarda contracts/fixtures/facebook_posts.json
-python scripts/importar_facebook.py --desde-json       # repite con los posts guardados, sin red ni créditos
-python scripts/importar_facebook.py --solo-descargar   # solo guarda los posts
-python scripts/importar_facebook.py --pagina https://www.facebook.com/<pagina>   # página suelta (sin asociación: va a revisión)
+python scripts/importar_facebook.py --desde-json       # SIN token: importa los posts ya guardados (sin red ni créditos)
+python scripts/importar_facebook.py                    # descarga (FB_SCRAPER_TOKEN) e importa
+python scripts/importar_facebook.py --cada 24          # revisión diaria: se queda en marcha y solo pide los posts nuevos
+python scripts/importar_facebook.py --solo-descargar   # solo guarda los posts, no importa
+python scripts/importar_facebook.py --pagina https://www.facebook.com/<pagina>   # página suelta
 ```
 
-- Páginas: las fuentes de Facebook activas de los publicadores aprobados (así el post queda asociado) más `--pagina` y `FB_PAGINAS`.
-- Del post solo se guarda la URL, la página, la fecha, el texto y el texto de las fotos (carteles); nada de comentarios ni de quién reacciona.
-- La fecha de publicación va al final del texto para que la IA entienda «este sábado». Si el bot no responde, el post queda guardado y no se crea nada; si falta la fecha, el evento se queda en `pendiente_confirmacion`. Volver a ejecutarlo no duplica: la API reconoce la URL del post.
-- Resultado por post: `publicado`, `en_revision`, `pendiente`, `duplicado`, `no_es_evento` o `error`, y un resumen final.
+- **Qué páginas:** las fuentes de Facebook activas de los publicadores aprobados (así el post queda asociado) más `--pagina` y `FB_PAGINAS`. En `.env.example` ya están las 4 con actividad en 2026: Aytos. de Uleila del Campo, Lucainena de las Torres y Senés, y Monte-Sión.
+- **Qué se guarda:** `contracts/fixtures/facebook_posts.json` (en git) con solo la URL, la página, la fecha, el texto y el texto de las fotos. Tras importar se **quitan los posts que la IA dice que no son planes** (pésames, avisos de obras…), para no guardar datos personales; `--guardar-todo` los deja.
+- **Solo lo nuevo:** el JSON apunta `ultima_descarga` y la revisión periódica pide a Apify solo lo publicado desde entonces (Apify cobra por post devuelto). A mano, la ventana es `FB_DESDE` (30 días).
+- **Sin inventar nada:** si el bot no responde, el post queda guardado y no se crea nada; si falta la fecha, el evento queda en `pendiente_confirmacion`. Repetirlo no duplica: la API reconoce la URL del post. La fecha de publicación va al final del texto para que la IA entienda «este sábado».
+- **Calidad:** sin IA (solo reglas) se cuelan avisos que no son planes y faltan categorías; con Gemini o NIM (tarea B2) sale mucho mejor. En la primera descarga (21/11, solo reglas) salieron 30 posts, 26 con texto, 20 guardados.
+
+**Revisión diaria (una vez al día)**, solo en la máquina de la demo, que es la que tiene el token:
+- Con Docker: el servicio `ingesta` del compose, **apagado por defecto** para no gastar crédito sin querer. Encenderlo:
+  `docker compose -f infra/docker-compose.yml --profile ingesta up -d ingesta` (y `logs -f ingesta` para ver cada revisión).
+- Sin Docker (Windows): una tarea diaria en el Programador de tareas, por ejemplo a las 8:00, con la API y el bot en marcha:
+  `schtasks /Create /SC DAILY /ST 08:00 /TN HackeMateFacebook /TR "python C:\ruta\HackeMate\scripts\importar_facebook.py"`
+  (cada ejecución a mano pide los últimos `FB_DESDE`; los repetidos no se duplican en la base).
+
+**¿Quién necesita el token de Apify (`FB_SCRAPER_TOKEN`)?** Solo la máquina que descarga (la de la demo). El resto del equipo importa los posts del JSON que hay en git con `--desde-json`, sin token. Se pasa por privado, nunca en `*.example` ni en el grupo; el plan gratuito da unos 5 $ al mes y la revisión diaria de 4 páginas gasta céntimos.
 
 ### Tests y smoke test
 

@@ -5,10 +5,11 @@
     python scripts/importar_facebook.py --desde-json             # repite con los posts guardados (sin red ni créditos)
     python scripts/importar_facebook.py --solo-descargar         # solo guarda los posts, no importa nada
     python scripts/importar_facebook.py --sin-confirmar          # deja los eventos en pendiente_confirmacion
+    python scripts/importar_facebook.py --cada 24                # revisión diaria: solo los posts nuevos
 
 Recorrido de cada post:
 1. «Facebook Posts Scraper» (actor de Apify) devuelve los posts públicos de cada página. Se guardan en
-   contracts/fixtures/facebook_posts.json solo con lo necesario (url, página, fecha, texto y el texto que
+   contracts/fixtures/facebook_posts.json (después se quitan los que no son planes) solo con lo necesario (url, página, fecha, texto y el texto que
    Facebook lee en las fotos); nada de comentarios, reacciones ni datos de quien comenta.
 2. `bot POST /ai/extraer` (la IA de Francisco) decide si es un plan y saca la ficha. El script no habla con
    ninguna IA: si el bot no responde, el post se queda guardado y no se inventa nada.
@@ -21,7 +22,8 @@ Configuración (entorno o .env de la raíz; las claves nunca en *.example):
   FB_SCRAPER_TOKEN   token de Apify. Sin él solo funciona --desde-json.
   FB_SCRAPER_ACTOR   actor (por defecto apify~facebook-posts-scraper).
   FB_PAGINAS         URLs de páginas separadas por comas (además de las fuentes de la API).
-  FB_MAX_POSTS       posts por página (por defecto 10).  FB_DESDE  antigüedad máxima (por defecto «30 days»).
+  FB_MAX_POSTS       posts por página (por defecto 10).  FB_DESDE  antigüedad máxima (por defecto «30 days»);
+                     en la revisión periódica solo se piden los posts desde la última descarga (ultima_descarga).
   API_URL, BOT_URL, INTERNAL_TOKEN  como el resto del proyecto (los nombres de Docker se cambian por localhost).
 """
 
@@ -31,6 +33,7 @@ import argparse
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -171,24 +174,50 @@ def resumir_post(item: dict, paginas: list[dict[str, str]]) -> dict | None:
     }
 
 
-def guardar_posts(posts: list[dict], paginas: list[dict[str, str]], ruta: Path = JSON_POSTS) -> None:
-    """Junta con lo ya guardado (por URL) para que --desde-json repita también descargas anteriores."""
+def leer_json(ruta: Path = JSON_POSTS) -> dict:
+    return json.loads(ruta.read_text(encoding="utf-8")) if ruta.is_file() else {}
+
+
+def guardar_posts(posts: list[dict], paginas: list[dict[str, str]], ruta: Path = JSON_POSTS,
+                  ultima_descarga: str | None = None) -> None:
+    """Junta con lo ya guardado (por URL) para que --desde-json repita también descargas anteriores.
+    `ultima_descarga` (UTC) es desde cuándo pedirá posts la siguiente revisión periódica."""
+    previo = leer_json(ruta)
     anteriores = {p["url"]: p for p in cargar_posts(ruta)} if ruta.is_file() else {}
     anteriores.update({p["url"]: p for p in posts})
+    paginas_todas = {p["url"] for p in paginas} | {p.get("pagina_url") for p in anteriores.values()}
+    paginas_todas |= set(previo.get("paginas", []))
     contenido = {
-        "descripcion": "Posts públicos de Facebook de las páginas de los pueblos, descargados con "
-                       "scripts/importar_facebook.py (Facebook Posts Scraper). Solo url, página, fecha, texto y "
-                       "texto de las fotos. Se reimportan sin red con --desde-json.",
+        "descripcion": "Posts públicos de Facebook de las páginas de los pueblos que la IA reconoce como planes, "
+                       "descargados con scripts/importar_facebook.py (Facebook Posts Scraper). Solo url, página, "
+                       "fecha, texto y texto de las fotos. Se reimportan sin red con --desde-json.",
         "actualizado_en": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "paginas": sorted({p["url"] for p in paginas} | {p.get("pagina_url") for p in anteriores.values()} - {None}),
+        "ultima_descarga": ultima_descarga or previo.get("ultima_descarga"),
+        "paginas": sorted(paginas_todas - {None}),
         "posts": sorted(anteriores.values(), key=lambda p: p.get("fecha") or "", reverse=True),
     }
     ruta.write_text(json.dumps(contenido, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def quitar_posts(urls: set[str], ruta: Path = JSON_POSTS) -> int:
+    """Borra del JSON los posts que no son planes: no hace falta guardarlos (ni sus datos personales)."""
+    datos = leer_json(ruta)
+    antes = len(datos.get("posts", []))
+    datos["posts"] = [p for p in datos.get("posts", []) if p["url"] not in urls]
+    ruta.write_text(json.dumps(datos, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return antes - len(datos["posts"])
+
+
 def cargar_posts(ruta: Path = JSON_POSTS) -> list[dict]:
-    posts = json.loads(ruta.read_text(encoding="utf-8")).get("posts", [])
+    posts = leer_json(ruta).get("posts", [])
     return [{**p, "pagina": nombre_pagina(p.get("pagina"))} for p in posts]
+
+
+def desde_cuando(env: dict[str, str], ruta: Path, solo_nuevos: bool) -> str:
+    """Revisión periódica: solo lo publicado desde la última descarga (Apify cobra por post devuelto).
+    Si no hay ninguna anterior, o a mano, FB_DESDE (por defecto «30 days»)."""
+    ultima = leer_json(ruta).get("ultima_descarga") if solo_nuevos else None
+    return ultima or env.get("FB_DESDE", "30 days")
 
 
 # ---------- 2-4. IA del bot, importar y confirmar ----------
@@ -253,20 +282,10 @@ def procesar_post(post: dict, api_url: str, bot_url: str, token: str, confirmar:
 
 # ---------- programa ----------
 
-def main(argv: list[str] | None = None) -> int:
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
-    parser = argparse.ArgumentParser(description="Importa planes desde las páginas de Facebook de los pueblos.")
-    parser.add_argument("--pagina", action="append", default=[], help="URL de una página (se puede repetir)")
-    parser.add_argument("--desde-json", action="store_true", help="usa los posts guardados, sin descargar")
-    parser.add_argument("--solo-descargar", action="store_true", help="descarga y guarda, sin importar")
-    parser.add_argument("--sin-confirmar", action="store_true", help="deja los eventos en pendiente_confirmacion")
-    parser.add_argument("--json", type=Path, default=JSON_POSTS, help="fichero de posts (por defecto el fixture)")
-    args = parser.parse_args(argv)
-
-    env = leer_env()
-    api_url = url_local(env.get("API_URL"), "http://localhost:8000")
-    bot_url = url_local(env.get("BOT_URL"), "http://localhost:8001")
+def ejecutar(args: argparse.Namespace, env: dict[str, str]) -> int:
+    """Una revisión completa. Devuelve el código de salida (0 bien, 1 fallo, 2 falta configuración)."""
+    api_url = args.api_url or url_local(env.get("API_URL"), "http://localhost:8000")
+    bot_url = args.bot_url or url_local(env.get("BOT_URL"), "http://localhost:8001")
     token = env.get("INTERNAL_TOKEN", "cambia-esto")
 
     if args.desde_json:
@@ -291,32 +310,74 @@ def main(argv: list[str] | None = None) -> int:
             print("ERROR: no hay páginas. Da de alta fuentes de Facebook en la API, usa --pagina o FB_PAGINAS.",
                   file=sys.stderr)
             return 2
-        print(f"==> Descargando de {len(paginas)} páginas con {env.get('FB_SCRAPER_ACTOR', 'apify~facebook-posts-scraper')}…")
+        actor = env.get("FB_SCRAPER_ACTOR", "apify~facebook-posts-scraper")
+        desde = desde_cuando(env, args.json, solo_nuevos=args.cada is not None)
+        inicio = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+        print(f"==> Descargando de {len(paginas)} páginas con {actor} (posts desde {desde})…")
         try:
-            items = descargar_posts(paginas, scraper_token, env.get("FB_SCRAPER_ACTOR", "apify~facebook-posts-scraper"),
-                                    int(env.get("FB_MAX_POSTS", "10")), env.get("FB_DESDE", "30 days"))
+            items = descargar_posts(paginas, scraper_token, actor, int(env.get("FB_MAX_POSTS", "10")), desde)
         except ErrorHttp as e:
             print(f"ERROR del scraper: {e} {e.cuerpo or ''}", file=sys.stderr)
             return 1
         posts = [p for p in (resumir_post(i, paginas) for i in items) if p]
-        guardar_posts(posts, paginas, args.json)
+        guardar_posts(posts, paginas, args.json, ultima_descarga=inicio)
         print(f"==> {len(items)} posts descargados, {len(posts)} con texto. Guardados en {args.json}")
         if args.solo_descargar:
             return 0
 
     resumen: dict[str, int] = {}
     errores = 0
+    no_son_planes: set[str] = set()
     for post in posts:
         r = procesar_post(post, api_url, bot_url, token, confirmar=not args.sin_confirmar)
         resumen[r["resultado"]] = resumen.get(r["resultado"], 0) + 1
         errores += r["resultado"] == "error"
+        if r["resultado"] == "no_es_evento":
+            no_son_planes.add(post["url"])
         titulo = r.get("titulo") or (post.get("texto") or "")[:60].replace("\n", " ")
         extra = r.get("motivo") or (", ".join(r["faltan"]) if r.get("faltan") else "") or r.get("paso") or ""
         print(f"  [{r['resultado']:>13}] {titulo}" + (f"  ({extra})" if extra else ""))
         if r["resultado"] == "error":
             print(f"                  {r.get('detalle')}")
-    print("==> Resumen: " + ", ".join(f"{k} {v}" for k, v in sorted(resumen.items())) if resumen else "==> Nada que importar")
+    if resumen:
+        print("==> Resumen: " + ", ".join(f"{k} {v}" for k, v in sorted(resumen.items())))
+    else:
+        print("==> Nada que importar")
+    if no_son_planes and not args.guardar_todo:
+        print(f"==> {quitar_posts(no_son_planes, args.json)} posts que no son planes quitados de {args.json.name}")
     return 1 if errores and errores == len(posts) else 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    parser = argparse.ArgumentParser(description="Importa planes desde las páginas de Facebook de los pueblos.")
+    parser.add_argument("--pagina", action="append", default=[], help="URL de una página (se puede repetir)")
+    parser.add_argument("--desde-json", action="store_true", help="usa los posts guardados, sin descargar")
+    parser.add_argument("--solo-descargar", action="store_true", help="descarga y guarda, sin importar")
+    parser.add_argument("--sin-confirmar", action="store_true", help="deja los eventos en pendiente_confirmacion")
+    parser.add_argument("--guardar-todo", action="store_true", help="no quita del JSON los posts que no son planes")
+    parser.add_argument("--cada", type=float, metavar="HORAS",
+                        help="revisión periódica: se queda en marcha y repite cada HORAS, solo con los posts nuevos")
+    parser.add_argument("--api-url", help="URL de la API (por defecto API_URL; en Docker, http://api:8000)")
+    parser.add_argument("--bot-url", help="URL del bot (por defecto BOT_URL; en Docker, http://bot:8001)")
+    parser.add_argument("--json", type=Path, default=JSON_POSTS, help="fichero de posts (por defecto el fixture)")
+    args = parser.parse_args(argv)
+
+    if args.cada is None:
+        return ejecutar(args, leer_env())
+    if args.desde_json or args.cada <= 0:
+        parser.error("--cada necesita un número de horas positivo y no se combina con --desde-json")
+    while True:  # revisión periódica: un fallo no la para, se reintenta en la siguiente vuelta
+        print(f"\n==> Revisión del {datetime.now().strftime('%d/%m %H:%M')}", flush=True)
+        try:
+            codigo = ejecutar(args, leer_env())
+            if codigo == 2:
+                return codigo  # falta configuración: repetir no lo arregla
+        except Exception as e:  # noqa: BLE001
+            print(f"ERROR inesperado: {e!r}", file=sys.stderr)
+        print(f"==> Siguiente revisión en {args.cada:g} h", flush=True)
+        time.sleep(args.cada * 3600)
 
 
 if __name__ == "__main__":
