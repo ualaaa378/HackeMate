@@ -74,6 +74,76 @@ Revisado el 21/11/2026 a las 11:00. Todo esto ya lo usa la app web (flujo C) o e
 
 > **Regla del equipo (ver `CLAUDE.md`):** cada flujo apunta aquí, bajo el flujo responsable, lo que necesita de los demás. Antes de empezar una tarea, revisa tu apartado.
 
+### 🚨 PRIORIDAD (sáb 21/11, 13:30): la app fuera de `localhost` y la app móvil
+
+Acordado tras la prueba completa en el portátil de Francisco (todo en Docker, bot por Telegram real). **Esto va antes que cualquier otra tarea del reparto.** Para los tres y para vuestros Claudes: leed el apartado entero; cada uno marca `[x]` en el mismo commit en que termina.
+
+**Por qué:** hoy todo funciona, pero **solo en el portátil donde corre Docker**. Desde el móvil del jurado o desde un APK:
+- la web lleva `VITE_API_URL=http://localhost:8000` incrustado en el build, así que no encuentra la API y **cae a los mocks** sin avisar;
+- el túnel (`tunnel` en `infra/docker-compose.yml`) solo expone el bot, y su URL **cambia cada vez que se reinicia**;
+- los enlaces que manda el bot (`WEB_URL`) apuntan a `http://localhost:8080`;
+- no hay proyecto Android (`apps/web/android` no existe ni está `@capacitor/android`).
+
+**La solución, en una línea:** una sola URL pública, `https://<algo>.trycloudflare.com`, que entra por el `nginx` de la web y reparte: `/` → la web, `/api/` → `api:8000`, `/webhook/` → `bot:8001`. La web llama a la API en su mismo dominio (sin CORS ni `localhost`), Telegram entra por la misma URL y el APK apunta a ella.
+
+```
+móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──> túnel ──> web:8080 (nginx)
+                                                                                 ├── /          → la web (estáticos)
+                                                                                 ├── /api/      → api:8000
+                                                                                 └── /webhook/  → bot:8001
+```
+
+**✅ Decisión D3 (sáb 21/11, Francisco): el túnel rápido de Cloudflare que ya usamos.** Criterio: gratis **y sin restricciones que afecten a la demo**. Revisado en la documentación oficial:
+
+| Opción | Gratis | Por qué sí / por qué no |
+|---|---|---|
+| **Cloudflare, túnel rápido** (`trycloudflare.com`, el de ahora) | ✅ sin cuenta | **Elegida.** Sin página de aviso, sin cuota de datos. Límites: 200 peticiones a la vez (nos sobra), sin garantía de disponibilidad, sin SSE (no lo usamos) y **la URL cambia cada vez que se reinicia el túnel**: las tareas de abajo lo resuelven. |
+| ngrok, plan gratuito | ✅ con cuenta | **Descartada:** enseña una página de aviso a cada navegador nuevo y tiene 1 GB de datos al mes y cuotas mensuales. |
+| Tailscale Funnel | ✅ con cuenta | **Descartada:** está en beta, tiene límites de ancho de banda que no publican y hay que instalar Tailscale en la máquina de la demo. |
+| Cloudflare, túnel con nombre | ✅ | **Descartada:** URL fija y sin límites, pero necesita un dominio propio, y no compramos nada. |
+
+**Regla de la URL que cambia:** el túnel solo se reinicia si hace falta. Cada vez que cambie, se ejecuta el script de F1 (actualiza el webhook y los enlaces del bot) y, en el APK, se cambia la dirección en sus ajustes (C9), sin reinstalar.
+
+**Orden:** F1 y C8 (a la vez) → A6 → C9 → T1 y T2 (los tres). Fecha límite: **web fuera de localhost a las 19:00 (CP3)** y **APK a las 00:00 (CP4)**. Si el APK no sale a las 23:00, la app móvil de la demo es la **PWA instalada** desde la URL pública (C4).
+
+*Fuentes de la decisión D3: [límites del túnel rápido de Cloudflare](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/), [límites del plan gratuito de ngrok](https://ngrok.com/docs/pricing-limits/free-plan-limits), [Tailscale Funnel](https://tailscale.com/kb/1223/tailscale-funnel).*
+
+**Francisco (flujo B) · máquina de la demo, URL pública y bot**
+
+| Hito | Hasta | Tarea |
+|---|---|---|
+| H3 · CP3 | sáb 13:30 | - [x] **D3.** URL pública: túnel rápido de Cloudflare (decidido arriba). |
+| H3 · CP3 | sáb 19:00 | - [ ] **F1.** Script `scripts/url_publica.ps1` (y `.sh`) para la máquina de la demo (su portátil): lee la URL del túnel de `docker compose … logs tunnel`, la escribe en el `.env` como `PUBLIC_URL` y `WEB_URL`, vuelve a registrar el webhook de Telegram (`POST /admin/webhook-telegram`) y recrea el bot para que los enlaces de las fichas usen la URL nueva. Lo escribe en pantalla para pasarla al grupo y al APK. Comprobar que Telegram entra por la URL nueva. |
+| H3 · CP3 | sáb 19:00 | - [ ] **F2.** Que el bot no dependa de `localhost` en nada que vea el usuario: enlaces de ficha, botones «Más info» y avisos. Probarlo con el móvil **con datos, sin wifi**. |
+| H4 · CP4 | dom 00:00 | - [ ] **T1** (con todos). Ver abajo. |
+
+**Adán (flujo C) · web detrás del proxy y APK**
+
+| Hito | Hasta | Tarea |
+|---|---|---|
+| H3 · CP3 | sáb 19:00 | - [ ] **C8** (sustituye a C3). `apps/web/nginx.conf`: `location /api/ { proxy_pass http://api:8000; }` y `location /webhook/ { proxy_pass http://bot:8001; }`, con `proxy_set_header Host`, `X-Forwarded-For` y `X-Forwarded-Proto`. `apps/web/src/api/client.ts`: que la web pueda llamar a la API **en su mismo dominio**. Hoy `VITE_API_URL` vacío significa «mocks», así que hace falta un valor explícito (p. ej. `VITE_API_URL=/` → rutas relativas `/api/v1/…`) sin romper los tests. Build de Docker con ese valor por defecto. |
+| H3 · CP3 | sáb 19:00 | - [ ] **C8b.** `infra/docker-compose.yml` (PR que revisa Benas): el servicio `tunnel` apunta a `web:8080` en vez de a `bot:8001` (sigue siendo el túnel rápido, sin cuenta). La web `depends_on` de `api` y `bot` para que el proxy los encuentre. |
+| H4 · CP4 | dom 00:00 | - [ ] **C9** (sustituye a C5). APK de debug: `npm i @capacitor/android`, `npx cap add android`, `capacitor.config.ts` con `appId: 'es.hackemate.app'` y `appName: 'HackeMate'`. Como la URL del túnel cambia al reiniciar, **la app no la lleva fija**: una pantalla de ajustes («Dirección del servidor») la guarda en el móvil, con la del build como valor por defecto, y la API se llama con esa dirección. Si el túnel cambia, se pega la nueva ahí, sin reinstalar. Hace falta Android Studio con JDK 21 en su portátil. Instalarlo en un móvil real con datos y probar agenda, ficha, inscripción y chat. El `.apk` va a `C:\Users\aalva\Desktop\Hackaton`. |
+| H4 · CP4 | dom 00:00 | - [ ] **C4** (plan B del APK, ya estaba). PWA instalable desde la URL pública: service worker e icono. |
+
+**Benas (flujo A) · API detrás del proxy, revisión de infra**
+
+| Hito | Hasta | Tarea |
+|---|---|---|
+| H3 · CP3 | sáb 19:00 | - [ ] **A6.** API lista para servirse detrás de `nginx` y desde el APK: añadir a `CORS_ORIGENES` (`.env.example` y valor por defecto) los orígenes de Capacitor, `https://localhost` y `capacitor://localhost` (la web pública no lo necesita: va por el mismo dominio); `uvicorn` con `--proxy-headers --forwarded-allow-ips='*'` en el `Dockerfile` para que vea `https`; revisar que ninguna respuesta lleve URLs absolutas a `localhost` (`.ics`, imágenes, enlaces). Tests sin Docker. |
+| H3 · CP3 | sáb 19:00 | - [ ] **A7.** Revisar y fusionar la PR de C8b (el compose es de A). Actualizar en el README y en `CLAUDE.md` cómo se arranca con la URL pública. |
+| H4 · CP4 | dom 00:00 | - [ ] **T1** (con todos). Ver abajo. |
+
+**Los tres · prueba de verdad desde fuera**
+
+- [ ] **T1** (dom 00:00). Con la máquina de la demo encendida y **los tres móviles con datos (sin el wifi de la universidad)**: abrir la URL pública, agenda con datos reales (no los mocks), ficha, inscripción, chat, `/admin` (aprobar y rechazar), los 7 pasos del guion por Telegram y el APK instalado. Apuntar lo que falle en el apartado del flujo que lo tiene que arreglar.
+- [ ] **T2** (dom 00:00). Reinicio en frío: `docker compose --env-file .env -f infra/docker-compose.yml down` y `up -d`, el script de F1, y comprobar que Telegram, los enlaces del bot y la web funcionan con la URL nueva, y que el APK vuelve a funcionar cambiando solo la dirección en sus ajustes. Cronometrarlo: es lo que habría que hacer si algo se cae en mitad de la demo.
+
+**Avisos que ya sabemos:**
+- La red de la universidad (Fortinet) bloquea `npm`: para construir la imagen `web` o el APK hay que usar los datos del móvil.
+- El bot de Telegram solo puede estar en **una** máquina: la que tenga `PUBLIC_URL`. Las demás, vacío.
+- Las claves (Telegram, FreeLLMAPI, Apify) van por privado y solo en `.env`, nunca en `*.example`, ni en el grupo, ni en `capacitor.config.ts`.
+
 ### 📋 Reparto del sábado 21/11 (11:00) · hasta la entrega
 
 Acordado por Adán el sábado a las 11:00, después de revisar todo `develop` (tras las PR #41, #43 y #44). **Para los tres y para vuestros Claudes:** antes de empezar, leed este apartado entero y vuestra parte. Cada uno marca `[x]` en el mismo commit en que termina la tarea y apunta los fallos que encuentre en el apartado del flujo que los tiene que arreglar (más abajo), con el formato de `docs/SINCRONIZACION_SABADO.md` §3.
@@ -112,10 +182,10 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 |---|---|---|
 | H2 · CP2 | sáb 13:00 | - [ ] **C1.** *(sáb 11:30: Docker, smoke test, guion por chat y `/admin` en verde con `CANAL=console`; falta Telegram.)* `docker compose --env-file .env -f infra/docker-compose.yml down -v`, `up --build`, `scripts/smoke_test.sh` en verde y pasos 1–3 con Telegram (`DEMO_MODE=true`). Rellenar la columna «Docker + Telegram» de `SINCRONIZACION_SABADO.md` §5. Si sale bien, etiqueta `v0.2`. |
 | H3 · CP3 | sáb 19:00 | - [ ] **C2.** «Para ti» en la agenda con `GET /recomendaciones` y el motivo legible (Carmen ve la II Ruta Solidaria la primera). |
-| H3 · CP3 | sáb 19:00 | - [ ] **C3.** **URL pública de la web:** que el `nginx.conf` de la web pase `/api/` a `api:8000`, que la web use una URL relativa (`VITE_API_URL` vacío) y un segundo túnel a `web:8080`. Es infra de A: lo hace Adán porque Benas no puede ejecutar Docker, en una PR que mira Benas. |
+| H3 · CP3 | sáb 19:00 | - [-] **C3.** *(sustituida por C8 y C8b en «🚨 PRIORIDAD», arriba)* **URL pública de la web:** que el `nginx.conf` de la web pase `/api/` a `api:8000`, que la web use una URL relativa (`VITE_API_URL` vacío) y un segundo túnel a `web:8080`. Es infra de A: lo hace Adán porque Benas no puede ejecutar Docker, en una PR que mira Benas. |
 | H3 · CP3 | sáb 19:00 | - [ ] **C4.** PWA instalable: service worker e icono (el `manifest.json` ya existe). |
 | H3 | — | - [-] **Login con Google: recortado.** En la demo se entra con el modo demo (`/auth/demo`). El código por Telegram, solo si sobra tiempo (D2). |
-| H4 · CP4 | dom 00:00 | - [ ] **C5.** APK de debug con Capacitor que apunta a la URL de C3. Si en 30 min no sale, la demo va con la PWA instalada. |
+| H4 · CP4 | dom 00:00 | - [-] **C5.** *(sustituida por C9 en «🚨 PRIORIDAD», arriba)* APK de debug con Capacitor que apunta a la URL de C3. Si en 30 min no sale, la demo va con la PWA instalada. |
 | H4 · CP4 | dom 00:00 | - [ ] **C6.** Panel: % de eventos importados de Facebook y coste en tokens con NIM incluido (cuando A2 y B2 estén). Accesibilidad: teclado y letra grande en agenda y ficha. |
 | H5 | dom 07:00 | - [ ] **C7.** Vídeo de respaldo, sección de la web en el README con capturas, dos ensayos seguidos del guion y `v1.0` en `main`. |
 
