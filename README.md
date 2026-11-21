@@ -81,6 +81,26 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 
 > **Regla del equipo (ver `CLAUDE.md`):** cada flujo apunta aquí, bajo el flujo responsable, lo que necesita de los demás, y lo borra al resolverlo. Cada uno marca `[x]` en el mismo commit en que termina. Mientras algo falte, la web cae a mocks y el bot guarda en cola: nada se rompe. Formato de los hallazgos: `docs/SINCRONIZACION_SABADO.md` §3.
 
+### 🧭 Orden de trabajo de hoy (Adán, sáb 21/11 17:00)
+
+**Primero lo establecido y después lo nuevo.** Hasta las 19:00 (CP3) cada uno cierra lo que ya tiene en su tabla. Después, hasta el freeze de las 00:00, el orden es este: 1) lo que queda de la demo (C9 APK o C4 PWA, C6, C10, A8, A10, T1 y T2) y 2) las tareas **N** de abajo. Lo que a las 00:00 no esté, se queda fuera: entre una funcionalidad pulida y dos que funcionan, elegimos las dos.
+
+**Única excepción:** los cambios de contrato de las tareas N (N7 y N9) se proponen **antes de las 19:00**, porque después el contrato queda congelado. Solo se añaden campos o rutas opcionales, con `contract-change`. El código va después.
+
+**IA de las tareas nuevas: siempre FreeLLM primero.** Cada tarea lleva su propia cadena (`freellm,nim,gemini,reglas`), sin cambiar la `LLM_CADENA` general, y si no hay IA cae a reglas. La IA propone y una persona decide.
+
+| Orden | Quién | Tarea nueva (después de lo establecido, antes de las 00:00) |
+|---|---|---|
+| N1 | Adán (C) | **Agenda en tres zonas.** En el centro, la agenda con **Recuerdos** integrado (los planes pasados dejan de ser una pestaña aparte). A la izquierda, **tus planes** (solo si estás inscrito en alguno) y debajo **sugeridos para ti**: «Para ti» (C2), con tus gustos y los planes parecidos a los que ya fuiste. En el móvil, todo apilado: tus planes, sugeridos y agenda. |
+| N2 | Adán (C) | **Fondo con vida.** Un mosaico o dibujo suave en SVG en línea (azulejo, monte, olivo), que no baje el contraste del texto y que se vea bien en claro y oscuro. |
+| N3 | Adán (C) | **Mapa solo con próximos.** Los planes pasados desaparecen del mapa, con un filtro por meses (este mes, el que viene, etc.). |
+| N4 | Adán (C) | **Gustos al crear el perfil, opcionales:** 🥾 Deportiva · 🎭 Cultural · 🎉 Fiestas · 🍽 Gastronomía · 🎲 Lúdica · 🛍 Comercio. El contrato ya tiene `usuario.gustos` con estos seis valores: `PATCH /usuarios/me`. Se puede saltar. |
+| N5 | Adán (C) + Benas (A) | **Revisar el panel de control.** Lista de cada botón y cifra del panel: si funciona, si no hace nada o si no tiene sentido. Se arregla lo que lo necesita para la demo y se quita lo que no aporta. Lo que falte de la API va al apartado de Benas. |
+| N6 | Benas (A) | **Plazas libres reales.** `plazas_libres = plazas_totales − inscritos en nuestra plataforma`. Los inscritos inventados de los fixtures ya no cuentan: el seed y una migración recalculan el contador a partir de las inscripciones de la base. Sin cambio de contrato. *Pendiente de Adán: si los que se apuntan por el bot también cuentan (propuesta: sí, porque son inscripciones de la app).* |
+| N7 | Benas (A) | **IA que sugiere planes a los administradores.** Detecta los planes con mucha participación (ocupación, inscritos, lista de espera y preguntas en el chat) y pide al bot una propuesta («repetir la Ruta Solidaria en primavera: se llenó y hubo 6 en lista de espera»). Ruta nueva en el contrato antes de las 19:00 (p. ej. `GET /admin/sugerencias`). La web la enseña en el panel (N5) con [Crear borrador] [Descartar]. |
+| N8 | Francisco (B) | **`POST /ai/sugerir-eventos`** para N7, con FreeLLM primero. Recibe los planes con más participación y devuelve 1 a 3 propuestas (título, categoría, pueblo, fecha aproximada y por qué) sin inventar datos. |
+| N9 | Francisco (B) | **Filtro de spam y fraude con IA.** `/ai/spam` ya existe (primero reglas y, si dudan, IA). Hay que poner FreeLLM primero, añadir señales de **fraude** (pago por adelantado, Bizum o datos bancarios, precios irreales, enlaces de fuera, suplantación de un ayuntamiento) y devolver el tipo (`spam` o `fraude`) en un campo opcional del contrato antes de las 19:00. Probarlo con los posts reales de `facebook_posts.json` y con dos de fraude inventados para la demo. Solo si sobra tiempo: un clasificador local tipo SBERT, como en los cuadernos del curso. |
+
 ### Adán (flujo C) · web, APK y entrega
 
 | Hasta | Tarea |
