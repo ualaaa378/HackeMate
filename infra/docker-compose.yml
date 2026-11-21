@@ -117,7 +117,11 @@ services:
     #   docker compose --env-file .env -f infra/docker-compose.yml logs tunnel
     # y hay que pasarla a PUBLIC_URL y WEB_URL del .env y volver a registrar el webhook (script de F1).
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate --url http://web:8080
+    # Con CLOUDFLARE_TUNNEL_TOKEN en el .env (solo en la máquina de la demo): túnel con nombre y URL FIJA
+    # (p. ej. https://hackemate.rompelab.com, el «Public hostname» apunta a http://web:8080 en el panel de
+    # Cloudflare); PUBLIC_URL y WEB_URL del .env van con esa URL y url_publica.py ya no hace falta.
+    # Sin token: túnel rápido como antes. http2 (TCP 443): por si la red bloquea QUIC (UDP).
+    command: tunnel --no-autoupdate --protocol http2 ${CLOUDFLARE_TUNNEL_TOKEN:+run --token} ${CLOUDFLARE_TUNNEL_TOKEN:---url http://web:8080}
     restart: unless-stopped
     depends_on:
       web:
