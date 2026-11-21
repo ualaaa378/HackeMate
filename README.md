@@ -91,6 +91,7 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 | dom 00:00 | - [ ] **C9.** APK de debug con Capacitor (`@capacitor/android`, `appId: 'es.hackemate.app'`), con pantalla de ajustes «Dirección del servidor» para pegar la URL nueva del túnel sin reinstalar. Android Studio + JDK 21. El `.apk` va a `C:\Users\aalva\Desktop\Hackaton`. Si a las 23:00 no sale, plan B = C4. |
 | dom 00:00 | - [ ] **C4.** PWA instalable: service worker e icono (el `manifest.json` ya existe). **Sin caché de `/api/`**, solo estáticos. |
 | dom 00:00 | - [ ] **C6.** Panel: % de importados de Facebook y coste en tokens con NIM. Accesibilidad: teclado y letra grande en agenda y ficha. |
+| dom 00:00 | - [ ] **C10 (D2).** Entrar con el código: la web pide el número y llama a `POST /auth/whatsapp/codigo`. Si responde `enviado: false` (aún no ha hablado con el bot), enseña el botón «Abrir el bot» → `https://t.me/HackeMate_bot?start=codigo` y, al volver, «Pedir el código otra vez». Luego `POST /auth/whatsapp/verificar`. |
 | dom 07:00 | - [ ] **C7.** Vídeo de respaldo, sección web del README con capturas, dos ensayos seguidos del guion y `v1.0` en `main`. |
 
 Opcional (lo pide el bot, plan C de la demo): un chat simulado en la web que llame a `bot POST /dev/mensaje`.
@@ -100,6 +101,9 @@ Opcional (lo pide el bot, plan C de la demo): un chat simulado en la web que lla
 | Hasta | Tarea |
 |---|---|
 | dom 00:00 | - [x] **A4.** `GET /estadisticas`: que el % de importadas cuente las de Facebook (llegan con `importado_auto`). *(sáb 21/11: ya lo hacía, ahora con test de punta a punta. `pct_importadas_auto` = planes `publicado`/`finalizado` que llegaron solos (Facebook, Instagram, web externa) sobre el total del periodo. Lo de Telegram, la web y el panel no cuenta como importado. Un post de Facebook que va a la bandeja cuenta cuando el moderador lo aprueba. **Adán (C6):** basta con pintar `pct_importadas_auto`; no hace falta cambiar el contrato.)* |
+| sáb 19:00 | - [ ] **A9 (D1, contrato).** `schemas/notificacion.json`: `telefono` obligatorio solo si no viene `contacto` (p. ej. `anyOf` de `required: [telefono]` o `required: [contacto]`); quitar el `fallida` «sin telefono» de `notificaciones.py` cuando hay `telegram_id`. El bot ya acepta avisos sin teléfono (B7). |
+| dom 00:00 | - [ ] **A8 (D1).** `acepta_avisos` a `false` por defecto (modelo y migración; los usuarios del seed que ya lo usan en la demo, a `true`). Que `/notify` de tipo `recomendacion` y los avisos de planes nuevos solo salgan a quien tiene `acepta_avisos = true`. |
+| dom 00:00 | - [ ] **A10 (D1).** Al pasar un plan a `publicado`: avisar (`tipo: recomendacion`, `evento_id`, con los botones [Apuntarme] [Más info] del bot) a quien tiene `acepta_avisos` y le gusta esa categoría o ha ido a planes de esa categoría, en su pueblo o cerca (máx. 1 aviso por persona y plan; respetar `formato_aviso`). |
 | dom 07:00 | - [ ] **A5.** Arreglos `fix/*` de los ensayos y repaso de la sección del backend del README. |
 | — | - [ ] **D4 (decidir con Adán).** Lo importado de Facebook de los ayuntamientos (modo «automática») hoy se publica sin revisión; pasarlo siempre por la bandeja son dos líneas en `decidir_estado`, sin tocar el contrato. Además, los Aytos. de Uleila y Senés no son publicadores: sus posts llegan «Sin publicador identificado» (van a revisión). |
 
@@ -111,6 +115,8 @@ Notas: `frase_portada` ya se guarda; si llega vacía la pedirá a `bot POST /ai/
 |---|---|
 | sáb 19:00 | - [ ] **B3.** Pasar por privado a Adán `freellmapi.config.json` y `.env` de `services/bot/freellmapi/` y ensayar juntos el paso 7 en su máquina. |
 | dom 00:00 | - [ ] **B5b.** Solo si sobra tiempo: `POST /ai/frase` (primero en el contrato, antes de CP3): frase breve y alegre (≤ 90 letras, sin inventar datos) a partir de título, categoría y pueblo. Mientras, la web pone una frase fija por tipo de plan. |
+| sáb 19:00 | - [x] **B7 (D1).** *(sáb 21/11: hecho. `/notify` acepta solo `contacto` (422 `sin_destino` si no hay ninguno); `app/avisos.py`: tras los gustos pregunta con botones [🔔 Sí, avísame] [No, gracias] una vez, y «no quiero avisos», «deja de avisarme», «avísame» cambian `acepta_avisos` con `PATCH /usuarios/{id}`; en Telegram sin vincular pide antes el número. Probado contra la API real: el campo cambia en la base.)* Bot: aceptar `/notify` sin `telefono` si viene `contacto`; tras decir sus gustos, preguntar «¿Quieres que te avise de planes nuevos que te puedan gustar?» [Sí] [No] y guardar `acepta_avisos`; entender «no quiero avisos» y «avísame». |
+| sáb 19:00 | - [x] **B8 (D2).** *(sáb 21/11: hecho. `t.me/HackeMate_bot?start=codigo` pide «Compartir mi número» y luego dice «Vuelve a la web y pulsa *Pedir el código*»; si ya lo había compartido, lo dice directamente. De paso, `?start=alta` abre el alta de asociaciones.)* Bot: `/start codigo` (el enlace de la web) pide «Compartir mi número» y, al compartirlo, dice que ya puede pedir el código en la web. |
 | dom 07:00 | - [ ] **B6.** Sección del bot en el README y claves de IA de la demo en el `.env` de Adán (por privado). |
 
 Detalle de las llamadas: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
@@ -120,10 +126,13 @@ Detalle de las llamadas: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJ
 - [ ] **T1.** Máquina de la demo encendida y **los tres móviles con datos (sin wifi de la uni)**: URL pública, agenda con datos reales, ficha, inscripción, chat, `/admin`, los 7 pasos por Telegram y el APK. Lo que falle, a la tabla del flujo que lo arregla.
 - [ ] **T2.** Reinicio en frío cronometrado: `down` (sin `-v`) y `up -d`, `url_publica.py`, y comprobar Telegram, enlaces del bot, web y APK (cambiando solo su dirección).
 
-### Decisiones abiertas
+### Decisiones
 
-- **D1 · aplazada por Adán (sáb 13:20), A3 + B4.** Avisos a quien solo usa Telegram (paso 6): el bot ya lee `contacto` en `POST /notify`, pero `schemas/notificacion.json` y el bot exigen `telefono`, y sin él la API deja el aviso como `fallida`. Quitar el `required` no es aditivo. **Mientras, en la demo todos los inscritos comparten su número.**
-- **D2 · código de acceso por mensajería** (solo si sobra tiempo; el login con Google está recortado y la demo entra con `/auth/demo`). `POST /auth/whatsapp/codigo` debe pedir al bot que mande el código; con Telegram, antes hay que vincular el número (`t.me/HackeMate_bot?start=alta` → «Compartir mi número»). Un campo `canal`, si hace falta, opcional y con `contract-change`.
+- **✅ D1 · decidida por Francisco (sáb 21/11, 16:45): avisos por Telegram solo a quien los acepta.** A quien **ha aceptado** los avisos se le avisa por Telegram de las **actividades nuevas** y se le mandan **recomendaciones** según lo que ha dicho que le gusta (`gustos`) y los planes a los que ha ido. Consecuencias:
+  - **Consentimiento de verdad:** `acepta_avisos` debe valer **`false` por defecto** (hoy es `true`, así que todos estarían apuntados sin que se lo hayamos preguntado). El bot lo pregunta tras decir sus gustos («¿Quieres que te avise…?») y entiende «no quiero avisos» / «avísame». Tareas A8 (Benas) y B7 (Francisco).
+  - **Quien solo usa Telegram también recibe avisos:** `telefono` deja de ser obligatorio en `schemas/notificacion.json` cuando viene `contacto` (`tg:…`). No es un cambio aditivo: **contrato antes de las 19:00 (CP3)**. Tareas A9 (Benas) y B7 (Francisco).
+  - **Alguien tiene que mandar esos avisos:** hoy la API no avisa a nadie cuando se publica un plan nuevo (el tipo `recomendacion` del contrato no se usa). Tarea A10 (Benas).
+- **✅ D2 · se mantiene (Francisco, sáb 21/11): el código por mensajería**, para comprobar que nadie mete mal su número. La API ya lo genera y lo manda (`POST /auth/whatsapp/codigo` → bot `/notify`); falta el camino para quien aún no ha hablado con el bot: la web lo manda a `t.me/HackeMate_bot?start=codigo`, el bot le pide «Compartir mi número» y le dice que ya puede pedir el código. Tareas C10 (Adán) y B8 (Francisco).
 - **D4** · Facebook de los ayuntamientos con o sin bandeja (ver Benas).
 
 ### Canales: Telegram ahora, WhatsApp intercambiable

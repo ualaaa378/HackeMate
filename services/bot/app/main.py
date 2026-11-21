@@ -253,7 +253,8 @@ def ai_preferencias(p: PeticionPreferencias, x_internal_token: str | None = Head
 class Notificacion(BaseModel):
     """contracts/schemas/notificacion.json"""
 
-    telefono: str
+    # D1: quien solo usa Telegram no tiene teléfono; basta con uno de los dos (contacto manda si vienen ambos)
+    telefono: Optional[str] = None
     contacto: Optional[str] = None  # +34… (WhatsApp) o tg:<chat_id> (Telegram); si viene, manda sobre telefono
     tipo: str = "anuncio"
     texto: str
@@ -270,6 +271,8 @@ class Notificacion(BaseModel):
 def notify(n: Notificacion, x_internal_token: str | None = Header(None)):
     _comprobar_interno(x_internal_token)
     destino = n.contacto or n.telefono
+    if not destino:
+        raise HTTPException(422, detail={"code": "sin_destino", "message": "Hace falta telefono o contacto"})
     botones = None
     if n.evento_id and n.tipo in ("recomendacion", "anuncio"):
         # Recomendación → la vecina se apunta con un botón (paso 4 de la demo)
