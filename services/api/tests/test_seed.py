@@ -126,3 +126,63 @@ def test_demo_de_moderacion(db):
     assert taller.motivo_moderacion == "Publicador nuevo (nivel 0)"
     assert apuestas.publicador_id == bar.id and apuestas.score_spam == 0.95
     assert apuestas.motivo_moderacion.startswith("Posible spam")
+
+
+# --- arranque del contenedor: --solo-nuevos no deshace lo que hacen las personas ----------------------------------
+
+CARMEN = "5a5e0000-0000-4000-8000-000000000001"
+
+
+def _cambios_de_la_demo(db) -> dict:
+    """Lo que haría la gente durante un ensayo sobre los datos de la demo."""
+    ruta = db.get(Evento, RUTA_SOLIDARIA)
+    nueva_hora = ruta.fecha_inicio + timedelta(hours=2)
+    ruta.fecha_inicio, ruta.plazas_libres = nueva_hora, ruta.plazas_libres - 1  # cambio de hora y alguien se apunta
+    db.get(Evento, TALLER_GRAFITI).estado = "publicado"  # el moderador lo aprueba
+    carmen = db.get(Usuario, CARMEN)
+    carmen.nombre = "Carmen (editado)"
+    db.commit()
+    return {"hora": nueva_hora, "plazas": ruta.plazas_libres}
+
+
+def test_solo_nuevos_no_sobrescribe_lo_que_ya_existe(db):
+    _sembrar(db)
+    antes = _cambios_de_la_demo(db)
+    eventos = _contar(db, Evento)
+
+    sembrar(db, ahora=VIERNES, sobrescribir=False)  # como al reiniciar el contenedor api
+    db.commit()
+    db.expire_all()
+    ruta = db.get(Evento, RUTA_SOLIDARIA)
+    assert ruta.fecha_inicio.replace(tzinfo=None) == antes["hora"].replace(tzinfo=None)
+    assert ruta.plazas_libres == antes["plazas"]
+    assert db.get(Evento, TALLER_GRAFITI).estado == "publicado"
+    assert db.get(Usuario, CARMEN).nombre == "Carmen (editado)"
+    assert _contar(db, Evento) == eventos  # no duplica
+
+
+def test_solo_nuevos_anade_lo_que_falta(db):
+    _sembrar(db)
+    db.delete(db.get(Evento, APUESTAS_BAR))
+    db.commit()
+    resumen = sembrar(db, ahora=VIERNES, sobrescribir=False)
+    db.commit()
+    assert db.get(Evento, APUESTAS_BAR) is not None
+    assert resumen["eventos"] > 0
+
+
+def test_solo_nuevos_sigue_quitando_los_eventos_terminados(db):
+    _sembrar(db)
+    sembrar(db, ahora=datetime(2027, 6, 1, tzinfo=timezone.utc), sobrescribir=False)
+    db.commit()
+    assert db.get(Evento, RUTA_SOLIDARIA) is None
+
+
+def test_sin_solo_nuevos_vuelve_a_los_fixtures(db):
+    # El seed a mano (y demo_reset) sigue dejando los datos de la demo como en los fixtures.
+    _sembrar(db)
+    _cambios_de_la_demo(db)
+    _sembrar(db)
+    db.expire_all()
+    assert db.get(Evento, TALLER_GRAFITI).estado == "en_revision"
+    assert db.get(Usuario, CARMEN).nombre != "Carmen (editado)"

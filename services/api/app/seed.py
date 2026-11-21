@@ -10,9 +10,12 @@
   Se cargan siempre: no salen en la agenda ni en las recomendaciones (solo muestran `publicado`), pero así las
   gráficas no están vacías. Incluyen el solapamiento de demo «Cine de verano en Uleila» con la verbena de Senés.
 - Solo toca los datos de los fixtures; lo que creen los usuarios no se borra (salvo con --reset).
+- `--solo-nuevos` (el que usa el contenedor `api` al arrancar): añade lo que falte y NO sobrescribe lo que ya
+  existe. Sin él, cada reinicio devolvería los datos de la demo a los fixtures y desharía lo que hayan hecho las
+  personas (cambios de hora, decisiones del moderador, plazas libres tras inscribirse, gustos guardados…).
 
-Uso:  python scripts/seed.py [--reset]        (desde la raíz del repo)
-      python -m app.seed [--reset]            (desde services/api o dentro del contenedor api)
+Uso:  python scripts/seed.py [--reset | --solo-nuevos]   (desde la raíz del repo)
+      python -m app.seed [--reset | --solo-nuevos]       (desde services/api o dentro del contenedor api)
 """
 
 import argparse
@@ -22,7 +25,7 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import delete, select
+from sqlalchemy import delete, inspect, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -117,38 +120,54 @@ def vaciar(db: Session) -> None:
             db.execute(delete(tabla))
 
 
-def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None = None) -> dict:
-    """Carga los fixtures y devuelve un resumen. No hace commit: lo hace quien llama."""
+def _guardar(db: Session, fila, sobrescribir: bool) -> bool:
+    """`merge` (actualiza por id) o, con sobrescribir=False, solo inserta si no existe. True si la escribe."""
+    if sobrescribir:
+        db.merge(fila)
+        return True
+    clave = inspect(fila).mapper.primary_key_from_instance(fila)
+    if db.get(type(fila), clave[0] if len(clave) == 1 else tuple(clave)) is not None:
+        return False
+    db.add(fila)
+    return True
+
+
+def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None = None,
+            sobrescribir: bool = True) -> dict:
+    """Carga los fixtures y devuelve un resumen. No hace commit: lo hace quien llama.
+    Con sobrescribir=False (`--solo-nuevos`) no toca las filas que ya existen: solo añade las que faltan."""
     directorio = directorio or directorio_fixtures()
     ahora = ahora or datetime.now(timezone.utc)
     resumen: dict[str, int] = {}
 
     for m in _leer("municipios.json", directorio):
-        db.merge(Municipio(**m))
+        _guardar(db, Municipio(**m), sobrescribir)
     resumen["municipios"] = len(_leer("municipios.json", directorio))
 
     lugares = _leer("lugares.json", directorio)
     for lugar in lugares:
-        db.merge(Lugar(**_columnas(Lugar, lugar)))
+        _guardar(db, Lugar(**_columnas(Lugar, lugar)), sobrescribir)
     resumen["lugares"] = len(lugares)
 
     # usuarios <-> publicadores se apuntan entre sí: primero sin el enlace, luego se completa.
     usuarios = _leer("usuarios.json", directorio)
+    nuevos_usuarios = set()
     for u in usuarios:
-        db.merge(Usuario(**(_columnas(Usuario, u, ("creado_en",)) | {"publicador_id": None})))
+        if _guardar(db, Usuario(**(_columnas(Usuario, u, ("creado_en",)) | {"publicador_id": None})), sobrescribir):
+            nuevos_usuarios.add(u["id"])
     db.flush()
 
     publicadores = _leer("publicadores.json", directorio)
     fuentes = 0
     for p in publicadores:
-        db.merge(Publicador(**_fila_publicador(p)))
+        _guardar(db, Publicador(**_fila_publicador(p)), sobrescribir)
         db.flush()
         for f in p.get("fuentes", []):
-            db.merge(Fuente(**_columnas(Fuente, f), publicador_id=p["id"]))
+            _guardar(db, Fuente(**_columnas(Fuente, f), publicador_id=p["id"]), sobrescribir)
             fuentes += 1
     db.flush()
     for u in usuarios:
-        if u.get("publicador_id"):
+        if u.get("publicador_id") and u["id"] in nuevos_usuarios:
             db.get(Usuario, u["id"]).publicador_id = u["publicador_id"]
     resumen |= {"usuarios": len(usuarios), "publicadores": len(publicadores), "fuentes": fuentes}
 
@@ -158,7 +177,7 @@ def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None 
             if ha_terminado(e, ahora):
                 terminados.add(e["id"])
             else:
-                db.merge(Evento(**_fila_evento(e)))
+                _guardar(db, Evento(**_fila_evento(e)), sobrescribir)
                 cargados.add(e["id"])
     db.flush()
     borrados = 0
@@ -172,13 +191,13 @@ def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None 
 
     historico = set()
     for e in _leer(FICHERO_HISTORICO, directorio):
-        db.merge(Evento(**_fila_evento(e)))
+        _guardar(db, Evento(**_fila_evento(e)), sobrescribir)
         historico.add(e["id"])
     db.flush()
     n = 0
     for fila in _leer(FICHERO_INSCRIPCIONES_HISTORICO, directorio):
         if fila["evento_id"] in historico:
-            db.merge(Inscripcion(**_columnas(Inscripcion, fila, ("creado_en", "actualizado_en"))))
+            _guardar(db, Inscripcion(**_columnas(Inscripcion, fila, ("creado_en", "actualizado_en"))), sobrescribir)
             n += 1
     db.flush()
     resumen |= {"eventos_historico": len(historico), "inscripciones_historico": n}
@@ -193,7 +212,7 @@ def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None 
         for fila in _leer(fichero, directorio):
             if fila.get("evento_id") and fila["evento_id"] not in cargados:
                 continue
-            db.merge(modelo(**_columnas(modelo, fila, fechas)))
+            _guardar(db, modelo(**_columnas(modelo, fila, fechas)), sobrescribir)
             db.flush()  # respuestas que apuntan a mensajes anteriores del mismo fichero
             n += 1
         resumen[clave] = n
@@ -203,7 +222,10 @@ def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None 
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Carga los datos de la demo en la base de datos")
-    parser.add_argument("--reset", action="store_true", help="vacía todas las tablas antes de cargar")
+    modo = parser.add_mutually_exclusive_group()
+    modo.add_argument("--reset", action="store_true", help="vacía todas las tablas antes de cargar")
+    modo.add_argument("--solo-nuevos", action="store_true",
+                      help="solo añade lo que falte; no sobrescribe lo que ya existe (arranque del contenedor)")
     args = parser.parse_args(argv)
 
     migrar()
@@ -211,7 +233,7 @@ def main(argv: list[str] | None = None) -> None:
     with Session(motor) as db, db.begin():
         if args.reset:
             vaciar(db)
-        resumen = sembrar(db)
+        resumen = sembrar(db, sobrescribir=not args.solo_nuevos)
     motor.dispose()
 
     destino = motor.url.database if motor.url.get_backend_name() == "sqlite" else motor.url.render_as_string(True)
