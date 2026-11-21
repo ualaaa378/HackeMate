@@ -212,6 +212,12 @@ def preguntar_en_chat(evento_id: str, usuario_id: str, texto: str) -> dict | Non
                      {"texto": texto[:1000], "tipo": "pregunta", "usuario_id": usuario_id})
 
 
+def comentar_en_chat(evento_id: str, usuario_id: str, texto: str) -> dict | None:
+    """«¿Qué tal fue?»: la valoración queda como comentario del plan (también vale con el plan ya terminado)."""
+    return _peticion("POST", f"/api/v1/eventos/{evento_id}/mensajes",
+                     {"texto": texto[:1000], "tipo": "comentario", "usuario_id": usuario_id})
+
+
 def guardar_preferencias(usuario_id: str, cambios: dict) -> bool:
     """El contrato solo tiene PATCH /usuarios/me (login de usuario). Se prueba PATCH /usuarios/{id}
     con el token interno (propuesto a A); si no existe, el bot las guarda solo en memoria."""

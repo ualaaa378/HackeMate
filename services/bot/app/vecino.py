@@ -6,7 +6,7 @@ import logging
 import re
 import unicodedata
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from app import api_cliente, telegram
@@ -402,6 +402,47 @@ def inscribir(msg: MensajeEntrante, evento_id: str | None, usuario: dict | None)
         return [f"Ahora mismo está lleno{nombre}: estás en lista de espera" +
                 (f" (puesto {puesto})" if puesto else "") + ". Si queda sitio, te aviso 🙌"]
     return [f"✅ ¡Apuntado/a{nombre}! Te avisaré si hay cambios. ¡Nos vemos allí! 🎉"]
+
+
+# ---------- «¿Qué tal fue?» (tarea programada de la API) ----------
+
+MARCA_QUE_TAL = "¿Qué tal fue"  # la misma que services/api/app/tareas_programadas.py
+VALORACIONES = {"muy_bien": "😍 ¡Muy bien!", "bien": "🙂 Bien", "regular": "😕 Regular"}
+ESPERA_VALORACION = timedelta(hours=48)
+valoraciones_pendientes: dict[str, tuple[str, datetime]] = {}  # contacto → (evento_id, hasta cuándo)
+
+
+def botones_valoracion(evento_id: str) -> list[tuple[str, str]]:
+    return [(f"valora:{evento_id}:{k}", v) for k, v in VALORACIONES.items()]
+
+
+def esperar_valoracion(contacto: str, evento_id: str) -> None:
+    valoraciones_pendientes[contacto] = (evento_id, _ahora() + ESPERA_VALORACION)
+
+
+def valoracion_pendiente(contacto: str) -> str | None:
+    pendiente = valoraciones_pendientes.get(contacto)
+    if not pendiente or pendiente[1] < _ahora():
+        valoraciones_pendientes.pop(contacto, None)
+        return None
+    return pendiente[0]
+
+
+def valorar(msg: MensajeEntrante, evento_id: str, texto: str, usuario: dict | None) -> list:
+    """El botón o el mensaje que contesta a «¿qué tal fue?» → comentario del plan, con su nombre."""
+    valoraciones_pendientes.pop(msg.de, None)
+    if not (usuario or {}).get("id"):
+        return ["¡Gracias por contármelo! 🙏"]
+    try:
+        api_cliente.comentar_en_chat(evento_id, usuario["id"], texto)
+    except (ApiNoDisponible, ErrorApi) as e:
+        log.warning("No se pudo guardar la valoración: %s", e)
+        return ["¡Gracias! 🙏 Ahora mismo no puedo guardarlo, pero me lo apunto."]
+    if texto in VALORACIONES.values():  # con el botón: puede añadir un comentario con sus palabras
+        esperar_valoracion(msg.de, evento_id)
+        return ["¡Gracias por contármelo! 🙌 Se lo paso a quienes lo organizaron. Si quieres añadir algo más (qué "
+                "te gustó, qué mejorarías), escríbemelo."]
+    return ["¡Gracias! 🙌 Lo he dejado en el plan para quienes lo organizaron."]
 
 
 # ---------- Desapuntarse (N6b) ----------
