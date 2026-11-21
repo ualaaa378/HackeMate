@@ -57,11 +57,11 @@ Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **vis
 
 ## 🚧 Estado
 
-El proyecto está **en sus primeras fases**. Iremos actualizando este README a medida que avancemos.
+**Primera versión completa para probar (sáb 21/11).** La API (flujo A) tiene todos los endpoints del contrato y el guion de la demo funciona de punta a punta con el bot en local. Cómo probarla y qué revisar: [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md).
 
 ## 🔗 Pendiente entre flujos
 
-Revisado el 21/11/2026 a las 01:55. Todo esto ya lo usa la app web (flujo C) o el bot (flujo B), pero depende de otro flujo. Mientras no esté, **la web vuelve sola a los datos de prueba (mocks) y el bot guarda la petición en cola**, así que nada se rompe, pero la demo no usa datos reales. Al cerrar cada punto, se borra de esta lista.
+Revisado el 21/11/2026 a las 09:20. Todo esto ya lo usa la app web (flujo C) o el bot (flujo B), pero depende de otro flujo. Mientras no esté, **la web vuelve sola a los datos de prueba (mocks) y el bot guarda la petición en cola**, así que nada se rompe, pero la demo no usa datos reales. Al cerrar cada punto, se borra de esta lista.
 
 > **Regla del equipo (ver `CLAUDE.md`):** cada flujo apunta aquí, bajo el flujo responsable, lo que necesita de los demás. Antes de empezar una tarea, revisa tu apartado.
 
@@ -73,6 +73,8 @@ Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen 
 - **Una propuesta de un vecino sin asociación:** entra en revisión y el moderador ve sus `datos_ayuntamiento`, pero el vecino solo los ve en la respuesta del alta (la API no guarda quién propuso el plan si no es un publicador).
 
 ### Flujos A y B · a acordar (Benas + Francisco)
+
+- **Avisos a quien solo usa Telegram (paso 6 de la demo):** el bot ya lee `contacto` en `POST /notify`, pero el contrato (`schemas/notificacion.json`) y el modelo del bot siguen exigiendo `telefono`. Un vecino que entró por Telegram sin «Compartir mi número» no tiene teléfono y la API deja su aviso como `fallida` («sin telefono»). Quitar el `required` no es un cambio aditivo: hay que decidirlo juntos. Mientras tanto, en la demo, todos los inscritos tienen que haber compartido su número.
 
 - **Código de acceso por mensajería (Telegram y WhatsApp):** `POST /auth/whatsapp/codigo` tiene que pedir al bot (`POST /notify`) que mande el código. El nombre de la ruta no se cambia (el contrato no renombra), pero vale para los dos canales. Con Telegram, el bot no puede escribir a un móvil que nunca le ha hablado. Hace falta acordar el paso previo: por ejemplo, que la web enseñe el enlace `t.me/HackeMate_bot?start=alta` y el vecino comparta su número con «Compartir mi número» (`POST /usuarios/vincular`) antes de pedir el código. Si hace falta un campo `canal` en la petición, se añade como opcional con `contract-change`.
 
@@ -95,6 +97,13 @@ Regla en `CLAUDE.md` § «Canales de mensajería». Cómo se elige el canal hoy,
 ### Flujo B · bot (Francisco), frase de portada con IA
 
 - **`POST /ai/frase`** (o el nombre que se acuerde, primero en el contrato): a partir del título, la categoría y el pueblo, devolver una frase breve, espontánea y alegre (máx. 90 letras, sin inventar datos del plan) para la portada del carrusel. La llama la API cuando el publicador no escribe la suya. Mientras no exista, la web elige una frase fija por tipo de plan y la marca como «✨ Frase automática».
+
+### Flujo B · bot (Francisco), hallazgos de la prueba de la v1 (sin claves de IA)
+
+Probado con `scripts/simular_chat.py` (bot con `CANAL=console`, sin Gemini ni FreeLLM: solo reglas). Detalle en [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md) §4.
+- **Título por reglas:** sin IA, el título de la ficha es el post entero recortado («Taller de esparto en Senés el sábado 28 de noviembre a las 11:00 en la plaza. Gr»). Conviene cortar en la primera frase o antes de « en <pueblo>»/« el <día>».
+- **Pregunta sobre un plan por chat privado** («¿Hay que llevar agua a la ruta solidaria?»): el bot la trata como una búsqueda y enseña la ficha, sin responder. En el chat del evento sí se responde (la API llama a `/ai/responder-ficha`).
+- **Post de apuestas por el bot:** sin fecha, el bot se queda pidiendo «¿Qué día y a qué hora empieza?» y no llega a la API, así que el antispam no lo ve. Para el paso 3, el post de spam tiene que llevar fecha (el del seed ya está en la bandeja con `score_spam` 0,95).
 
 ### Flujo B · bot (Francisco), opcional en el compose
 
@@ -143,6 +152,8 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 Python 3.15: `uvicorn` va sin el extra `[standard]` y para YAML se usa `ruamel.yaml` (no hay wheel de PyYAML).
+
+**Con el bot también en local (sin Docker):** el valor por defecto `BOT_URL=http://bot:8001` es el nombre del contenedor y fuera de Docker no existe; los avisos se quedan en cola (`pendiente`, `getaddrinfo failed`). Pon `BOT_URL=http://localhost:8001` en el `.env` (y en el del bot `API_URL=http://localhost:8000`). Guía completa de pruebas: [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md).
 
 ### Arquitectura
 
