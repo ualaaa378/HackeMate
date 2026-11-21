@@ -137,8 +137,8 @@ Lee la URL nueva del túnel, la pone en el `.env` (`PUBLIC_URL` y, cuando el tú
 
 | Hito | Hasta | Tarea |
 |---|---|---|
-| H3 · CP3 | sáb 19:00 | - [ ] **A6.** API lista para servirse detrás de `nginx` y desde el APK: añadir a `CORS_ORIGENES` (`.env.example` y valor por defecto) los orígenes de Capacitor, `https://localhost` y `capacitor://localhost` (la web pública no lo necesita: va por el mismo dominio); `uvicorn` con `--proxy-headers --forwarded-allow-ips='*'` en el `Dockerfile` para que vea `https`; revisar que ninguna respuesta lleve URLs absolutas a `localhost` (`.ics`, imágenes, enlaces). Tests sin Docker. |
-| H3 · CP3 | sáb 19:00 | - [ ] **A7.** Revisar y fusionar la PR de C8b (el compose es de A). Actualizar en el README y en `CLAUDE.md` cómo se arranca con la URL pública. |
+| H3 · CP3 | sáb 19:00 | - [x] **A6.** *(sáb 21/11: hecho. CORS con `https://localhost` y `capacitor://localhost`, `uvicorn --proxy-headers --forwarded-allow-ips='*'` y ninguna respuesta con `localhost`; tests en `tests/test_despliegue.py`)* API lista para servirse detrás de `nginx` y desde el APK: añadir a `CORS_ORIGENES` (`.env.example` y valor por defecto) los orígenes de Capacitor, `https://localhost` y `capacitor://localhost` (la web pública no lo necesita: va por el mismo dominio); `uvicorn` con `--proxy-headers --forwarded-allow-ips='*'` en el `Dockerfile` para que vea `https`; revisar que ninguna respuesta lleve URLs absolutas a `localhost` (`.ics`, imágenes, enlaces). Tests sin Docker. |
+| H3 · CP3 | sáb 19:00 | - [x] **A7.** *(sáb 21/11: C8b revisada después del merge (#60), correcta: túnel a `web:8080`, la web arranca aunque api o bot fallen, nginx con `X-Forwarded-Proto` y 20 MB de cuerpo. Arranque con la URL pública en el README y en `CLAUDE.md`)* Revisar y fusionar la PR de C8b (el compose es de A). Actualizar en el README y en `CLAUDE.md` cómo se arranca con la URL pública. |
 | H4 · CP4 | dom 00:00 | - [ ] **T1** (con todos). Ver abajo. |
 
 **Los tres · prueba de verdad desde fuera**
@@ -313,7 +313,21 @@ docker compose --env-file .env -f infra/docker-compose.yml up --build  # db, api
 scripts/smoke_test.sh                                   # debe acabar en «SMOKE TEST EN VERDE»
 ```
 
-El contenedor `api` crea las tablas y siembra la demo al arrancar. API en `http://localhost:8000` (docs en `/docs`), bot en `:8001`, web en `:8080`. La URL pública del túnel sale en `docker compose --env-file .env -f infra/docker-compose.yml logs tunnel`.
+El contenedor `api` crea las tablas y siembra la demo al arrancar. En la máquina: web en `http://localhost:8080`, API en `http://localhost:8000` (docs en `/docs`) y bot en `:8001`.
+
+### URL pública (móviles, jurado, APK y Telegram)
+
+Una sola URL, la del túnel rápido de Cloudflare (decisión D3), que entra por el `nginx` de la web: `/` → web, `/api/` → `api:8000`, `/webhook/` → `bot:8001`. La web llama a la API en su mismo dominio (`VITE_API_URL=/`), así que no hace falta CORS ni `localhost`.
+
+```bash
+python scripts/url_publica.py          # con el compose en marcha: lee la URL del túnel, la pone en PUBLIC_URL y WEB_URL,
+                                       # recrea el bot (registra el webhook de Telegram) y la escribe para el grupo
+python scripts/url_publica.py --ver    # solo enseña la URL actual
+```
+
+- **La URL cambia cada vez que se reinicia el túnel.** Reiniciarlo solo si hace falta y, cuando cambie, volver a ejecutar el script (y en el APK, cambiar la dirección en sus ajustes).
+- Solo **una** máquina tiene el túnel y `PUBLIC_URL`: la de la demo (el bot de Telegram solo puede estar en una).
+- La API va con `uvicorn --proxy-headers`: detrás del túnel ve `https` y el dominio público. CORS solo hace falta para el APK de Capacitor (`https://localhost` y `capacitor://localhost`, ya en `CORS_ORIGENES`); si tu `.env` es anterior, copia esa línea de `.env.example`.
 
 ### Arranque en Windows sin Docker
 

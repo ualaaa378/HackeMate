@@ -87,6 +87,8 @@ docker compose --env-file .env -f infra/docker-compose.yml up --build
 curl localhost:8000/health
 ```
 
+URL pública para móviles, jurado y Telegram (solo en la máquina de la demo, con el compose en marcha): `python scripts/url_publica.py`. El túnel rápido entra por el `nginx` de la web (`/` web, `/api/` API, `/webhook/` bot) y su URL cambia al reiniciarse: cada vez que cambie, se vuelve a ejecutar el script.
+
 ## Convenciones de código
 
 - Identificadores, comentarios y textos en **español**, sin tildes ni eñes en los identificadores (`publicacion`, `ano`, `municipio_id`).
