@@ -20,7 +20,10 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
+      # Los datos de la demo y lo que hace la gente viven aquí: sobreviven a down/up y a reinicios.
+      # Solo se borran con «down -v» o con scripts/demo_reset.sh: no usarlos en mitad de la demo.
       - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -50,6 +53,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Si se cae, vuelve sola. Al arrancar, el seed solo añade lo que falte (--solo-nuevos en el Dockerfile):
+    # un reinicio no deshace lo que han hecho las personas.
+    restart: unless-stopped
 
   bot:
     <<: *env
@@ -62,10 +68,15 @@ services:
       # El proxy FreeLLM corre en el equipo anfitrión: 127.0.0.1 del .env no sirve dentro del contenedor
       FREELLM_URL: ${FREELLM_URL_DOCKER:-http://host.docker.internal:31415/v1}
       WEB_URL: ${WEB_URL:-http://localhost:8080}
+      # Cola de peticiones a la api cuando está caída: en un volumen para que sobreviva a recrear el bot
+      # (scripts/url_publica.py lo recrea cada vez que cambia la URL del túnel)
+      COLA_PATH: /srv/data/cola_pendiente.json
       # INTERNAL_TOKEN, CANAL, TELEGRAM_*, META_*, TWILIO_*, LLM_*, GEMINI_*, FREELLM_*,
       # ANTHROPIC_*, CLAUDE_* y ZONA_HORARIA llegan del ../.env (env_file)
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - bot_data:/srv/data
     ports:
       - "8001:8001"
     healthcheck:
@@ -119,7 +130,7 @@ services:
     # crédito de Apify (FB_SCRAPER_TOKEN en el .env de la máquina de la demo). Para encenderla:
     #   docker compose --env-file .env -f infra/docker-compose.yml --profile ingesta up -d ingesta
     profiles: ["ingesta"]
-    image: python:3.13-slim
+    image: python:3.12-slim
     # Solo usa la biblioteca estándar: no hace falta construir imagen.
     command: ["python", "/srv/scripts/importar_facebook.py", "--cada", "24",
               "--api-url", "http://api:8000", "--bot-url", "http://bot:8001"]
@@ -138,3 +149,4 @@ services:
 
 volumes:
   db_data:
+  bot_data:

@@ -59,6 +59,17 @@ Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **vis
 
 **Primera versión completa para probar (sáb 21/11).** La API (flujo A) tiene todos los endpoints del contrato y el guion de la demo funciona de punta a punta con el bot en local. Cómo probarla y qué revisar: [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md).
 
+**📣 Cambios del flujo A (Benas), sáb 21/11 por la tarde: qué ha cambiado y qué tenéis que hacer**
+
+| PR | Qué cambia | Qué tenéis que hacer |
+|---|---|---|
+| #49 | **Ingesta de Facebook** (`scripts/importar_facebook.py`): los posts de los Aytos. de Uleila, Lucainena y Senés y de Monte-Sión → IA del bot → bandeja. Servicio `ingesta` del compose (revisión diaria, **apagado por defecto**) y 20 posts reales en `contracts/fixtures/facebook_posts.json` | Solo la máquina de la demo, si quiere la revisión diaria: `FB_SCRAPER_TOKEN` en el `.env` (por privado) y `--profile ingesta up -d ingesta`. Sin token: importar los posts guardados con `--desde-json` |
+| #53 | **El compose lee el `.env` de la raíz** solo con `--env-file .env` (sin él, el bot iba sin IA en Docker) | **Siempre, desde la raíz del repo:** `docker compose --env-file .env -f infra/docker-compose.yml …` (también en `exec`, `logs` y `--profile ingesta`) |
+| #61 | **API detrás del nginx y del túnel:** `uvicorn --proxy-headers` y CORS para el APK (`https://localhost`, `capacitor://localhost`). Arranque con la URL pública (`scripts/url_publica.py`) en el README y en `CLAUDE.md` | Si vuestro `.env` es anterior, copiad la línea `CORS_ORIGENES` de `.env.example` (solo hace falta para el APK) |
+| #63 | **Lo que hace la gente ya no se pierde al reiniciar:** antes, cada arranque de la API devolvía los datos de la demo a los fixtures (horas, decisiones del moderador, gustos) y **volvía a poner las plazas libres aunque hubiera inscritos**. Ahora el seed del arranque solo añade lo que falta. Además, `db` y `api` se levantan solas si se caen y la cola del bot va en el volumen `bot_data` | `git pull` y `up -d --build` **sin `-v`**. En la demo, **ni `down -v` ni `demo_reset`** (borran la base). Qué conserva cada comando: «⚙️ Backend» → «Qué se guarda» |
+
+**Pendiente que sale de esta revisión** (detalle en «🔗 Pendiente entre flujos»): **Adán**, que la ficha, el chat y la bandeja se refresquen solos (hoy cargan una vez y no se ve lo que hacen los demás) y que el service worker de la PWA no guarde `/api/` en caché. **Fran**, al recrear el bot (lo hace `url_publica.py`) se pierden las conversaciones a medias.
+
 **Progreso sáb 21/11 11:45 (punto de partida común para corregir y seguir):**
 - ✅ **Prueba completa en Docker con PostgreSQL** en la máquina de Adán (`down -v` + `up --build`, `CANAL=console`, sin IA): `smoke_test.ps1` en verde, `scripts/simular_chat.py` de punta a punta, `/admin` contra la API real (aprobar, rechazar y ver lo aprobado en la agenda) y la web (ficha, apuntarse, Recuerdos, Proponer un plan con el código de alta que sale en `docker compose … logs bot`). Detalle en la PR #48.
 - ✅ **Arreglado en la web:** tras reiniciar la base, la sesión vieja ya no rompe la ficha (la web la cierra sola y repite sin token).
@@ -253,6 +264,11 @@ Regla en `CLAUDE.md` § «Canales de mensajería». Cómo se elige el canal hoy,
 
 ### Flujo C · web (Adán)
 
+- **Que lo que hace uno se vea en los demás móviles sin recargar** (revisión del despliegue, sáb 21/11, Benas). La API ya lo guarda todo y lo devuelve al momento (comprobado con dos «móviles» contra la misma API), pero hay pantallas que cargan una sola vez:
+  - **Ficha** (`src/pages/Ficha.tsx`): carga con `useEffect` al cambiar el `id`; al volver a la misma ficha, las plazas libres, la hora o el estado no se actualizan. Propuesta: `useIonViewWillEnter` y deslizar para recargar (`IonRefresher`), como en la Agenda.
+  - **Chat del evento** (`src/components/ChatEvento.tsx`): no se ven las preguntas ni las respuestas de los demás hasta recargar (paso 5). Propuesta: volver a pedir `GET /eventos/{id}/mensajes` cada 10–15 s mientras la ficha está abierta.
+  - **Bandeja del moderador** (`src/pages/admin/Bandeja.tsx`): los posts nuevos que llegan por el bot o por Facebook no aparecen hasta recargar (paso 3). Propuesta: refresco cada 10 s, como el Panel, y `useIonViewWillEnter`.
+  - **PWA (C4):** cuando se añada el service worker, que **no guarde en caché `/api/`** (solo los estáticos), o los móviles verán datos viejos.
 - **URL pública de la web (C3):** hoy la web solo funciona en la máquina de la demo (`VITE_API_URL=http://localhost:8000` y el túnel solo al bot). Lo necesitan el jurado, el APK (C5) y cualquiera que pruebe desde fuera.
 - **«Para ti» (C2):** la API ya da `GET /recomendaciones`; falta enseñarlo en la agenda para el paso 4.
 - **La imagen `web` no se construye en la red de la universidad** (ensayo del sáb 21/11 en el portátil de Francisco): `npm ci` falla con `UNABLE_TO_VERIFY_LEAF_SIGNATURE` porque el cortafuegos (Fortinet) intercepta `registry.npmjs.org`. GitHub y PyPI sí funcionan. Para el día de la demo: construir la imagen antes en otra red (datos del móvil) y no borrarla, o tener el `dist/` ya generado. No se desactiva la comprobación de certificados.
@@ -274,13 +290,15 @@ Lo que pide el bot:
 
 - **`POST /ai/frase`** (o el nombre que se acuerde, primero en el contrato): a partir del título, la categoría y el pueblo, devolver una frase breve, espontánea y alegre (máx. 90 letras, sin inventar datos del plan) para la portada del carrusel. La llama la API cuando el publicador no escribe la suya. Mientras no exista, la web elige una frase fija por tipo de plan y la marca como «✨ Frase automática».
 
-### Flujo B · bot (Francisco), opcional en el compose
+### Flujo B · bot (Francisco), reinicios y URL pública
 
-- Volumen `bot_data` con `COLA_PATH` para que la cola sobreviva si se recrea el contenedor, y `PUBLIC_URL` en el `.env` si el túnel tiene URL fija (ver `services/bot/PARA_FLUJO_A.md` §4).
+- **Conversaciones a medias:** `scripts/url_publica.py` recrea el bot cada vez que cambia la URL del túnel, y las conversaciones que el bot guarda en memoria (un publicador a mitad de confirmar, por ejemplo) se pierden. La cola ya no (volumen `bot_data`, ver «Ya resuelto»). Si da tiempo, guardar también ese estado en `/srv/data`; si no, evitar cambiar la URL en mitad de la demo.
 
 Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
 
 ### Ya resuelto
+
+- **Lo que hace la gente ya no se pierde al reiniciar** (revisión del despliegue, sáb 21/11, Benas). El contenedor `api` ejecutaba el seed en cada arranque y **sobrescribía con los fixtures** los datos de la demo: un `up --build` o cualquier reinicio deshacía el cambio de hora, las decisiones del moderador, los gustos guardados y **volvía a poner las plazas libres aunque hubiera inscritos** (Carmen inscrita y otra vez 8 plazas: se podía vender su plaza). Ahora arranca con `seed --solo-nuevos` (solo añade lo que falte). Comprobado con dos «móviles» contra la misma API y un reinicio simulado. Además, en el compose: `restart: unless-stopped` en `db` y `api` (si la API se cae, vuelve sola) y volumen `bot_data` con `COLA_PATH` para que la cola del bot sobreviva a recrearlo.
 
 - **El compose no leía las variables `${…}` del `.env` de la raíz** (encontrado por Francisco en su ensayo con Docker): todos los comandos llevan ahora `--env-file .env` (cabecera del compose, README, `CLAUDE.md`, `PLAN.md`, `PLAN_FLUJO_A.md`, `PRUEBAS_V1.md` y `scripts/demo_reset.sh`). Desde la raíz del repo: `docker compose --env-file .env -f infra/docker-compose.yml up --build`. Sin él, `FREELLM_URL_DOCKER`, `VITE_*`, `WEB_URL` y `POSTGRES_*` se quedaban con su valor por defecto y el bot caía a reglas.
 - **Restaurar un plan rechazado** (pedido por Adán, 21/11): `POST /moderacion/{id}/decision` con `decision: restaurar` (contrato, API con tests y botón en `/admin` → Planes → Rechazados).
@@ -399,9 +417,24 @@ Todos bajo `/api/v1/` salvo `/health`. Detalle, errores y ejemplos en `contracts
 
 Modos de publicación: solo dos, **a mano** (`nivel_confianza` 0, todo pasa por el moderador) y **automática** (2, se publica salvo spam alto o pausa). No hay semiautomático ni subida automática: a automática solo pasa un moderador y solo si se cumplen las reglas. El nivel 1 está obsoleto (si llega, se guarda como 0). La `actividad` se cuenta por la fecha en que se propuso cada plan (`creado_en`); «aprobados» son los `publicado` y `finalizado`.
 
+### Qué se guarda (lo que hace uno lo ven todos)
+
+Todo pasa por la misma API y la misma base de datos (PostgreSQL en el volumen `db_data` de la máquina de la demo): lo que hace una persona desde su móvil, la web, el panel o Telegram lo ven las demás en cuanto su pantalla vuelve a pedir los datos.
+
+| Acción | ¿Se guarda? |
+|---|---|
+| `docker compose … restart`, `down` + `up`, `up --build` tras un `git pull`, que la API se caiga y vuelva | ✅ Sí: el seed del arranque solo añade lo que falte (`--solo-nuevos`) |
+| Reiniciar el túnel | ✅ Los datos sí, pero **cambia la URL**: `python scripts/url_publica.py` y pasar la nueva |
+| Recrear el bot (lo hace `url_publica.py`) | ✅ La cola sí (`bot_data`); las conversaciones a medias del bot, no |
+| `docker compose … down -v` | ❌ **Borra la base entera** (y la cola del bot) |
+| `scripts/demo_reset.sh` | ❌ **Borra todo lo creado** y vuelve a los datos iniciales de la demo |
+
+En la demo: **ni `down -v` ni `demo_reset`**, salvo para empezar de cero antes del ensayo.
+
 ### Sembrar y reiniciar la demo
 
-- `python scripts/seed.py`: crea/actualiza tablas y carga los fixtures. Repetible; omite los eventos que ya han terminado y solo toca los datos de `contracts/fixtures`.
+- `python scripts/seed.py`: crea/actualiza tablas y carga los fixtures. Repetible; omite los eventos que ya han terminado y solo toca los datos de `contracts/fixtures`. **Devuelve los datos de la demo a como están en los fixtures** (deshace lo hecho sobre ellos).
+- `python scripts/seed.py --solo-nuevos` (lo que hace el contenedor `api` al arrancar): solo añade lo que falte; no toca lo que ya existe.
 - **Reinicio completo** (borra todo lo creado en el ensayo y vuelve al estado inicial; ~1–2 s, no hace falta reiniciar la api):
   - Docker: `scripts/demo_reset.sh`
   - Sin Docker (Linux/Git Bash): `scripts/demo_reset.sh --local`
