@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { estadoPlan } from './estadoPlan';
+import { estadoPlan, puedeApelar } from './estadoPlan';
 
 const ahora = new Date('2026-11-21T22:00:00+01:00');
 const plan = (estado: string, fecha_inicio = '2026-12-05T10:00:00+01:00') =>
@@ -23,5 +23,20 @@ describe('estadoPlan (P5c)', () => {
   it('rechazado y cancelado no se modifican', () => {
     expect(estadoPlan(plan('rechazado'), ahora)).toMatchObject({ clase: 'rechazado', modificable: false });
     expect(estadoPlan(plan('cancelado'), ahora).modificable).toBe(false);
+  });
+});
+
+describe('apelaciones (P3c)', () => {
+  const apelacion = { motivo: 'Es una fiesta de toda la vida', creada_en: '2026-11-21T21:00:00+01:00' };
+
+  it('solo se apela un rechazado, una vez y si aún no ha pasado', () => {
+    expect(puedeApelar(plan('rechazado'), ahora)).toBe(true);
+    expect(puedeApelar({ ...plan('rechazado'), apelacion }, ahora)).toBe(false);
+    expect(puedeApelar(plan('en_revision'), ahora)).toBe(false);
+    expect(puedeApelar(plan('rechazado', '2026-11-10T10:00:00+01:00'), ahora)).toBe(false);
+  });
+
+  it('un plan apelado en revisión lo dice', () => {
+    expect(estadoPlan({ ...plan('en_revision'), apelacion }, ahora).texto).toContain('Apelado');
   });
 });

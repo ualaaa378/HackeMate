@@ -25,6 +25,7 @@ import {
 import type { Categoria, Token } from '../api/types';
 import { ENLACE_CANAL, NOMBRE_CANAL } from '../canal';
 import SelectorGustos from '../components/SelectorGustos';
+import { EDAD_MINIMA, leerEdad } from '../utils/edad';
 
 interface Props {
   abierto: boolean;
@@ -38,6 +39,7 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
   const [paso, setPaso] = useState<'datos' | 'vincular' | 'codigo'>('datos');
   const [nombre, setNombre] = useState('');
   const [movil, setMovil] = useState('');
+  const [edadTexto, setEdadTexto] = useState('');
   const [acepto, setAcepto] = useState(false);
   const [gustos, setGustos] = useState<Categoria[]>([]);
   const [codigo, setCodigo] = useState('');
@@ -56,6 +58,8 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
     const tel = aE164(movil);
     if (!nombre.trim()) return setError('Escribe tu nombre.');
     if (!tel) return setError('Escribe un móvil de 9 cifras, por ejemplo 600 123 456.');
+    const edad = leerEdad(edadTexto);
+    if ('error' in edad) return setError(edad.error);
     if (!acepto) return setError(`Marca la casilla para que podamos avisarte por ${NOMBRE_CANAL}.`);
     setError(null);
     await solicitarCodigo(tel);
@@ -84,12 +88,14 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
     setError(null);
     try {
       const t = await verificarCodigo(tel, codigo.trim());
+      const edad = leerEdad(edadTexto);
       let usuario = t.usuario;
       try {
         usuario = await actualizarPerfil({
           nombre: nombre.trim(),
           acepta_avisos: true,
           ...(gustos.length > 0 && { gustos }),
+          ...('edad' in edad && edad.edad != null && { edad: edad.edad }),
         });
       } catch {
         usuario = { ...usuario, nombre: nombre.trim() };
@@ -141,6 +147,18 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
               placeholder="600 123 456"
               value={movil}
               onIonInput={(e) => setMovil(e.detail.value ?? '')}
+            />
+            <IonInput
+              label="Edad (opcional)"
+              labelPlacement="stacked"
+              fill="outline"
+              type="text"
+              inputmode="numeric"
+              maxlength={3}
+              placeholder="Por ejemplo: 67"
+              helperText={`Hace falta tener ${EDAD_MINIMA} años o más. Nos ayuda a proponer planes que te encajen.`}
+              value={edadTexto}
+              onIonInput={(e) => setEdadTexto(e.detail.value ?? '')}
             />
             <SelectorGustos gustos={gustos} onCambio={setGustos} />
             <IonCheckbox

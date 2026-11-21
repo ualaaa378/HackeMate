@@ -61,7 +61,12 @@ def test_alta_completa_por_whatsapp(api, enviados):
     assert "no es válido" in _texto(r)
     conversacion.procesar(_msg("12345678Z"))
     r = conversacion.procesar(_msg("Velefique"))
+    assert "Cuántos años" in _texto(r)  # P4b: opcional
+    r = conversacion.procesar(_msg("12"))
+    assert "al menos 14" in _texto(r)
+    r = conversacion.procesar(_msg("58"))
     resumen = _texto(r)
+    assert "58 años" in resumen
     assert "Asociación Amigos de Velefique (Asociación)" in resumen and "•••••678Z" in resumen
     assert "12345678Z" not in resumen  # el DNI nunca se enseña entero
 
@@ -70,7 +75,7 @@ def test_alta_completa_por_whatsapp(api, enviados):
     assert enviados == [{
         "nombre": "Asociación Amigos de Velefique", "tipo": "asociacion", "municipio": "Velefique",
         "telefono": WA,
-        "responsable": {"nombre": "Antonio García López", "dni": "12345678Z", "residencia": "Velefique"},
+        "responsable": {"nombre": "Antonio García López", "dni": "12345678Z", "residencia": "Velefique", "edad": 58},
     }]
     assert not alta.en_curso(WA)  # los datos personales ya no están en memoria
 
@@ -105,7 +110,7 @@ def test_ya_publica_en_nombre_de_una_entidad(api):
 
 def _hasta_confirmar():
     for t in ("quiero dar de alta mi asociación", "Club Senderista Tahal", "asociación", "Tahal",
-              "María Pérez Gil", "X1234567L", "Tahal"):
+              "María Pérez Gil", "X1234567L", "Tahal", "saltar"):
         conversacion.procesar(_msg(t))
 
 

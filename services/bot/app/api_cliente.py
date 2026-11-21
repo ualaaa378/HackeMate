@@ -183,6 +183,11 @@ def planes_de(usuario_id: str) -> list[dict]:
     return (res or {}).get("items", [])
 
 
+def apelar(evento_id: str, usuario_id: str, motivo: str) -> dict | None:
+    """P3b: POST /eventos/{id}/apelacion en nombre de esa persona (con el token interno)."""
+    return _peticion("POST", f"/api/v1/eventos/{evento_id}/apelacion", {"motivo": motivo, "usuario_id": usuario_id})
+
+
 def editar_evento(evento_id: str, cambios: dict) -> dict | None:
     """P5b: PATCH /eventos/{id}. Si cambia la fecha o el lugar, la API avisa a los apuntados."""
     return _peticion("PATCH", f"/api/v1/eventos/{evento_id}", cambios)

@@ -442,6 +442,73 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/eventos/{id}/apelacion': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * P3a: el organizador pide que se revise otra vez un plan rechazado (una sola vez)
+     * @description Solo quien propuso el plan: el responsable de su publicador o el vecino que lo propuso (con su sesión), o el
+     *     bot en su nombre (`X-Internal-Token` + `usuario_id`). Solo si el plan está `rechazado` y **una vez**: el
+     *     plan vuelve a `en_revision`, a la bandeja, con el motivo «Apelación: {motivo}» y guarda `apelacion` en el
+     *     evento. El moderador decide con los botones de siempre; un segundo rechazo es definitivo (no se puede
+     *     volver a apelar). El aviso de rechazo al publicador lleva `evento_id`, para que el bot ponga [Apelar].
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: components['parameters']['Id'];
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            /** @description Por qué debería publicarse */
+            motivo: string;
+            /**
+             * Format: uuid
+             * @description Obligatorio con X-Internal-Token (el bot): quién apela
+             */
+            usuario_id?: string;
+          };
+        };
+      };
+      responses: {
+        /** @description El plan vuelve a la bandeja */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['evento'];
+          };
+        };
+        /** @description 401 `no_autenticado` */
+        401: components['responses']['Error'];
+        /** @description 403 `prohibido` (no es quien propuso el plan) */
+        403: components['responses']['Error'];
+        /** @description 404 `evento_no_encontrado` */
+        404: components['responses']['Error'];
+        /** @description 409 `estado_invalido` (no está rechazado) o `apelacion_usada` (ya apeló una vez) */
+        409: components['responses']['Error'];
+        /** @description 422 `validacion` (motivo de menos de 10 o más de 500 caracteres) */
+        422: components['responses']['Error'];
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/eventos/{id}/inscripciones': {
     parameters: {
       query?: never;
@@ -2974,12 +3041,16 @@ export interface components {
         dni?: string;
         /** @description Pueblo o dirección donde vive */
         residencia?: string;
+        /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
+        edad?: number | null;
       } | null;
     };
     UsuarioCrear: {
       telefono: components['schemas']['Telefono'];
       nombre?: string;
       municipio?: string | null;
+      /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
+      edad?: number | null;
     };
     /** @description Vincula el contacto de un canal (p. ej. Telegram tras «Compartir mi número») con el teléfono. */
     UsuarioVincular: {
@@ -2989,6 +3060,8 @@ export interface components {
       nombre?: string;
       /** @description Solo se usa si se crea el usuario */
       municipio?: string | null;
+      /** @description P4a. Solo se usa si se crea el usuario. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
+      edad?: number | null;
     };
     UsuarioEditar: {
       nombre?: string;
@@ -3002,6 +3075,8 @@ export interface components {
       acepta_avisos?: boolean;
       radio_km?: number | null;
       telefono?: components['schemas']['Telefono'];
+      /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
+      edad?: number | null;
     };
     Token: {
       access_token: string;
@@ -3266,6 +3341,12 @@ export interface components {
         score_spam?: number | null;
         revisado_por?: string | null;
       };
+      /** @description P3a. La apelación del organizador tras un rechazo (POST /eventos/{id}/apelacion). Solo hay una por plan; null si no ha apelado */
+      readonly apelacion?: {
+        motivo: string;
+        /** Format: date-time */
+        creada_en: string;
+      } | null;
       /** Format: date-time */
       creado_en?: string;
       /** Format: date-time */
@@ -3394,6 +3475,8 @@ export interface components {
         dni: string;
         /** @description Pueblo o dirección donde vive */
         residencia: string;
+        /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
+        edad?: number | null;
         /** @description Un moderador ha comprobado el DNI y la residencia (POST /publicadores/{id}/verificar-identidad) */
         identidad_verificada: boolean;
       } | null;
@@ -3439,6 +3522,8 @@ export interface components {
       formato_aviso?: 'texto' | 'audio';
       acepta_avisos?: boolean;
       radio_km?: number | null;
+      /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion`. Los usuarios anteriores quedan en null */
+      edad?: number | null;
       /** Format: uuid */
       publicador_id?: string | null;
       /** Format: date-time */
