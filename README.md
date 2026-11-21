@@ -65,7 +65,7 @@ Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **vis
 
 **Reglas de arranque para todos** (lo que más ha fallado):
 1. Siempre desde la raíz: `docker compose --env-file .env -f infra/docker-compose.yml …` (también `exec`, `logs`, `--profile ingesta`). Sin `--env-file`, el bot va sin IA (#53).
-2. Tras cada `up` o si cambia el túnel: `python scripts/url_publica.py` (pone `PUBLIC_URL` y `WEB_URL`, pasa la URL al bot en caliente y comprueba el webhook). Si dice «Telegram: REVISAR», `--forzar`.
+2. **Con la URL fija** (`CLOUDFLARE_TUNNEL_TOKEN` en el `.env`, `PUBLIC_URL`=`WEB_URL`=`https://hackemate.rompelab.com`) no hace falta nada más. **Solo con el túnel rápido** (sin token), tras cada `up` o si cambia el túnel: `python scripts/url_publica.py` (pone `PUBLIC_URL` y `WEB_URL`, pasa la URL al bot en caliente y comprueba el webhook). Si dice «Telegram: REVISAR», `--forzar`.
 3. `.env` sin variables repetidas (Docker usa la última) y con: `VITE_API_URL=/`, `DEMO_MODE=true`, `CORS_ORIGENES` con `https://localhost,capacitor://localhost`, `PUBLIC_URL=` vacío y `WEB_URL=http://localhost:8080` (los rellena el script), `FREELLM_URL_DOCKER=http://host.docker.internal:3001/v1` con **tu** clave de FreeLLM, `NIM_API_KEY` y la `LLM_CADENA` de `.env.example`.
 4. En la demo, **ni `down -v` ni `demo_reset`** (borran la base). `up -d --build` conserva lo que hace la gente (#63). Qué conserva cada comando: «⚙️ Backend» → «Qué se guarda».
 5. La red de la universidad (Fortinet) bloquea `npm`: la imagen `web` y el APK se construyen con datos del móvil. Claves solo por privado y en `.env`, nunca en `*.example`.
@@ -233,7 +233,7 @@ Detalle de las llamadas: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJ
 ### Los tres · prueba desde fuera (dom 00:00)
 
 - [ ] **T1.** Máquina de la demo encendida y **los tres móviles con datos (sin wifi de la uni)**: URL pública, agenda con datos reales, ficha, inscripción, chat, `/admin`, los 7 pasos por Telegram y el APK. Lo que falle, a la tabla del flujo que lo arregla.
-- [ ] **T2.** Reinicio en frío cronometrado: `down` (sin `-v`) y `up -d`, `url_publica.py`, y comprobar Telegram, enlaces del bot, web y APK (cambiando solo su dirección).
+- [ ] **T2.** Reinicio en frío cronometrado: `down` (sin `-v`) y `up -d`, y comprobar Telegram, enlaces del bot, web y APK. Con la URL fija (`https://hackemate.rompelab.com`, `CLOUDFLARE_TUNNEL_TOKEN` en el `.env`, PR #119) **ya no hace falta `url_publica.py`** ni cambiar la dirección del APK: el bot registra el webhook solo al arrancar. `url_publica.py` solo hace falta si se vuelve al túnel rápido (token vacío).
 
 ### Decisiones
 
