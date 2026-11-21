@@ -70,11 +70,20 @@ Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **vis
 
 **Pendiente que sale de esta revisión** (detalle en «🔗 Pendiente entre flujos»): **Adán**, que la ficha, el chat y la bandeja se refresquen solos (hoy cargan una vez y no se ve lo que hacen los demás) y que el service worker de la PWA no guarde `/api/` en caché. **Fran**, al recrear el bot (lo hace `url_publica.py`) se pierden las conversaciones a medias.
 
+**Progreso sáb 21/11 14:30 · segunda máquina de demo lista (Adán):** con `develop` hasta la #62, en el portátil de Adán funcionan la URL pública (`scripts/url_publica.py`), Telegram con IA (Gemini y FreeLLM en Docker) y, **desde el móvil**, la web por la URL del túnel y un post por Telegram que llega a la bandeja. Así hay dos máquinas capaces de hacer la demo (Francisco y Adán); **solo una a la vez puede tener Telegram**. Siguiente: APK (C9) y T1.
+
+**Checklist del `.env` para que todos tengamos lo mismo** (lo que falló en el de Adán):
+1. `git pull origin develop` y comparar con `.env.example`: **ninguna variable repetida** (si una sale dos veces, Docker usa la última) y añadir las nuevas (`FB_*`, `COLA_*`, `NOTIFICACIONES_*`, `VITE_CANAL`…).
+2. `VITE_API_URL=/`, `DEMO_MODE=true` y `CORS_ORIGENES` con `https://localhost,capacitor://localhost`.
+3. `PUBLIC_URL=` vacío y `WEB_URL=http://localhost:8080`: los rellena `url_publica.py`. Nunca dejar el texto de ejemplo `https://<lo-que-sea>.trycloudflare.com`.
+4. IA: `FREELLM_URL_DOCKER=http://host.docker.internal:3001/v1` y en `FREELLM_API_KEY` **la clave unificada de tu propio** FreeLLM (http://localhost:3001 → *Keys*). `GEMINI_API_KEY` puede ser la de Google de `freellmapi.config.json`.
+5. Arrancar siempre con `--env-file .env` (#53). Si `url_publica.py` dice «Telegram: REVISAR», el bot aún arrancaba: `python scripts/url_publica.py --forzar`.
+
 **Progreso sáb 21/11 11:45 (punto de partida común para corregir y seguir):**
 - ✅ **Prueba completa en Docker con PostgreSQL** en la máquina de Adán (`down -v` + `up --build`, `CANAL=console`, sin IA): `smoke_test.ps1` en verde, `scripts/simular_chat.py` de punta a punta, `/admin` contra la API real (aprobar, rechazar y ver lo aprobado en la agenda) y la web (ficha, apuntarse, Recuerdos, Proponer un plan con el código de alta que sale en `docker compose … logs bot`). Detalle en la PR #48.
 - ✅ **Arreglado en la web:** tras reiniciar la base, la sesión vieja ya no rompe la ficha (la web la cierra sola y repite sin token).
 - ✅ **Nuevo: restaurar un plan rechazado.** En `/admin` → Planes → Rechazados, el moderador pulsa «Restaurar» y el plan vuelve a la bandeja para decidir otra vez. Contrato: `Decision.decision` acepta `restaurar` (solo desde `rechazado`, pasa a `en_revision` y no avisa al publicador).
-- ⏳ **Falta:** Telegram real con IA y audios (pasos 1 con audio, 6 y 7) en la máquina de la demo. De los fallos de la prueba, el de duplicados ya está resuelto (A, ver «Ya resuelto») y el de «este finde» va en la rama `Flujo-B`.
+- ⏳ **Falta (a las 11:45):** Telegram real con IA y audios. *(Actualizado: pasos 1–3 con Telegram hechos en el portátil de Francisco (C1, `v0.2`) y Telegram con IA también en el de Adán a las 14:20; «este finde» arreglado en la #52.)*
 - 🔑 **Un solo `.env` en la raíz para Docker:** las claves del bot que solo estaban en `services/bot/.env` no llegaban a Docker. Adán pasa por privado el `.env` unificado (con `DEMO_MODE=true`); el `INTERNAL_TOKEN` de ese archivo es el de todo el equipo.
 
 👉 **Para hoy:** propuesta de cómo trabajamos, revisión conjunta de la v1 a las 10:00 y decisiones pendientes en [`docs/SINCRONIZACION_SABADO.md`](docs/SINCRONIZACION_SABADO.md). Para revisarla entre los tres.
