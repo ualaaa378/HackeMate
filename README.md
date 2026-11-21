@@ -107,6 +107,7 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 
 | Hasta | Tarea |
 |---|---|
+| dom 00:00 | - [ ] **Probar el acceso con contraseña de `/admin`** (Benas, sáb 21/11, en la misma PR). Cambia `src/admin/PaginaAdmin.tsx` (formulario usuario/contraseña), `ProveedorAcceso.tsx`, `acceso.ts`, `api/admin.ts` (`entrarAdmin`), un test en `api/admin.test.ts` y estilos en `theme/app.css`. **No se ha podido compilar** (no hay Node en el portátil de Benas): pasar `npm run lint` y `npm run test:unit` y probarlo con `admin` / `1234`. Con API, el botón viejo de moderador de la demo ya no deja entrar. |
 | sáb 19:00 | - [x] **C2.** *(sáb 16:30: hecho. Sección «Para ti» en la agenda con sesión iniciada, `GET /recomendaciones` y el motivo debajo de cada tarjeta; se recarga al volver a la agenda o al deslizar. Sin API, planes con plazas de los mocks.)* Paso 4. |
 | sáb 19:00 | - [x] **Refresco sin recargar** *(sáb 16:30: hecho. Ficha al entrar, al deslizar y cada 20 s; chat cada 12 s; bandeja cada 10 s salvo mientras se decide un plan. Solo con la pestaña visible.)* |
 | sáb 19:00 | - [x] **B3 con Fran.** *(sáb 21/11: hecho, ver B3 en el apartado de Francisco.)* FreeLLMAPI en Docker en la máquina de Adán y ensayo del paso 7 (audios). |
@@ -123,6 +124,7 @@ Opcional (lo pide el bot, plan C de la demo): un chat simulado en la web que lla
 
 | Hasta | Tarea |
 |---|---|
+| sáb 21/11 | - [x] **Acceso de la moderación con usuario y contraseña** (pedido por Benas). `POST /auth/admin` {usuario, contrasena} → sesión del moderador; compara con `ADMIN_USUARIO` / `ADMIN_CONTRASENA` del `.env` (por ahora `admin` / `1234`; si se queda en 1234 sin DEMO_MODE, la API lo avisa en el log). En la web, la puerta de `/admin` pide usuario y contraseña en vez del botón «🏛️ Moderación del ayuntamiento» de la demo; las asociaciones siguen entrando con su móvil o con el botón de la demo. |
 | dom 00:00 | - [x] **A4.** `GET /estadisticas`: que el % de importadas cuente las de Facebook (llegan con `importado_auto`). *(sáb 21/11: ya lo hacía, ahora con test de punta a punta. `pct_importadas_auto` = planes `publicado`/`finalizado` que llegaron solos (Facebook, Instagram, web externa) sobre el total del periodo. Lo de Telegram, la web y el panel no cuenta como importado. Un post de Facebook que va a la bandeja cuenta cuando el moderador lo aprueba. **Adán (C6):** basta con pintar `pct_importadas_auto`; no hace falta cambiar el contrato.)* |
 | sáb 19:00 | - [x] **A9 (D1, contrato).** *(sáb 21/11: hecho.)* `schemas/notificacion.json` pide `telefono` **o** `contacto` (`anyOf`); sin ninguno, el contrato lo rechaza. La API ya no deja «fallida» un aviso a quien solo tiene Telegram: sale por su `contacto` (`tg:…`) y el cuerpo no lleva `telefono`. Sin destino → `fallida` con «sin destino». |
 | dom 00:00 | - [x] **A8 (D1).** *(sáb 21/11: hecho.)* `acepta_avisos` vale `false` por defecto para los usuarios nuevos (el valor por defecto está en el modelo, no en la base: no hace falta migración y los usuarios que ya existen no cambian). Los del seed siguen en `true`. Un aviso `recomendacion` a quien no lo acepta no sale (`fallida`, «no acepta avisos»); los avisos de planes a los que ya está apuntado (cambio de hora, respuestas) salen siempre. |
@@ -245,6 +247,7 @@ La lista completa y comentada está en `.env.example` (manda sobre esta tabla).
 | `JWT_SECRET` / `JWT_EXPIRA_MIN` | `cambia-esto-tambien` / `1440` | Firma y duración de las sesiones. Con el valor de ejemplo y `DEMO_MODE=false`, la api arranca igual pero escribe un `WARNING` en el log: pon un secreto aleatorio. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_TOKENINFO_URL` / `GOOGLE_TIMEOUT_S` | vacío / URL de Google / `5` | Login con Google (vacío → `/auth/google` responde 503). |
 | `DEMO_MODE` | `false` | `true` habilita `POST /api/v1/auth/demo`. Solo en la presentación. |
+| `ADMIN_USUARIO` / `ADMIN_CONTRASENA` | `admin` / `1234` | Acceso de la moderación del ayuntamiento en la web (`POST /auth/admin`). Provisional: cambiar la contraseña en la máquina de la demo. |
 | `BOT_URL` | `http://bot:8001` | Dónde están `/notify` y `/ai/*`. |
 | `API_URL` | `http://api:8000` | La usa el bot para llamar a la api. |
 | `APP_VERSION` | vacío | Versión de `/health` (vacío = la del código). |

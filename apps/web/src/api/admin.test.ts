@@ -221,6 +221,14 @@ describe('interfaz del ayuntamiento con la API real', () => {
     expect(llamadas[0].cuerpo).toEqual({ usuario_id: '5a5e0000-0000-4000-8000-000000000002' });
   });
 
+  it('la moderación entra con usuario y contraseña (POST /auth/admin)', async () => {
+    const api = await cargarReal();
+    const token = { access_token: 't', token_type: 'bearer', usuario: { id: 'u', nombre: 'Lucía', rol: 'moderador' } };
+    respuestas.set('/auth/admin', token);
+    expect(await api.entrarAdmin('admin', '1234')).toEqual(token);
+    expect(llamadas[0].cuerpo).toEqual({ usuario: 'admin', contrasena: '1234' });
+  });
+
   it('sin DEMO_MODE en la API, la entrada de la demo vuelve a los mocks', async () => {
     const api = await cargarReal();
     expect(await api.entrarDemo('publicador')).toBeNull();

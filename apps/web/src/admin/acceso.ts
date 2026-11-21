@@ -1,6 +1,8 @@
 import { createContext, useContext } from 'react';
 
 export type RolAdmin = 'moderador' | 'publicador';
+/** ok: dentro · credenciales: usuario o contraseña mal · sin_api: no se puede comprobar ahora. */
+export type ResultadoAcceso = 'ok' | 'credenciales' | 'sin_api';
 export interface AccesoAdmin {
   rol: RolAdmin | null;
   nombre: string;
@@ -8,8 +10,10 @@ export interface AccesoAdmin {
   publicadorId: string | null;
   /** true si se trabaja con mocks: no hay API o no deja entrar sin cuenta (DEMO_MODE). */
   demo: boolean;
-  /** Entra sin cuenta con el usuario de la demo de ese rol. Con la API en DEMO_MODE, con sesión real. */
+  /** Entra sin cuenta con el usuario de la demo de ese rol (la asociación; la moderación, solo sin API). */
   entrarDemo: (rol: RolAdmin) => Promise<void>;
+  /** Moderación del ayuntamiento con usuario y contraseña (POST /auth/admin). */
+  entrarAdmin: (usuario: string, contrasena: string) => Promise<ResultadoAcceso>;
   salir: () => void;
 }
 

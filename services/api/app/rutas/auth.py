@@ -273,6 +273,38 @@ def login_google(datos: LoginGoogle, db: Session = Depends(get_db)):
     return respuesta_token(usuario)
 
 
+# --- Acceso de la moderación del ayuntamiento ------------------------------------------------------
+
+
+class LoginAdmin(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    usuario: str = Field(min_length=1, max_length=100)
+    contrasena: str = Field(min_length=1, max_length=200)
+
+
+def _igual(a: str, b: str) -> bool:
+    return hmac.compare_digest(a.encode("utf-8"), b.encode("utf-8"))
+
+
+@router.post("/admin")
+def login_admin(datos: LoginAdmin, db: Session = Depends(get_db)):
+    """Usuario y contraseña de la moderación (ADMIN_USUARIO / ADMIN_CONTRASENA) → sesión del moderador más antiguo.
+    Funciona con y sin DEMO_MODE. Comparación en tiempo constante; el error no dice cuál de los dos falla."""
+    ajustes = get_settings()
+    usuario_ok = _igual(datos.usuario.strip(), ajustes.admin_usuario)
+    contrasena_ok = bool(ajustes.admin_contrasena) and _igual(datos.contrasena, ajustes.admin_contrasena)
+    if not (usuario_ok and contrasena_ok):
+        log.info("acceso de moderación rechazado")
+        raise ErrorApi(401, "credenciales_invalidas", "Usuario o contraseña incorrectos")
+    moderador = db.scalar(
+        select(Usuario).where(Usuario.rol == "moderador").order_by(Usuario.creado_en, Usuario.id).limit(1)
+    )
+    if moderador is None:
+        raise ErrorApi(503, "sin_moderador", "No hay ningún usuario moderador en la base de datos")
+    return respuesta_token(moderador)
+
+
 # --- Modo demo ------------------------------------------------------------------------------------
 
 
