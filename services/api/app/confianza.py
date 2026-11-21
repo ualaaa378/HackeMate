@@ -4,7 +4,7 @@ del nivel 2 (las mismas que `apps/web/src/admin/confianza.ts`).
 - `actividad`: se cuenta por `Evento.creado_en` (cuándo se propuso el plan). «Aprobados» son los eventos que
   llegaron a publicarse y siguen contando aunque ya hayan pasado (`publicado` y `finalizado`).
 - Nivel 2 = revisión automática. Solo lo da un moderador y solo si se cumplen todas las reglas; la subida
-  automática por aprobaciones (`app/moderacion.registrar_aprobacion`) llega como mucho al nivel 1.
+  automática por aprobaciones ya no existe: solo hay dos modos (0 a mano, 2 automática).
 """
 
 import re

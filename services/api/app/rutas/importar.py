@@ -20,7 +20,7 @@ from app.db import get_db
 from app.duplicados import buscar_posible_duplicado
 from app.errores import ErrorApi
 from app.modelos import CANALES, CATEGORIAS, Evento, Fuente, Municipio, Publicador, ahora
-from app.moderacion import clasificar_spam, decidir_estado
+from app.moderacion import clasificar_spam, decidir_estado, motivo_con_duplicado
 from app.notificaciones import enviar_en_segundo_plano, notificar_moderadores
 from app.rutas.eventos import (
     Categoria,
@@ -435,8 +435,7 @@ def confirmar_evento(
     estado, motivo = decidir_estado(db, evento, publicador, score, motivo_spam)
 
     parecido = buscar_posible_duplicado(db, evento.titulo, evento.fecha_inicio, evento.municipio, excluir_id=evento.id)
-    if parecido is not None and estado == "publicado":
-        estado, motivo = "en_revision", f"Posible duplicado de «{parecido.titulo}»"
+    estado, motivo = motivo_con_duplicado(estado, motivo, parecido.titulo if parecido else None)
 
     evento.estado = estado
     evento.score_spam = score

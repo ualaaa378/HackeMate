@@ -84,17 +84,26 @@ def test_ruta_solidaria_completa_faltan(api):
     assert id not in _publicados(api)
 
 
-def test_nivel_1_categoria_habitual_publica(api):
-    # Amigos de Velefique es nivel 1 y «deportiva» es de sus categorías habituales.
+def test_a_mano_va_a_revision_aunque_sea_su_categoria_habitual(api):
+    # Amigos de Velefique publica «a mano» (nivel 0): ya no hay semiautomático por categoría habitual.
     id = _importar(api, telefono=AMIGOS_VELEFIQUE_TEL, titulo=OTRO_TITULO)["evento"]["id"]
     r = _confirmar(api, id, {"lugar": "Plaza de la Iglesia", "plazas_totales": 40})
     assert r.status_code == 200, r.text
     _valida(r.json())
     assert r.json()["posible_duplicado_de"] is None
     evento = r.json()["evento"]
-    assert evento["estado"] == "publicado"
-    assert evento["moderacion"]["motivo"] == "Publicador de nivel 1, categoría habitual"
-    assert id in _publicados(api)
+    assert evento["estado"] == "en_revision"
+    assert evento["moderacion"]["motivo"] == "Publicación a mano: la revisa el moderador"
+    assert id not in _publicados(api)
+
+
+def test_nivel_1_obsoleto_cuenta_como_a_mano(api, db):
+    _nuevo_publicador(db, nivel=1)
+    id = _importar(api, telefono=NUEVO_TEL, titulo=OTRO_TITULO)["evento"]["id"]
+    r = _confirmar(api, id, {"lugar": "Plaza", "plazas_totales": 10})
+    assert r.status_code == 200, r.text
+    assert r.json()["evento"]["estado"] == "en_revision"
+    assert r.json()["evento"]["moderacion"]["motivo"] == "Publicación a mano: la revisa el moderador"
 
 
 def test_nivel_2_texto_normal_publica(api):
@@ -111,13 +120,13 @@ def test_nivel_2_texto_normal_publica(api):
 
 def test_nivel_0_a_revision_con_motivo(api, db):
     _nuevo_publicador(db, nivel=0)
-    id = _importar(api, telefono=NUEVO_TEL)["evento"]["id"]
+    id = _importar(api, telefono=NUEVO_TEL, titulo=OTRO_TITULO)["evento"]["id"]
     r = _confirmar(api, id, {"lugar": "Plaza", "plazas_totales": 10})
     assert r.status_code == 200, r.text
     _valida(r.json())
     evento = r.json()["evento"]
     assert evento["estado"] == "en_revision"
-    assert "nivel 0" in evento["moderacion"]["motivo"]
+    assert evento["moderacion"]["motivo"] == "Publicación a mano: la revisa el moderador"
     assert id not in _publicados(api)
 
 
@@ -188,7 +197,8 @@ def test_publicador_pausado_403(api, db):
 
 
 def test_posible_duplicado_va_a_revision(api):
-    primero = _importar(api, telefono=AMIGOS_VELEFIQUE_TEL, titulo=OTRO_TITULO)["evento"]["id"]
+    # El primero lo publica el Bar La Plaza (automática, nivel 2).
+    primero = _importar(api, titulo=OTRO_TITULO)["evento"]["id"]
     assert _confirmar(api, primero, {"lugar": "Plaza", "plazas_totales": 40}).json()["evento"]["estado"] == "publicado"
     # Lo mismo, llegado por otro lado y publicado por alguien de nivel 2.
     segundo = _importar(api, url="https://example.org/otro-post", titulo=OTRO_TITULO.upper())["evento"]["id"]

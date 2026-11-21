@@ -95,7 +95,6 @@ Quién hace qué ahora. Cada uno marca su línea al terminar y apunta los fallos
 Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen en la API (ninguna queda con `x-implementado: false`).
 
 - **Frase de portada automática:** `frase_portada` ya se guarda y se devuelve (`POST`/`PATCH /eventos`, confirmar). Si llega vacía, la API se la pedirá al bot cuando exista `POST /ai/frase` (ver flujo B); mientras, la web pone una frase fija por tipo de plan.
-- **Revisión a mano o automática (nivel 1):** la regla del equipo (`apps/web/src/admin/confianza.ts`, H2.3) es que solo hay dos modos: a mano (todo pasa por la bandeja) o automática (nivel 2). En la API, un publicador de nivel 1 publica sin revisión los planes de sus categorías habituales (`services/api/app/moderacion.py`, `decidir_estado`). Probado el 21/11: «Amigos de Velefique» (nivel 1) crea una ruta deportiva desde `/admin/eventos` y sale publicada sin pasar por la bandeja, aunque la web le dice «revisión a mano». Propuesta: que el nivel 1 vaya siempre a `en_revision` (como el 0), o decidir juntos que el nivel 1 es «automática solo en lo habitual» y la web lo enseña así.
 - **Una propuesta de un vecino sin asociación:** entra en revisión y el moderador ve sus `datos_ayuntamiento`, pero el vecino solo los ve en la respuesta del alta (la API no guarda quién propuso el plan si no es un publicador).
 
 ### Flujos A y B · a acordar (Benas + Francisco)
@@ -137,6 +136,8 @@ Probado con `scripts/simular_chat.py` (bot con `CANAL=console`, sin Gemini ni Fr
 Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
 
 ### Ya resuelto
+
+- **Solo dos modos de publicación (a mano y automática), sin semiautomático** (decisión del equipo, 21/11): la API ya no usa el nivel 1 (si llega, lo guarda como 0) ni sube de nivel sola; la migración 0008 pasa a «a mano» los que estaban en 1, y en el seed las asociaciones son «a mano» y los ayuntamientos y el bar, «automática». Un posible duplicado de una asociación «a mano» llega a la bandeja con el motivo «Posible duplicado de…». **Para Adán (opcional):** en `apps/web/src/api/admin.ts` (`cambiarRevision`), «a mano» puede mandar `nivel_confianza: 0` en vez de 1 (hoy funciona igual: la API convierte el 1 en 0), y el comentario de `confianza.ts` ya no tiene que hablar de «0 o 1».
 
 - La web (flujo C, H2) ya usa la API real en la zona del ayuntamiento: bandeja (`/moderacion/*`), publicadores (`/aprobar`, `/pausar`, `/verificar-identidad`), planes con JWT, `GET /estadisticas`, panel del bot y «Proponer un plan» con `datos_ayuntamiento`. Los botones de la demo en `/admin` entran con `POST /auth/demo`, así que la API tiene que arrancar con `DEMO_MODE=true` en el `.env` (si no, la web vuelve a los mocks y lo marca como «modo demo»).
 
@@ -212,7 +213,7 @@ La lista completa y comentada está en `.env.example` (manda sobre esta tabla).
 | `API_URL` | `http://api:8000` | La usa el bot para llamar a la api. |
 | `APP_VERSION` | vacío | Versión de `/health` (vacío = la del código). |
 | `ZONA_HORARIA` | `Europe/Madrid` | Zona de las fechas y del `.ics`. |
-| `MODERACION_APROBACIONES_SUBIR_NIVEL` / `MODERACION_UMBRAL_SPAM` | `3` / `0.7` | Confianza del publicador y umbral del antispam. |
+| `MODERACION_UMBRAL_SPAM` | `0.7` | Umbral del antispam. (`MODERACION_APROBACIONES_SUBIR_NIVEL` ya no se usa: no hay subida automática de nivel.) |
 | `NOTIFICACIONES_TIMEOUT_S` / `NOTIFICACIONES_MAX_INTENTOS` | `3` / `5` | Cola de avisos hacia el bot: espera máxima a `/notify` e intentos antes de darlo por fallido. |
 | `NOTIFICACIONES_REINTENTO_S` | `60` | Cada cuántos segundos la api reintenta en segundo plano los avisos pendientes (`0` = desactivado). |
 | `PRECIOS_TOKENS_EUR_MTOK` | JSON por proveedor | Coste de la IA en `/estadisticas` (euros por millón de tokens; lo que no aparece cuenta como gratuito). |
@@ -232,7 +233,7 @@ Todos bajo `/api/v1/` salvo `/health`. Detalle, errores y ejemplos en `contracts
 | H4 · Jurado | `GET /estadisticas` (panel: actividades, inscripciones vs asistencia, ocupación, solapamientos y coste de la IA) · `POST /metrics/tokens` (el bot registra los tokens por proveedor) · `GET /admin/bot/metricas`, `POST /admin/bot/simular-caida` (panel de robustez: la API reenvía al bot con su `INTERNAL_TOKEN`; 503 `bot_no_disponible` si no responde en 3 s, 502 si responde con error) |
 | Asociaciones (revisión a mano o automática) | `POST /publicadores/{id}/verificar-identidad` · `POST /publicadores/{id}/aprobar` sobre un publicador ya aprobado cambia `nivel_confianza` (el 2 exige las reglas de `apps/web/src/admin/confianza.ts`; si no, 409 `reglas_confianza_no_cumplidas` con `details.faltan`) · `responsable` y `actividad` solo con sesión de moderador · alta con `responsable` (422 `dni_invalido` si el DNI/NIE no es válido) |
 
-Niveles de confianza: la subida automática por aprobaciones (`MODERACION_APROBACIONES_SUBIR_NIVEL`) llega como mucho al nivel 1; el nivel 2 (revisión automática) solo lo da un moderador y solo si se cumplen las reglas. La `actividad` se cuenta por la fecha en que se propuso cada plan (`creado_en`); «aprobados» son los `publicado` y `finalizado`.
+Modos de publicación: solo dos, **a mano** (`nivel_confianza` 0, todo pasa por el moderador) y **automática** (2, se publica salvo spam alto o pausa). No hay semiautomático ni subida automática: a automática solo pasa un moderador y solo si se cumplen las reglas. El nivel 1 está obsoleto (si llega, se guarda como 0). La `actividad` se cuenta por la fecha en que se propuso cada plan (`creado_en`); «aprobados» son los `publicado` y `finalizado`.
 
 ### Sembrar y reiniciar la demo
 

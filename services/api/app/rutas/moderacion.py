@@ -84,15 +84,9 @@ def pendientes(p: Pagina = Depends(pagina), revisor: str = Depends(exigir_modera
     return paginar_lista([item for _, item in items], p)
 
 
-def _texto_aviso(evento: Evento, decision: str, motivo: str | None, subio_nivel: bool) -> str:
+def _texto_aviso(evento: Evento, decision: str, motivo: str | None) -> str:
     if decision == "aprobar":
-        texto = f"Tu evento «{evento.titulo}» ya está publicado en la agenda."
-        if subio_nivel and evento.publicador is not None:
-            texto += (
-                f" Has subido a nivel de confianza {evento.publicador.nivel_confianza}:"
-                " tus próximas publicaciones habituales saldrán sin esperar revisión."
-            )
-        return texto
+        return f"Tu evento «{evento.titulo}» ya está publicado en la agenda."
     accion = "no se ha publicado" if decision == "rechazar" else "se ha retirado de la agenda"
     return f"Tu evento «{evento.titulo}» {accion}." + (f" Motivo: {motivo}" if motivo else "")
 
@@ -135,15 +129,13 @@ def decidir(
         )
     db.refresh(evento)
 
-    subio_nivel = False
     publicador = evento.publicador
     if datos.decision == "aprobar" and publicador is not None:
-        # Al quedar publicado, su categoría cuenta ya como «lo habitual» para el nivel 1 (decidir_estado).
-        subio_nivel = registrar_aprobacion_en_bd(db, publicador.id)
+        registrar_aprobacion_en_bd(db, publicador.id)
     aviso = None
     if publicador is not None:
         aviso = notificar_publicador(
-            db, publicador, "moderacion", _texto_aviso(evento, datos.decision, motivo, subio_nivel),
+            db, publicador, "moderacion", _texto_aviso(evento, datos.decision, motivo),
             evento_id=evento.id, enviar=False,
         )
     db.commit()

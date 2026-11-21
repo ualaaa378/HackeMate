@@ -15,8 +15,8 @@
     "email": { "type": ["string", "null"], "format": "email" },
     "telegram_id": { "type": ["string", "null"], "pattern": "^-?[0-9]{1,20}$", "description": "chat_id de Telegram (contacto tg:<chat_id>). Solo para servicios internos" },
     "estado": { "enum": ["solicitado", "whatsapp_verificado", "aprobado", "rechazado", "pausado"] },
-    "nivel_confianza": { "enum": [0, 1, 2] },
-    "aprobaciones": { "type": "integer", "minimum": 0, "description": "Eventos aprobados; al llegar al umbral sube de nivel" },
+    "nivel_confianza": { "enum": [0, 1, 2], "description": "Modo de publicación: 0 = a mano (todo pasa por el moderador) · 2 = automática (solo la da un moderador, con reglas). 1 está obsoleto: la API ya no lo asigna (ver enums.md)" },
+    "aprobaciones": { "type": "integer", "minimum": 0, "description": "Eventos aprobados (acumulado, para estadísticas). Ya no sube de nivel solo" },
     "automatizaciones_pausadas": { "type": "boolean" },
     "categorias_habituales": { "type": "array", "items": { "enum": ["deportiva", "cultural", "fiestas", "gastronomia", "ludica", "comercio"] } },
     "fuentes": {

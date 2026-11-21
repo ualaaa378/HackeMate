@@ -224,29 +224,29 @@ def test_spam_alto_a_revision_aunque_sea_nivel_2(base, ajustes):
     assert motivo.startswith("Posible spam") and "bit.ly" in motivo
 
 
-def test_nivel_0_a_revision(base):
+def test_a_mano_a_revision(base):
     p = _publicador(base, nivel=0)
-    assert moderacion.decidir_estado(base, _evento(base, p), p, 0.1) == ("en_revision", "Publicador nuevo (nivel 0)")
+    assert moderacion.decidir_estado(base, _evento(base, p), p, 0.1) == ("en_revision", moderacion.MOTIVO_A_MANO)
 
 
-def test_nivel_1_categoria_habitual_publica(base):
+def test_nivel_1_obsoleto_es_a_mano_aunque_sea_su_categoria_habitual(base):
+    # Ya no hay semiautomático: el nivel 1 que quede en la base va a revisión como el 0.
     p = _publicador(base, nivel=1, categorias_habituales=["gastronomia"])
-    assert moderacion.decidir_estado(base, _evento(base, p), p, 0.1)[0] == "publicado"
+    _evento(base, p, categoria="gastronomia", estado="publicado")
+    assert moderacion.decidir_estado(base, _evento(base, p), p, 0.1) == ("en_revision", moderacion.MOTIVO_A_MANO)
 
 
-def test_nivel_1_categoria_ya_publicada_publica(base):
-    p = _publicador(base, nivel=1)
-    _evento(base, p, categoria="deportiva", estado="publicado")
-    nuevo = _evento(base, p, categoria="deportiva")
-    assert moderacion.decidir_estado(base, nuevo, p, 0.1)[0] == "publicado"
+def test_normalizar_nivel():
+    assert [moderacion.normalizar_nivel(n) for n in (0, 1, 2)] == [0, 0, 2]
 
 
-def test_nivel_1_categoria_nueva_a_revision(base):
-    p = _publicador(base, nivel=1, categorias_habituales=["gastronomia"])
-    _evento(base, p, categoria="cultural", estado="rechazado")  # rechazado no cuenta como habitual
-    e = _evento(base, p, categoria="cultural")
-    estado, motivo = moderacion.decidir_estado(base, e, p, 0.1)
-    assert estado == "en_revision" and motivo.startswith("Categoría fuera de lo habitual")
+def test_motivo_con_duplicado():
+    f = moderacion.motivo_con_duplicado
+    assert f("publicado", "Publicación automática", "Ruta") == ("en_revision", "Posible duplicado de «Ruta»")
+    assert f("en_revision", moderacion.MOTIVO_A_MANO, "Ruta") == ("en_revision", "Posible duplicado de «Ruta»")
+    # El spam y las pausas son más importantes: su motivo se queda.
+    assert f("en_revision", "Posible spam (0.95): apuestas", "Ruta") == ("en_revision", "Posible spam (0.95): apuestas")
+    assert f("publicado", "Publicación automática", None) == ("publicado", "Publicación automática")
 
 
 def test_nivel_2_publica(base):
@@ -263,24 +263,22 @@ def test_umbral_configurable(base, ajustes):
 
 # --- registrar_aprobacion -------------------------------------------------------
 
-def test_tres_aprobaciones_suben_de_0_a_1_y_no_llegan_solas_a_2(base, ajustes):
-    # El nivel 2 (revisión automática) solo lo da un moderador si se cumplen las reglas (app/confianza.py).
+def test_aprobaciones_cuentan_pero_no_suben_de_nivel(base, ajustes):
+    # Solo hay dos modos: a automática solo pasa un moderador (POST /publicadores/{id}/aprobar con reglas).
     ajustes(MODERACION_APROBACIONES_SUBIR_NIVEL=3)
     p = _publicador(base, nivel=0)
-    assert [moderacion.registrar_aprobacion(p) for _ in range(3)] == [False, False, True]
-    assert p.nivel_confianza == 1 and p.aprobaciones == 3
-    assert not any(moderacion.registrar_aprobacion(p) for _ in range(6))
-    assert p.nivel_confianza == 1 and p.aprobaciones == 9
+    assert not any(moderacion.registrar_aprobacion(p) for _ in range(9))
+    assert p.nivel_confianza == 0 and p.aprobaciones == 9
     base.commit()
 
 
-def test_registrar_aprobacion_en_bd_no_sube_de_1(base, ajustes):
+def test_registrar_aprobacion_en_bd_cuenta_sin_subir(base, ajustes):
     ajustes(MODERACION_APROBACIONES_SUBIR_NIVEL=1)
     p = _publicador(base, nivel=0)
     base.commit()
-    assert moderacion.registrar_aprobacion_en_bd(base, p.id) is True
-    assert not any(moderacion.registrar_aprobacion_en_bd(base, p.id) for _ in range(3))
-    assert p.nivel_confianza == 1 and p.aprobaciones == 4
+    assert not any(moderacion.registrar_aprobacion_en_bd(base, p.id) for _ in range(4))
+    base.refresh(p)
+    assert p.nivel_confianza == 0 and p.aprobaciones == 4
 
 
 def test_nivel_2_no_sube_mas(base, ajustes):

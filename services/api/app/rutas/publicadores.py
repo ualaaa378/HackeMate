@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.db import get_db
 from app.confianza import normalizar_dni, reglas_nivel_2_que_faltan, tiene_datos_responsable
 from app.errores import ErrorApi
+from app.moderacion import NIVEL_A_MANO, NIVEL_AUTOMATICA, normalizar_nivel
 from app.modelos import ESTADOS_PUBLICADOR, TIPOS_PUBLICADOR, Fuente, Municipio, Publicador, Usuario
 from app.notificaciones import enviar_en_segundo_plano, notificar_moderadores, notificar_publicador
 from app.paginacion import Pagina, pagina, respuesta
@@ -152,6 +153,7 @@ class AprobarPublicador(BaseModel):
 
     aprobar: bool = True
     # Sin enviar: 0 al aprobar una solicitud; en un publicador ya aprobado, el nivel no cambia.
+    # Solo hay dos modos (0 a mano, 2 automática): el 1 obsoleto se acepta y se guarda como 0.
     nivel_confianza: Literal[0, 1, 2] | None = None
     motivo: str | None = None
 
@@ -177,7 +179,8 @@ def aprobar_publicador(
     datos = datos or AprobarPublicador()
     publicador = _buscar(db, id)
     if publicador.estado == "aprobado" and datos.aprobar:
-        return _cambiar_nivel(db, publicador, datos.nivel_confianza, background_tasks, revisor)
+        nivel = None if datos.nivel_confianza is None else normalizar_nivel(datos.nivel_confianza)
+        return _cambiar_nivel(db, publicador, nivel, background_tasks, revisor)
     if publicador.estado not in POR_APROBAR:
         raise ErrorApi(
             409, "estado_invalido", "El publicador no está pendiente de aprobación", {"estado": publicador.estado}
@@ -185,16 +188,21 @@ def aprobar_publicador(
     # Se admite aprobar desde `solicitado` (sin pasar por /auth/whatsapp/verificar): si el publicador habla
     # con el bot por Telegram o el código no le llega, el moderador asume la verificación.
     motivo = (datos.motivo or "").strip() or None
-    nivel = datos.nivel_confianza or 0
-    if datos.aprobar and nivel == 2:
+    nivel = normalizar_nivel(datos.nivel_confianza or NIVEL_A_MANO)
+    if datos.aprobar and nivel == NIVEL_AUTOMATICA:
         _exigir_reglas_nivel_2(db, publicador)
     cambios = {"estado": "aprobado", "nivel_confianza": nivel} if datos.aprobar else {"estado": "rechazado"}
     # Atómico: si dos moderadores deciden a la vez, solo uno cambia la fila y avisa; el otro recibe 409.
     _transicion(db, publicador, POR_APROBAR, cambios, "El publicador no está pendiente de aprobación")
     if datos.aprobar:
+        modo = (
+            "tus planes se publicarán directamente"
+            if nivel == NIVEL_AUTOMATICA
+            else "el moderador revisará tus planes antes de publicarlos"
+        )
         texto = (
-            f"¡Bienvenido! {publicador.nombre} ya puede publicar en HackeMate (nivel de confianza "
-            f"{nivel}). Mándanos el cartel, el post o un audio y lo preparamos."
+            f"¡Bienvenido! {publicador.nombre} ya puede publicar en HackeMate: {modo}. "
+            "Mándanos el cartel, el post o un audio y lo preparamos."
         )
     else:
         texto = f"Tu solicitud para publicar como {publicador.nombre} no se ha aprobado." + (
@@ -226,20 +234,21 @@ def _exigir_reglas_nivel_2(db: Session, publicador: Publicador) -> None:
 def _cambiar_nivel(
     db: Session, publicador: Publicador, nivel: int | None, background_tasks: BackgroundTasks, revisor: str
 ) -> dict:
-    """Publicador ya aprobado: revisión automática (nivel 2) o a mano (0 o 1). Sin nivel, no cambia nada."""
+    """Publicador ya aprobado: publicación automática (nivel 2) o a mano (0). Sin nivel, no cambia nada.
+    Un publicador que aún tenga el nivel 1 obsoleto pasa a 0 si se le pide «a mano»."""
     if nivel is None or nivel == publicador.nivel_confianza:
         return _respuesta_moderador(db, publicador.id, revisor)
-    if nivel == 2:
+    if nivel == NIVEL_AUTOMATICA:
         _exigir_reglas_nivel_2(db, publicador)
     anterior = publicador.nivel_confianza
     # Atómico: solo si sigue aprobado (otro moderador puede haberlo pausado a la vez).
     _transicion(db, publicador, ("aprobado",), {"nivel_confianza": nivel}, "El publicador ya no está aprobado")
     aviso = None
-    if (nivel == 2) != (anterior == 2):  # solo se avisa si cambia el modo de revisión
+    if (nivel == NIVEL_AUTOMATICA) != (anterior == NIVEL_AUTOMATICA):  # solo se avisa si cambia el modo
         texto = (
             f"{publicador.nombre} pasa a revisión automática: tus planes se publicarán sin esperar revisión "
             "(salvo que el antispam los pare)."
-            if nivel == 2
+            if nivel == NIVEL_AUTOMATICA
             else f"A partir de ahora revisaremos los planes de {publicador.nombre} antes de publicarlos."
         )
         aviso = notificar_publicador(db, publicador, "moderacion", texto, enviar=False)
