@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from app import alta, api_cliente, canales, telegram, vecino
+from app import alta, api_cliente, avisos, canales, telegram, vecino
 from app.agentes import antispam, extractor, idiomas, intencion, medios, voz
 from app.api_cliente import ApiNoDisponible, ErrorApi
 from app.config import get_settings
@@ -158,6 +158,10 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
             return [Respuesta("Vale, dejo el alta y he borrado los datos.", quitar_teclado=True)]
         return ["Vale, borrado. Cuando quieras me mandas otro evento."]
 
+    # D2: viene de la web para entrar con código (t.me/HackeMate_bot?start=codigo)
+    if t == "/codigo":
+        return _para_codigo(msg)
+
     # Alta de una entidad (B5): mientras dura, cada mensaje es la respuesta a su pregunta
     if alta.en_curso(msg.de):
         return alta.responder(msg, texto)
@@ -200,6 +204,10 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
     if t in COMANDOS_MODERACION:
         return _bandeja(msg)
 
+    # D1: «avísame» / «no quiero avisos» (también con los botones de la pregunta o en una nota de voz)
+    if not es_cartel and (acepta := avisos.que_quiere(msg, texto)) is not None:
+        return eco + avisos.responder(msg, acepta, _usuario(msg.de))
+
     # Un cartel siempre es para publicar; texto y notas de voz pueden ser de un vecino que busca planes
     if not es_cartel:
         tipo = intencion.detectar(texto, vecino.mirando_evento(msg.de)).tipo
@@ -208,7 +216,8 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
         if tipo == "buscar":
             return eco + vecino.buscar(msg, texto, _usuario(msg.de))
         if tipo == "gustos":
-            return eco + vecino.gustos(msg, texto, _usuario(msg.de))
+            usuario = _usuario(msg.de)
+            return eco + vecino.gustos(msg, texto, usuario) + avisos.pregunta_si_toca(msg, usuario)
         if tipo == "inscribir":
             return eco + vecino.inscribir(msg, None, _usuario(msg.de))
         if tipo == "pregunta_evento":
@@ -369,6 +378,21 @@ def _saludo(msg: MensajeEntrante) -> list[str | Respuesta]:
     return [AYUDA]
 
 
+LISTO_PARA_CODIGO = ("✅ Listo. Vuelve a la web y pulsa *Pedir el código*: te llegará aquí un código de 6 cifras "
+                     "para comprobar que el número es tuyo.")
+esperando_codigo: set[str] = set()  # vino de la web y aún no ha compartido su número
+
+
+def _para_codigo(msg: MensajeEntrante) -> list[str | Respuesta]:
+    """D2: para que la API pueda mandarle el código, el bot tiene que conocer su número."""
+    usuario = _usuario(msg.de)
+    if (usuario or {}).get("telefono"):
+        return [LISTO_PARA_CODIGO]
+    esperando_codigo.add(msg.de)
+    return [Respuesta("¡Hola! 👋 Para mandarte el código de la web necesito tu número: pulsa *Compartir mi número* "
+                      "aquí abajo 📱", pedir_contacto=True)]
+
+
 def _vincular(msg: MensajeEntrante) -> list[str | Respuesta]:
     try:
         usuario = api_cliente.vincular(msg.telefono_compartido, msg.de, msg.nombre)
@@ -386,7 +410,15 @@ def _vincular(msg: MensajeEntrante) -> list[str | Respuesta]:
     elif (usuario or {}).get("publicador_id"):
         extra = "\nPublicas en nombre de tu entidad: lo que me mandes irá con su nombre."
     return [Respuesta(f"¡Gracias, {nombre}! Ya te tengo identificado ✅{extra}", quitar_teclado=True)] + \
-        vecino.tras_vincular(msg, usuario) + alta.tras_vincular(msg, usuario)
+        vecino.tras_vincular(msg, usuario) + alta.tras_vincular(msg, usuario) + avisos.tras_vincular(msg, usuario) + \
+        _codigo_tras_vincular(msg)
+
+
+def _codigo_tras_vincular(msg: MensajeEntrante) -> list[str]:
+    if msg.de not in esperando_codigo:
+        return []
+    esperando_codigo.discard(msg.de)
+    return [LISTO_PARA_CODIGO]
 
 
 # ---------- Moderador ----------

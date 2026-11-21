@@ -13,6 +13,8 @@ from app.schemas import MensajeEntrante
 log = logging.getLogger(__name__)
 
 PREFIJO = "tg:"
+# /start <parámetro> del enlace de la web → lo que el bot entiende como primer mensaje
+START = {"codigo": "/codigo", "alta": "quiero dar de alta mi asociación"}
 
 
 def es_telegram(destino: str) -> bool:
@@ -139,7 +141,8 @@ def parsear(update: dict) -> tuple[MensajeEntrante | None, str | None]:
     if "text" in m:
         texto = m["text"]
         if texto.startswith("/start"):
-            texto = "hola"  # el primer mensaje al abrir el bot
+            # Enlaces t.me/HackeMate_bot?start=<x> desde la web: «codigo» (D2, entrar con código) o «alta» (B5)
+            texto = START.get(texto.split(maxsplit=1)[1].strip() if " " in texto else "", "hola")
         return MensajeEntrante(**base, texto=texto), None
     if voz := (m.get("voice") or m.get("audio")):
         return MensajeEntrante(**base, texto=m.get("caption", ""), media_id=voz["file_id"],
