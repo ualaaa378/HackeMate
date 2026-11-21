@@ -70,7 +70,13 @@ def responder(msg: MensajeEntrante, acepta: bool, usuario: dict | None) -> list:
             pendiente_numero[msg.de] = acepta
             return [Respuesta("Para guardarlo necesito saber quién eres: pulsa *Compartir mi número* aquí abajo 📱",
                               pedir_contacto=True)]
-        return ["Ahora mismo no puedo guardarlo 🙏 Inténtalo en un rato."]
+        if msg.de.startswith("+"):  # WhatsApp: el contacto ya es su teléfono, se le da de alta como al inscribirse
+            try:
+                usuario = api_cliente.vincular(msg.de, msg.de, msg.nombre)
+            except (ApiNoDisponible, ErrorApi) as e:
+                log.warning("No se pudo dar de alta para guardar acepta_avisos: %s", e)
+        if not (usuario or {}).get("id"):
+            return ["Ahora mismo no puedo guardarlo 🙏 Inténtalo en un rato."]
     return [_guardar(usuario["id"], acepta)]
 
 

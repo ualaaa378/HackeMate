@@ -197,13 +197,15 @@ async def webhook_twilio(
 
 class MensajeDev(BaseModel):
     de: str = "+34600000000"
-    texto: str
+    texto: str = ""
+    boton_id: Optional[str] = None  # pulsar un botón (p. ej. «insc:<evento_id>» de un aviso)
 
 
 @app.post("/dev/mensaje")
 def dev_mensaje(m: MensajeDev):
     """Simulador de WhatsApp (plan C de la demo y pruebas sin Twilio)."""
-    respuestas = conversacion.procesar(MensajeEntrante(canal="console", de=m.de, texto=m.texto), solo_consola=True)
+    msg = MensajeEntrante(canal="console", de=m.de, texto=m.texto, boton_id=m.boton_id)
+    respuestas = conversacion.procesar(msg, solo_consola=True)
     return {"respuestas": respuestas}
 
 
