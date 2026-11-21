@@ -1,26 +1,44 @@
 """Ingesta: el bot entrega lo que la IA ha sacado de un post, cartel o audio (E1.6, adelanto de H2.1).
 
 El evento se crea en `pendiente_confirmacion`: no lo ve nadie hasta que el publicador confirma (H2.3).
-La IA propone; aquí se valida cada campo y lo que no sirve cuenta como que falta.
+La IA propone; aquí se valida cada campo y lo que no sirve cuenta como que falta. Al confirmar,
+la moderación automática (H2.4) decide si pasa a `publicado` o a `en_revision`.
 """
 
-import unicodedata
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.canales import buscar_publicador_por_contacto, validar_contacto
 from app.db import get_db
+from app.duplicados import buscar_posible_duplicado
 from app.errores import ErrorApi
 from app.modelos import CANALES, CATEGORIAS, Evento, Fuente, Municipio, Publicador, ahora
-from app.rutas.eventos import _buscar, _con_zona, _ficha
+from app.moderacion import clasificar_spam, decidir_estado
+from app.notificaciones import enviar_en_segundo_plano, notificar_moderadores
+from app.rutas.eventos import (
+    Categoria,
+    DatosAyuntamiento,
+    EnteroNoNegativo,
+    FrasePortada,
+    NoNegativo,
+    Titulo,
+    _buscar,
+    _comprobar_fechas,
+    _con_zona,
+    _ficha,
+    comprobar_puede_publicar,
+    normalizar_extras,
+)
 from app.rutas.publico import es_uuid
 from app.seguridad import exigir_token_interno
+from app.texto import plegar
 
 router = APIRouter(prefix="/api/v1", tags=["ingesta"])
 
@@ -125,9 +143,20 @@ def _entero(valor: Any) -> int | None:
     return int(numero) if numero is not None and numero == int(numero) else None
 
 
-def _plegar(texto: str) -> str:
-    """Sin tildes ni mayúsculas: la IA puede escribir «Senes» o «SENÉS»."""
-    return "".join(c for c in unicodedata.normalize("NFKD", texto) if not unicodedata.combining(c)).casefold().strip()
+def _imagen(valor: Any) -> str | None:
+    """Una imagen que no es URL http(s) ni data URL válida es como si faltara."""
+    texto = _texto(valor)
+    if texto is None:
+        return None
+    try:
+        return normalizar_extras({"imagen_url": texto})["imagen_url"]
+    except ErrorApi:
+        return None
+
+
+def _frase(valor: Any) -> str | None:
+    texto = _texto(valor)
+    return texto[:90].strip() if texto else None
 
 
 def _municipio(db: Session, valor: Any) -> Municipio | None:
@@ -137,8 +166,8 @@ def _municipio(db: Session, valor: Any) -> Municipio | None:
     exacto = db.get(Municipio, nombre)
     if exacto is not None:
         return exacto
-    buscado = _plegar(nombre)
-    return next((m for m in db.scalars(select(Municipio)).all() if _plegar(m.nombre) == buscado), None)
+    buscado = plegar(nombre)
+    return next((m for m in db.scalars(select(Municipio)).all() if plegar(m.nombre) == buscado), None)
 
 
 # --- Publicador -------------------------------------------------------------------------------------
@@ -157,6 +186,14 @@ def _publicador_por_fuente(db: Session, url: str | None) -> Publicador | None:
     return mejor.publicador if mejor else None
 
 
+def _primero_con_url(db: Session, url: str, excluir_id: str | None = None) -> Evento | None:
+    """El evento más antiguo con ese origen_url (desempate por id: dos peticiones a la vez eligen el mismo)."""
+    consulta = select(Evento).where(Evento.origen_url == url)
+    if excluir_id is not None:
+        consulta = consulta.where(Evento.id != excluir_id)
+    return db.scalar(consulta.order_by(Evento.creado_en, Evento.id).limit(1))
+
+
 def _asociar_publicador(db: Session, datos: ImportarEvento) -> Publicador | None:
     """Orden: fuente conocida (origen.url) -> publicador_id -> contacto del remitente en su canal
     (teléfono o telegram_id; en Telegram, también el teléfono del usuario vinculado)."""
@@ -167,18 +204,19 @@ def _asociar_publicador(db: Session, datos: ImportarEvento) -> Publicador | None
             raise ErrorApi(422, "publicador_no_encontrado", "No existe ese publicador", {"campo": "publicador_id"})
     if publicador is None and datos.contacto is not None:
         publicador = buscar_publicador_por_contacto(db, datos.contacto)
-    if publicador is not None and publicador.estado == "pausado":
-        raise ErrorApi(403, "publicador_pausado", "El publicador está pausado y no puede publicar")
+    comprobar_puede_publicar(publicador)
     # H2.4: según el estado y el nivel de confianza del publicador se decidirá luego la moderación.
     return publicador
 
 
-def _resultado(db: Session, evento: Evento, duplicado: bool, status: int) -> JSONResponse:
+def _resultado(
+    db: Session, evento: Evento, duplicado: bool, status: int, posible_duplicado_de: str | None = None
+) -> JSONResponse:
     cuerpo = {
         "evento": _ficha(db, _buscar(db, evento.id)),
         "faltan": list(evento.faltan or []),
         "duplicado": duplicado,
-        "posible_duplicado_de": None,
+        "posible_duplicado_de": posible_duplicado_de,
     }
     return JSONResponse(cuerpo, status_code=status)
 
@@ -198,11 +236,9 @@ def importar_evento(datos: ImportarEvento, db: Session = Depends(get_db)):
 
     url = (datos.origen.url or "").strip() or None
     if url is not None:
-        existente = db.scalar(select(Evento).where(Evento.origen_url == url).order_by(Evento.creado_en))
+        existente = _primero_con_url(db, url)
         if existente is not None:
             return _resultado(db, existente, duplicado=True, status=200)
-    # H2.2: si no hay mismo origen.url, buscar uno parecido (título + fecha + municipio) por encima de un
-    # umbral y devolverlo en `posible_duplicado_de` (se crea igualmente).
 
     campos = extraccion.campos
     titulo = _texto(_valor(campos, "titulo"))
@@ -225,6 +261,12 @@ def importar_evento(datos: ImportarEvento, db: Session = Depends(get_db)):
     faltan = list(dict.fromkeys(extraccion.faltan))
     validos = {"titulo": titulo, "categoria": categoria, "municipio": municipio, "fecha_inicio": fecha_inicio}
     faltan += [c for c in OBLIGATORIOS if validos[c] is None and c not in faltan]
+
+    # H2.2: sin mismo origen.url, uno parecido (título + fecha + municipio) se señala pero se crea igualmente.
+    # Solo con valores reales: con los provisionales todo se parecería a todo.
+    parecido = None
+    if titulo is not None and fecha_inicio is not None and municipio is not None:
+        parecido = buscar_posible_duplicado(db, titulo, fecha_inicio, municipio.nombre)
 
     # Valores provisionales para lo obligatorio que falta (ver OBLIGATORIOS). El municipio, el del
     # publicador o, si no hay, el primero de la plataforma.
@@ -252,7 +294,8 @@ def importar_evento(datos: ImportarEvento, db: Session = Depends(get_db)):
         es_gratuito=es_gratuito,
         plazas_totales=plazas,
         plazas_libres=plazas,
-        imagen_url=_texto(_valor(campos, "imagen_url")),
+        imagen_url=_imagen(_valor(campos, "imagen_url")),
+        frase_portada=_frase(_valor(campos, "frase_portada")),
         estado="pendiente_confirmacion",
         publicador_id=publicador.id if publicador else None,
         origen_canal=datos.origen.canal,
@@ -263,5 +306,150 @@ def importar_evento(datos: ImportarEvento, db: Session = Depends(get_db)):
     )
     # H2.4: moderación y niveles de confianza (score_spam, en_revision/publicado) al confirmar (H2.3).
     db.add(evento)
+    if url is not None:
+        # El mismo post puede llegar dos veces casi a la vez (reintento del bot, dos webhooks). No hay índice
+        # único en origen_url: se vuelve a mirar justo antes del commit y, ya guardado, se queda solo el más
+        # antiguo; el que pierde se borra y responde como duplicado.
+        try:
+            db.flush()
+            otro = _primero_con_url(db, url, excluir_id=evento.id)
+            if otro is not None:
+                db.rollback()
+                return _resultado(db, otro, duplicado=True, status=200)
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            otro = _primero_con_url(db, url)
+            if otro is None:
+                raise
+            return _resultado(db, otro, duplicado=True, status=200)
+        primero = _primero_con_url(db, url)
+        if primero is not None and primero.id != evento.id:
+            db.delete(evento)
+            db.commit()
+            return _resultado(db, primero, duplicado=True, status=200)
+    else:
+        db.commit()
+    return _resultado(db, evento, duplicado=False, status=201, posible_duplicado_de=parecido.id if parecido else None)
+
+
+# --- Confirmación del publicador (H2.3) -------------------------------------------------------------
+
+
+class CamposConfirmar(BaseModel):
+    """`ConfirmarEvento.campos`: mismos nombres que EventoCrear, todos opcionales. Los que el contrato
+    no deja a null llevan None por defecto pero no lo admiten si se envía. Lo desconocido se ignora
+    (el contrato deja additionalProperties abierto)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    titulo: Titulo = None
+    descripcion: str | None = None
+    categoria: Categoria = None
+    etiquetas: list[str] = None
+    municipio: str = None
+    lugar: str | None = None
+    lat: float | None = None
+    lon: float | None = None
+    fecha_inicio: datetime = None
+    fecha_fin: datetime | None = None
+    precio_eur: NoNegativo | None = None
+    es_gratuito: bool = None
+    plazas_totales: EnteroNoNegativo | None = None
+    imagen_url: str | None = None
+    frase_portada: FrasePortada | None = None
+    datos_ayuntamiento: DatosAyuntamiento | None = None
+
+
+class ConfirmarEvento(BaseModel):
+    """components/schemas/ConfirmarEvento."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    campos: CamposConfirmar = Field(default_factory=CamposConfirmar)
+    confirmado_por: Literal["whatsapp", "web", "telegram"] | None = None
+
+
+def _aplicar_campos(db: Session, evento: Evento, campos: CamposConfirmar) -> set[str]:
+    """Aplica al evento los campos enviados y devuelve los que quedan rellenos (con un valor real)."""
+    cambios = normalizar_extras(campos.model_dump(exclude_unset=True))
+    for nombre in ("descripcion", "lugar"):
+        if nombre in cambios:
+            cambios[nombre] = _texto(cambios[nombre])
+    for nombre in ("fecha_inicio", "fecha_fin"):
+        if nombre in cambios:
+            cambios[nombre] = _con_zona(cambios[nombre])
+
+    rellenos = {c for c, v in cambios.items() if v is not None and v != []}
+
+    if "municipio" in cambios:
+        municipio = _municipio(db, cambios.pop("municipio"))
+        if municipio is None:
+            raise ErrorApi(422, "municipio_no_encontrado", "Ese municipio no está en la plataforma", {"campo": "municipio"})
+        cambios["municipio"] = municipio.nombre
+        # Las coordenadas eran las del municipio provisional: pasan a las del nuevo salvo que vengan.
+        cambios.setdefault("lat", municipio.lat)
+        cambios.setdefault("lon", municipio.lon)
+
+    for nombre, valor in cambios.items():
+        setattr(evento, nombre, valor)
+    if "plazas_totales" in cambios:
+        # Un evento pendiente de confirmar no tiene inscritos: todas las plazas están libres.
+        evento.plazas_libres = cambios["plazas_totales"]
+    if "precio_eur" in cambios and "es_gratuito" not in cambios and cambios["precio_eur"] is not None:
+        evento.es_gratuito = cambios["precio_eur"] == 0
+    if evento.lat is None or evento.lon is None:
+        municipio = db.get(Municipio, evento.municipio)
+        evento.lat = evento.lat if evento.lat is not None else municipio.lat
+        evento.lon = evento.lon if evento.lon is not None else municipio.lon
+    _comprobar_fechas(evento)
+    return rellenos
+
+
+@router.post("/eventos/{id}/confirmar", dependencies=[Depends(exigir_token_interno)])
+def confirmar_evento(
+    id: str, datos: ConfirmarEvento, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+):
+    # H3: JWT del publicador (solo sus eventos). Hasta entonces solo servicios internos (el bot).
+    evento = _buscar(db, id)
+    if evento.estado != "pendiente_confirmacion":
+        raise ErrorApi(
+            409, "estado_invalido", "El evento no está pendiente de confirmación", {"estado": evento.estado}
+        )
+    publicador = evento.publicador
+    comprobar_puede_publicar(publicador)
+
+    try:
+        rellenos = _aplicar_campos(db, evento, datos.campos)
+        # Lo que faltaba al importar (provisionales y lo que marcó la IA) y no se ha rellenado ahora.
+        faltan = [c for c in (evento.faltan or []) if c not in rellenos]
+        bloquean = [c for c in faltan if c in OBLIGATORIOS]
+        if bloquean:
+            raise ErrorApi(422, "faltan_campos", "Faltan datos obligatorios para confirmar el evento", {"faltan": bloquean})
+    except ErrorApi:
+        db.rollback()
+        raise
+
+    texto = "\n".join(t for t in (evento.titulo, evento.descripcion) if t)
+    score, motivo_spam = clasificar_spam(texto, publicador)
+    estado, motivo = decidir_estado(db, evento, publicador, score, motivo_spam)
+
+    parecido = buscar_posible_duplicado(db, evento.titulo, evento.fecha_inicio, evento.municipio, excluir_id=evento.id)
+    if parecido is not None and estado == "publicado":
+        estado, motivo = "en_revision", f"Posible duplicado de «{parecido.titulo}»"
+
+    evento.estado = estado
+    evento.score_spam = score
+    evento.motivo_moderacion = motivo
+    # Solo pueden quedar opcionales (lugar, plazas…): no bloquean, pero el bot puede seguir pidiéndolos.
+    evento.faltan = faltan
+    avisos = []
+    if estado == "en_revision":
+        quien = publicador.nombre if publicador is not None else "sin publicador"
+        avisos = notificar_moderadores(
+            db, "moderacion", f"Evento para revisar: «{evento.titulo}» ({quien}). Motivo: {motivo}",
+            evento_id=evento.id, enviar=False,
+        )
     db.commit()
-    return _resultado(db, evento, duplicado=False, status=201)
+    enviar_en_segundo_plano(background_tasks, db, avisos)
+    return _resultado(db, evento, duplicado=False, status=200, posible_duplicado_de=parecido.id if parecido else None)

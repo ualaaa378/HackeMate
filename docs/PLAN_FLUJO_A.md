@@ -163,13 +163,13 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 ### H2 · Del post a la agenda: ingesta y moderación (sáb 08:00 → 13:00 · CP2 · `v0.2`)
 
 **Tareas**
-- [ ] H2.1 `POST /eventos/importar`: recibe `ExtraccionEvento` + origen, la asocia al publicador (fuente → publicador → WhatsApp), crea el evento en `pendiente_confirmacion` y devuelve los campos que faltan.
-- [ ] H2.2 Detección de duplicados: mismo `origen.url` → devuelve el existente; si no, similitud de título + fecha + municipio por encima de un umbral → se marca como posible duplicado.
-- [ ] H2.3 `POST /eventos/{id}/confirmar` con los campos completados → pasa a moderación.
-- [ ] H2.4 Niveles de confianza: nivel 0 todo a `en_revision`; nivel 1 pasa si es «lo habitual» (misma categoría que publicaciones ya aprobadas y `score_spam` bajo); nivel 2 pasa salvo spam alto. Subida de nivel automática tras N aprobaciones (N configurable, p. ej. 3).
-- [ ] H2.5 `GET /moderacion/pendientes` (con `motivo`) y `POST /moderacion/{id}/decision` (aprobar, rechazar, retirar). Pausar publicador y pausar automatizaciones.
-- [ ] H2.6 Alta de publicador: `POST /publicadores` → `POST /auth/whatsapp/codigo` + `/verificar` → `POST /publicadores/{id}/aprobar` → `POST /publicadores/{id}/fuentes`. El moderador recibe aviso vía `/notify`.
-- [ ] H2.7 Seed con un publicador de nivel 2 (Bar La Plaza, «Menú del domingo») y uno de nivel 0 para la demo del antispam.
+- [x] H2.1 `POST /eventos/importar`: recibe `ExtraccionEvento` + origen, la asocia al publicador (fuente → publicador → WhatsApp), crea el evento en `pendiente_confirmacion` y devuelve los campos que faltan.
+- [x] H2.2 Detección de duplicados: mismo `origen.url` → devuelve el existente; si no, similitud de título + fecha + municipio por encima de un umbral → se marca como posible duplicado.
+- [x] H2.3 `POST /eventos/{id}/confirmar` con los campos completados → pasa a moderación.
+- [x] H2.4 Niveles de confianza: nivel 0 todo a `en_revision`; nivel 1 pasa si es «lo habitual» (misma categoría que publicaciones ya aprobadas y `score_spam` bajo); nivel 2 pasa salvo spam alto. Subida de nivel automática tras N aprobaciones (N configurable, p. ej. 3).
+- [x] H2.5 `GET /moderacion/pendientes` (con `motivo`) y `POST /moderacion/{id}/decision` (aprobar, rechazar, retirar). Pausar publicador y pausar automatizaciones.
+- [x] H2.6 Alta de publicador: `POST /publicadores` → `POST /auth/whatsapp/codigo` + `/verificar` → `POST /publicadores/{id}/aprobar` → `POST /publicadores/{id}/fuentes`. El moderador recibe aviso vía `/notify`.
+- [x] H2.7 Seed con un publicador de nivel 2 (Bar La Plaza, «Menú del domingo») y uno de nivel 0 para la demo del antispam.
 
 **Criterios de aceptación**
 - ✅ Importar el fixture de la Ruta Solidaria crea un evento `pendiente_confirmacion` y la respuesta lista `faltan: ["plazas_totales","lugar"]`.
@@ -184,12 +184,12 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 ### H3 · La vecina: participación (sáb 14:00 → 19:00 · CP3 · `v0.3` + contratos v2 congelados)
 
 **Tareas**
-- [ ] H3.1 Login con Google: `POST /auth/google` valida el `id_token` y devuelve un JWT propio con `rol`. Login por WhatsApp con código (reutiliza H2.6). Dependencias de FastAPI para exigir rol. `GET/PATCH /usuarios/me` (viene de H1.4).
-- [ ] H3.2 Inscripciones: `POST /eventos/{id}/inscripciones` y `DELETE …/{insc_id}`. Si no hay plazas → `lista_espera`. Al cancelar, el primero de la lista sube a `confirmada` y se le avisa vía `/notify`. Control de concurrencia (transacción con bloqueo de fila) para no vender la misma plaza dos veces.
-- [ ] H3.3 `.ics`: `GET /eventos/{id}/ics` y `GET /usuarios/me/ics` (librería `ics` o generación a mano, zona `Europe/Madrid`).
-- [ ] H3.4 Chat del evento: `GET/POST /eventos/{id}/mensajes`, anuncios fijados, ocultar, silenciar, con los permisos de la tabla de la diapositiva 17. Sin teléfonos en las respuestas. Antes de publicar un mensaje, llamada a `bot /ai/spam`; si es una pregunta, `bot /ai/responder-ficha`.
-- [ ] H3.5 `PATCH /eventos/{id}` con cambio de `fecha_inicio` → `/notify` a **todos** los inscritos (tipo `cambio_evento`) + anuncio fijado automático en el chat.
-- [ ] H3.6 Recomendador `GET /recomendaciones?usuario_id=`: puntuación = gustos + distancia (haversine) + fecha y plazas libres + historial (+ embeddings si da tiempo). Cada resultado lleva un `motivo` legible («te gusta el senderismo y quedan plazas»).
+- [x] H3.1 Login con Google: `POST /auth/google` valida el `id_token` y devuelve un JWT propio con `rol`. Login por WhatsApp con código (reutiliza H2.6). Dependencias de FastAPI para exigir rol. `GET/PATCH /usuarios/me` (viene de H1.4).
+- [x] H3.2 Inscripciones: `POST /eventos/{id}/inscripciones` y `DELETE …/{insc_id}`. Si no hay plazas → `lista_espera`. Al cancelar, el primero de la lista sube a `confirmada` y se le avisa vía `/notify`. Control de concurrencia (transacción con bloqueo de fila) para no vender la misma plaza dos veces.
+- [x] H3.3 `.ics`: `GET /eventos/{id}/ics` y `GET /usuarios/me/ics` (librería `ics` o generación a mano, zona `Europe/Madrid`).
+- [x] H3.4 Chat del evento: `GET/POST /eventos/{id}/mensajes`, anuncios fijados, ocultar, silenciar, con los permisos de la tabla de la diapositiva 17. Sin teléfonos en las respuestas. Antes de publicar un mensaje, llamada a `bot /ai/spam`; si es una pregunta, `bot /ai/responder-ficha`.
+- [x] H3.5 `PATCH /eventos/{id}` con cambio de `fecha_inicio` → `/notify` a **todos** los inscritos (tipo `cambio_evento`) + anuncio fijado automático en el chat.
+- [x] H3.6 Recomendador `GET /recomendaciones?usuario_id=`: puntuación = gustos + distancia (haversine) + fecha y plazas libres + historial (+ embeddings si da tiempo). Cada resultado lleva un `motivo` legible («te gusta el senderismo y quedan plazas»).
 - [ ] H3.7 Congelar contratos v2 con B y C.
 
 **Criterios de aceptación**
@@ -206,11 +206,11 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 ### H4 · Criterios del jurado (sáb 20:00 → dom 00:00 · CP4 · `v0.9` feature freeze)
 
 **Tareas**
-- [ ] H4.1 `GET /estadisticas`: actividades del periodo, % importadas solas, inscripciones vs asistencia, ocupación por categoría, % de gente de otro pueblo, **solapamientos** entre pueblos (mismo día y franja, misma categoría o eventos grandes).
-- [ ] H4.2 `POST /metrics/tokens` (B registra cada llamada) y acumulados de tokens y euros por proveedor en `/estadisticas`.
-- [ ] H4.3 Marcar asistencia (`asistio`/`no_asistio`) para que el panel tenga datos reales; seed con eventos pasados para que las gráficas no salgan vacías.
+- [x] H4.1 `GET /estadisticas`: actividades del periodo, % importadas solas, inscripciones vs asistencia, ocupación por categoría, % de gente de otro pueblo, **solapamientos** entre pueblos (mismo día y franja, misma categoría o eventos grandes).
+- [x] H4.2 `POST /metrics/tokens` (B registra cada llamada) y acumulados de tokens y euros por proveedor en `/estadisticas`.
+- [x] H4.3 Marcar asistencia (`asistio`/`no_asistio`) para que el panel tenga datos reales; seed con eventos pasados para que las gráficas no salgan vacías.
 - [ ] H4.4 URL pública estable: túnel de Cloudflare funcionando para el jurado. **Opcional:** despliegue alternativo en Render/Railway + Neon/Supabase.
-- [ ] H4.5 Revisión de robustez: la API arranca aunque `bot` esté caído; si `/notify` falla, la notificación queda en cola (tabla) y se reintenta.
+- [x] H4.5 Revisión de robustez: la API arranca aunque `bot` esté caído; si `/notify` falla, la notificación queda en cola (tabla) y se reintenta.
 
 **Criterios de aceptación**
 - ✅ `/estadisticas` devuelve cifras coherentes con el seed y detecta al menos un solapamiento de demo («Cine de verano en Uleila coincide con fiestas»).
@@ -223,9 +223,9 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 
 **Tareas**
 - [ ] H5.1 Arreglar lo que salga del smoke test y de los ensayos.
-- [ ] H5.2 `scripts/demo_reset.sh` deja la base de datos en el estado inicial de la demo en menos de 1 minuto.
+- [x] H5.2 `scripts/demo_reset.sh` deja la base de datos en el estado inicial de la demo en menos de 1 minuto.
 - [ ] H5.3 Prueba E2E en **otro portátil**: clonar, `cp .env.example .env`, rellenar claves, `docker compose up --build`, guion de la demo 2 veces.
-- [ ] H5.4 Sección de backend en el README: arranque en 3 comandos, arquitectura, variables.
+- [x] H5.4 Sección de backend en el README: arranque en 3 comandos, arquitectura, variables.
 - [ ] H5.5 Merge `develop` → `main`, etiqueta `v1.0`, smoke test sobre `main`.
 
 **Criterios de aceptación**

@@ -38,22 +38,42 @@ services:
       - ../contracts:/srv/contracts:ro
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # Sin depends_on de bot: la api arranca aunque el bot esté caído (las notificaciones quedan en cola)
     depends_on:
       db:
         condition: service_healthy
 
   bot:
     <<: *env
+    # Bot de WhatsApp/Telegram (Flujo B). El stub de infra/stubs/bot ya no se usa; se conserva
+    # solo por si hubiera que volver a él (build: ./stubs/bot).
     build: ../services/bot
     environment:
+      # Dentro de Docker, siempre contra el nombre del servicio (el .env puede traer valores de Windows)
       API_URL: http://api:8000
       # El proxy FreeLLM corre en el equipo anfitrión: 127.0.0.1 del .env no sirve dentro del contenedor
       FREELLM_URL: ${FREELLM_URL_DOCKER:-http://host.docker.internal:31415/v1}
       WEB_URL: ${WEB_URL:-http://localhost:8080}
+      # INTERNAL_TOKEN, CANAL, TELEGRAM_*, META_*, TWILIO_*, LLM_*, GEMINI_*, FREELLM_*,
+      # ANTHROPIC_*, CLAUDE_* y ZONA_HORARIA llegan del ../.env (env_file)
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
       - "8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    # Sin depends_on de api: el bot arranca aunque la api esté caída
+    restart: unless-stopped
 
   web:
     # App Ionic (Flujo C). VITE_API_URL se incrusta en el build y la usa el navegador,
@@ -64,20 +84,24 @@ services:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
         VITE_USE_MOCKS: ${VITE_USE_MOCKS:-false}
         VITE_CANAL: ${VITE_CANAL:-telegram}
+    # service_started (no healthy): la web es estática y vuelve a los mocks si la api falla
     depends_on:
-      - api
+      api:
+        condition: service_started
     ports:
       - "8080:8080"
 
   tunnel:
-    # Túnel rápido de Cloudflare hacia el bot (webhook de Twilio). La URL https sale en:
-    #   docker compose -f infra/docker-compose.yml logs tunnel
+    # Túnel rápido de Cloudflare hacia el bot: da la URL https pública para los webhooks
+    # de Telegram (/webhook/telegram, el canal activo) y de Meta/Twilio (/webhook/meta, /webhook/twilio).
+    # La URL sale en:  docker compose -f infra/docker-compose.yml logs tunnel
     # Con CLOUDFLARE_TUNNEL_TOKEN se podrá usar un túnel con nombre estable (H4.4).
     image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate --url http://bot:8001
     restart: unless-stopped
     depends_on:
-      - bot
+      bot:
+        condition: service_healthy
 
 volumes:
   db_data:

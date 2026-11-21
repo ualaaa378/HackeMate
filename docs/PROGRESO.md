@@ -48,7 +48,7 @@
 - [ ] Cuentas creadas: Twilio WhatsApp Sandbox, Google OAuth, clave de Claude, clave de Gemini (AI Studio)
 - [~] Ramas `main` y `develop` creadas (falta activar la protección de `main` en GitHub)
 - [x] Estructura de carpetas del monorepo creada
-- [~] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo (escrito; falta validarlo con Docker en otra máquina: pasos y resultado esperado en `PLAN_FLUJO_A.md` H0, «Cómo probar H0»). **Responsable de la prueba: por asignar en la reunión** (alguien con Docker)
+- [x] `infra/docker-compose.yml` con `db`, `api`, `bot`, `web`, `tunnel` y `/health` respondiendo *(validado por C el vie 22:20 con PostgreSQL y la API de #10; falta repetirlo con el bot real en lugar del stub)*
 - [x] `.env.example` con todas las variables (incluidas las `META_*` del canal WhatsApp Cloud API de `Flujo-B`)
 - [x] `contracts/openapi.yaml` v1
 - [x] `contracts/schemas/*.json` v1 (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion, lugar)
@@ -83,23 +83,25 @@
 - [x] Formato de error y paginación comunes
 
 **Bloque 2 (sáb 08:00–13:00)**
-- [~] `POST /eventos/importar` y `POST /eventos/{id}/confirmar` *(importar mínimo hecho en E1.6: pendiente_confirmacion, `faltan`, duplicado por origen.url; falta confirmar)*
-- [ ] Niveles de confianza 0/1/2 y bandeja de moderación con motivo
-- [ ] Detección de duplicados (origen_url + similitud)
-- [ ] Alta de publicador: verificación de WhatsApp con código + aprobación
+- [x] `POST /eventos/importar` y `POST /eventos/{id}/confirmar`
+- [x] Niveles de confianza 0/1/2 y bandeja de moderación con motivo
+- [x] Detección de duplicados (origen_url + similitud)
+- [x] Alta de publicador: verificación de WhatsApp con código + aprobación
 
 **Bloque 3 (sáb 14:00–19:00)**
-- [ ] Login con Google (OAuth → JWT) y roles
-- [ ] Inscripciones con plazas y lista de espera
-- [ ] Exportación `.ics` (evento y usuario)
-- [ ] Chat del evento (mensajes, anuncios fijados, permisos por rol)
-- [ ] Cambio de hora → `POST /notify` a todos los inscritos
-- [ ] Recomendador con motivo legible (gustos + distancia + fecha/plazas + historial + embeddings)
+- [x] Login con Google (OAuth → JWT) y roles *(JWT propio, código por el bot, Google y login demo con DEMO_MODE)*
+- [x] Inscripciones con plazas y lista de espera
+- [x] Exportación `.ics` (evento y usuario)
+- [x] Chat del evento (mensajes, anuncios fijados, permisos por rol) *(respuesta automática por reglas mientras el bot no tenga `/ai/responder-ficha`; silenciar autores con `silenciar_autor`)*
+- [x] Cambio de hora → `POST /notify` a todos los inscritos + anuncio fijado en el chat
+- [x] Recomendador con motivo legible (gustos + distancia + fecha/plazas + historial) *(sin embeddings)*
 
 **Bloque 4 (sáb 20:00–00:00)**
-- [ ] `GET /estadisticas` (actividades, % importadas, inscripciones vs asistencia, ocupación, solapamientos)
-- [ ] `POST /metrics/tokens` y coste acumulado
+- [x] `GET /estadisticas` (actividades, % importadas, inscripciones vs asistencia, ocupación, solapamientos) *(seed con histórico de 8 actividades pasadas y asistencia; solapamiento de demo «Cine de verano en Uleila» con la verbena de Senés)*
+- [x] `POST /metrics/tokens` y coste acumulado *(precios por proveedor/modelo en `PRECIOS_TOKENS_EUR_MTOK`; gratuitos a 0)*
 - [ ] Despliegue alternativo en Render/Railway (opcional)
+
+**Traspaso:** Peticiones de B y C atendidas (sáb 21): PATCH /usuarios/{id}, POST/PATCH /eventos con JWT, /moderacion/*, panel del bot, verificar-identidad, planes terminados con fotos, frase_portada, datos_ayuntamiento (sin subir: pendiente de confirmar por Benas).
 
 ---
 

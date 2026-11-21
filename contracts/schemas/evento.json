@@ -24,7 +24,26 @@
     "estado": { "enum": ["borrador", "pendiente_confirmacion", "en_revision", "publicado", "rechazado", "cancelado", "finalizado", "archivado"] },
     "publicador_id": { "type": ["string", "null"], "format": "uuid" },
     "publicador_nombre": { "type": ["string", "null"] },
-    "imagen_url": { "type": ["string", "null"] },
+    "imagen_url": { "type": ["string", "null"], "description": "Foto o cartel del plan: URL http(s) o data URL de imagen (p. ej. data:image/webp;base64,…) de hasta ~1,5 MB. Si se pasa o no es una imagen, 422 imagen_invalida." },
+    "frase_portada": { "type": ["string", "null"], "maxLength": 90, "description": "Frase corta y pública bajo la foto del carrusel de Inicio. La escribe quien publica; si llega vacía, la API puede pedírsela al bot." },
+    "datos_ayuntamiento": {
+      "type": ["object", "null"],
+      "description": "PRIVADO. Datos de la propuesta que solo ven el organizador del evento y los moderadores. La API nunca los devuelve en rutas públicas ni sin sesión, tampoco con X-Internal-Token (no llegan al bot ni a la IA): en esos casos el campo no aparece. Mismos nombres que DatosAyuntamiento de apps/web/src/api/types.ts.",
+      "properties": {
+        "responsable": { "type": "string", "maxLength": 120, "description": "Persona responsable del plan" },
+        "telefono": { "type": "string", "maxLength": 20, "description": "Teléfono de contacto del responsable (texto libre)" },
+        "entidad": { "enum": ["particular", "asociacion", "comercio", "otra"], "description": "Quién organiza" },
+        "entidad_nombre": { "type": ["string", "null"], "maxLength": 120 },
+        "publico": { "enum": ["todos", "infantil", "adultos", "mayores"], "description": "Público al que va dirigido" },
+        "necesidades": {
+          "type": "array",
+          "items": { "enum": ["espacio", "calle", "material", "luz", "musica", "comida", "seguridad", "limpieza", "difusion"] },
+          "description": "Lo que se pide al ayuntamiento"
+        },
+        "seguro_rc": { "enum": ["si", "no", "nose"], "description": "¿Tiene seguro de responsabilidad civil?" },
+        "observaciones": { "type": ["string", "null"], "maxLength": 1000 }
+      }
+    },
     "origen": {
       "type": "object",
       "required": ["canal", "importado_auto"],

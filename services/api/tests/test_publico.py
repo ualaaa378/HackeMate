@@ -132,7 +132,9 @@ def test_publico_solo_ve_publicados(api, db):
     assert all(e["estado"] == "publicado" for e in _todos(api, estado="en_revision"))
     # Un servicio interno sí puede pedir otro estado
     r = api.get("/api/v1/eventos", params={"estado": "en_revision"}, headers=TOKEN).json()
-    assert [e["id"] for e in r["items"]] == [RUTA_SOLIDARIA]
+    # La Ruta y los dos eventos de la demo de moderación que el seed ya deja en revisión
+    assert RUTA_SOLIDARIA in {e["id"] for e in r["items"]} and r["total"] == 3
+    assert all(e["estado"] == "en_revision" for e in r["items"])
     # La ficha de un evento no publicado no existe para el público
     assert api.get(f"/api/v1/eventos/{RUTA_SOLIDARIA}").status_code == 404
     assert api.get(f"/api/v1/eventos/{RUTA_SOLIDARIA}", headers=TOKEN).status_code == 200
@@ -240,9 +242,10 @@ NUEVO = {
 
 
 def test_post_sin_token_da_401_con_formato(api):
+    # Admite X-Internal-Token o sesión bearer: sin ninguno, 401 no_autenticado.
     r = api.post("/api/v1/eventos", json=NUEVO)
     assert r.status_code == 401
-    assert r.json()["error"]["code"] == "token_interno_invalido"
+    assert r.json()["error"]["code"] == "no_autenticado"
 
 
 def test_post_con_token_crea_y_aparece_en_la_ficha(api, db):

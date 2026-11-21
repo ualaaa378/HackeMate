@@ -9,6 +9,11 @@ info:
     Los schemas de entidades viven en `schemas/*.json`.
     `Evento.inscritos` (inscripciones confirmadas) lo calcula la API; no se envía al crear ni al editar.
     Estado: v1 congelado en CP0. Los endpoints marcados `x-implementado: false` aún no existen.
+    Ruta inexistente: cualquier ruta que la API no tiene responde 404 `{"error": {"code": "no_encontrado"}}`
+    (manejador genérico). Cuando la ruta existe pero el recurso no, el código es propio (`evento_no_encontrado`,
+    `publicador_no_encontrado`, `usuario_no_encontrado`…). El bot se basa en esa diferencia.
+    Datos privados: `evento.datos_ayuntamiento` (solo organizador y moderadores) y `publicador.responsable` /
+    `publicador.actividad` (solo moderadores) no aparecen nunca en las respuestas públicas.
 servers:
   - url: http://localhost:8000
     description: api
@@ -28,6 +33,7 @@ tags:
   - name: auth
   - name: usuarios
   - name: estadisticas
+  - name: admin
   - name: bot
 
 security:
@@ -104,6 +110,10 @@ paths:
     get:
       tags: [eventos]
       summary: Agenda y mapa. Público solo ve `publicado`.
+      description: |
+        Sin sesión, el público ve `publicado` (por defecto) y también puede pedir `estado=finalizado`
+        (planes ya pasados, para la pestaña «Recuerdos»). Los demás estados solo los ven el moderador
+        y el publicador (sus eventos). `datos_ayuntamiento` nunca aparece en esta lista pública.
       security: [{}]
       x-implementado: true
       parameters:
@@ -117,7 +127,7 @@ paths:
         - { name: q, in: query, description: Texto libre en título y descripción, schema: { type: string } }
         - name: estado
           in: query
-          description: Solo moderador y publicador (sus eventos). Por defecto `publicado`.
+          description: Por defecto `publicado`. Sin sesión también se admite `finalizado` (planes pasados, «Recuerdos»). Los demás estados, solo moderador y publicador (sus eventos).
           schema: { $ref: "#/components/schemas/EstadoEvento" }
         - { name: publicador_id, in: query, schema: { type: string, format: uuid } }
         - $ref: "#/components/parameters/Page"
@@ -146,7 +156,7 @@ paths:
               schema: { $ref: "./schemas/evento.json" }
         "401": { $ref: "#/components/responses/Error" }
         "403": { $ref: "#/components/responses/Error" }
-        "422": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` o `imagen_invalida` (imagen_url no es URL http(s) ni data URL de imagen, o pasa de ~1,5 MB)" }
 
   /api/v1/eventos/{id}:
     parameters:
@@ -154,6 +164,7 @@ paths:
     get:
       tags: [eventos]
       summary: Ficha del evento
+      description: "`datos_ayuntamiento` solo aparece si quien pide es el organizador del evento o un moderador (con sesión bearer)."
       security: [{}]
       x-implementado: true
       responses:
@@ -178,8 +189,10 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/evento.json" }
-        "403": { $ref: "#/components/responses/Error" }
-        "404": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo el organizador del evento o un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`, `fechas_invalidas` (fecha_fin anterior a fecha_inicio) o `imagen_invalida` (imagen_url no es URL http(s) ni data URL de imagen, o pasa de ~1,5 MB)" }
 
   /api/v1/eventos/importar:
     post:
@@ -204,8 +217,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ResultadoImportacion" }
-        "403": { $ref: "#/components/responses/Error" }
-        "422": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `publicador_pausado` o `publicador_rechazado` (la solicitud del publicador fue rechazada)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`, `no_es_evento`, `publicador_no_encontrado` o `municipio_no_encontrado`" }
 
   /api/v1/eventos/{id}/confirmar:
     parameters:
@@ -214,7 +228,7 @@ paths:
       tags: [ingesta]
       summary: El publicador completa lo que falta y confirma. Pasa a moderación (`en_revision` o `publicado` según nivel).
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -226,9 +240,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ResultadoImportacion" }
-        "403": { $ref: "#/components/responses/Error" }
-        "404": { $ref: "#/components/responses/Error" }
-        "409": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `publicador_pausado` o `publicador_rechazado`" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `estado_invalido` (el evento no está en `pendiente_confirmacion`)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `faltan_campos` (details.faltan), `validacion`, `municipio_no_encontrado` o `fechas_invalidas`" }
 
   /api/v1/eventos/{id}/inscripciones:
     parameters:
@@ -236,7 +252,7 @@ paths:
     get:
       tags: [inscripciones]
       summary: Lista de inscritos (solo organizador y moderador)
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Inscripciones
@@ -245,12 +261,14 @@ paths:
               schema:
                 type: array
                 items: { $ref: "./schemas/inscripcion.json" }
-        "403": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo el organizador del evento o un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
     post:
       tags: [inscripciones]
       summary: Apuntarse. Si no hay plazas, queda en `lista_espera`. Si el plan ya ha terminado, 409 `evento_finalizado`.
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: false
         content:
@@ -262,9 +280,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/inscripcion.json" }
-        "401": { $ref: "#/components/responses/Error" }
-        "404": { $ref: "#/components/responses/Error" }
-        "409": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (con sesión solo puedes inscribirte a ti mismo)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado` o `usuario_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `ya_inscrito` (details.inscripcion_id), `evento_no_inscribible` (el evento no está publicado) o `evento_terminado`" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `falta_usuario_id` (con X-Internal-Token hay que indicar usuario_id) o `validacion`" }
 
   /api/v1/eventos/{id}/inscripciones/{insc_id}:
     parameters:
@@ -274,19 +294,21 @@ paths:
       tags: [inscripciones]
       summary: Cancelar. El primero de la lista de espera sube a `confirmada` y se le avisa.
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Inscripción cancelada
           content:
             application/json:
               schema: { $ref: "./schemas/inscripcion.json" }
-        "403": { $ref: "#/components/responses/Error" }
-        "404": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo quien se apuntó, el organizador o un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado` o `inscripcion_no_encontrada`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `inscripcion_cerrada` (ya se marcó la asistencia)" }
     patch:
       tags: [inscripciones]
       summary: Marcar asistencia (organizador o moderador)
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -302,6 +324,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/inscripcion.json" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo el organizador del evento o un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado` o `inscripcion_no_encontrada`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `inscripcion_sin_plaza` (solo se marca la asistencia de quien tenía plaza)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
 
   /api/v1/eventos/{id}/mensajes:
     parameters:
@@ -310,7 +337,7 @@ paths:
       tags: [chat]
       summary: Chat del evento. Anuncios fijados primero. Nunca expone teléfonos.
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       parameters:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/Size"
@@ -320,11 +347,13 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaginaMensajes" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_invalido` o `token_caducado` (se envió una sesión no válida; sin sesión es público)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
     post:
       tags: [chat]
       summary: Publicar mensaje. Pasa por `bot /ai/spam`; si es pregunta, `bot /ai/responder-ficha`. Con el plan terminado solo se admiten comentarios (si no, 409 `evento_finalizado`).
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -341,9 +370,11 @@ paths:
                 properties:
                   mensaje: { $ref: "./schemas/mensaje_evento.json" }
                   respuesta_ia: { oneOf: [{ $ref: "./schemas/mensaje_evento.json" }, { type: "null" }] }
-        "401": { $ref: "#/components/responses/Error" }
-        "403": { $ref: "#/components/responses/Error" }
-        "409": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (escribir en nombre de otro, o un anuncio sin ser organizador ni moderador) o `usuario_silenciado` (el organizador o un moderador le ha silenciado en el chat de este evento)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado` o `usuario_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `chat_cerrado` (el evento no admite mensajes por su estado; details.estado)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `mensaje_spam` (details.score_spam y details.motivo), `falta_usuario_id`, `mensaje_no_encontrado` (en_respuesta_a no es de este evento) o `validacion`" }
 
   /api/v1/eventos/{id}/mensajes/{msg_id}:
     parameters:
@@ -352,7 +383,7 @@ paths:
     patch:
       tags: [chat]
       summary: Fijar u ocultar (organizador o moderador)
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -362,13 +393,20 @@ paths:
               properties:
                 fijado: { type: boolean }
                 oculto: { type: boolean }
+                silenciar_autor:
+                  type: boolean
+                  description: "Solo organizador o moderador: el autor no puede volver a escribir en el chat de este evento"
       responses:
         "200":
           description: Mensaje
           content:
             application/json:
               schema: { $ref: "./schemas/mensaje_evento.json" }
-        "403": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo el organizador o un moderador fijan, ocultan o silencian; el autor solo puede ocultar su propio mensaje)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado` o `mensaje_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `no_silenciable` (con `silenciar_autor: true`, el autor es el organizador del evento o un moderador, o el mensaje no tiene autor, como las respuestas de la IA)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
 
   /api/v1/eventos/{id}/ics:
     parameters:
@@ -376,8 +414,12 @@ paths:
     get:
       tags: [calendario]
       summary: Evento en formato iCalendar (zona Europe/Madrid)
+      description: |
+        Las fechas (`DTSTART`, `DTEND`, `DTSTAMP`) van en UTC con sufijo `Z`: equivalen a la hora de Europe/Madrid
+        del evento y cada calendario las muestra en su zona local. Excepción: los eventos con la etiqueta
+        `sin_hora` van de día completo (`VALUE=DATE`, con la fecha de Madrid). Sin `fecha_fin`, dura 2 horas.
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Archivo .ics
@@ -391,7 +433,7 @@ paths:
       tags: [calendario]
       summary: Todos los eventos en los que el usuario está confirmado
       security: [{ bearer: [] }]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Archivo .ics
@@ -405,7 +447,7 @@ paths:
       tags: [recomendaciones]
       summary: Eventos recomendados con motivo legible
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       parameters:
         - { name: usuario_id, in: query, required: true, schema: { type: string, format: uuid } }
         - { name: limite, in: query, schema: { type: integer, default: 5, minimum: 1, maximum: 20 } }
@@ -421,14 +463,17 @@ paths:
                   items:
                     type: array
                     items: { $ref: "#/components/schemas/Recomendacion" }
-        "404": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (solo puedes ver tus propias recomendaciones, salvo moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `usuario_no_encontrado`" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` (usuario_id no es UUID o limite fuera de 1-20)" }
 
   /api/v1/moderacion/pendientes:
     get:
       tags: [moderacion]
       summary: Bandeja del moderador (eventos en revisión y publicadores por aprobar), con motivo
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       parameters:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/Size"
@@ -438,7 +483,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaginaPendientes" }
-        "403": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` (page o size fuera de rango)" }
 
   /api/v1/moderacion/{id}/decision:
     parameters:
@@ -447,7 +494,7 @@ paths:
       tags: [moderacion]
       summary: Aprobar, rechazar o retirar un evento
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -459,13 +506,17 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/evento.json" }
-        "403": { $ref: "#/components/responses/Error" }
-        "404": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `estado_invalido` (la decisión no vale para el estado actual, p. ej. otro moderador ya decidió; details.estado y details.decision)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
 
   /api/v1/publicadores:
     get:
       tags: [publicadores]
       summary: Lista de publicadores
+      description: "`responsable` y `actividad` solo aparecen con sesión de moderador."
       x-implementado: true
       parameters:
         - { name: estado, in: query, schema: { enum: [solicitado, whatsapp_verificado, aprobado, rechazado, pausado] } }
@@ -494,7 +545,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/publicador.json" }
-        "422": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `publicador_ya_existe` (ya hay un publicador con ese teléfono; details.publicador_id)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` o `municipio_no_encontrado`" }
 
   /api/v1/publicadores/{id}:
     parameters:
@@ -502,6 +555,7 @@ paths:
     get:
       tags: [publicadores]
       summary: Ficha del publicador
+      description: "`responsable` y `actividad` solo aparecen con sesión de moderador."
       x-implementado: true
       responses:
         "200":
@@ -517,8 +571,20 @@ paths:
     post:
       tags: [publicadores]
       summary: El moderador aprueba (o rechaza) la entidad
+      description: |
+        También sirve para cambiar `nivel_confianza` de un publicador que ya está `aprobado` (con `aprobar: true`):
+        la web lo usa para pasarlo a revisión automática (nivel 2) o devolverlo a revisión a mano (nivel 0 o 1).
+        En un publicador ya aprobado, si no se envía `nivel_confianza`, el nivel no cambia.
+
+        Pasar a nivel 2 exige las reglas de `apps/web/src/admin/confianza.ts`, calculadas por la API:
+        - responsable identificado: `responsable` con `dni` y `residencia` y `identidad_verificada = true`;
+        - al menos 3 planes aprobados en los últimos 60 días (`actividad.planes_60_dias >= 3`);
+        - ningún plan rechazado en los últimos 60 días (`actividad.rechazados_60_dias = 0`);
+        - algún plan aprobado en los últimos 90 días (`actividad.ultimo_plan`).
+        Si falta alguna, 409 `reglas_confianza_no_cumplidas` con `details.faltan` = lista de las que fallan
+        (`identidad_verificada`, `planes_60_dias`, `rechazados_60_dias`, `ultimo_plan`). Los niveles 0 y 1 no exigen nada.
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: false
         content:
@@ -535,8 +601,40 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/publicador.json" }
-        "403": { $ref: "#/components/responses/Error" }
-        "409": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `publicador_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `estado_invalido` (el publicador no está pendiente de aprobación ni aprobado, o se intenta rechazar uno ya aprobado; details.estado) o `reglas_confianza_no_cumplidas` (nivel 2 sin cumplir las reglas; details.faltan)" }
+
+  /api/v1/publicadores/{id}/verificar-identidad:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [publicadores]
+      summary: El moderador marca como comprobados el DNI y la residencia del responsable
+      description: |
+        Pone `responsable.identidad_verificada` (por defecto `true`). Es uno de los requisitos para el nivel 2.
+        Desmarcarla no baja el nivel por sí sola: para eso, `POST /publicadores/{id}/aprobar` con otro nivel.
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: true
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                identidad_verificada: { type: boolean, default: true }
+      responses:
+        "200":
+          description: Publicador (con `responsable` actualizado)
+          content:
+            application/json:
+              schema: { $ref: "./schemas/publicador.json" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `publicador_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `sin_datos_responsable` (el publicador no tiene responsable con dni y residencia)" }
 
   /api/v1/publicadores/{id}/pausar:
     parameters:
@@ -545,7 +643,7 @@ paths:
       tags: [publicadores]
       summary: Pausar (o reactivar) un publicador o solo sus automatizaciones
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -562,7 +660,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/publicador.json" }
-        "403": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `publicador_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `estado_invalido` (solo se pausa o reactiva un publicador aprobado; details.estado)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
 
   /api/v1/publicadores/{id}/fuentes:
     parameters:
@@ -571,7 +673,7 @@ paths:
       tags: [publicadores]
       summary: Conectar una fuente (Facebook, Instagram, web) que el bot vigila
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -588,14 +690,18 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/publicador.json" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
         "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `publicador_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `fuente_ya_existe` (details.publicador_id) o `estado_invalido` (el publicador está rechazado)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
 
   /api/v1/auth/google:
     post:
       tags: [auth]
       summary: Valida el id_token de Google y devuelve un JWT propio con rol
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -611,14 +717,15 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Token" }
-        "401": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_google_invalido` o `email_no_verificado`" }
+        "503": { $ref: "#/components/responses/Error", description: "503 `google_no_configurado` (falta GOOGLE_CLIENT_ID) o `google_no_disponible`" }
 
   /api/v1/auth/whatsapp/codigo:
     post:
       tags: [auth]
       summary: Envía un código de un solo uso por WhatsApp (vía bot /notify)
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -639,14 +746,14 @@ paths:
                 properties:
                   enviado: { type: boolean }
                   expira_en: { type: string, format: date-time }
-        "429": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error", description: "429 `demasiados_codigos` (details.maximo_por_hora)" }
 
   /api/v1/auth/whatsapp/verificar:
     post:
       tags: [auth]
       summary: Verifica el código. Marca el WhatsApp como verificado y devuelve sesión.
       security: [{}]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -663,7 +770,36 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Token" }
-        "401": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `codigo_invalido` (incorrecto o caducado)" }
+
+  /api/v1/auth/demo:
+    post:
+      tags: [auth]
+      summary: "Solo en modo demo (DEMO_MODE=true): sesión como un usuario o rol sin login"
+      description: |
+        Existe solo si la API arranca con `DEMO_MODE=true` (por defecto `false`); si no, responde 404.
+        Sirve para que el panel y la app entren en la demo como la moderadora o como una vecina sin cuentas
+        de Google. Con `usuario_id` da la sesión de ese usuario; con `rol`, la del usuario más antiguo con ese rol.
+        Nunca se activa fuera de la presentación.
+      security: [{}]
+      x-implementado: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                usuario_id: { type: string, format: uuid }
+                rol: { enum: [vecino, publicador, moderador] }
+      responses:
+        "200":
+          description: Sesión
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Token" }
+        "404": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
 
   /api/v1/usuarios:
     post:
@@ -682,7 +818,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/usuario.json" }
-        "409": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `usuario_ya_existe` (details.usuario_id)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` o `municipio_no_encontrado`" }
 
   /api/v1/usuarios/by-phone/{e164}:
     parameters:
@@ -698,7 +836,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/usuario.json" }
-        "404": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `usuario_no_encontrado`" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `telefono_invalido` (no está en formato E.164)" }
 
   /api/v1/usuarios/by-contacto/{contacto}:
     parameters:
@@ -758,7 +898,7 @@ paths:
       tags: [usuarios]
       summary: Perfil del usuario autenticado
       security: [{ bearer: [] }]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Usuario
@@ -770,7 +910,7 @@ paths:
       tags: [usuarios]
       summary: Editar preferencias (gustos, pueblo, formato de aviso…)
       security: [{ bearer: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -782,13 +922,44 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/usuario.json" }
-        "401": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `telefono_en_uso` (ese teléfono ya es de otro usuario)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` o `municipio_no_encontrado`" }
+
+  /api/v1/usuarios/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      tags: [usuarios]
+      summary: Editar las preferencias de un usuario desde el bot (gustos, pueblo, formato de aviso…)
+      description: |
+        Igual que `PATCH /usuarios/me`, pero para servicios internos: el bot guarda lo que la vecina le dice
+        por chat («me gustan las rutas», «avísame con audios»). Solo cambia los campos que se envían.
+        `/usuarios/me` sigue igual (su ruta es fija y no choca con `{id}`, que es un UUID).
+      security: [{ interno: [] }]
+      x-implementado: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UsuarioEditar" }
+      responses:
+        "200":
+          description: Usuario
+          content:
+            application/json:
+              schema: { $ref: "./schemas/usuario.json" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `usuario_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `telefono_en_uso` (ese teléfono ya es de otro usuario)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` o `municipio_no_encontrado`" }
 
   /api/v1/estadisticas:
     get:
       tags: [estadisticas]
       summary: Datos del panel (actividades, importadas solas, asistencia, ocupación, solapamientos, tokens)
-      x-implementado: false
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: true
       parameters:
         - { name: desde, in: query, schema: { type: string, format: date-time } }
         - { name: hasta, in: query, schema: { type: string, format: date-time } }
@@ -799,13 +970,15 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Estadisticas" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión de moderador ni X-Internal-Token)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
 
   /api/v1/metrics/tokens:
     post:
       tags: [estadisticas]
       summary: El bot registra cada llamada a la IA (criterio «coste en tokens»)
       security: [{ interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:
@@ -813,6 +986,52 @@ paths:
             schema: { $ref: "#/components/schemas/MetricaTokens" }
       responses:
         "202": { description: Registrado }
+
+  /api/v1/admin/bot/metricas:
+    get:
+      tags: [admin]
+      summary: Cifras del bot para el panel de robustez (tokens por proveedor, últimas llamadas, cola, caída simulada)
+      description: |
+        La API llama a `bot GET /metrics` con su `X-Internal-Token` y devuelve el JSON tal cual, para no poner
+        el token interno en el navegador.
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: true
+      responses:
+        "200":
+          description: Métricas del bot
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MetricasBot" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+        "502": { $ref: "#/components/responses/Error", description: "502 `bot_no_disponible` (el bot respondió con error; details.status)" }
+        "503": { $ref: "#/components/responses/Error", description: "503 `bot_no_disponible` (el bot no responde)" }
+
+  /api/v1/admin/bot/simular-caida:
+    post:
+      tags: [admin]
+      summary: Activa o desactiva la caída simulada de la IA en el bot (demo de robustez)
+      description: |
+        La API reenvía el cuerpo a `bot POST /admin/simular-caida` con su `X-Internal-Token` y devuelve lo que
+        responde el bot. Con la caída activa, el bot sigue funcionando solo con reglas.
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CaidaSimulada" }
+      responses:
+        "200":
+          description: Estado de la caída simulada tras el cambio
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CaidaSimulada" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
+        "502": { $ref: "#/components/responses/Error", description: "502 `bot_no_disponible` (el bot respondió con error; details.status)" }
+        "503": { $ref: "#/components/responses/Error", description: "503 `bot_no_disponible` (el bot no responde)" }
 
   # ---------------- bot (Flujo B) ----------------
   /webhook/twilio:
@@ -1083,7 +1302,9 @@ components:
 
   responses:
     Error:
-      description: Error con el formato común
+      description: |
+        Error con el formato común. Una ruta que no existe responde 404 con code `no_encontrado` (manejador genérico),
+        distinto de los 404 de recurso inexistente (`evento_no_encontrado`, `publicador_no_encontrado`…).
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
@@ -1104,7 +1325,7 @@ components:
           type: object
           required: [code, message]
           properties:
-            code: { type: string, examples: [evento_no_encontrado, publicador_pausado, sin_plazas, evento_finalizado, sin_permiso, token_interno_invalido] }
+            code: { type: string, examples: [evento_no_encontrado, publicador_pausado, sin_plazas, evento_finalizado, sin_permiso, token_interno_invalido, no_encontrado, bot_no_disponible, reglas_confianza_no_cumplidas] }
             message: { type: string }
             details: { type: object }
 
@@ -1201,7 +1422,10 @@ components:
         precio_eur: { type: [number, "null"], minimum: 0 }
         es_gratuito: { type: boolean }
         plazas_totales: { type: [integer, "null"], minimum: 0 }
-        imagen_url: { type: [string, "null"] }
+        imagen_url: { type: [string, "null"], description: "URL http(s) o data URL de imagen (data:image/webp;base64,…) de hasta ~1,5 MB; si no, 422 imagen_invalida" }
+        frase_portada: { type: [string, "null"], maxLength: 90, description: "Frase corta y pública para la portada del carrusel. Si llega vacía, la API puede pedírsela al bot" }
+        datos_ayuntamiento:
+          $ref: "#/components/schemas/DatosAyuntamiento"
         publicador_id: { type: [string, "null"], format: uuid }
 
     EventoEditar:
@@ -1220,7 +1444,10 @@ components:
         precio_eur: { type: [number, "null"], minimum: 0 }
         es_gratuito: { type: boolean }
         plazas_totales: { type: [integer, "null"], minimum: 0 }
-        imagen_url: { type: [string, "null"] }
+        imagen_url: { type: [string, "null"], description: "URL http(s) o data URL de imagen (data:image/webp;base64,…) de hasta ~1,5 MB; si no, 422 imagen_invalida" }
+        frase_portada: { type: [string, "null"], maxLength: 90, description: "Frase corta y pública para la portada del carrusel. Si llega vacía, la API puede pedírsela al bot" }
+        datos_ayuntamiento:
+          $ref: "#/components/schemas/DatosAyuntamiento"
         estado: { enum: [cancelado, archivado] }
 
     Origen:
@@ -1263,7 +1490,7 @@ components:
       properties:
         campos:
           type: object
-          description: Valores que faltaban o que el publicador corrige (mismos nombres que EventoCrear)
+          description: Valores que faltaban o que el publicador corrige (mismos nombres que EventoCrear, incluida `frase_portada`)
           additionalProperties: true
         confirmado_por: { enum: [whatsapp, web, telegram] }
 
@@ -1298,7 +1525,9 @@ components:
       required: [decision]
       properties:
         decision: { enum: [aprobar, rechazar, retirar] }
-        motivo: { type: [string, "null"] }
+        motivo:
+          type: [string, "null"]
+          description: "Motivo que se guarda en el evento y se manda al publicador. En `retirar` es opcional (por defecto «Retirado por moderación»)."
 
     PublicadorCrear:
       type: object
@@ -1310,6 +1539,16 @@ components:
         descripcion: { type: [string, "null"] }
         telefono: { $ref: "#/components/schemas/Telefono" }
         email: { type: [string, "null"], format: email }
+        responsable:
+          type: [object, "null"]
+          description: |
+            PRIVADO (dato personal). Responsable de la entidad, lo pide el bot en el alta. Se guarda lo mínimo y solo
+            lo ven los moderadores. `identidad_verificada` no se envía aquí (si llega, se ignora): la marca el
+            moderador con `POST /publicadores/{id}/verificar-identidad`. Sin estos datos nunca podrá llegar al nivel 2.
+          properties:
+            nombre: { type: string, maxLength: 120 }
+            dni: { type: string, maxLength: 20, description: DNI o NIE }
+            residencia: { type: string, maxLength: 200, description: Pueblo o dirección donde vive }
 
     UsuarioCrear:
       type: object
@@ -1351,6 +1590,52 @@ components:
         token_type: { const: bearer }
         usuario: { $ref: "./schemas/usuario.json" }
 
+    DatosAyuntamiento:
+      type: [object, "null"]
+      description: |
+        PRIVADO. Datos de la propuesta para el ayuntamiento (evento.datos_ayuntamiento): solo los ven el organizador
+        del evento y los moderadores. Mismos nombres que DatosAyuntamiento de apps/web/src/api/types.ts
+        (si la web manda además `frase_portada` aquí, la API la ignora; va en EventoCrear.frase_portada).
+      properties:
+        responsable: { type: string, maxLength: 120 }
+        telefono: { type: string, maxLength: 20 }
+        entidad: { enum: [particular, asociacion, comercio, otra] }
+        entidad_nombre: { type: [string, "null"], maxLength: 120 }
+        publico: { enum: [todos, infantil, adultos, mayores] }
+        necesidades:
+          type: array
+          items: { enum: [espacio, calle, material, luz, musica, comida, seguridad, limpieza, difusion] }
+        seguro_rc: { enum: [si, no, nose] }
+        observaciones: { type: [string, "null"], maxLength: 1000 }
+
+    CaidaSimulada:
+      type: object
+      required: [activa]
+      properties:
+        activa: { type: boolean, description: true = todas las IAs «fallan» y el bot sigue solo con reglas }
+
+    MetricasBot:
+      type: object
+      description: Lo que devuelve `bot GET /metrics` (services/bot/app/main.py). Schema abierto.
+      additionalProperties: true
+      properties:
+        totales:
+          type: object
+          description: Acumulado por proveedor de IA
+          additionalProperties:
+            type: object
+            properties:
+              llamadas: { type: integer, minimum: 0 }
+              entrada: { type: integer, minimum: 0, description: Tokens de entrada }
+              salida: { type: integer, minimum: 0, description: Tokens de salida }
+              fallos: { type: integer, minimum: 0 }
+        ultimas:
+          type: array
+          description: Últimas llamadas a la IA (hasta 20)
+          items: { $ref: "#/components/schemas/MetricaTokens" }
+        eventos_en_cola: { type: integer, minimum: 0, description: Peticiones a la API pendientes en la cola del bot }
+        caida_simulada: { type: boolean }
+
     MetricaTokens:
       type: object
       description: Lo que ya envía services/bot/app/metrics.py
@@ -1374,13 +1659,14 @@ components:
             desde: { type: [string, "null"], format: date-time }
             hasta: { type: [string, "null"], format: date-time }
         actividades: { type: integer }
-        pct_importadas_auto: { type: number }
+        pct_importadas_auto: { type: number, description: "Porcentaje en escala 0-100" }
         inscripciones: { type: integer }
         asistencias: { type: integer }
         ocupacion_por_categoria:
           type: object
+          description: "Ocupación media por categoría, fracción en escala 0-1 (no porcentaje)"
           additionalProperties: { type: number, description: "0-1" }
-        pct_otro_pueblo: { type: number }
+        pct_otro_pueblo: { type: number, description: "Porcentaje en escala 0-100" }
         solapamientos:
           type: array
           items:

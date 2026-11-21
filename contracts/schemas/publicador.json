@@ -33,6 +33,28 @@
       }
     },
     "usuario_id": { "type": ["string", "null"], "format": "uuid", "description": "Usuario responsable" },
+    "responsable": {
+      "type": ["object", "null"],
+      "description": "PRIVADO (dato personal). Responsable de la entidad. Solo se devuelve con sesión de moderador (bearer): nunca en rutas públicas, a otros usuarios ni con X-Internal-Token (en esos casos el campo no aparece). Se envía al dar de alta (PublicadorCrear.responsable). Mismos nombres que DatosResponsable de apps/web/src/api/types.ts.",
+      "required": ["nombre", "dni", "residencia", "identidad_verificada"],
+      "properties": {
+        "nombre": { "type": "string", "maxLength": 120 },
+        "dni": { "type": "string", "maxLength": 20, "description": "DNI o NIE. La web lo enseña oculto salvo los 4 últimos caracteres" },
+        "residencia": { "type": "string", "maxLength": 200, "description": "Pueblo o dirección donde vive" },
+        "identidad_verificada": { "type": "boolean", "description": "Un moderador ha comprobado el DNI y la residencia (POST /publicadores/{id}/verificar-identidad)" }
+      }
+    },
+    "actividad": {
+      "type": "object",
+      "readOnly": true,
+      "description": "Actividad reciente. La calcula la API (no se envía). Solo con sesión de moderador, igual que responsable. Mismos nombres que ActividadPublicador de apps/web/src/api/types.ts.",
+      "required": ["planes_60_dias", "rechazados_60_dias", "ultimo_plan"],
+      "properties": {
+        "planes_60_dias": { "type": "integer", "minimum": 0, "description": "Planes aprobados (publicados) en los últimos 60 días" },
+        "rechazados_60_dias": { "type": "integer", "minimum": 0, "description": "Planes rechazados en los últimos 60 días" },
+        "ultimo_plan": { "type": ["string", "null"], "format": "date-time", "description": "Fecha del último plan aprobado; null si no hay ninguno" }
+      }
+    },
     "creado_en": { "type": "string", "format": "date-time" }
   }
 }

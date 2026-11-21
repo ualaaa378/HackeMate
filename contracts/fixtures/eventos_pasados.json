@@ -1,0 +1,299 @@
+[
+  {
+    "id": "4a5a0000-0000-4000-8000-000000000001",
+    "titulo": "Cine de verano en Uleila del Campo",
+    "descripcion": "Proyección al aire libre en la plaza. Trae tu silla.",
+    "categoria": "cultural",
+    "etiquetas": [
+      "cine",
+      "aire libre",
+      "familias"
+    ],
+    "municipio": "Uleila del Campo",
+    "lugar": "Plaza de la iglesia",
+    "lat": 37.1856,
+    "lon": -2.2061,
+    "fecha_inicio": "2026-08-14T22:00:00+02:00",
+    "fecha_fin": "2026-08-15T00:30:00+02:00",
+    "precio_eur": 0,
+    "es_gratuito": true,
+    "plazas_totales": 120,
+    "plazas_libres": 35,
+    "inscritos": 85,
+    "estado": "finalizado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a05",
+    "publicador_nombre": "Peña Cultural Uleila",
+    "imagen_url": null,
+    "origen": {
+      "canal": "facebook",
+      "url": "https://www.facebook.com/penaculturaluleila/posts/ejemplo-cine",
+      "importado_auto": true
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.02,
+      "revisado_por": null
+    },
+    "creado_en": "2026-08-01T12:00:00+02:00",
+    "actualizado_en": "2026-08-01T12:00:00+02:00"
+  },
+  {
+    "id": "4a5a0000-0000-4000-8000-000000000002",
+    "titulo": "Verbena de verano en Senés",
+    "descripcion": "Verbena con orquesta y barra en la plaza del pueblo.",
+    "categoria": "fiestas",
+    "etiquetas": [
+      "verbena",
+      "musica"
+    ],
+    "municipio": "Senés",
+    "lugar": "Plaza del pueblo",
+    "lat": 37.1983,
+    "lon": -2.3447,
+    "fecha_inicio": "2026-08-14T21:00:00+02:00",
+    "fecha_fin": "2026-08-15T03:00:00+02:00",
+    "precio_eur": 0,
+    "es_gratuito": true,
+    "plazas_totales": null,
+    "plazas_libres": null,
+    "inscritos": 0,
+    "estado": "finalizado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a04",
+    "publicador_nombre": "Asociación de Mujeres de Senés",
+    "imagen_url": null,
+    "origen": {
+      "canal": "instagram",
+      "url": "https://www.instagram.com/p/ejemplo-verbena-senes/",
+      "importado_auto": true
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.02,
+      "revisado_por": null
+    },
+    "creado_en": "2026-08-02T12:00:00+02:00",
+    "actualizado_en": "2026-08-02T12:00:00+02:00"
+  },
+  {
+    "id": "4a5a0000-0000-4000-8000-000000000003",
+    "titulo": "Ruta de senderismo por la sierra de Velefique",
+    "descripcion": "Ruta circular de 10 km con parada para almorzar.",
+    "categoria": "deportiva",
+    "etiquetas": [
+      "senderismo",
+      "naturaleza"
+    ],
+    "municipio": "Velefique",
+    "lugar": "Plaza de la iglesia",
+    "lat": 37.1931,
+    "lon": -2.4006,
+    "fecha_inicio": "2026-09-27T09:00:00+02:00",
+    "fecha_fin": "2026-09-27T14:00:00+02:00",
+    "precio_eur": 0,
+    "es_gratuito": true,
+    "plazas_totales": 30,
+    "plazas_libres": 4,
+    "inscritos": 26,
+    "estado": "finalizado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a01",
+    "publicador_nombre": "Amigos de Velefique",
+    "imagen_url": null,
+    "origen": {
+      "canal": "whatsapp",
+      "url": null,
+      "importado_auto": false
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.02,
+      "revisado_por": null
+    },
+    "creado_en": "2026-09-15T12:00:00+02:00",
+    "actualizado_en": "2026-09-15T12:00:00+02:00"
+  },
+  {
+    "id": "4a5a0000-0000-4000-8000-000000000004",
+    "titulo": "Taller de cocina: migas con tropezones",
+    "descripcion": "Aprende a hacer migas como las de siempre y cómetelas después.",
+    "categoria": "gastronomia",
+    "etiquetas": [
+      "cocina",
+      "taller"
+    ],
+    "municipio": "Senés",
+    "lugar": "Bar La Plaza",
+    "lat": 37.1983,
+    "lon": -2.3447,
+    "fecha_inicio": "2026-10-17T11:00:00+02:00",
+    "fecha_fin": "2026-10-17T14:00:00+02:00",
+    "precio_eur": 8.0,
+    "es_gratuito": false,
+    "plazas_totales": 20,
+    "plazas_libres": 2,
+    "inscritos": 18,
+    "estado": "finalizado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a03",
+    "publicador_nombre": "Bar La Plaza",
+    "imagen_url": null,
+    "origen": {
+      "canal": "instagram",
+      "url": "https://www.instagram.com/p/ejemplo-taller-migas/",
+      "importado_auto": true
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.02,
+      "revisado_por": null
+    },
+    "creado_en": "2026-10-05T12:00:00+02:00",
+    "actualizado_en": "2026-10-05T12:00:00+02:00"
+  },
+  {
+    "id": "4a5a0000-0000-4000-8000-000000000005",
+    "titulo": "Torneo de petanca",
+    "descripcion": "Torneo por parejas en las pistas municipales. Inscripción por parejas.",
+    "categoria": "ludica",
+    "etiquetas": [
+      "petanca",
+      "mayores"
+    ],
+    "municipio": "Tahal",
+    "lugar": "Pistas municipales",
+    "lat": 37.2219,
+    "lon": -2.2853,
+    "fecha_inicio": "2026-10-10T17:00:00+02:00",
+    "fecha_fin": "2026-10-10T20:00:00+02:00",
+    "precio_eur": 0,
+    "es_gratuito": true,
+    "plazas_totales": 24,
+    "plazas_libres": 10,
+    "inscritos": 14,
+    "estado": "finalizado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a06",
+    "publicador_nombre": "Ayto. Tahal",
+    "imagen_url": null,
+    "origen": {
+      "canal": "panel",
+      "url": null,
+      "importado_auto": false
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.02,
+      "revisado_por": null
+    },
+    "creado_en": "2026-09-30T12:00:00+02:00",
+    "actualizado_en": "2026-09-30T12:00:00+02:00"
+  },
+  {
+    "id": "4a5a0000-0000-4000-8000-000000000006",
+    "titulo": "Mercadillo de otoño",
+    "descripcion": "Productos de la huerta, miel, aceite y artesanía local.",
+    "categoria": "comercio",
+    "etiquetas": [
+      "mercadillo",
+      "artesania"
+    ],
+    "municipio": "Lucainena de las Torres",
+    "lugar": "Plaza de la Constitución",
+    "lat": 37.0406,
+    "lon": -2.2017,
+    "fecha_inicio": "2026-10-25T10:00:00+01:00",
+    "fecha_fin": "2026-10-25T14:00:00+01:00",
+    "precio_eur": null,
+    "es_gratuito": false,
+    "plazas_totales": null,
+    "plazas_libres": null,
+    "inscritos": 0,
+    "estado": "finalizado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a02",
+    "publicador_nombre": "Ayto. Lucainena de las Torres",
+    "imagen_url": null,
+    "origen": {
+      "canal": "facebook",
+      "url": "https://www.facebook.com/aytolucainena/posts/ejemplo-mercadillo",
+      "importado_auto": true
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.02,
+      "revisado_por": null
+    },
+    "creado_en": "2026-10-15T12:00:00+02:00",
+    "actualizado_en": "2026-10-15T12:00:00+02:00"
+  },
+  {
+    "id": "4a5a0000-0000-4000-8000-000000000007",
+    "titulo": "Concierto de la banda de música",
+    "descripcion": "Concierto de otoño con pasodobles y bandas sonoras.",
+    "categoria": "cultural",
+    "etiquetas": [
+      "musica",
+      "concierto"
+    ],
+    "municipio": "Lucainena de las Torres",
+    "lugar": "Salón de actos",
+    "lat": 37.0406,
+    "lon": -2.2017,
+    "fecha_inicio": "2026-11-07T19:00:00+01:00",
+    "fecha_fin": "2026-11-07T21:00:00+01:00",
+    "precio_eur": 0,
+    "es_gratuito": true,
+    "plazas_totales": 80,
+    "plazas_libres": 22,
+    "inscritos": 58,
+    "estado": "finalizado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a02",
+    "publicador_nombre": "Ayto. Lucainena de las Torres",
+    "imagen_url": null,
+    "origen": {
+      "canal": "web_externa",
+      "url": "https://www.lucainenadelastorres.es/ejemplo-concierto",
+      "importado_auto": true
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.02,
+      "revisado_por": null
+    },
+    "creado_en": "2026-10-28T12:00:00+01:00",
+    "actualizado_en": "2026-10-28T12:00:00+01:00"
+  },
+  {
+    "id": "4a5a0000-0000-4000-8000-000000000008",
+    "titulo": "Juegos tradicionales para peques",
+    "descripcion": "Chapas, comba, sacos y la gallinita ciega en la plaza.",
+    "categoria": "ludica",
+    "etiquetas": [
+      "infantil",
+      "juegos"
+    ],
+    "municipio": "Uleila del Campo",
+    "lugar": "Plaza de la iglesia",
+    "lat": 37.1856,
+    "lon": -2.2061,
+    "fecha_inicio": "2026-10-10T18:00:00+02:00",
+    "fecha_fin": "2026-10-10T20:00:00+02:00",
+    "precio_eur": 0,
+    "es_gratuito": true,
+    "plazas_totales": 30,
+    "plazas_libres": 12,
+    "inscritos": 18,
+    "estado": "finalizado",
+    "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a05",
+    "publicador_nombre": "Peña Cultural Uleila",
+    "imagen_url": null,
+    "origen": {
+      "canal": "whatsapp",
+      "url": null,
+      "importado_auto": false
+    },
+    "moderacion": {
+      "motivo": null,
+      "score_spam": 0.02,
+      "revisado_por": null
+    },
+    "creado_en": "2026-10-01T12:00:00+02:00",
+    "actualizado_en": "2026-10-01T12:00:00+02:00"
+  }
+]

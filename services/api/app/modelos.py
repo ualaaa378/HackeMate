@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import JSON, Boolean, CheckConstraint, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, CheckConstraint, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator
 
@@ -145,6 +145,10 @@ class Publicador(Base):
     automatizaciones_pausadas: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     categorias_habituales: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     usuario_id: Mapped[str | None] = mapped_column(ForeignKey("usuarios.id"))
+    # PRIVADO (solo moderadores): {nombre, dni, residencia} del responsable de la entidad.
+    responsable: Mapped[dict | None] = mapped_column(JSON)
+    # Lo marca un moderador (verificar-identidad); se devuelve dentro de `responsable.identidad_verificada`.
+    identidad_verificada: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false(), nullable=False)
     creado_en: Mapped[datetime] = _creado()
 
     fuentes: Mapped[list["Fuente"]] = relationship(
@@ -189,7 +193,12 @@ class Evento(Base):
         _enum("estado_evento", ESTADOS_EVENTO), default="borrador", nullable=False, index=True
     )
     publicador_id: Mapped[str | None] = mapped_column(ForeignKey("publicadores.id"), index=True)
-    imagen_url: Mapped[str | None] = mapped_column(String(500))
+    # URL http(s) o data URL de imagen (hasta ~1,5 MB): Text. En SQLite sigue siendo VARCHAR(500), que no limita
+    # la longitud; así la migración 0007 no tiene que recrear la tabla (ver su docstring).
+    imagen_url: Mapped[str | None] = mapped_column(Text().with_variant(String(500), "sqlite"))
+    frase_portada: Mapped[str | None] = mapped_column(String(90))
+    # PRIVADO (solo organizador y moderadores): datos de la propuesta para el ayuntamiento.
+    datos_ayuntamiento: Mapped[dict | None] = mapped_column(JSON)
     # origen
     origen_canal: Mapped[str] = mapped_column(_enum("canal_origen", CANALES), default="manual", nullable=False)
     origen_url: Mapped[str | None] = mapped_column(String(500), index=True)  # duplicados (H2)
@@ -233,6 +242,8 @@ class MensajeEvento(Base):
     tipo: Mapped[str] = mapped_column(_enum("tipo_mensaje", TIPOS_MENSAJE), nullable=False)
     texto: Mapped[str] = mapped_column(String(1000), nullable=False)
     en_respuesta_a: Mapped[str | None] = mapped_column(ForeignKey("mensajes_evento.id", ondelete="SET NULL"))
+    # Foto de un comentario en un plan pasado: URL http(s) o data URL de imagen (hasta ~2 MB).
+    imagen_url: Mapped[str | None] = mapped_column(Text)
     fijado: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     oculto: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     respondido_por_ia: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -240,19 +251,37 @@ class MensajeEvento(Base):
     creado_en: Mapped[datetime] = _creado()
 
 
+class Silenciado(Base):
+    """Usuario silenciado en el chat de un evento (PATCH .../mensajes/{msg_id} con `silenciar_autor`).
+    `por`: id del organizador o moderador que lo silencia (texto, sin FK: puede ser el bot)."""
+
+    __tablename__ = "silenciados"
+
+    evento_id: Mapped[str] = mapped_column(ForeignKey("eventos.id", ondelete="CASCADE"), primary_key=True)
+    usuario_id: Mapped[str] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True)
+    creado_en: Mapped[datetime] = _creado()
+    por: Mapped[str | None] = mapped_column(String(120))
+
+
 class Notificacion(Base):
-    """Cola de avisos: la API los pide al bot con POST /notify; si el bot está caído quedan pendientes (H4.5)."""
+    """Cola de avisos: la API los pide al bot con POST /notify; si el bot está caído quedan pendientes (H4.5).
+    Ver app/notificaciones.py."""
 
     __tablename__ = "notificaciones"
 
     id: Mapped[str] = _id()
-    telefono: Mapped[str] = mapped_column(String(16), nullable=False)
+    # Opcional en la tabla (usuarios solo de Telegram), pero el contrato de /notify lo exige para enviar.
+    telefono: Mapped[str | None] = mapped_column(String(16))
+    contacto: Mapped[str | None] = mapped_column(String(32))  # `+34…` o `tg:<chat_id>` (app/canales.py)
     tipo: Mapped[str] = mapped_column(_enum("tipo_notificacion", TIPOS_NOTIFICACION), nullable=False)
     texto: Mapped[str] = mapped_column(Text, nullable=False)
     formato: Mapped[str] = mapped_column(_enum("formato_notificacion", FORMATOS_AVISO), default="texto", nullable=False)
     usuario_id: Mapped[str | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
     evento_id: Mapped[str | None] = mapped_column(ForeignKey("eventos.id", ondelete="SET NULL"))
     botones: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    # Plantilla de WhatsApp para avisos fuera de la ventana de 24 h; se guarda para poder reintentar
+    plantilla: Mapped[str | None] = mapped_column(String(64))
+    parametros: Mapped[list | None] = mapped_column(JSON)
     estado_envio: Mapped[str] = mapped_column(
         _enum("estado_envio", ESTADOS_ENVIO), default="pendiente", nullable=False, index=True
     )
@@ -260,6 +289,21 @@ class Notificacion(Base):
     ultimo_error: Mapped[str | None] = mapped_column(Text)
     creado_en: Mapped[datetime] = _creado()
     enviada_en: Mapped[datetime | None] = mapped_column(FechaUTC())
+
+
+class CodigoVerificacion(Base):
+    """Código de un solo uso para verificar un teléfono (POST /auth/whatsapp/codigo y /verificar).
+    Solo se guarda el HMAC del código (app/rutas/auth.py), nunca el código."""
+
+    __tablename__ = "codigos_verificacion"
+
+    id: Mapped[str] = _id()
+    telefono: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    codigo_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    expira_en: Mapped[datetime] = mapped_column(FechaUTC(), nullable=False)
+    intentos: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    usado: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    creado_en: Mapped[datetime] = _creado()
 
 
 class MetricaTokens(Base):

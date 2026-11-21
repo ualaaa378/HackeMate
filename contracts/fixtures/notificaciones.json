@@ -14,11 +14,11 @@
   },
   {
     "id": "2b7f0000-0000-4000-8000-000000000002",
-    "telefono": "+34600000201",
+    "telefono": "+34600000205",
     "tipo": "cambio_evento",
     "texto": "Cambio de hora en la II Ruta Solidaria: ahora sale a las 10:00 (antes 09:00).",
     "formato": "texto",
-    "usuario_id": "5a5e0000-0000-4000-8000-000000000001",
+    "usuario_id": "5a5e0000-0000-4000-8000-000000000005",
     "evento_id": "1e5d0000-0000-4000-8000-000000000001",
     "botones": [],
     "estado_envio": "pendiente",

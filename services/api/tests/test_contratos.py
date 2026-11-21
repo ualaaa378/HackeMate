@@ -26,11 +26,13 @@ SCHEMAS_V1 = [
 FIXTURE_SCHEMA = {
     "eventos.json": "evento",
     "eventos_demo.json": "evento",
+    "eventos_pasados.json": "evento",
     "lugares.json": "lugar",
     "extraccion_evento.json": "extraccion_evento",
     "usuarios.json": "usuario",
     "publicadores.json": "publicador",
     "inscripciones.json": "inscripcion",
+    "inscripciones_pasadas.json": "inscripcion",
     "mensajes_evento.json": "mensaje_evento",
     "notificaciones.json": "notificacion",
     "municipios.json": None,
@@ -139,6 +141,20 @@ def test_fixtures_coherentes_entre_si():
         assert i["evento_id"] in ids_eventos and i["usuario_id"] in usuarios
     for m in _json(FIXTURES / "mensajes_evento.json"):
         assert m["evento_id"] in ids_eventos
+
+    # Histórico del panel (H4.3): actividades ya celebradas y su asistencia
+    pasados = _json(FIXTURES / "eventos_pasados.json")
+    ids_pasados = {e["id"] for e in pasados}
+    assert len(ids_pasados) == len(pasados) and not ids_pasados & ids_eventos
+    for e in pasados:
+        assert e["estado"] == "finalizado", e["titulo"]
+        assert e["publicador_id"] is None or e["publicador_id"] in publicadores, e["titulo"]
+        assert e["municipio"] in municipios, e["titulo"]
+    parejas = set()
+    for i in _json(FIXTURES / "inscripciones_pasadas.json"):
+        assert i["evento_id"] in ids_pasados and i["usuario_id"] in usuarios
+        assert (i["evento_id"], i["usuario_id"]) not in parejas
+        parejas.add((i["evento_id"], i["usuario_id"]))
 
 
 def test_extraccion_ruta_solidaria_lista_lo_que_falta():
