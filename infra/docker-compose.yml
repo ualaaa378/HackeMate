@@ -103,5 +103,29 @@ services:
       bot:
         condition: service_healthy
 
+  ingesta:
+    <<: *env
+    # Revisión diaria de las páginas de Facebook de los pueblos (A2, scripts/importar_facebook.py):
+    # solo los posts nuevos → bot /ai/extraer → api importar/confirmar. APAGADA por defecto porque gasta
+    # crédito de Apify (FB_SCRAPER_TOKEN en el .env de la máquina de la demo). Para encenderla:
+    #   docker compose -f infra/docker-compose.yml --profile ingesta up -d ingesta
+    profiles: ["ingesta"]
+    image: python:3.13-slim
+    # Solo usa la biblioteca estándar: no hace falta construir imagen.
+    command: ["python", "/srv/scripts/importar_facebook.py", "--cada", "24",
+              "--api-url", "http://api:8000", "--bot-url", "http://bot:8001"]
+    environment:
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ../scripts:/srv/scripts:ro
+      # Escribe contracts/fixtures/facebook_posts.json (los posts que son planes, para --desde-json)
+      - ../contracts:/srv/contracts
+    depends_on:
+      api:
+        condition: service_healthy
+      bot:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   db_data:
