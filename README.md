@@ -231,7 +231,7 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 | Hito | Hasta | Tarea |
 |---|---|---|
 | H2 · CP2 | sáb 13:00 | - [x] **B1.** Los tres hallazgos sin IA, que afectan a los pasos 1, 3 y 5: título por reglas, pregunta por chat privado y post de spam sin fecha. *(sáb 21/11: hecho y probado contra la API con la IA caída. «Taller de esparto en Senés el sábado…» → título «Taller de esparto»; «¿A qué hora empieza la ruta solidaria?» por privado → «Empieza el 29/11 a las 09:00» (lo que no está en la ficha va al chat del evento); el post de apuestas sin fecha lo para el antispam del bot en vez de preguntar la fecha. Además: el bot ya no contesta en francés a «apúntame a la ruta» y apunta al plan que se nombra.)* |
-| H3 · CP3 | sáb 19:00 | - [ ] **B2.** **NVIDIA NIM como proveedor del `llm_router`**, en el orden Gemini → NIM → FreeLLM → Claude → reglas. NIM es compatible con OpenAI, así que basta con otra instancia como la de `FreeLLM` en `app/llm/proveedores.py`, con `NIM_URL`, `NIM_API_KEY` y `NIM_MODELO` en `.env.example` (vacías). Que `/ai/extraer` lo use para A2 y que sus tokens salgan en `/metrics` y en `/metrics/tokens` de la API. |
+| H3 · CP3 | sáb 19:00 | - [x] **B2.** *(sáb 21/11: hecho. Proveedor `nim` en `app/llm/proveedores.py` (comparte código con FreeLLM, los dos son compatibles con OpenAI), cadena por defecto `gemini,nim,freellm,claude,reglas` y `NIM_URL`, `NIM_API_KEY`, `NIM_MODELOS`, `NIM_TIMEOUT_INTENTO_S` en los dos `.env.example`. Modelo medido con el plan gratuito: `nvidia/nemotron-3.5-bolt-e4b`, 1–3 s por ficha, descarta avisos y pésames y detecta el spam; los grandes pasaban de 25 s. Probado con el bot: `/ai/extraer` responde con `nim:…` y sus tokens salen en `/metrics`. **Cada uno pone su clave en `NIM_API_KEY`** (la de NVIDIA de `freellmapi.config.json` vale) y `LLM_CADENA` nueva en su `.env`.)* **NVIDIA NIM como proveedor del `llm_router`**, en el orden Gemini → NIM → FreeLLM → Claude → reglas. NIM es compatible con OpenAI, así que basta con otra instancia como la de `FreeLLM` en `app/llm/proveedores.py`, con `NIM_URL`, `NIM_API_KEY` y `NIM_MODELO` en `.env.example` (vacías). Que `/ai/extraer` lo use para A2 y que sus tokens salgan en `/metrics` y en `/metrics/tokens` de la API. |
 | H3 · CP3 | sáb 19:00 | - [ ] **B3.** **Audios fuera del portátil de Fran.** Decidido (sáb 21/11): **FreeLLMAPI con Docker en la máquina de Adán**, sin plan B dentro del bot. Fran le pasa por privado `freellmapi.config.json` y `.env` de `services/bot/freellmapi/`; Adán hace `docker compose up -d` allí y pone en el `.env` de la raíz `FREELLM_URL_DOCKER=http://host.docker.internal:3001/v1` y **su** clave unificada en `FREELLM_API_KEY` (ver `services/bot/freellmapi/README.md`). Falta ensayar el paso 7 juntos en su máquina. |
 | Aplazada | — | - [ ] **B4.** Decidir **D1** con Benas (ver A3, aplazada por Adán el sáb 13:20). |
 | H4 · CP4 | dom 00:00 | - [ ] **B5.** Solo si sobra tiempo: `POST /ai/frase` (primero en el contrato) y pedir nombre, DNI y residencia en el alta de asociaciones. |
@@ -287,8 +287,6 @@ Lo que pide el bot:
 
 ### Flujo B · bot (Francisco), NVIDIA NIM y audios
 
-- **«Este finde» recomienda planes de otras semanas (prueba en Docker, sáb 11:10):** Carmen escribe «¿Qué planes hay este finde?» el sábado 21 y el bot responde «Te recomiendo este fin de semana» con planes del 29/11, 5/12 y 13/12. En `services/bot/app/vecino.py`, la rama de recomendaciones personalizadas (`api_cliente.recomendaciones`) no filtra por `c.desde`/`c.hasta`; la búsqueda normal sí. Filtrar por el rango o, si no queda nada, cambiar la cabecera a «Para los próximos días». Paso 4 de la demo.
-- **NIM en el `llm_router` (B2):** lo usa la ingesta de Facebook de Benas (A2) a través de `/ai/extraer`, y C enseña sus tokens en el panel (C6).
 - **Audios sin depender del portátil de Fran (B3):** la transcripción va por FreeLLM, que ya corre en Docker (`services/bot/freellmapi/`). En la demo, Adán levanta su propio FreeLLMAPI en su máquina con la configuración que le pasa Fran por privado. Lo necesita el paso 7.
 
 ### Flujo B · bot (Francisco), alta de asociaciones
@@ -302,6 +300,9 @@ Lo que pide el bot:
 Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
 
 ### Ya resuelto
+
+- **NVIDIA NIM en el `llm_router` (B2)**, para la ingesta de Facebook de Benas (A2) y el panel de Adán (C6): `/ai/extraer` lo usa antes que FreeLLM y sus tokens salen en `/metrics` y `/metrics/tokens` como `nim`. Ver B2 en el reparto.
+- **«Este finde» recomendaba planes de otras semanas** (hallazgo de Adán, paso 4): resuelto en la #52; las recomendaciones se filtran por el periodo pedido.
 
 - **Cambiar la URL del túnel ya no reinicia el bot** (pedido en la revisión del despliegue de Benas, sáb 21/11). `scripts/url_publica.py` se la pasa en caliente (`POST /admin/webhook-telegram` con `public_url` y `web_url`): el bot vuelve a registrar el webhook y cambia los enlaces de las fichas sin perder las conversaciones a medias (un publicador a mitad de confirmar sigue donde estaba). El `.env` se actualiza igual, para el siguiente arranque. Solo recrea el bot si no responde o con `--forzar`. Probado con un publicador a medias: tras el cambio, contesta la fecha y sigue a «¿Lo publico así?». Test en `services/bot/tests/test_robustez.py`.
 

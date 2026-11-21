@@ -9,6 +9,8 @@ os.environ.update({
     "GEMINI_API_KEY": "",
     "FREELLM_API_KEY": "",
     "FREELLM_URL": "http://freellm.test/v1",
+    "NIM_API_KEY": "",
+    "NIM_URL": "http://nim.test/v1",
     "CANAL": "console",
     "META_TOKEN": "",
     "TELEGRAM_TOKEN": "",
