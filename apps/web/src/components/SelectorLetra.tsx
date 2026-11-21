@@ -8,12 +8,17 @@ const OPCIONES: [TamanoLetra, string][] = [
   ['enorme', 'Letra muy grande'],
 ];
 
-/** Tres botones A A A para agrandar la letra de toda la app. */
-const SelectorLetra: React.FC = () => {
+/** Tres botones A A A para agrandar la letra de toda la app.
+ * `compacto`: versión pequeña para una cabecera o franja (el texto «Tamaño de letra» queda solo para lectores). */
+const SelectorLetra: React.FC<{ compacto?: boolean }> = ({ compacto = false }) => {
   const [actual, setActual] = useState(letraGuardada);
   return (
-    <div className="selector-letra" role="group" aria-label="Tamaño de letra">
-      <span className="selector-letra__texto">Tamaño de letra</span>
+    <div
+      className={compacto ? 'selector-letra selector-letra--compacto' : 'selector-letra'}
+      role="group"
+      aria-label="Tamaño de letra"
+    >
+      <span className={compacto ? 'oculto-visual' : 'selector-letra__texto'}>Tamaño de letra</span>
       {OPCIONES.map(([t, etiqueta], i) => (
         <button
           key={t}
