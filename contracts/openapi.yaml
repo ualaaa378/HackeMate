@@ -130,6 +130,13 @@ paths:
           description: Por defecto `publicado`. Sin sesión también se admite `finalizado` (planes pasados, «Recuerdos»). Los demás estados, solo moderador y publicador (sus eventos).
           schema: { $ref: "#/components/schemas/EstadoEvento" }
         - { name: publicador_id, in: query, schema: { type: string, format: uuid } }
+        - name: organizador_id
+          in: query
+          description: |
+            P5a, «Mis planes propuestos» (opcional). Id del usuario: los planes que propuso (`propuesto_por_id`) o los de sus
+            entidades, en todos los estados salvo `borrador` (o solo en `estado`, si se manda), los más recientes primero.
+            Solo para el propio usuario, un moderador o el servicio interno (el bot); para otro, la lista sale vacía.
+          schema: { type: string, format: uuid }
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/Size"
       responses:

@@ -82,6 +82,7 @@ def evento_a_dict(e: Evento, inscritos: int = 0, privados: bool = False) -> dict
         "inscritos": inscritos,
         "estado": e.estado,
         "publicador_id": e.publicador_id,
+        "propuesto_por_id": e.propuesto_por_id,
         "publicador_nombre": e.publicador.nombre if e.publicador else None,
         "imagen_url": e.imagen_url,
         "frase_portada": e.frase_portada,

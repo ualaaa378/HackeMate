@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from app import alta, api_cliente, avisos, canales, telegram, vecino
+from app import alta, api_cliente, avisos, canales, organizador, telegram, vecino
 from app.agentes import antispam, extractor, idiomas, intencion, medios, voz
 from app.api_cliente import ApiNoDisponible, ErrorApi
 from app.config import get_settings
@@ -156,6 +156,7 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
 
     if t in ("cancelar", "salir", "reset"):
         estados[msg.de] = Estado()
+        organizador.cancelar(msg.de)
         if alta.en_curso(msg.de):
             alta.cancelar(msg.de)
             return [Respuesta("Vale, dejo el alta y he borrado los datos.", quitar_teclado=True)]
@@ -173,6 +174,13 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
 
     if t.startswith("mod:"):
         return _decidir(msg, t)
+    # P5b: «modificar plan» (botones, la respuesta que espera y la frase que lo empieza)
+    if msg.boton_id and (t.startswith(("orgplan:", "orgcampo:")) or t == "orgfin"):
+        return organizador.boton(msg.de, msg.boton_id)
+    if texto and not msg.boton_id and organizador.en_curso(msg.de):
+        return organizador.responder(msg.de, texto)
+    if texto and not msg.boton_id and organizador.quiere_modificar(texto):
+        return organizador.empezar(msg.de, texto, _usuario(msg.de))
     if t.startswith("insc:"):
         return vecino.inscribir(msg, msg.boton_id.split(":", 1)[1], _usuario(msg.de))
     if t.startswith("desinsc:"):  # N6b: [Desapuntarme]

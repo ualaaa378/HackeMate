@@ -177,6 +177,17 @@ def evento(evento_id: str) -> dict | None:
         raise
 
 
+def planes_de(usuario_id: str) -> list[dict]:
+    """P5a: los planes que propuso esa persona (o los de su entidad), en todos sus estados."""
+    res = _peticion("GET", "/api/v1/eventos?" + urlencode({"organizador_id": usuario_id, "size": 50}))
+    return (res or {}).get("items", [])
+
+
+def editar_evento(evento_id: str, cambios: dict) -> dict | None:
+    """P5b: PATCH /eventos/{id}. Si cambia la fecha o el lugar, la API avisa a los apuntados."""
+    return _peticion("PATCH", f"/api/v1/eventos/{evento_id}", cambios)
+
+
 def recomendaciones(usuario_id: str, limite: int = 3) -> list[dict] | None:
     """Lista de Recomendacion, o None si la api aún no tiene el recomendador."""
     try:

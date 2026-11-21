@@ -230,6 +230,7 @@ def test_0009_plazas_libres_salen_de_las_inscripciones(url):
     """0009 (N6): plazas_libres = plazas_totales − inscritos confirmados. Los finalizados y los sin aforo no cambian."""
     from datetime import datetime, timezone
 
+    from sqlalchemy import insert
     from sqlalchemy.orm import Session
 
     from app.modelos import Evento, Inscripcion, Municipio, Usuario
@@ -243,8 +244,10 @@ def test_0009_plazas_libres_salen_de_las_inscripciones(url):
         db.flush()
 
         def evento(id_, estado, total, libres):
-            db.add(Evento(id=id_, titulo=id_, categoria="cultural", municipio="Senés", lat=0, lon=0,
-                          fecha_inicio=fecha, estado=estado, plazas_totales=total, plazas_libres=libres))
+            # INSERT solo con estas columnas: la base está en 0008 y el modelo ya tiene columnas posteriores.
+            db.execute(insert(Evento), [dict(id=id_, titulo=id_, categoria="cultural", municipio="Senés", lat=0,
+                                             lon=0, fecha_inicio=fecha, estado=estado, plazas_totales=total,
+                                             plazas_libres=libres)])
 
         evento("abierto", "publicado", 10, 2)  # 8 inscritos inventados en el fixture
         evento("pasado", "finalizado", 10, 1)

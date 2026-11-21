@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.canales import buscar_publicador_por_contacto, validar_contacto
+from app.canales import buscar_publicador_por_contacto, buscar_usuario_por_contacto, validar_contacto
 from app.db import get_db
 from app.duplicados import buscar_posible_duplicado
 from app.errores import ErrorApi
@@ -195,6 +195,13 @@ def _primero_con_url(db: Session, url: str, excluir_id: str | None = None) -> Ev
     return db.scalar(consulta.order_by(Evento.creado_en, Evento.id).limit(1))
 
 
+def _usuario_del_contacto(db: Session, datos: ImportarEvento) -> str | None:
+    if datos.contacto is None:
+        return None
+    usuario = buscar_usuario_por_contacto(db, datos.contacto)
+    return usuario.id if usuario is not None else None
+
+
 def _asociar_publicador(db: Session, datos: ImportarEvento) -> Publicador | None:
     """Orden: fuente conocida (origen.url) -> publicador_id -> contacto del remitente en su canal
     (teléfono o telegram_id; en Telegram, también el teléfono del usuario vinculado)."""
@@ -298,6 +305,8 @@ def importar_evento(datos: ImportarEvento, db: Session = Depends(get_db)):
         imagen_url=_imagen(_valor(campos, "imagen_url")),
         frase_portada=_frase(_valor(campos, "frase_portada")),
         estado="pendiente_confirmacion",
+        # P5a: quien lo manda por el bot (vecino o miembro de una asociación) es su dueño.
+        propuesto_por_id=_usuario_del_contacto(db, datos),
         publicador_id=publicador.id if publicador else None,
         origen_canal=datos.origen.canal,
         origen_url=url,
