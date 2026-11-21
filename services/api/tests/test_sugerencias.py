@@ -163,3 +163,13 @@ def test_crear_borrador_valida(api):
     assert api.post(f"{URL}/borrador", json=sin_fecha, headers=MODERADOR).status_code == 422
     vecina = {"Authorization": f"Bearer {emitir_jwt(CARMEN, 'vecino')}"}
     assert api.post(f"{URL}/borrador", json=base | {"municipio": "Tahal"}, headers=vecina).status_code == 403
+
+
+def test_n5a_ocupacion_cuenta_las_plazas_ocupadas_del_plan(api, db):
+    # Las migas del seed llenaron 18 de 20 plazas, aunque desde la plataforma solo se apuntaran 4: la tarjeta de
+    # ideas de la IA tiene que decir lo mismo que «Ocupación por tipo de plan» del panel (gastronomía 90 %).
+    migas = next(p for p in sugerencias.participacion(db) if p["titulo"].startswith("Taller de cocina: migas"))
+    assert migas["inscritos"] == 4
+    assert migas["ocupacion"] == 0.9
+    propuesta = sugerencias.por_reglas([migas], 1, datetime(2026, 11, 21, tzinfo=timezone.utc))[0]
+    assert "se ocupó el 90 % (18 de 20 plazas)" in propuesta["motivo"]

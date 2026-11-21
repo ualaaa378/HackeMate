@@ -306,3 +306,46 @@ def test_nivel_2_no_sube_mas(base, ajustes):
     assert not any(moderacion.registrar_aprobacion(p) for _ in range(6))
     assert p.nivel_confianza == 2 and p.aprobaciones == 6
     base.commit()  # el CHECK de nivel_confianza (0..2) sigue cumpliéndose
+
+
+# --- N9b: el fraude que ve el bot se nota en la bandeja ---------------------------------------------------------
+
+def _bot_responde(monkeypatch, **datos):
+    monkeypatch.setattr(moderacion.httpx, "post", lambda *a, **k: httpx.Response(200, json=datos))
+
+
+def test_n9b_fraude_del_bot_lleva_prefijo_sin_repetirlo(ajustes, monkeypatch):
+    ajustes(BOT_URL="http://bot-falso:8001")
+    _bot_responde(monkeypatch, score_spam=0.88, es_spam=True, tipo="fraude", proveedor_ia="freellm",
+                  motivo="Posible fraude: pide pagar por Bizum a un número particular")
+    score, motivo = moderacion.clasificar_spam("Reserva ya: Bizum al 600...")
+    assert score == 0.88
+    assert motivo == "Posible fraude: IA (freellm): pide pagar por Bizum a un número particular"
+
+
+def test_n9b_spam_normal_no_lleva_prefijo(ajustes, monkeypatch):
+    ajustes(BOT_URL="http://bot-falso:8001")
+    _bot_responde(monkeypatch, score_spam=0.9, es_spam=True, tipo="spam", motivo="apuestas")
+    _, motivo = moderacion.clasificar_spam(TEXTO_APUESTAS)
+    assert motivo == "IA: apuestas" and not moderacion.es_motivo_fraude(motivo)
+
+
+def test_n9b_fraude_a_la_bandeja_aunque_puntue_bajo_y_sea_automatica(base, ajustes, monkeypatch):
+    ajustes(BOT_URL="http://bot-falso:8001")
+    _bot_responde(monkeypatch, score_spam=0.55, es_spam=True, tipo="fraude", proveedor_ia="nim",
+                  motivo="posible fraude: pago por adelantado")
+    p = _publicador(base, nivel=2)
+    score, motivo_spam = moderacion.clasificar_spam("Paga 20 € por adelantado", p)
+    estado, motivo = moderacion.decidir_estado(base, _evento(base, p), p, score, motivo_spam)
+    assert estado == "en_revision"
+    assert motivo == "Posible fraude (0.55): IA (nim): pago por adelantado"
+
+
+def test_n9b_fraude_sin_tipo_es_spam_como_antes(base, ajustes, monkeypatch):
+    # Un bot antiguo sin el campo `tipo` se comporta igual que antes de N9b.
+    ajustes(BOT_URL="http://bot-falso:8001")
+    _bot_responde(monkeypatch, score_spam=0.9, es_spam=True, motivo="pide datos bancarios")
+    p = _publicador(base, nivel=2)
+    score, motivo_spam = moderacion.clasificar_spam("texto", p)
+    estado, motivo = moderacion.decidir_estado(base, _evento(base, p), p, score, motivo_spam)
+    assert estado == "en_revision" and motivo.startswith("Posible spam (0.90)")
