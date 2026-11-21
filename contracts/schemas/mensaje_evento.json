@@ -15,6 +15,7 @@
     "tipo": { "enum": ["pregunta", "respuesta", "anuncio", "comentario"] },
     "texto": { "type": "string", "minLength": 1, "maxLength": 1000 },
     "en_respuesta_a": { "type": ["string", "null"], "format": "uuid" },
+    "imagen_url": { "type": ["string", "null"], "description": "Foto adjunta a un comentario de un plan ya pasado. Solo pueden subirla quienes se inscribieron o la organización. URL o data URL de imagen" },
     "fijado": { "type": "boolean" },
     "oculto": { "type": "boolean" },
     "respondido_por_ia": { "type": "boolean" },

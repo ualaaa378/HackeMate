@@ -95,6 +95,19 @@ curl localhost:8000/health
 - Comentarios solo donde aporten algo que el código no dice.
 - Cada servicio arranca aunque los demás estén caídos y expone `GET /health` → `{"status":"ok","version":"x.y.z"}`.
 
+## Canales de mensajería: Telegram ahora, WhatsApp después
+
+- El canal activo es **Telegram**. WhatsApp queda aparcado (Meta pide verificar el negocio), pero **no se borra**: el proyecto tiene que poder funcionar con cualquiera de los dos, o con los dos a la vez, solo cambiando la configuración.
+- El canal se elige por variables de entorno, nunca en el código: bot con `TELEGRAM_TOKEN` y `CANAL` (`meta`/`twilio`/`console`), web con `VITE_CANAL` (`telegram`/`whatsapp`). La API no supone ningún canal: guarda `telefono` y `telegram_id` y elige con `services/api/app/canales.py`.
+- No se escriben «WhatsApp» ni «Telegram» a fuego en textos, rutas nuevas o lógica. En la web se usa `NOMBRE_CANAL` de `apps/web/src/canal.ts`, y en el bot y la API, el contacto (`+34…` o `tg:…`).
+- Las rutas y campos que ya existen con «whatsapp» en el nombre (`/auth/whatsapp/*`, `whatsapp_verificado`) no se renombran (contract-first). Sirven para los dos canales.
+
+## Dependencias entre flujos (recíprocas)
+
+- Todo lo que un flujo necesite de otro se apunta en `README.md` § «🔗 Pendiente entre flujos», **bajo el flujo que tiene que hacerlo**, en el mismo commit en que aparece la dependencia. Ahí se anota qué hace falta, quién lo usa y para qué paso de la demo.
+- Es recíproco: si C necesita algo de A, sale en el apartado de A. Si A deja algo listo para B o C, se avisa en el de ellos. Los documentos de cada flujo (`services/bot/PARA_FLUJO_A.md`, `docs/PLAN_FLUJO_B.md` §5, `docs/PLAN_FLUJO_C.md`) enlazan a esa sección y no la contradicen.
+- Antes de empezar una tarea, revisa tu apartado en esa sección. Cuando resuelvas un punto, bórralo de la lista en el mismo commit.
+
 ## Git
 
 - `main`: solo versiones probadas y etiquetadas. `develop`: integración en los checkpoints. Trabajo del flujo A en `Flujo-A` o `feat/api-<tarea>`.

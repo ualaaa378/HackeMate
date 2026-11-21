@@ -17,6 +17,7 @@ import { useState } from 'react';
 
 import { MUNICIPIOS } from '../api/client';
 import { CATEGORIAS, type Categoria, type Evento, type EventoCrear, type Publicador } from '../api/types';
+import SelectorImagen from '../components/SelectorImagen';
 import { claveDia, hora, isoMadrid } from '../utils/formato';
 
 interface Props {
@@ -51,6 +52,7 @@ const Formulario: React.FC<Props> = ({ evento, publicadores, publicadorFijo, onG
     evento?.plazas_totales != null ? String(evento.plazas_totales) : '',
   );
   const [descripcion, setDescripcion] = useState(evento?.descripcion ?? '');
+  const [imagen, setImagen] = useState<string | null>(evento?.imagen_url ?? null);
   const [publicadorId, setPublicadorId] = useState<string | null>(publicadorFijo ?? evento?.publicador_id ?? null);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -77,6 +79,7 @@ const Formulario: React.FC<Props> = ({ evento, publicadores, publicadorFijo, onG
         precio_eur: gratis ? null : Number(precioEur) || null,
         plazas_totales: plazasTotales ? Number(plazasTotales) : null,
         descripcion: descripcion.trim(),
+        imagen_url: imagen,
         publicador_id: publicadorId,
       });
     } catch (e) {
@@ -222,6 +225,7 @@ const Formulario: React.FC<Props> = ({ evento, publicadores, publicadorFijo, onG
             value={descripcion}
             onIonInput={(ev) => setDescripcion(ev.detail.value ?? '')}
           />
+          <SelectorImagen valor={imagen} onCambio={setImagen} />
           {error && (
             <IonText color="danger">
               <p className="error-form" role="alert">

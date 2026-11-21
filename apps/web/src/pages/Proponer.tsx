@@ -31,6 +31,7 @@ import {
   type Necesidad,
   type Publico,
 } from '../api/types';
+import SelectorImagen from '../components/SelectorImagen';
 import { useSesion } from '../cuenta/sesion';
 import { fechaLarga } from '../utils/formato';
 
@@ -70,6 +71,8 @@ const Proponer: React.FC = () => {
     necesidades: [] as Necesidad[],
     seguro_rc: 'nose' as DatosAyuntamiento['seguro_rc'],
     observaciones: '',
+    imagen: null as string | null,
+    frase: '',
   });
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -110,6 +113,7 @@ const Proponer: React.FC = () => {
             precio_eur: f.pago === 'si' ? Number(f.precio) : null,
             plazas_totales: f.plazas ? Number(f.plazas) : null,
             etiquetas: ['propuesta_vecinal', `publico_${f.publico}`],
+            imagen_url: f.imagen,
           },
           {
             responsable: f.responsable.trim(),
@@ -120,6 +124,7 @@ const Proponer: React.FC = () => {
             necesidades: f.necesidades,
             seguro_rc: f.seguro_rc,
             observaciones: f.observaciones.trim() || undefined,
+            frase_portada: f.frase.trim() || undefined,
           },
         );
         setEnviada(r);
@@ -214,6 +219,18 @@ const Proponer: React.FC = () => {
                 placeholder="Qué se hará, qué hay que llevar…"
                 value={f.descripcion}
                 onIonInput={texto('descripcion')}
+              />
+              <SelectorImagen valor={f.imagen} onCambio={(v) => poner('imagen', v)} />
+              <IonInput
+                label="Frase para la portada (opcional)"
+                labelPlacement="stacked"
+                fill="outline"
+                maxlength={90}
+                counter
+                placeholder="Ej.: ¡Trae a tu vecina, que esto no se repite!"
+                value={f.frase}
+                onIonInput={texto('frase')}
+                helperText="Sale bajo la foto en Inicio. Si la dejas vacía, ponemos una frase automática."
               />
             </fieldset>
 

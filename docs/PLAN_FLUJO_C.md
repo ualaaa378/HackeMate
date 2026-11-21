@@ -77,7 +77,7 @@
 
 - [x] H2.1 Rol en la app: selector de rol en modo demo (vecino, publicador, moderador) hasta que llegue el login en H3. *(vie 23:15: zona `/admin` dentro de la misma app, con su propia barra; se entra desde Perfil. Sin sesión de moderador o publicador real todo va con mocks: `src/api/admin.ts`.)*
 - [~] H2.2 **Bandeja del moderador** (`GET /moderacion/pendientes`): cada evento con su **motivo** y `score_spam`; aprobar o rechazar (`POST /moderacion/{id}/decision`). *(Con mocks: caso «apuestas» de Bar La Plaza, evento por WhatsApp, propuesta vecinal con sus datos para el ayuntamiento y asociación por aprobar. Lo aprobado sale en la agenda de mocks.)*
-- [~] H2.3 Publicadores: lista con nivel de confianza y estado, aprobar y **pausar** (`/publicadores/{id}/aprobar`, `/pausar`).
+- [~] H2.3 Publicadores *(21/11: solo dos modos de revisión, a mano o automática; para pasar a automática, responsable identificado con DNI y residencia y planes frecuentes sin rechazos, reglas en `src/admin/confianza.ts`)*: lista con nivel de confianza y estado, aprobar y **pausar** (`/publicadores/{id}/aprobar`, `/pausar`).
 - [~] H2.4 Vista del publicador: sus eventos por estado, crear y editar evento (`POST/PATCH /eventos`).
 - [ ] H2.5 Ficha de un evento `pendiente_confirmacion` o `en_revision` visible solo para el publicador y el moderador.
 

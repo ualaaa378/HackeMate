@@ -14,6 +14,7 @@ import {
 } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 
+import BloqueConfianza from '../../admin/BloqueConfianza';
 import PaginaAdmin from '../../admin/PaginaAdmin';
 import { aprobarPublicador, decidir, getPendientes } from '../../api/admin';
 import { CATEGORIAS, NECESIDADES, PUBLICOS, type PendienteBandeja } from '../../api/types';
@@ -72,7 +73,7 @@ const Bandeja: React.FC = () => {
         await decidir(p.evento.id, { decision: aprobar ? 'aprobar' : 'rechazar', motivo: motivo || null });
         setAviso(aprobar ? `«${p.evento.titulo}» ya está en la agenda.` : `«${p.evento.titulo}» rechazado.`);
       } else if (p.publicador) {
-        await aprobarPublicador(p.publicador.id, { aprobar, nivel_confianza: 0, motivo: motivo || null });
+        await aprobarPublicador(p.publicador.id, { aprobar, motivo: motivo || null });
         setAviso(aprobar ? `${p.publicador.nombre} ya puede publicar.` : `${p.publicador.nombre} rechazado.`);
       }
       quitar(p);
@@ -141,6 +142,7 @@ const Bandeja: React.FC = () => {
               )}
               {e?.descripcion && <p className="descripcion">{e.descripcion}</p>}
               {p.publicador?.descripcion && <p className="descripcion">{p.publicador.descripcion}</p>}
+              {p.publicador && <BloqueConfianza publicador={p.publicador} conRequisitos={false} />}
 
               <div className="motivo-ia">
                 <strong>🤖 Por qué está aquí</strong>

@@ -1,52 +1,63 @@
-/* Tema visual tomado de la plantilla de portal municipal (index.html de referencia).
-   Paleta azul institucional; todas las combinaciones de texto cumplen WCAG AA y casi todas AAA. */
+/* Tema verde, naranja y blanco (cambio pedido por Adán el 21/11), con azul para la información.
+   Todas las combinaciones de texto cumplen WCAG AA y casi todas AAA (contraste con blanco entre paréntesis). */
 :root {
-  /* Colores de la plantilla */
-  --hm-azul-barra: #1f3d63; /* barra superior y pie (11:1 con blanco) */
-  --hm-azul: #1d5a8c; /* color principal (7,3:1 con blanco) */
-  --hm-azul-oscuro: #123b5e; /* textos de marca y estados pulsados (11,6:1) */
-  --hm-gris-cabecera: #e9ecef;
-  --hm-fondo: #f4f6f8;
-  --hm-texto: #1f2933; /* 13,6:1 sobre el fondo */
-  --hm-texto-suave: #4a5560; /* 7,6:1 con blanco; el gris de la plantilla (#5f6b76) se queda en AA justo */
+  --hm-verde-oscuro: #14451a; /* cabecera, pie y títulos (11,1:1) */
+  --hm-verde: #1b5e20; /* color de marca (7,9:1) */
+  --hm-verde-claro: #e8f1e4; /* fondos suaves y bordes */
+  --hm-naranja: #b93c0b; /* acciones principales: apuntarse, proponer (5,7:1) */
+  --hm-naranja-oscuro: #9a3412; /* estados pulsados y texto naranja pequeño (7,3:1) */
+  --hm-naranja-claro: #fdf0e6;
+  --hm-azul: #1d5a8c; /* información y enlaces secundarios (7,3:1) */
+  --hm-fondo: #f6f8f1;
+  --hm-texto: #1f2a1f; /* 13,9:1 sobre el fondo */
+  --hm-texto-suave: #4a5560; /* 7,1:1 sobre el fondo */
+  --hm-borde: #d3dccd;
   --hm-foco: #ffbf47;
-  --hm-radio: 8px;
+  --hm-radio: 10px;
   --hm-hueco: 14px;
-  --hm-toque: 52px; /* tamaño mínimo de cualquier botón o zona táctil */
+  --hm-toque: 56px; /* tamaño mínimo de cualquier botón o zona táctil */
 
-  --ion-font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --ion-font-family: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
   --ion-background-color: var(--hm-fondo);
-  --ion-background-color-rgb: 244, 246, 248;
+  --ion-background-color-rgb: 246, 248, 241;
   --ion-text-color: var(--hm-texto);
-  --ion-text-color-rgb: 31, 41, 51;
-  --ion-toolbar-background: var(--hm-azul-barra);
+  --ion-text-color-rgb: 31, 42, 31;
+  --ion-toolbar-background: var(--hm-verde-oscuro);
   --ion-item-background: #ffffff;
   --ion-card-background: #ffffff;
   --ion-tab-bar-background: #ffffff;
   --ion-tab-bar-color: var(--hm-texto-suave);
-  --ion-tab-bar-color-selected: var(--hm-azul);
+  --ion-tab-bar-color-selected: var(--hm-naranja-oscuro);
 
-  --ion-color-primary: #1d5a8c;
-  --ion-color-primary-rgb: 29, 90, 140;
+  /* primary = naranja (botones de acción); secondary = verde oscuro (cabeceras); tertiary = azul (información) */
+  --ion-color-primary: #b93c0b;
+  --ion-color-primary-rgb: 185, 60, 11;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #123b5e;
-  --ion-color-primary-tint: #346a98;
+  --ion-color-primary-shade: #9a3412;
+  --ion-color-primary-tint: #c0501f;
 
-  --ion-color-secondary: #1f3d63;
-  --ion-color-secondary-rgb: 31, 61, 99;
+  --ion-color-secondary: #14451a;
+  --ion-color-secondary-rgb: 20, 69, 26;
   --ion-color-secondary-contrast: #ffffff;
   --ion-color-secondary-contrast-rgb: 255, 255, 255;
-  --ion-color-secondary-shade: #1b3657;
-  --ion-color-secondary-tint: #355073;
+  --ion-color-secondary-shade: #123d17;
+  --ion-color-secondary-tint: #2c5831;
+
+  --ion-color-tertiary: #1d5a8c;
+  --ion-color-tertiary-rgb: 29, 90, 140;
+  --ion-color-tertiary-contrast: #ffffff;
+  --ion-color-tertiary-contrast-rgb: 255, 255, 255;
+  --ion-color-tertiary-shade: #1a4f7b;
+  --ion-color-tertiary-tint: #346a98;
 
   /* Verde y gris más oscuros que los de Ionic para que el texto blanco de las insignias pase AA */
-  --ion-color-success: #2e7d32;
-  --ion-color-success-rgb: 46, 125, 50;
+  --ion-color-success: #1b5e20;
+  --ion-color-success-rgb: 27, 94, 32;
   --ion-color-success-contrast: #ffffff;
   --ion-color-success-contrast-rgb: 255, 255, 255;
-  --ion-color-success-shade: #286e2c;
-  --ion-color-success-tint: #438a47;
+  --ion-color-success-shade: #18531c;
+  --ion-color-success-tint: #326e36;
 
   --ion-color-medium: #4a5560;
   --ion-color-medium-rgb: 74, 85, 96;
@@ -55,10 +66,10 @@
   --ion-color-medium-shade: #414b54;
   --ion-color-medium-tint: #5c6670;
 
-  --ion-color-light: #e9ecef;
-  --ion-color-light-rgb: 233, 236, 239;
-  --ion-color-light-contrast: #1f2933;
-  --ion-color-light-contrast-rgb: 31, 41, 51;
-  --ion-color-light-shade: #cdd0d2;
-  --ion-color-light-tint: #ebeef1;
+  --ion-color-light: #e8f1e4;
+  --ion-color-light-rgb: 232, 241, 228;
+  --ion-color-light-contrast: #1f2a1f;
+  --ion-color-light-contrast-rgb: 31, 42, 31;
+  --ion-color-light-shade: #ccd4c9;
+  --ion-color-light-tint: #eaf2e7;
 }

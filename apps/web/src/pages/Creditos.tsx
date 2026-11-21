@@ -1,5 +1,6 @@
 import { IonBackButton, IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
 
+import { FOTOS_PLANES, type ClaveFoto, miniaturaPlan } from '../eventos/imagenes';
 import { FOTOS_PUEBLOS, srcFoto } from '../pueblos/fotos';
 
 const Creditos: React.FC = () => (
@@ -31,6 +32,37 @@ const Creditos: React.FC = () => (
                 <a href={f.url_licencia} target="_blank" rel="noopener noreferrer">
                   {f.licencia}
                 </a>
+                <br />
+                <a href={f.url_original} target="_blank" rel="noopener noreferrer">
+                  Ver la foto original en Wikimedia Commons
+                </a>
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <h2 className="titulo-creditos">Fotos de los planes</h2>
+      <p>
+        Cuando quien organiza un plan no sube su propia foto, mostramos una foto ilustrativa del tipo de plan. No es del
+        evento concreto, y así lo indicamos en cada una.
+      </p>
+      <ul className="lista-creditos">
+        {(Object.entries(FOTOS_PLANES) as [ClaveFoto, (typeof FOTOS_PLANES)[ClaveFoto]][]).map(([clave, f]) => (
+          <li key={clave}>
+            <img src={miniaturaPlan(clave)} alt="" width={320} height={240} loading="lazy" />
+            <div>
+              <p>{f.alt}</p>
+              <p>
+                Autoría: <strong>{f.autor}</strong>
+                <br />
+                Licencia:{' '}
+                {f.url_licencia ? (
+                  <a href={f.url_licencia} target="_blank" rel="noopener noreferrer">
+                    {f.licencia}
+                  </a>
+                ) : (
+                  f.licencia
+                )}
                 <br />
                 <a href={f.url_original} target="_blank" rel="noopener noreferrer">
                   Ver la foto original en Wikimedia Commons
