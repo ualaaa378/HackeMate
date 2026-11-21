@@ -19,7 +19,7 @@ from app.duplicados import buscar_posible_duplicado
 from app.errores import ErrorApi
 from app.imagenes import validar_imagen
 from app.modelos import CATEGORIAS, ESTADOS_EVENTO, Evento, Municipio, Publicador, Usuario
-from app.moderacion import clasificar_spam, decidir_estado, motivo_con_duplicado
+from app.moderacion import PREFIJO_FRAUDE, clasificar_spam, decidir_estado, es_motivo_fraude, motivo_con_duplicado
 from app.paginacion import Pagina, pagina, paginar, paginar_lista
 from app.rutas.publico import dentro_del_radio, en_caja, es_uuid, hay_radio
 from app.chat import anuncio_automatico
@@ -403,6 +403,35 @@ def crear_evento(
     return _ficha(db, _buscar(db, evento.id), privados=usuario is not None)
 
 
+def _remoderar_si_cambia_el_texto(
+    db: Session, evento: Evento, quien: Quien, estado_anterior: str, texto_anterior: tuple
+) -> list:
+    """Un plan ya publicado que su organizador edita (título, descripción o foto) vuelve a pasar el antispam y el
+    antifraude: así no se cuela un timo editando algo que ya estaba aprobado. Si salta, vuelve a la bandeja y se
+    avisa a los moderadores. Los cambios del moderador o del bot no se revisan otra vez."""
+    if quien.interno or (quien.usuario is not None and quien.usuario.rol == "moderador"):
+        return []
+    if estado_anterior != "publicado" or evento.estado != "publicado":
+        return []
+    if (evento.titulo, evento.descripcion, evento.imagen_url) == texto_anterior:
+        return []
+    texto = "\n".join(t for t in (evento.titulo, evento.descripcion) if t)
+    score, motivo_spam = clasificar_spam(texto, evento.publicador)
+    if es_motivo_fraude(motivo_spam):
+        motivo = f"Posible fraude ({score:.2f}): {motivo_spam[len(PREFIJO_FRAUDE):]}"
+    elif score >= get_settings().moderacion_umbral_spam:
+        motivo = f"Posible spam ({score:.2f}): {motivo_spam or 'sin detalle'}"
+    else:
+        return []
+    evento.estado, evento.score_spam = "en_revision", score
+    evento.motivo_moderacion = f"Editado después de publicarse. {motivo}"
+    db.flush()
+    return notificar_moderadores(
+        db, "moderacion", f"Evento para revisar: «{evento.titulo}» (editado tras publicarse). Motivo: {motivo}",
+        evento_id=evento.id, enviar=False,
+    )
+
+
 @router.patch("/eventos/{id}")
 def editar_evento(
     id: str,
@@ -422,6 +451,7 @@ def editar_evento(
             cambios[campo] = _con_zona(cambios[campo])
     fecha_anterior, lugar_anterior, estado_anterior = evento.fecha_inicio, evento.lugar, evento.estado
 
+    texto_anterior = (evento.titulo, evento.descripcion, evento.imagen_url)
     for campo, valor in cambios.items():
         setattr(evento, campo, valor)
     if evento.lat is None or evento.lon is None:
@@ -438,6 +468,8 @@ def editar_evento(
         db.flush()
         if evento.estado == "publicado":
             avisos += promocionar(db, evento)  # con más plazas, sube la lista de espera
+
+    avisos += _remoderar_si_cambia_el_texto(db, evento, quien, estado_anterior, texto_anterior)
 
     cancelado = evento.estado == "cancelado" and estado_anterior != "cancelado"
     texto = texto_cambio(evento, fecha_anterior, lugar_anterior, cancelado)
