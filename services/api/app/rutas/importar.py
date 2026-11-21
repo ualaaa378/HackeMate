@@ -21,6 +21,7 @@ from app.duplicados import buscar_posible_duplicado
 from app.errores import ErrorApi
 from app.modelos import CANALES, CATEGORIAS, Evento, Fuente, Municipio, Publicador, ahora
 from app.moderacion import clasificar_spam, decidir_estado, motivo_con_duplicado
+from app.avisos_planes import avisar_interesados
 from app.notificaciones import enviar_en_segundo_plano, notificar_moderadores
 from app.rutas.eventos import (
     Categoria,
@@ -449,6 +450,8 @@ def confirmar_evento(
             db, "moderacion", f"Evento para revisar: «{evento.titulo}» ({quien}). Motivo: {motivo}",
             evento_id=evento.id, enviar=False,
         )
+    elif estado == "publicado":
+        avisos = avisar_interesados(db, evento)  # A10
     db.commit()
     enviar_en_segundo_plano(background_tasks, db, avisos)
     return _resultado(db, evento, duplicado=False, status=200, posible_duplicado_de=parecido.id if parecido else None)

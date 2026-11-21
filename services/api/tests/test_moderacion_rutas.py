@@ -355,6 +355,6 @@ def test_aviso_sale_tras_el_commit_en_segundo_plano(api, db, motor, monkeypatch)
     get_settings.cache_clear()
     monkeypatch.setattr(notificaciones, "_transporte", httpx.MockTransport(bot))
     assert _decidir(api, evento["id"], "aprobar").status_code == 200
-    assert vistos == ["publicado"]
+    assert vistos and set(vistos) == {"publicado"}  # el del publicador y los de A10 a interesados
     avisos = [n for n in _avisos(db, TEL_NIVEL0) if n.evento_id == evento["id"]]
     assert len(avisos) == 1 and avisos[0].estado_envio == "enviada" and avisos[0].intentos == 1
