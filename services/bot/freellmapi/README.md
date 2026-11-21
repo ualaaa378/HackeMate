@@ -27,7 +27,7 @@ python -c "import secrets; print(secrets.token_hex(32))"   # pega el resultado e
 1. En `freellmapi.config.json`:
    - pon tus claves de cada proveedor;
    - **borra las líneas de los proveedores que no tengas**, para no cargar claves falsas;
-   - cambia el email y la contraseña de `admin`, que es la cuenta del panel.
+   - cambia el email y la contraseña de `admin`, que es la cuenta del panel. **La contraseña necesita al menos 8 caracteres**; si no, el contenedor se queda reiniciando en bucle (`docker compose logs` dice `admin.password: Too small`).
 2. Arranca:
    ```powershell
    docker compose up -d
