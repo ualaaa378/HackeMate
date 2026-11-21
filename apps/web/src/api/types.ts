@@ -41,8 +41,8 @@ export const NECESIDADES = {
 export type Necesidad = keyof typeof NECESIDADES;
 
 /**
- * Datos de la propuesta que solo ve el ayuntamiento. Aún NO están en el contrato:
- * hasta que se añadan (contract-change), la API solo recibe la parte pública (EventoCrear).
+ * Datos de la propuesta que solo ve el ayuntamiento. En la API van en `EventoCrear.datos_ayuntamiento`
+ * (privados: solo los ven el organizador y los moderadores); `frase_portada` va aparte, en EventoCrear.
  */
 export interface DatosAyuntamiento {
   responsable: string;
@@ -53,20 +53,19 @@ export interface DatosAyuntamiento {
   necesidades: Necesidad[];
   seguro_rc: 'si' | 'no' | 'nose';
   observaciones?: string;
-  /** Frase corta y pública para la portada del plan. Pendiente de contract-change (flujo A) como `frase_portada` de EventoCrear. */
+  /** Frase corta y pública para la portada del plan. Se envía como `EventoCrear.frase_portada`. */
   frase_portada?: string;
 }
 export type Publicador = Esquemas['publicador'];
 export type Pendiente = Esquemas['Pendiente'];
-/** Elemento de la bandeja. `propuesta` son los datos privados de un plan vecinal (aún fuera del contrato). */
+/** Elemento de la bandeja. `propuesta` son los datos privados de un plan vecinal (`evento.datos_ayuntamiento`). */
 export type PendienteBandeja = Omit<Pendiente, 'publicador'> & {
   publicador?: PublicadorAdmin;
   propuesta?: DatosAyuntamiento;
 };
 
 /**
- * Datos del responsable de una asociación o comercio. Solo los ve el moderador.
- * Aún NO están en el contrato (pendiente de contract-change con A).
+ * Datos del responsable de una asociación o comercio. Solo los ve el moderador (`publicador.responsable`).
  */
 export interface DatosResponsable {
   nombre: string;
@@ -87,6 +86,8 @@ export interface ActividadPublicador {
 export type PublicadorAdmin = Publicador & { responsable?: DatosResponsable | null; actividad?: ActividadPublicador };
 export type Decision = Esquemas['Decision'];
 export type Estadisticas = Esquemas['Estadisticas'];
+export type MetricasBot = Esquemas['MetricasBot'];
+export type CaidaSimulada = Esquemas['CaidaSimulada'];
 export type EventoEditar = Esquemas['EventoEditar'];
 export type Rol = Usuario['rol'];
 

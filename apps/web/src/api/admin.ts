@@ -1,23 +1,50 @@
-// Llamadas de la interfaz del ayuntamiento (moderador y publicador).
-// Las rutas están en contracts/openapi.yaml, pero A aún no las tiene con JWT:
-// POST/PATCH /eventos solo aceptan X-Internal-Token y la moderación no está implementada.
-// Por eso, mientras no haya una sesión real de moderador o publicador, todo va con mocks (modo demo).
+// Llamadas de la interfaz del ayuntamiento (moderador y publicador), todas con la sesión (JWT) del usuario.
+// Con sesión real de moderador o publicador van a la API; si la API no responde, se vuelve a los mocks.
+// Solo si no hay API (o no tiene DEMO_MODE para entrar sin cuenta) se usa el modo demo, todo con mocks.
 
 import { puedeSerAutomatica, type ModoRevision } from '../admin/confianza';
 import { COORDENADAS, estadisticasMock, nuevoEventoMock, pendientesMock, publicadoresMock } from '../mocks/admin';
 
-import { conRespaldo, esperar, mockEventos, peticion, propuestasMock, query } from './client';
+import { conRespaldo, ErrorApi, esperar, mockEventos, peticion, propuestasMock, query, USAR_MOCKS } from './client';
 import type {
+  CaidaSimulada,
   Decision,
   EstadoEvento,
   Estadisticas,
   Evento,
   EventoCrear,
+  MetricasBot,
   EventoEditar,
   Pagina,
   PendienteBandeja,
   PublicadorAdmin,
+  Rol,
+  Token,
 } from './types';
+
+// Usuarios de la demo en contracts/fixtures/usuarios.json: Lucía (moderadora) y Antonio (Amigos de Velefique,
+// con revisión a mano, así sus planes pasan por la bandeja).
+const USUARIOS_DEMO: Record<'moderador' | 'publicador', string> = {
+  moderador: '5a5e0000-0000-4000-8000-000000000002',
+  publicador: '5a5e0000-0000-4000-8000-000000000003',
+};
+
+/**
+ * Entra sin cuenta como el moderador o el publicador de la demo (`POST /auth/demo`, solo con DEMO_MODE=true en la
+ * API). Devuelve null si no hay API o no está en modo demo: entonces la zona del ayuntamiento va con mocks.
+ */
+export async function entrarDemo(rol: 'moderador' | 'publicador'): Promise<Token | null> {
+  if (USAR_MOCKS) return null;
+  const pedir = (cuerpo: { usuario_id?: string; rol?: Rol }) =>
+    peticion<Token>('/auth/demo', { method: 'POST', body: JSON.stringify(cuerpo) });
+  try {
+    return await pedir({ usuario_id: USUARIOS_DEMO[rol] });
+  } catch (e) {
+    // Si alguien ha cambiado los usuarios de la demo, vale el primero con ese rol.
+    if (e instanceof ErrorApi && e.code === 'usuario_no_encontrado') return pedir({ rol }).catch(() => null);
+    return null;
+  }
+}
 
 let demo = true;
 /** La pone el proveedor de acceso: true si se entra con el selector de rol de la demo. */
@@ -69,7 +96,16 @@ function incorporarPropuestas() {
 // ---------- bandeja ----------
 export function getPendientes(): Promise<Pagina<PendienteBandeja>> {
   return llamar(
-    () => peticion('/moderacion/pendientes?size=100'),
+    async () => {
+      const r = await peticion<Pagina<PendienteBandeja>>('/moderacion/pendientes?size=100');
+      // La API manda los datos privados de una propuesta vecinal dentro del evento.
+      const items = r.items.map((p) =>
+        p.evento?.datos_ayuntamiento && !p.propuesta
+          ? { ...p, propuesta: p.evento.datos_ayuntamiento as PendienteBandeja['propuesta'] }
+          : p,
+      );
+      return { ...r, items };
+    },
     () => {
       incorporarPropuestas();
       return esperar(pagina([...pendientesMock]));
@@ -179,15 +215,21 @@ export function cambiarRevision(id: string, modo: ModoRevision): Promise<Publica
   );
 }
 
-/**
- * El moderador marca como comprobados el DNI y la residencia del responsable.
- * Sin ruta en el contrato todavía: solo funciona en modo demo (pendiente de A, ver README).
- */
+/** El moderador marca como comprobados el DNI y la residencia del responsable. */
 export function verificarIdentidad(id: string): Promise<PublicadorAdmin> {
-  const p = publicadoresMock.find((x) => x.id === id);
-  if (!p?.responsable) return Promise.reject(new Error('Falta que el responsable aporte sus datos.'));
-  p.responsable = { ...p.responsable, identidad_verificada: true };
-  return esperar({ ...p });
+  return llamar(
+    () =>
+      peticion(`/publicadores/${id}/verificar-identidad`, {
+        method: 'POST',
+        body: JSON.stringify({ identidad_verificada: true }),
+      }),
+    () => {
+      const p = publicadoresMock.find((x) => x.id === id);
+      if (!p?.responsable) return Promise.reject(new Error('Falta que el responsable aporte sus datos.'));
+      p.responsable = { ...p.responsable, identidad_verificada: true };
+      return esperar({ ...p });
+    },
+  );
 }
 
 // ---------- eventos ----------
@@ -271,4 +313,36 @@ export function getEstadisticas(): Promise<Estadisticas> {
       return esperar({ ...estadisticasMock, actividades: publicados });
     },
   );
+}
+
+// ---------- robustez del bot (la API hace de intermediaria: el INTERNAL_TOKEN no llega al navegador) ----------
+let caidaMock = false;
+
+function metricasMock(): MetricasBot {
+  return {
+    totales: Object.fromEntries(
+      Object.entries(estadisticasMock.tokens?.por_proveedor ?? {}).map(([n, p]) => [
+        n,
+        { llamadas: p.llamadas ?? 0, entrada: p.entrada ?? 0, salida: p.salida ?? 0, fallos: 0 },
+      ]),
+    ),
+    ultimas: [],
+    eventos_en_cola: 0,
+    caida_simulada: caidaMock,
+  };
+}
+
+/**
+ * Métricas del bot (`GET /admin/bot/metricas`). Aquí no se vuelve a los mocks: si el bot no responde
+ * (503 `bot_no_disponible`), el panel lo tiene que decir.
+ */
+export function getMetricasBot(): Promise<MetricasBot> {
+  return demo ? esperar(metricasMock()) : peticion('/admin/bot/metricas');
+}
+
+/** Activa o quita la caída simulada de todas las IAs: el bot sigue solo con reglas. */
+export function simularCaida(activa: boolean): Promise<CaidaSimulada> {
+  if (!demo) return peticion('/admin/bot/simular-caida', { method: 'POST', body: JSON.stringify({ activa }) });
+  caidaMock = activa;
+  return esperar({ activa });
 }

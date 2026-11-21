@@ -158,9 +158,9 @@
 - [x] **H1 cerrado** (vie 22:20): compose completo con PostgreSQL y la API de #10, la agenda y el mapa leen los 18 eventos de la base; las rutas aún sin implementar caen a mocks (ver `PLAN_FLUJO_C.md` H1)
 
 **Bloque 2 (sáb 08:00–13:00)**
-- [~] Panel del moderador: bandeja con motivo de la IA, aprobar/rechazar *(vie 23:15: `/admin/bandeja` con mocks, incluye las propuestas vecinales con sus datos para el ayuntamiento; falta que A implemente `/moderacion/*` con JWT)*
-- [~] Gestión de publicadores y niveles de confianza, pausar automatizaciones *(`/admin/publicadores` con mocks; falta `/publicadores/{id}/aprobar` y `/pausar` en A)*
-- [~] Vista del publicador: alta, fuentes, crear/editar/cancelar evento, ver inscritos *(`/admin/eventos`: crear, editar, cancelar y aviso de cambio de hora, con mocks; `POST/PATCH /eventos` solo aceptan `X-Internal-Token`, necesitan el JWT del publicador o moderador)*
+- [x] Panel del moderador: bandeja con motivo de la IA, aprobar/rechazar *(sáb 21/11: `/admin/bandeja` contra `/moderacion/*` con la sesión del moderador; las propuestas vecinales enseñan su `datos_ayuntamiento`. Sin API vuelve a los mocks)*
+- [x] Gestión de publicadores y niveles de confianza, pausar automatizaciones *(`/admin/publicadores` contra `/publicadores`, `/aprobar`, `/pausar` y `/verificar-identidad`)*
+- [~] Vista del publicador: alta, fuentes, crear/editar/cancelar evento, ver inscritos *(`/admin/eventos`: crear, editar, cancelar y aviso de cambio de hora contra `POST/PATCH /eventos` con JWT; un publicador pausado ve el error `publicador_pausado` de la API. Falta «ver inscritos» y fuentes)*
 
 **Bloque 3 (sáb 14:00–19:00)**
 - [ ] Login con Google y perfil (gustos, pueblo, tipo de aviso, vincular WhatsApp)
@@ -169,7 +169,7 @@
 - [ ] PWA: `manifest.json`, service worker e icono
 
 **Bloque 4 (sáb 20:00–00:00)**
-- [~] Panel de estadísticas y coste en tokens *(`/admin/panel` adelantado con mocks; falta `GET /estadisticas` en A)*
+- [x] Panel de estadísticas y coste en tokens *(`/admin/panel` con `GET /estadisticas`; bloque «El bot en directo» con `GET /admin/bot/metricas` y el botón «Simular caída de la IA», `POST /admin/bot/simular-caida`)*
 - [ ] Accesibilidad WCAG 2.1 AA: contraste, teclado, `aria-label`, modo letra grande
 - [ ] Capacitor: `npx cap add android`, APK de debug generado
 - [ ] APK apunta a la URL pública del túnel y funciona en un móvil real

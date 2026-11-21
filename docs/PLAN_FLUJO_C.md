@@ -75,11 +75,11 @@
 
 ### H2 · Moderador y publicador (sáb 08:00 → 13:00 · CP2 · `v0.2`)
 
-- [x] H2.1 Rol en la app: selector de rol en modo demo (vecino, publicador, moderador) hasta que llegue el login en H3. *(vie 23:15: zona `/admin` dentro de la misma app, con su propia barra; se entra desde Perfil. Sin sesión de moderador o publicador real todo va con mocks: `src/api/admin.ts`.)*
-- [~] H2.2 **Bandeja del moderador** (`GET /moderacion/pendientes`): cada evento con su **motivo** y `score_spam`; aprobar o rechazar (`POST /moderacion/{id}/decision`). *(Con mocks: caso «apuestas» de Bar La Plaza, evento por WhatsApp, propuesta vecinal con sus datos para el ayuntamiento y asociación por aprobar. Lo aprobado sale en la agenda de mocks.)*
-- [~] H2.3 Publicadores *(21/11: solo dos modos de revisión, a mano o automática; para pasar a automática, responsable identificado con DNI y residencia y planes frecuentes sin rechazos, reglas en `src/admin/confianza.ts`)*: lista con nivel de confianza y estado, aprobar y **pausar** (`/publicadores/{id}/aprobar`, `/pausar`).
-- [~] H2.4 Vista del publicador: sus eventos por estado, crear y editar evento (`POST/PATCH /eventos`).
-- [ ] H2.5 Ficha de un evento `pendiente_confirmacion` o `en_revision` visible solo para el publicador y el moderador.
+- [x] H2.1 Rol en la app: selector de rol en modo demo (vecino, publicador, moderador) hasta que llegue el login en H3. *(vie 23:15: zona `/admin` dentro de la misma app, con su propia barra; se entra desde Perfil. Sáb 21/11: los botones de la demo piden sesión real con `POST /auth/demo` (Lucía, moderadora; Antonio, Amigos de Velefique) si la API tiene `DEMO_MODE=true`; si no, todo va con mocks: `src/api/admin.ts`.)*
+- [x] H2.2 **Bandeja del moderador** (`GET /moderacion/pendientes`): cada evento con su **motivo** y `score_spam`; aprobar o rechazar (`POST /moderacion/{id}/decision`). *(Con mocks: caso «apuestas» de Bar La Plaza, evento por WhatsApp, propuesta vecinal con sus datos para el ayuntamiento y asociación por aprobar. Sáb 21/11: contra la API real; probado rechazar el de apuestas y aprobar el taller de grafiti, que sale en la agenda al volver a ella.)*
+- [x] H2.3 Publicadores *(21/11: solo dos modos de revisión, a mano o automática; para pasar a automática, responsable identificado con DNI y residencia y planes frecuentes sin rechazos, reglas en `src/admin/confianza.ts`; contra la API, también «identidad comprobada» con `/verificar-identidad`)*: lista con nivel de confianza y estado, aprobar y **pausar** (`/publicadores/{id}/aprobar`, `/pausar`).
+- [x] H2.4 Vista del publicador: sus eventos por estado, crear y editar evento (`POST/PATCH /eventos`). *(Con el JWT del publicador; pausado → error `publicador_pausado` de la API.)*
+- [x] H2.5 Ficha de un evento `pendiente_confirmacion` o `en_revision` visible solo para el publicador y el moderador. *(Lo decide la API en `GET /eventos/{id}` según la sesión; la web manda el JWT.)*
 
 **Criterios de aceptación**
 - ✅ El moderador ve en la bandeja el caso «apuestas» de Bar La Plaza con su motivo, lo rechaza y desaparece de la bandeja.
@@ -87,7 +87,7 @@
 - ✅ Un publicador pausado sale marcado y la app no le deja publicar (muestra el error de la API).
 - ✅ **Demo pasos 1–3** vistos desde la web: el evento que entra por el bot aparece en la bandeja y, aprobado, en la agenda.
 
-**Depende de A (H2):** moderación, confirmar y publicadores. Mientras no estén, la bandeja usa los mocks de `src/mocks/admin.ts`. Además, `POST/PATCH /eventos` tienen que aceptar `Authorization: Bearer` de moderador o publicador (hoy solo `X-Internal-Token`), y la propuesta vecinal necesita en el contrato un objeto `propuesta` opcional y privado (hoy `DatosAyuntamiento` en `types.ts`).
+**Depende de A (H2):** ✅ resuelto en la PR #35 (moderación, publicadores, `POST/PATCH /eventos` con JWT, `datos_ayuntamiento`, panel del bot). Sin API, la zona del ayuntamiento sigue funcionando con los mocks de `src/mocks/admin.ts`.
 
 ### H3 · La vecina (sáb 14:00 → 19:00 · CP3 · `v0.3`)
 
