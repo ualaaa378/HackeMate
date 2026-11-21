@@ -2079,6 +2079,13 @@ ion-content.contenido-agenda--zonas::part(scroll) {
   font-weight: 700;
 }
 
+.chip-apelacion {
+  --background: var(--hm-petroleo-claro);
+  --color: var(--hm-petroleo-oscuro);
+  border: 1px solid var(--hm-petroleo);
+  font-weight: 700;
+}
+
 /* P5c · «Mis planes propuestos» */
 .mis-planes {
   list-style: none;

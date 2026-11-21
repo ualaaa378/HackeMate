@@ -411,6 +411,26 @@ export function modificarPlan(id: string, cambios: EventoEditar): Promise<Evento
   );
 }
 
+/** P3a/P3c: quien propuso un plan rechazado pide que lo revisen otra vez (una sola vez). Vuelve a la bandeja. */
+export function apelarPlan(id: string, motivo: string): Promise<Evento> {
+  return conRespaldo(
+    () => peticion(`/eventos/${id}/apelacion`, { method: 'POST', body: JSON.stringify({ motivo }) }),
+    () => {
+      const p = propuestasMock.find((x) => x.evento.id === id);
+      if (!p) return Promise.reject(new ErrorApi('evento_no_encontrado', 'No existe ese plan', 404));
+      if (p.evento.apelacion) return Promise.reject(new ErrorApi('apelacion_usada', 'Ya pediste revisarlo', 409));
+      if (p.evento.estado !== 'rechazado')
+        return Promise.reject(new ErrorApi('estado_invalido', 'Solo se apelan planes no publicados', 409));
+      Object.assign(p.evento, {
+        estado: 'en_revision',
+        apelacion: { motivo, creada_en: new Date().toISOString() },
+        moderacion: { ...p.evento.moderacion, motivo: `Apelación: ${motivo}` },
+      });
+      return esperar({ ...p.evento });
+    },
+  );
+}
+
 // ---------- chat del evento ----------
 const chatsMock = new Map<string, MensajeEvento[]>();
 

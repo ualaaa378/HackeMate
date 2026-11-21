@@ -49,6 +49,7 @@ function nivelSpam(score: number | null | undefined): { texto: string; clase: st
 }
 
 /** N9b/N9c: la API empieza el motivo por «Posible fraude» cuando la IA ve señales de estafa. */
+const esApelacion = (p: PendienteBandeja) => p.motivo.trimStart().toLowerCase().startsWith('apelación:');
 const esFraude = (p: PendienteBandeja) => p.motivo.trimStart().toLowerCase().startsWith('posible fraude');
 
 const clave = (p: PendienteBandeja) => p.evento?.id ?? p.publicador?.id ?? p.motivo;
@@ -138,6 +139,7 @@ const Bandeja: React.FC = () => {
                     </IonChip>
                     <IonChip outline>{CANALES[e.origen.canal] ?? e.origen.canal}</IonChip>
                     {esFraude(p) && <IonChip className="chip-fraude">⚠️ Posible fraude</IonChip>}
+                    {esApelacion(p) && <IonChip className="chip-apelacion">🔁 Apelación</IonChip>}
                   </div>
                   <IonCardTitle>{e.titulo}</IonCardTitle>
                   <IonCardSubtitle>

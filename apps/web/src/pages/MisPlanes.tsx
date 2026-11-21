@@ -1,4 +1,5 @@
 import {
+  IonAlert,
   IonBackButton,
   IonButton,
   IonButtons,
@@ -17,11 +18,11 @@ import {
 import { useCallback, useState } from 'react';
 
 import FormEvento from '../admin/FormEvento';
-import { getMisPlanes, modificarPlan } from '../api/client';
+import { apelarPlan, ErrorApi, getMisPlanes, modificarPlan } from '../api/client';
 import { CATEGORIAS, type Evento, type EventoCrear } from '../api/types';
 import { useSesion } from '../cuenta/sesion';
 import { imagenPlan } from '../eventos/imagenes';
-import { estadoPlan } from '../utils/estadoPlan';
+import { estadoPlan, MOTIVO_APELACION, puedeApelar } from '../utils/estadoPlan';
 import { fechaLarga, horaEvento, textoApuntados } from '../utils/formato';
 
 /** P5c · «Mis planes propuestos»: lo que ha propuesto esta persona (o su asociación), con su estado, y «Modificar». */
@@ -31,6 +32,7 @@ const MisPlanes: React.FC = () => {
   const [error, setError] = useState(false);
   const [editando, setEditando] = useState<Evento | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [apelando, setApelando] = useState<Evento | null>(null);
   const usuarioId = usuario?.id;
 
   const cargar = useCallback(() => {
@@ -65,6 +67,33 @@ const MisPlanes: React.FC = () => {
     setPlanes((l) => l?.map((e) => (e.id === nuevo.id ? { ...e, ...nuevo } : e)) ?? null);
     setAviso('Plan cancelado. Avisamos a quien estaba apuntado.');
     setEditando(null);
+  };
+
+  // P3c: devuelve false para dejar el cuadro abierto si el motivo es demasiado corto.
+  const apelar = (motivo: string): boolean => {
+    const plan = apelando;
+    const texto = motivo.trim();
+    if (!plan) return true;
+    if (texto.length < MOTIVO_APELACION.min) {
+      setAviso(`Cuéntanos un poco más (al menos ${MOTIVO_APELACION.min} letras).`);
+      return false;
+    }
+    apelarPlan(plan.id, texto.slice(0, MOTIVO_APELACION.max))
+      .then((nuevo) => {
+        setPlanes((l) => l?.map((e) => (e.id === nuevo.id ? { ...e, ...nuevo } : e)) ?? null);
+        setAviso('Enviado. El ayuntamiento lo revisará otra vez.');
+      })
+      .catch((err: unknown) => {
+        const codigo = err instanceof ErrorApi ? err.code : '';
+        setAviso(
+          codigo === 'apelacion_usada'
+            ? 'Ya pediste que lo revisaran. Esta segunda decisión es definitiva.'
+            : codigo === 'estado_invalido'
+              ? 'Este plan ya no está rechazado. Recarga la página.'
+              : 'No hemos podido enviarlo. Inténtalo de nuevo en un momento.',
+        );
+      });
+    return true;
   };
 
   return (
@@ -128,10 +157,18 @@ const MisPlanes: React.FC = () => {
                       <span>📍 {e.municipio}</span>
                       {(est.clase === 'publicado' || est.clase === 'hecho') && <span>👥 {textoApuntados(e)}</span>}
                       {est.clase === 'rechazado' && motivo && <span className="mi-plan__motivo">Motivo: {motivo}</span>}
+                      {est.clase === 'rechazado' && e.apelacion && (
+                        <span>Ya pediste que lo revisaran otra vez. Esta decisión es definitiva.</span>
+                      )}
                       <div className="mi-plan__botones">
                         {est.modificable && (
                           <IonButton size="small" onClick={() => setEditando(e)}>
                             Modificar
+                          </IonButton>
+                        )}
+                        {puedeApelar(e) && (
+                          <IonButton size="small" onClick={() => setApelando(e)}>
+                            🔁 Pedir que lo revisen otra vez
                           </IonButton>
                         )}
                         {(est.clase === 'publicado' || est.clase === 'hecho') && (
@@ -155,6 +192,24 @@ const MisPlanes: React.FC = () => {
           onGuardar={guardar}
           onCancelarPlan={cancelar}
           onCerrar={() => setEditando(null)}
+        />
+        <IonAlert
+          isOpen={!!apelando}
+          onDidDismiss={() => setApelando(null)}
+          header="Pedir que lo revisen otra vez"
+          message="Cuéntale al ayuntamiento por qué debería publicarse. Solo se puede pedir una vez."
+          inputs={[
+            {
+              name: 'motivo',
+              type: 'textarea',
+              placeholder: 'Por ejemplo: es la fiesta del pueblo de todos los años y ya tenemos permiso',
+              attributes: { maxlength: MOTIVO_APELACION.max, 'aria-label': 'Por qué debería publicarse' },
+            },
+          ]}
+          buttons={[
+            { text: 'Cancelar', role: 'cancel' },
+            { text: 'Enviar', handler: (datos: { motivo?: string }) => apelar(datos.motivo ?? '') },
+          ]}
         />
         <IonToast isOpen={!!aviso} message={aviso ?? ''} duration={3000} onDidDismiss={() => setAviso(null)} />
       </IonContent>
