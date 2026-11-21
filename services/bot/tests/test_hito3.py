@@ -250,3 +250,37 @@ def test_inscribir_por_nombre_entre_varios_planes():
     assert _por_nombre("apuntame al taller de esparto", titulos) == "b"
     assert _por_nombre("me apunto a las migas", titulos) == "a"
     assert _por_nombre("apuntame", titulos) is None  # no dice cuál: se pregunta
+
+
+# ---------- B1: hallazgos de la prueba sin IA ----------
+
+@pytest.mark.parametrize("post,titulo", [
+    ("Taller de esparto en Senés el sábado 28 de noviembre a las 11:00 en la plaza. Gratis", "Taller de esparto"),
+    ("Este sábado fiesta de la castaña en Tahal a las 18:00", "Fiesta de la castaña"),
+    ("Mañana a las 10 ruta por Uleila", "Ruta por Uleila"),
+    ("¡Hola vecinos! Taller de cocina en Senés el sábado", "Taller de cocina"),
+    ("II Ruta Solidaria Sierra de Velefique\nEl domingo 30 a las 9:00", "II Ruta Solidaria Sierra de Velefique"),
+])
+def test_titulo_por_reglas_es_el_nombre_del_plan(post, titulo):
+    from app.agentes.extractor import titulo_por_reglas
+    assert titulo_por_reglas(post) == titulo
+
+
+def test_pregunta_por_un_plan_en_el_chat_privado_se_responde(agenda):
+    agenda.agenda[0]["titulo"] = "II Ruta Solidaria Sierra de Velefique"
+    agenda.agenda[0]["es_gratuito"] = True
+    r = conversacion.procesar(_msg("¿Es gratis la ruta solidaria?"))
+    texto = " ".join(x if isinstance(x, str) else x.texto for x in r)
+    assert "Es gratis" in texto and "📌" not in texto  # responde, no enseña tarjetas
+
+
+def test_pregunta_general_sigue_siendo_busqueda(agenda):
+    r = conversacion.procesar(_msg("¿qué hay en Senés?"))
+    assert "Migas solidarias" in r[1]
+
+
+def test_spam_sin_fecha_no_se_queda_preguntando(agenda):
+    r = conversacion.procesar(_msg("APUESTAS DEPORTIVAS!!! gana dinero con el casino, entra ya en bit.ly/xxx"))
+    texto = " ".join(x if isinstance(x, str) else x.texto for x in r)
+    assert "spam" in texto and "¿Qué día" not in texto
+    assert not conversacion.estados.get("+34600000201") or not conversacion.estados["+34600000201"].preguntando
