@@ -150,9 +150,11 @@ const EventosAdmin: React.FC = () => {
                 Restaurar
               </IonButton>
             ) : (
-              <IonBadge slot="end" color="light">
-                👥 {e.inscritos ?? 0}
-              </IonBadge>
+              (e.inscritos ?? 0) > 0 && (
+                <IonBadge slot="end" color="light" aria-label={`${e.inscritos} apuntados`}>
+                  👥 {e.inscritos}
+                </IonBadge>
+              )
             )}
           </IonItem>
         ))}

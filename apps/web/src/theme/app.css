@@ -600,7 +600,7 @@ ion-card-content {
 
 .cifras {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin-bottom: 8px;
 }
@@ -2207,4 +2207,20 @@ ion-content.contenido-agenda--zonas::part(scroll) {
 /* «Volver» en minúsculas: las mayúsculas sostenidas se leen peor. */
 ion-back-button {
   text-transform: none;
+}
+
+/* 6 cifras: 2 columnas en el móvil y 3 + 3 en pantallas anchas, sin ninguna huérfana. */
+@media (min-width: 700px) {
+  .cifras {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Pestañas de estado de los planes: sin mayúsculas sostenidas y con letra legible. */
+.contenido-admin ion-segment-button {
+  min-height: 48px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
 }

@@ -53,7 +53,7 @@ const Panel: React.FC = () => {
         <Cifra valor={miles(datos.actividades)} texto="planes publicados o ya hechos" />
         <Cifra valor={pct100(datos.pct_importadas_auto)} texto="importados de Facebook y webs por la IA" />
         <Cifra valor={miles(datos.inscripciones)} texto="personas apuntadas" />
-        <Cifra valor={pct(asistencia)} texto="de los apuntados fueron" />
+        <Cifra valor={pct(asistencia)} texto="de los apuntados acudieron" />
         <Cifra valor={pct100(datos.pct_otro_pueblo)} texto="vienen de otro pueblo" />
         <Cifra valor={euros(datos.tokens?.coste_total_eur)} texto={`coste de IA en ${miles(llamadas)} llamadas`} />
       </div>

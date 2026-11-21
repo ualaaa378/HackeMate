@@ -125,11 +125,10 @@ const Bandeja: React.FC = () => {
       {items?.map((p) => {
         const e = p.evento;
         const spam = nivelSpam(p.score_spam);
+        // El botón relleno es el que recomienda la IA; la persona sigue decidiendo.
+        const sospechoso = (p.score_spam != null && p.score_spam >= 0.7) || esFraude(p);
         return (
-          <IonCard
-            key={clave(p)}
-            className={`pendiente ${(p.score_spam != null && p.score_spam >= 0.7) || esFraude(p) ? 'pendiente--spam' : ''}`}
-          >
+          <IonCard key={clave(p)} className={`pendiente ${sospechoso ? 'pendiente--spam' : ''}`}>
             <IonCardHeader>
               {e ? (
                 <>
@@ -210,6 +209,7 @@ const Bandeja: React.FC = () => {
                 <IonButton
                   color="success"
                   size="large"
+                  fill={sospechoso ? 'outline' : 'solid'}
                   disabled={ocupado === clave(p)}
                   onClick={() => void actuar(p, true)}
                 >
@@ -218,7 +218,7 @@ const Bandeja: React.FC = () => {
                 <IonButton
                   color="danger"
                   size="large"
-                  fill="outline"
+                  fill={sospechoso ? 'solid' : 'outline'}
                   disabled={ocupado === clave(p)}
                   onClick={() => setRechazando(p)}
                 >
