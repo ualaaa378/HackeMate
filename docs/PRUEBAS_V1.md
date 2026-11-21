@@ -2,12 +2,26 @@
 
 Escrito el sábado 21/11 a las 09:20 por el flujo A. Probado en el portátil de Benas (Windows, **sin Docker**), con la API de `Flujo-A` (que ya integra `develop` hasta el PR #34) y el bot de `develop`.
 
+## 0. ¿Podemos empezar las pruebas? **Sí.** Cómo empezar
+
+La API está completa (todas las rutas del contrato), el bot de `develop` es compatible con ella y el guion funciona de punta a punta en local (§4). Lo que falta es probarlo **con Docker y Telegram de verdad**, y eso no se puede hacer en el portátil de Benas. Por eso empieza quien tenga Docker (Adán o Fran), en este orden:
+
+1. **Mergear la PR de `Flujo-A` → `develop`** (la revisa cualquiera del equipo; está en verde) y hacer `git pull` de `develop`.
+2. **Arrancar desde cero:** `docker compose -f infra/docker-compose.yml down -v` (borra la base de datos vieja para probar la migración 0007 en PostgreSQL), `cp .env.example .env` con las claves y `docker compose -f infra/docker-compose.yml up --build`.
+3. **Smoke test:** `scripts/smoke_test.sh` → «SMOKE TEST EN VERDE». Si falla: `docker compose -f infra/docker-compose.yml logs api` y avisar a Benas con el error.
+4. **Guion sin móvil:** `docker compose -f infra/docker-compose.yml exec bot python - < scripts/simular_chat.py`, o `python scripts/simular_chat.py` desde fuera (usa `localhost:8001`). Se compara con la tabla de §4.
+5. **Guion con Telegram:** registrar el webhook con la URL del túnel (§3, opción B) y hacer los siete pasos del guion desde el móvil, con la web abierta en `http://localhost:8080`, y el panel con `DEMO_MODE=true`.
+6. **Apuntar cada fallo** en `README.md` § «Pendiente entre flujos», bajo el flujo que lo tiene que arreglar (la API es del flujo A, el bot del B y la web del C), con el paso del guion y lo que se esperaba.
+7. Entre ensayos: `scripts/demo_reset.sh` deja los datos como al principio en 1–2 s.
+
+Mientras tanto, **sin Docker**, Benas puede repetir la prueba local de §3 (opción A) después de cada cambio de la API.
+
 ## 1. Estado de la sincronización
 
 | Rama | Qué lleva | Estado |
 |---|---|---|
 | `develop` | Flujo B hasta el PR #34 (planes terminados → 409 `evento_finalizado`) y lo último de C | Al día en GitHub |
-| `Flujo-A` (local) | Toda la API del flujo A (H2–H5 y peticiones de B y C) **+ `develop` integrado** | **Sin subir**: unos 75 commits por delante de `origin/Flujo-A`. Benas decide cuándo se sube |
+| `Flujo-A` | Toda la API del flujo A (H2–H5 y peticiones de B y C) **+ `develop` integrado** | Subida el 21/11 con su PR a `develop`, pendiente de merge |
 | Ramas `claude/project-thread-*` de Adán | Tema verde y naranja, revisión a mano o automática, `VITE_CANAL` y planes pasados | Sin PR abierta: Adán decide si van a `develop` |
 
 **Cuando se suba `Flujo-A`**, cada uno hace en su rama:
