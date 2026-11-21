@@ -83,7 +83,7 @@ python -m pytest -q
 
 ```bash
 cp .env.example .env
-docker compose -f infra/docker-compose.yml up --build
+docker compose --env-file .env -f infra/docker-compose.yml up --build
 curl localhost:8000/health
 ```
 

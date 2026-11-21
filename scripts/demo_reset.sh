@@ -22,7 +22,7 @@ esac
 inicio=$(date +%s)
 if [ "$modo" = "docker" ]; then
   echo "==> Reiniciando la demo en el contenedor api (docker compose)…"
-  docker compose -f infra/docker-compose.yml exec -T api python -m app.seed --reset
+  docker compose --env-file .env -f infra/docker-compose.yml exec -T api python -m app.seed --reset
 else
   # python3 en Linux/macOS; python en Windows (Git Bash). Se comprueba que funcione de verdad
   # (en Windows "python3" puede ser el acceso directo de la Microsoft Store).

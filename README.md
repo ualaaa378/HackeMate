@@ -103,7 +103,7 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 
 | Hito | Hasta | Tarea |
 |---|---|---|
-| H2 · CP2 | sáb 13:00 | - [ ] **C1.** `docker compose -f infra/docker-compose.yml down -v`, `up --build`, `scripts/smoke_test.sh` en verde y pasos 1–3 con Telegram (`DEMO_MODE=true`). Rellenar la columna «Docker + Telegram» de `SINCRONIZACION_SABADO.md` §5. Si sale bien, etiqueta `v0.2`. |
+| H2 · CP2 | sáb 13:00 | - [ ] **C1.** `docker compose --env-file .env -f infra/docker-compose.yml down -v`, `up --build`, `scripts/smoke_test.sh` en verde y pasos 1–3 con Telegram (`DEMO_MODE=true`). Rellenar la columna «Docker + Telegram» de `SINCRONIZACION_SABADO.md` §5. Si sale bien, etiqueta `v0.2`. |
 | H3 · CP3 | sáb 19:00 | - [ ] **C2.** «Para ti» en la agenda con `GET /recomendaciones` y el motivo legible (Carmen ve la II Ruta Solidaria la primera). |
 | H3 · CP3 | sáb 19:00 | - [ ] **C3.** **URL pública de la web:** que el `nginx.conf` de la web pase `/api/` a `api:8000`, que la web use una URL relativa (`VITE_API_URL` vacío) y un segundo túnel a `web:8080`. Es infra de A: lo hace Adán porque Benas no puede ejecutar Docker, en una PR que mira Benas. |
 | H3 · CP3 | sáb 19:00 | - [ ] **C4.** PWA instalable: service worker e icono (el `manifest.json` ya existe). |
@@ -152,7 +152,6 @@ Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen 
 - **Una propuesta de un vecino sin asociación:** entra en revisión y el moderador ve sus `datos_ayuntamiento`, pero el vecino solo los ve en la respuesta del alta (la API no guarda quién propuso el plan si no es un publicador).
 
 - **Ingesta de Facebook (A2): falta decidir** si lo importado de los ayuntamientos (que están en «automática») se publica directamente o pasa siempre por la bandeja. Hoy la API lo trata igual que un post enviado por el bot, así que lo de los ayuntamientos se publicaría sin revisión. Pasarlo siempre por la bandeja son dos líneas en `decidir_estado`, sin tocar el contrato. Además, los Aytos. de Uleila del Campo y Senés no están dados de alta como publicadores: sus posts llegan como «Sin publicador identificado» (van a revisión).
-- **El compose no lee las variables `${…}` del `.env` de la raíz** (encontrado por Francisco en el ensayo del sáb 21/11 con Docker). Con `docker compose -f infra/docker-compose.yml up`, Docker busca el `.env` de sustitución en `infra/`, no en la raíz: `env_file: ../.env` solo llega al entorno de los contenedores. Resultado: `FREELLM_URL_DOCKER`, `VITE_API_URL`, `VITE_CANAL`, `WEB_URL` y `POSTGRES_*` se quedan con su valor por defecto y el bot no llega a la IA (cae a reglas). **Hoy funciona así:** `docker compose --env-file .env -f infra/docker-compose.yml up --build`. Arreglo propuesto (decide Benas): cambiar el comando en la cabecera del compose, en `CLAUDE.md` y en C1, o un `infra/.env` que apunte al de la raíz.
 - **Revisar la PR de la URL pública (C3):** Adán cambia el `nginx.conf` de la web y añade un segundo túnel en `infra/docker-compose.yml` porque Benas no puede ejecutar Docker. Como el compose es de A, la mira Benas antes de fusionarla.
 
 ### Flujos A y B · a acordar (Benas + Francisco)
@@ -199,7 +198,9 @@ Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PAR
 
 ### Ya resuelto
 
-- **Duplicados en la bandeja (prueba en Docker de Adán, sáb 11:15):** ya lo resuelve la #43. Antes, un plan que iba a revisión por otro motivo no se marcaba como duplicado; ahora el segundo envío del mismo post llega a la bandeja con el motivo «Posible duplicado de «Taller de esparto»». Comprobado a mano con `simular_chat.py` dos veces (bot y API de `develop`) y con un test nuevo (`test_mismo_post_dos_veces_del_mismo_publicador_avisa_duplicado`). Si en Docker sigue saliendo, es una imagen anterior: `docker compose -f infra/docker-compose.yml up --build`.
+- **El compose no leía las variables `${…}` del `.env` de la raíz** (encontrado por Francisco en su ensayo con Docker): todos los comandos llevan ahora `--env-file .env` (cabecera del compose, README, `CLAUDE.md`, `PLAN.md`, `PLAN_FLUJO_A.md`, `PRUEBAS_V1.md` y `scripts/demo_reset.sh`). Desde la raíz del repo: `docker compose --env-file .env -f infra/docker-compose.yml up --build`. Sin él, `FREELLM_URL_DOCKER`, `VITE_*`, `WEB_URL` y `POSTGRES_*` se quedaban con su valor por defecto y el bot caía a reglas.
+
+- **Duplicados en la bandeja (prueba en Docker de Adán, sáb 11:15):** ya lo resuelve la #43. Antes, un plan que iba a revisión por otro motivo no se marcaba como duplicado; ahora el segundo envío del mismo post llega a la bandeja con el motivo «Posible duplicado de «Taller de esparto»». Comprobado a mano con `simular_chat.py` dos veces (bot y API de `develop`) y con un test nuevo (`test_mismo_post_dos_veces_del_mismo_publicador_avisa_duplicado`). Si en Docker sigue saliendo, es una imagen anterior: `docker compose --env-file .env -f infra/docker-compose.yml up --build`.
 
 - **Solo dos modos de publicación (a mano y automática), sin semiautomático** (decisión del equipo, 21/11): la API ya no usa el nivel 1 (si llega, lo guarda como 0) ni sube de nivel sola; la migración 0008 pasa a «a mano» los que estaban en 1, y en el seed las asociaciones son «a mano» y los ayuntamientos y el bar, «automática». Un posible duplicado de una asociación «a mano» llega a la bandeja con el motivo «Posible duplicado de…». La web ya manda `nivel_confianza: 0` para «a mano» (`cambiarRevision` en `apps/web/src/api/admin.ts`).
 
@@ -223,11 +224,11 @@ API FastAPI + SQLAlchemy + Alembic en `services/api/`, con PostgreSQL (pgvector)
 
 ```bash
 cp .env.example .env                                   # y rellenar las claves (llegan por mensaje privado)
-docker compose -f infra/docker-compose.yml up --build  # db, api, bot, web y tunnel
+docker compose --env-file .env -f infra/docker-compose.yml up --build  # db, api, bot, web y tunnel
 scripts/smoke_test.sh                                   # debe acabar en «SMOKE TEST EN VERDE»
 ```
 
-El contenedor `api` crea las tablas y siembra la demo al arrancar. API en `http://localhost:8000` (docs en `/docs`), bot en `:8001`, web en `:8080`. La URL pública del túnel sale en `docker compose -f infra/docker-compose.yml logs tunnel`.
+El contenedor `api` crea las tablas y siembra la demo al arrancar. API en `http://localhost:8000` (docs en `/docs`), bot en `:8001`, web en `:8080`. La URL pública del túnel sale en `docker compose --env-file .env -f infra/docker-compose.yml logs tunnel`.
 
 ### Arranque en Windows sin Docker
 
@@ -327,7 +328,7 @@ python scripts/importar_facebook.py --pagina https://www.facebook.com/<pagina>  
 
 **Revisión diaria (una vez al día)**, solo en la máquina de la demo, que es la que tiene el token:
 - Con Docker: el servicio `ingesta` del compose, **apagado por defecto** para no gastar crédito sin querer. Encenderlo:
-  `docker compose -f infra/docker-compose.yml --profile ingesta up -d ingesta` (y `logs -f ingesta` para ver cada revisión).
+  `docker compose --env-file .env -f infra/docker-compose.yml --profile ingesta up -d ingesta` (y `logs -f ingesta` para ver cada revisión).
 - Sin Docker (Windows): una tarea diaria en el Programador de tareas, por ejemplo a las 8:00, con la API y el bot en marcha:
   `schtasks /Create /SC DAILY /ST 08:00 /TN HackeMateFacebook /TR "python C:\ruta\HackeMate\scripts\importar_facebook.py"`
   (cada ejecución a mano pide los últimos `FB_DESDE`; los repetidos no se duplican en la base).
