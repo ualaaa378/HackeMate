@@ -42,11 +42,13 @@ El bot habla con la gente por WhatsApp y por Telegram. Cada persona se identific
 
 ## Niveles de confianza del publicador
 
-- `0`: todo va a revisión.
-- `1`: pasa si es «lo habitual» (misma categoría que publicaciones ya aprobadas y `score_spam` bajo).
-- `2`: pasa todo salvo spam alto.
-- Sube de nivel automáticamente tras `MODERACION_APROBACIONES_SUBIR_NIVEL` aprobaciones.
-- En la web solo hay dos modos: **a mano** (niveles 0 y 1) y **automática** (nivel 2). Ojo: el nivel 1 no es «a mano» del todo: publica directamente las categorías habituales del publicador y solo manda a revisión el resto; «a mano» total (todo a revisión) es el nivel 0. El moderador cambia el nivel de un publicador ya aprobado con `POST /publicadores/{id}/aprobar`.
+**Solo hay dos modos de publicación** (decisión del equipo, sáb 21/11: no hay semiautomático):
+
+- `0` · **a mano**: todo plan pasa por el moderador. Es el modo de toda asociación nueva.
+- `2` · **automática**: se publica sin revisión, salvo spam alto, publicador pausado o automatizaciones pausadas.
+- `1` · **obsoleto** (era «pasa si es su categoría habitual»). Se mantiene en el enum por compatibilidad (después de CP0 no se borra nada), pero la API ya no lo asigna: si llega en `POST /publicadores/{id}/aprobar`, se guarda como `0`, y si queda alguno en la base se trata como «a mano».
+- **No hay subida automática.** `aprobaciones` sigue contando (estadísticas) y `MODERACION_APROBACIONES_SUBIR_NIVEL` ya no se usa. Solo un moderador pasa una asociación a automática.
+- El moderador cambia el modo de un publicador ya aprobado con `POST /publicadores/{id}/aprobar` (`nivel_confianza` 0 o 2).
 - Pasar a nivel 2 a mano exige las reglas de `apps/web/src/admin/confianza.ts`: responsable con DNI y residencia comprobados (`responsable.identidad_verificada`), al menos 3 planes aprobados en 60 días, ningún rechazo en 60 días y algún plan en los últimos 90 días (`actividad`). Si no, 409 `reglas_confianza_no_cumplidas` con `details.faltan` ⊂ {`identidad_verificada`, `planes_60_dias`, `rechazados_60_dias`, `ultimo_plan`}.
 
 ## Datos privados
