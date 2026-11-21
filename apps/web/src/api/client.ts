@@ -16,6 +16,7 @@ import type {
   DatosAyuntamiento,
   Evento,
   EventoCrear,
+  EventoEditar,
   FiltrosEventos,
   Inscripcion,
   MensajeCrear,
@@ -386,6 +387,28 @@ export async function proponerEvento(datos: EventoCrear, ayuntamiento: DatosAyun
   const p = { evento, ayuntamiento, demo: true };
   propuestasMock.push(p);
   return esperar(p);
+}
+
+// ---------- P5c: mis planes propuestos ----------
+// La API devuelve los planes que propuso esta persona (`propuesto_por_id`) y los de su entidad, en todos sus estados.
+// Sin API, los que ha propuesto en este navegador en modo demo.
+export function getMisPlanes(usuarioId: string): Promise<Evento[]> {
+  return conRespaldo(
+    () => peticion<Pagina<Evento>>(`/eventos${query({ organizador_id: usuarioId, size: 100 })}`).then((p) => p.items),
+    () => esperar(propuestasMock.map((p) => p.evento).reverse()),
+  );
+}
+
+export function modificarPlan(id: string, cambios: EventoEditar): Promise<Evento> {
+  return conRespaldo(
+    () => peticion(`/eventos/${id}`, { method: 'PATCH', body: JSON.stringify(cambios) }),
+    () => {
+      const p = propuestasMock.find((x) => x.evento.id === id);
+      if (!p) return Promise.reject(new ErrorApi('evento_no_encontrado', 'No existe ese plan', 404));
+      Object.assign(p.evento, cambios);
+      return esperar({ ...p.evento });
+    },
+  );
 }
 
 // ---------- chat del evento ----------

@@ -20,6 +20,7 @@ import Ajustes from './pages/Ajustes';
 import Creditos from './pages/Creditos';
 import Ficha from './pages/Ficha';
 import Mapa from './pages/Mapa';
+import MisPlanes from './pages/MisPlanes';
 import Perfil from './pages/Perfil';
 import Proponer from './pages/Proponer';
 import Recuerdos from './pages/Recuerdos';
@@ -66,6 +67,7 @@ const Navegacion: React.FC = () => {
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/evento/:id" element={<Ficha />} />
         <Route path="/proponer" element={<Proponer />} />
+        <Route path="/mis-planes" element={<MisPlanes />} />
         <Route path="/creditos" element={<Creditos />} />
         <Route path="/ajustes" element={<Ajustes />} />
         <Route path="/recuerdos" element={<Recuerdos />} />

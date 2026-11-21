@@ -158,7 +158,10 @@ const Proponer: React.FC = () => {
               <p className="nota">
                 Estado: en revisión.{enviada.demo && ' (Modo demo: aún no se guarda en el servidor).'}
               </p>
-              <IonButton expand="block" routerLink="/agenda">
+              <IonButton expand="block" routerLink="/mis-planes">
+                Ver mis planes propuestos
+              </IonButton>
+              <IonButton expand="block" fill="outline" routerLink="/agenda">
                 Volver a la agenda
               </IonButton>
             </IonCardContent>
