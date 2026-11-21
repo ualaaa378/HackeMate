@@ -111,3 +111,39 @@ def test_codigo_con_el_numero_ya_compartido(api):
     api.usuarios["tg:44"] = {"id": "u44", "rol": "vecino", "telefono": "+34600000044"}
     r = conversacion.procesar(_msg("/codigo", de="tg:44", canal="telegram"))
     assert "Pedir el código" in _t(r)
+
+
+def test_whatsapp_nueva_se_da_de_alta_para_guardar_los_avisos(api, monkeypatch):
+    """Por WhatsApp el contacto ya es su teléfono: si aún no existe, se le da de alta y se guarda."""
+    api.caida = False
+    guardados = []
+    monkeypatch.setattr(api_cliente, "guardar_preferencias", lambda uid, c: guardados.append((uid, c)) or True)
+    r = conversacion.procesar(_msg("avísame de planes nuevos", de="+34611000111"))
+    assert "Te avisaré" in _t(r)
+    assert guardados and guardados[-1][1] == {"acepta_avisos": True}
+    assert api.usuarios["+34611000111"]["telefono"] == "+34611000111"
+
+
+def test_simulador_acepta_botones():
+    r = TestClient(app).post("/dev/mensaje", json={"de": "+34600000301", "boton_id": "insc_ok"})
+    assert r.status_code == 200 and "Nos vemos" in " ".join(r.json()["respuestas"])
+
+
+def test_los_gustos_de_una_vecina_nueva_llegan_a_la_api(api, monkeypatch):
+    """Sin esto, los avisos de planes nuevos (la API filtra por gustos) nunca le llegarían."""
+    api.caida = False
+    guardados = []
+    monkeypatch.setattr(api_cliente, "guardar_preferencias", lambda uid, c: guardados.append(c) or True)
+    conversacion.procesar(_msg("Me gustan las rutas", de="+34611000333"))
+    assert api.usuarios["+34611000333"]  # dada de alta al decir sus gustos
+    assert any(c.get("gustos") == ["deportiva"] for c in guardados)
+
+
+def test_en_telegram_los_gustos_suben_al_compartir_el_numero(api, monkeypatch):
+    api.caida = False
+    guardados = []
+    monkeypatch.setattr(api_cliente, "guardar_preferencias", lambda uid, c: guardados.append(c) or True)
+    conversacion.procesar(_msg("Me gustan las rutas", de="tg:77", canal="telegram"))
+    assert guardados == []  # aún no sabemos quién es
+    conversacion.procesar(_msg("", de="tg:77", canal="telegram", telefono_compartido="+34600000077"))
+    assert any(c.get("gustos") == ["deportiva"] for c in guardados)

@@ -198,6 +198,18 @@ def ubicacion_recibida(msg: MensajeEntrante, usuario: dict | None) -> list:
 
 # ---------- Gustos ----------
 
+def _subir_preferencias(usuario_id: str, p: preferencias.Preferencias) -> None:
+    cambios = {"gustos": p.gustos, "etiquetas_interes": p.etiquetas_interes}
+    if p.municipio:
+        cambios["municipio"] = p.municipio
+    if p.formato_aviso:
+        cambios["formato_aviso"] = p.formato_aviso
+    try:
+        api_cliente.guardar_preferencias(usuario_id, cambios)
+    except (ApiNoDisponible, ErrorApi) as e:
+        log.warning("No se pudieron guardar las preferencias en la api: %s", e)
+
+
 def gustos(msg: MensajeEntrante, texto: str, usuario: dict | None) -> list:
     nuevas = preferencias.interpretar(texto)
     if not nuevas.gustos and not nuevas.formato_aviso:
@@ -210,16 +222,15 @@ def gustos(msg: MensajeEntrante, texto: str, usuario: dict | None) -> list:
         formato_aviso=nuevas.formato_aviso or previas.formato_aviso,
     )
     preferencias_locales[msg.de] = combinadas
-    if usuario and usuario.get("id"):
-        cambios = {"gustos": combinadas.gustos, "etiquetas_interes": combinadas.etiquetas_interes}
-        if combinadas.municipio:
-            cambios["municipio"] = combinadas.municipio
-        if combinadas.formato_aviso:
-            cambios["formato_aviso"] = combinadas.formato_aviso
+    if not (usuario or {}).get("id") and msg.de.startswith("+"):
+        # WhatsApp: el contacto ya es su teléfono. Se le da de alta para que sus gustos lleguen a la API
+        # (si no, los avisos de planes nuevos, que filtra la API por gustos, nunca le llegarían)
         try:
-            api_cliente.guardar_preferencias(usuario["id"], cambios)
+            usuario = api_cliente.vincular(msg.de, msg.de, msg.nombre)
         except (ApiNoDisponible, ErrorApi) as e:
-            log.warning("No se pudieron guardar las preferencias en la api: %s", e)
+            log.warning("No se pudo dar de alta para guardar los gustos: %s", e)
+    if usuario and usuario.get("id"):
+        _subir_preferencias(usuario["id"], combinadas)
     lista = ", ".join(NOMBRE_CATEGORIA.get(g, g) for g in combinadas.gustos)
     salida: list = [f"¡Apuntado! 📝 Te gusta: {lista}." + (
         " Te avisaré con notas de voz 🎙️" if combinadas.formato_aviso == "audio" else "")]
@@ -409,7 +420,10 @@ def desinscribir(msg: MensajeEntrante, evento_id: str | None, inscripcion_id: st
 
 
 def tras_vincular(msg: MensajeEntrante, usuario: dict | None) -> list:
-    """Si compartió el número para apuntarse, completamos la inscripción."""
+    """Si compartió el número para apuntarse, completamos la inscripción. Y los gustos que dijo antes de
+    identificarse (en Telegram solo estaban en memoria) se suben ya a la API."""
+    if usuario and usuario.get("id") and msg.de in preferencias_locales:
+        _subir_preferencias(usuario["id"], preferencias_locales[msg.de])
     v = _v(msg.de)
     if v.inscripcion_pendiente and usuario:
         evento_id, v.inscripcion_pendiente = v.inscripcion_pendiente, None
