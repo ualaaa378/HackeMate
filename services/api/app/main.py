@@ -3,8 +3,9 @@ import contextlib
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app import __version__, errores
 from app.config import avisar_configuracion_insegura, get_settings
@@ -26,6 +27,9 @@ from app.rutas import (
 )
 
 log = logging.getLogger(__name__)
+
+# Las fotos van hasta 2 MB en base64 (~2,7 MB de JSON): 4 MB deja margen para el resto de campos.
+MAX_CUERPO_BYTES = 4 * 1024 * 1024
 
 
 async def bucle_reintentos(intervalo: float) -> None:
@@ -54,6 +58,28 @@ async def ciclo_de_vida(_: FastAPI):
 
 
 app = FastAPI(title="HackeMate api", version=__version__, lifespan=ciclo_de_vida)
+errores.registrar(app)
+
+
+@app.middleware("http")
+async def limitar_cuerpo(request: Request, call_next):
+    """413 `cuerpo_demasiado_grande` si `Content-Length` pasa de 4 MB (antes de leer el cuerpo)."""
+    longitud = request.headers.get("content-length")
+    if longitud is not None:
+        try:
+            demasiado = int(longitud) > MAX_CUERPO_BYTES
+        except ValueError:
+            demasiado = False
+        if demasiado:
+            return JSONResponse(
+                {"error": {"code": "cuerpo_demasiado_grande", "message": "La petición ocupa más de 4 MB",
+                           "details": {"max_bytes": MAX_CUERPO_BYTES}}},
+                status_code=413,
+            )
+    return await call_next(request)
+
+
+# CORS después (queda por fuera): así el 413 también lleva las cabeceras CORS y la web puede leerlo.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_settings().lista_cors,
@@ -61,7 +87,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-errores.registrar(app)
 app.include_router(publico.router)
 app.include_router(importar.router)
 app.include_router(eventos.router)

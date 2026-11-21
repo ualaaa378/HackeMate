@@ -189,6 +189,28 @@ def _escapar_like(texto: str) -> str:
     return texto.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
+def _quien_tolerante(
+    x_internal_token: str | None = Header(None),
+    authorization: str | None = Header(None),
+    db: Session = Depends(get_db),
+) -> Quien:
+    """Como `quien_opcional`, pero una sesión caducada o mal firmada cuenta como anónima en vez de dar 401:
+    la agenda es pública y el contrato de `GET /eventos` solo prevé 200/422."""
+    try:
+        usuario = usuario_actual(authorization, db)
+    except ErrorApi:
+        usuario = None
+    return Quien(es_servicio_interno(x_internal_token), usuario)
+
+
+def _publicadores_del_usuario(db: Session, usuario: Usuario) -> list[str]:
+    """Entidades de las que el usuario es organizador (como en `es_organizador`)."""
+    ids = set(db.scalars(select(Publicador.id).where(Publicador.usuario_id == usuario.id)).all())
+    if usuario.publicador_id is not None:
+        ids.add(usuario.publicador_id)
+    return sorted(ids)
+
+
 @router.get("/eventos")
 def listar_eventos(
     municipio: str | None = None,
@@ -202,19 +224,32 @@ def listar_eventos(
     estado: EstadoEvento = "publicado",
     publicador_id: str | None = None,
     p: Pagina = Depends(pagina),
-    x_internal_token: str | None = Header(None),
+    quien: Quien = Depends(_quien_tolerante),
     db: Session = Depends(get_db),
 ):
-    # Sin token interno solo se admiten `publicado` (agenda) y `finalizado` («Recuerdos»); cualquier otro estado
-    # se cambia por `publicado`, como antes. `datos_ayuntamiento` nunca sale en esta lista.
-    if not es_servicio_interno(x_internal_token) and estado not in VISIBLES_EN_LISTA:
-        estado = "publicado"
+    # `publicado` (agenda) y `finalizado` («Recuerdos») los ve cualquiera. Los demás estados:
+    # - token interno o moderador con sesión: todos los eventos de ese estado;
+    # - publicador con sesión: solo los de sus entidades (si pide otro `publicador_id`, la lista sale vacía:
+    #   el contrato solo prevé 200/422 en esta ruta, así que no se responde 403);
+    # - vecino o sin sesión: se cambia por `publicado`, como antes.
+    # `datos_ayuntamiento` nunca sale en esta lista (el contrato lo dice así): se ve en la ficha o en /moderacion.
+    solo_de: list[str] | None = None
+    if estado not in VISIBLES_EN_LISTA and not quien.interno:
+        u = quien.usuario
+        if u is not None and u.rol == "moderador":
+            pass
+        elif u is not None and (ids := _publicadores_del_usuario(db, u)):
+            solo_de = ids
+        else:
+            estado = "publicado"
     consulta = (
         select(Evento)
         .options(selectinload(Evento.publicador))
         .where(Evento.estado == estado)
         .order_by(Evento.fecha_inicio, Evento.id)
     )
+    if solo_de is not None:
+        consulta = consulta.where(Evento.publicador_id.in_(solo_de))
     if municipio:
         consulta = consulta.where(Evento.municipio == municipio)
     if categoria:

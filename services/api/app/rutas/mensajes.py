@@ -85,10 +85,6 @@ MAX_BYTES_IMAGEN = 2 * 1024 * 1024
 def validar_imagen(imagen_url: str) -> str:
     """URL http(s) o data URL de imagen en base64. 422 `imagen_invalida` o 413 `imagen_demasiado_grande` (2 MB)."""
     return _validar_imagen(imagen_url, MAX_BYTES_IMAGEN)
-    if len(imagen_url) > MAX_URL_IMAGEN or _URL_HTTP.fullmatch(imagen_url) is None:
-        raise ErrorApi(422, "imagen_invalida", "La foto debe ser una URL http(s) o una data URL de imagen",
-                       {"campo": "imagen_url"})
-    return imagen_url
 
 
 def _evento(db: Session, id: str, gestor_interno: bool = False) -> Evento:

@@ -10,7 +10,7 @@ import re
 from app.errores import ErrorApi
 
 MAX_URL_IMAGEN = 2048
-_URL_HTTP = re.compile(r"https?://[^\s/?#]+[^\s]*", re.IGNORECASE)
+_URL_HTTP = re.compile(r"https?://[^\s\"<>/?#]+[^\s\"<>]*", re.IGNORECASE)
 _DATA_URL = re.compile(r"data:image/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/]*={0,2})")
 
 

@@ -412,3 +412,88 @@ def test_ruta_inexistente_404_no_encontrado(api, metodo, ruta):
     r = getattr(api, metodo)(ruta)
     _error(r, 404, "no_encontrado")
     assert json.loads(r.text)["error"]["message"]
+
+
+# --- GET /eventos?estado=: moderador todos, publicador los suyos, público solo publicado/finalizado -----------
+
+
+def _lista(api, cabeceras=None, **params):
+    r = api.get("/api/v1/eventos", params={"size": 100, **params}, headers=cabeceras or {})
+    assert r.status_code == 200, r.text
+    return r.json()["items"]
+
+
+@pytest.fixture
+def datos_en_todo(db):
+    """Datos privados en todos los eventos, para que cualquier fuga en la lista se note."""
+    for e in db.scalars(select(Evento)).all():
+        e.datos_ayuntamiento = {**DATOS_AYTO, "observaciones": SECRETO}
+    db.commit()
+
+
+def test_moderador_con_sesion_ve_cualquier_estado_sin_datos_privados(api, datos_en_todo):
+    items = _lista(api, _bearer(LUCIA_MODERADORA, "moderador"), estado="en_revision")
+    assert GRAFITI_EN_REVISION in {e["id"] for e in items}
+    for e in items:
+        _valida(EVENTO, e)
+        assert e["estado"] == "en_revision" and "datos_ayuntamiento" not in e
+
+
+def test_publicador_con_sesion_ve_solo_sus_eventos_en_otros_estados(api, db, organizador_tahal, datos_en_todo):
+    # Un evento en revisión de otra entidad, para comprobar que no se cuela.
+    otro = db.get(Evento, RUTA)
+    otro.estado = "en_revision"
+    db.commit()
+    org = _bearer(organizador_tahal, "publicador")
+
+    items = _lista(api, org, estado="en_revision")
+    assert GRAFITI_EN_REVISION in {e["id"] for e in items} and RUTA not in {e["id"] for e in items}
+    assert {e["publicador_id"] for e in items} == {ASOC_JUVENIL_TAHAL}
+    assert all("datos_ayuntamiento" not in e for e in items)
+
+    # Pedir los de otra entidad en un estado no público no da error: sale vacío.
+    assert _lista(api, org, estado="en_revision", publicador_id=AMIGOS_VELEFIQUE) == []
+    # Antonio (Amigos de Velefique) ve su ruta en revisión y no el grafiti de Tahal.
+    antonio = _lista(api, _bearer(ANTONIO_PUBLICADOR, "publicador"), estado="en_revision")
+    assert {e["id"] for e in antonio} >= {RUTA} and GRAFITI_EN_REVISION not in {e["id"] for e in antonio}
+    assert {e["publicador_id"] for e in antonio} == {AMIGOS_VELEFIQUE}
+
+    # Lo publicado sigue siendo público para el publicador, también de otras entidades.
+    publicados = _lista(api, org, publicador_id=SENES_CULTURAL)
+    assert publicados and {e["estado"] for e in publicados} == {"publicado"}
+
+
+def test_vecino_o_sesion_caducada_solo_ve_publicado(api, datos_en_todo):
+    for cabeceras in (_bearer(CARMEN), {"Authorization": "Bearer no.es.valido"}, None):
+        items = _lista(api, cabeceras, estado="en_revision")
+        assert items and {e["estado"] for e in items} == {"publicado"}
+        assert all("datos_ayuntamiento" not in e for e in items)
+    # El token interno sigue como antes, sin datos privados.
+    items = _lista(api, TOKEN, estado="en_revision")
+    assert {e["estado"] for e in items} == {"en_revision"} and all("datos_ayuntamiento" not in e for e in items)
+
+
+def test_la_ficha_que_va_a_la_ia_no_lleva_la_foto(api, db, monkeypatch):
+    enviado = {}
+    monkeypatch.setattr(chat, "_llamar_bot_ficha", lambda ev, _p: (enviado.update(ev), (True, "Sí."))[1])
+    ruta = db.get(Evento, RUTA)
+    ruta.imagen_url = _data_url(100)
+    db.commit()
+    assert chat.respuesta_automatica(ruta, "¿Es gratis?") == "Sí."
+    assert enviado["id"] == RUTA and "imagen_url" not in enviado and "datos_ayuntamiento" not in enviado
+
+
+@pytest.mark.parametrize("imagen", ['https://example.org/a.png"onerror="x', "https://example.org/<script>",
+                                    "https://example.org/a b.png", "https://ex>ample.org/a.png"])
+def test_url_de_imagen_con_comillas_o_angulos_422(api, imagen):
+    _error(api.post("/api/v1/eventos", json={**NUEVO, "imagen_url": imagen}, headers=TOKEN), 422, "imagen_invalida")
+
+
+def test_cuerpo_de_mas_de_4_mb_413(api):
+    grande = json.dumps({**NUEVO, "descripcion": "x" * (4 * 1024 * 1024)})
+    r = api.post("/api/v1/eventos", content=grande, headers={**TOKEN, "Content-Type": "application/json"})
+    _error(r, 413, "cuerpo_demasiado_grande")
+    # Un cuerpo de ~3 MB (lo que ocupa una foto de 2 MB en base64) pasa el tope y llega a la ruta.
+    mediano = json.dumps({**NUEVO, "descripcion": "x" * (3 * 1024 * 1024)})
+    r = api.post("/api/v1/eventos", content=mediano, headers={**TOKEN, "Content-Type": "application/json"})
+    assert r.status_code == 201

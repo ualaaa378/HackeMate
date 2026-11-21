@@ -151,7 +151,12 @@ def responder_por_reglas(evento: Evento, pregunta: str) -> str | None:
 
 def respuesta_automatica(evento: Evento, pregunta: str, inscritos: int = 0) -> str | None:
     """Texto de la respuesta del asistente o None si hay que dejársela al organizador."""
-    resultado = _llamar_bot_ficha(evento_a_dict(evento, inscritos), pregunta)
+    # Sin la foto (puede ser una data URL de 2 MB que la IA no necesita) ni datos privados (evento_a_dict
+    # sin `privados` ya no lleva `datos_ayuntamiento`).
+    ficha = evento_a_dict(evento, inscritos)
+    ficha.pop("imagen_url", None)
+    ficha.pop("datos_ayuntamiento", None)
+    resultado = _llamar_bot_ficha(ficha, pregunta)
     if resultado is not None:
         puede, respuesta = resultado
         return ocultar_telefonos(respuesta)[:MAX_TEXTO] if puede else None
