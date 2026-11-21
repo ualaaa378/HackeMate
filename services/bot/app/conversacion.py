@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from app import alta, api_cliente, avisos, canales, organizador, telegram, vecino
+from app import alta, api_cliente, apelacion, avisos, canales, organizador, telegram, vecino
 from app.agentes import antispam, extractor, idiomas, intencion, medios, voz
 from app.api_cliente import ApiNoDisponible, ErrorApi
 from app.config import get_settings
@@ -157,6 +157,7 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
     if t in ("cancelar", "salir", "reset"):
         estados[msg.de] = Estado()
         organizador.cancelar(msg.de)
+        apelacion.cancelar(msg.de)
         if alta.en_curso(msg.de):
             alta.cancelar(msg.de)
             return [Respuesta("Vale, dejo el alta y he borrado los datos.", quitar_teclado=True)]
@@ -174,6 +175,16 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
 
     if t.startswith("mod:"):
         return _decidir(msg, t)
+    # P3b: apelar un plan rechazado (botón del aviso, el motivo que espera o «quiero apelar»)
+    if msg.boton_id and t.startswith("apelar:"):
+        return apelacion.empezar(msg.de, msg.boton_id.split(":", 1)[1], _usuario(msg.de))
+    if msg.boton_id and t == "apelar_no":
+        apelacion.cancelar(msg.de)
+        return ["Vale, no apelo 👍"]
+    if texto and not msg.boton_id and apelacion.esperando(msg.de):
+        return apelacion.responder(msg.de, texto, _usuario(msg.de))
+    if texto and not msg.boton_id and apelacion.quiere_apelar(texto):
+        return apelacion.empezar(msg.de, None, _usuario(msg.de))
     # P5b: «modificar plan» (botones, la respuesta que espera y la frase que lo empieza)
     if msg.boton_id and (t.startswith(("orgplan:", "orgcampo:")) or t == "orgfin"):
         return organizador.boton(msg.de, msg.boton_id)
