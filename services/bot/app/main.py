@@ -10,7 +10,7 @@ from fastapi import BackgroundTasks, FastAPI, Form, Header, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
-from app import __version__, api_cliente, canales, conversacion, meta, metrics, telegram
+from app import __version__, api_cliente, canales, conversacion, meta, metrics, telegram, vecino
 from app.agentes import antispam, asistente, extractor, preferencias, sugerencias, voz
 from app.config import get_settings
 from app.llm import router
@@ -283,9 +283,16 @@ def notify(n: Notificacion, x_internal_token: str | None = Header(None)):
     if not destino:
         raise HTTPException(422, detail={"code": "sin_destino", "message": "Hace falta telefono o contacto"})
     botones = None
-    if n.evento_id and n.tipo in ("recomendacion", "anuncio"):
+    if n.evento_id and n.texto.startswith(vecino.MARCA_QUE_TAL):
+        # Tarea programada «¿qué tal fue?»: valoración con botones; lo que conteste va al plan como comentario
+        vecino.esperar_valoracion(destino, n.evento_id)
+        botones = vecino.botones_valoracion(n.evento_id)
+    elif n.evento_id and n.tipo == "recomendacion":
         # Recomendación → la vecina se apunta con un botón (paso 4 de la demo)
         botones = [(f"insc:{n.evento_id}", "✋ Apuntarme"), (f"info:{n.evento_id}", "ℹ️ Más info")]
+    elif n.evento_id and n.tipo == "anuncio":
+        # Recordatorio o anuncio de un plan al que ya está apuntado: [Apuntarme] no pinta nada
+        botones = [(f"info:{n.evento_id}", "ℹ️ Ver el plan")]
     elif n.botones:
         botones = [(b, b) for b in n.botones[:3]]
     if n.plantilla:

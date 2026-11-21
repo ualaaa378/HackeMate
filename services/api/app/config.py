@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     notificaciones_max_intentos: int = 5
     # Tarea de fondo que reintenta los avisos pendientes (app/main.py). 0 = desactivada.
     notificaciones_reintento_s: float = 60.0
+    # Tareas programadas (app/tareas_programadas.py): recordatorio 24 h antes, «¿qué tal fue?» y resumen semanal.
+    # Cada cuántos minutos se mira si toca algo. 0 = desactivadas
+    tareas_cada_min: float = 10.0
+    # Resumen semanal: día (0 = lunes … 6 = domingo) y hora local a partir de la que sale, una vez por semana
+    resumen_dia_semana: int = 0
+    resumen_hora: int = 9
     # Coste de la IA (app/estadisticas.py): euros por millón de tokens. Clave «proveedor:modelo» o «proveedor»;
     # lo que no aparece cuenta como gratuito (0 €). JSON en la variable PRECIOS_TOKENS_EUR_MTOK.
     precios_tokens_eur_mtok: dict[str, dict[str, float]] = {

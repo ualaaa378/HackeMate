@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from app import __version__, errores
 from app.config import avisar_configuracion_insegura, get_settings
 from app.notificaciones import ciclo_reintentos
+from app.tareas_programadas import ciclo_tareas
 from app.rutas import (
     admin,
     auth,
@@ -44,15 +45,30 @@ async def bucle_reintentos(intervalo: float) -> None:
             log.exception("fallo en la tarea de reintento de avisos")
 
 
+async def bucle_tareas(intervalo: float) -> None:
+    """Recordatorios, «¿qué tal fue?» y resumen semanal (app/tareas_programadas.py), cada `intervalo` segundos."""
+    while True:
+        await asyncio.sleep(intervalo)
+        try:
+            await asyncio.to_thread(ciclo_tareas)
+        except Exception:  # noqa: BLE001
+            log.exception("fallo en las tareas programadas")
+
+
 @asynccontextmanager
 async def ciclo_de_vida(_: FastAPI):
     avisar_configuracion_insegura()
-    intervalo = get_settings().notificaciones_reintento_s
-    tarea = asyncio.create_task(bucle_reintentos(intervalo)) if intervalo > 0 else None
+    ajustes = get_settings()
+    intervalo = ajustes.notificaciones_reintento_s
+    tareas = []
+    if intervalo > 0:
+        tareas.append(asyncio.create_task(bucle_reintentos(intervalo)))
+    if ajustes.tareas_cada_min > 0:
+        tareas.append(asyncio.create_task(bucle_tareas(ajustes.tareas_cada_min * 60)))
     try:
         yield
     finally:
-        if tarea is not None:
+        for tarea in tareas:
             tarea.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await tarea

@@ -134,6 +134,7 @@ def limpiar_estado():
     conversacion.estados.clear()
     vecino.vecinos.clear()
     vecino.preferencias_locales.clear()
+    vecino.valoraciones_pendientes.clear()
     vecino.ubicaciones.clear()
     conversacion.idiomas_por_contacto.clear()
     from app import alta, avisos

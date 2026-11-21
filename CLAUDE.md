@@ -23,7 +23,7 @@ Guion de la demo (lo que TIENE que funcionar): post/audio → ficha · el public
 
 | Servicio | Carpeta | Flujo | Stack | Puerto |
 |---|---|---|---|---|
-| `api` | `services/api/` | A · Benas (+ Juan Carlos) | FastAPI + SQLAlchemy + Alembic + PostgreSQL (pgvector) / SQLite en local | 8000 |
+| `api` | `services/api/` | A · Francisco desde el sáb 21/11 por la tarde (antes Benas, que se ha ido; traspaso en `docs/RESUMEN_FLUJO_A.md`) | FastAPI + SQLAlchemy + Alembic + PostgreSQL (pgvector) / SQLite en local | 8000 |
 | `bot` | `services/bot/` | B · Francisco | FastAPI · Telegram Bot API (activo) · WhatsApp Cloud API de Meta y Twilio (alternativas) · `llm_router` (Gemini → FreeLLMAPI → Claude → reglas) | 8001 |
 | `web` | `apps/web/` | C · Adán | Ionic React + Vite + react-leaflet, Capacitor | 8080 |
 | `db` | — | A | `pgvector/pgvector:pg16` | 5432 |

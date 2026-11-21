@@ -212,6 +212,12 @@ def preguntar_en_chat(evento_id: str, usuario_id: str, texto: str) -> dict | Non
                      {"texto": texto[:1000], "tipo": "pregunta", "usuario_id": usuario_id})
 
 
+def comentar_en_chat(evento_id: str, usuario_id: str, texto: str) -> dict | None:
+    """«¿Qué tal fue?»: la valoración queda como comentario del plan (también vale con el plan ya terminado)."""
+    return _peticion("POST", f"/api/v1/eventos/{evento_id}/mensajes",
+                     {"texto": texto[:1000], "tipo": "comentario", "usuario_id": usuario_id})
+
+
 def guardar_preferencias(usuario_id: str, cambios: dict) -> bool:
     """El contrato solo tiene PATCH /usuarios/me (login de usuario). Se prueba PATCH /usuarios/{id}
     con el token interno (propuesto a A); si no existe, el bot las guarda solo en memoria."""
@@ -285,3 +291,17 @@ def _despues_de_reintentar(item: dict, res: dict | None) -> None:
 def crear_publicador(cuerpo: dict) -> dict | None:
     """POST /publicadores con el responsable (dato personal): nunca se encola en disco."""
     return _peticion("POST", "/api/v1/publicadores", cuerpo)
+
+
+_municipios: dict[str, tuple[float, float]] = {}
+
+
+def coordenadas_municipio(nombre: str) -> tuple[float, float] | None:
+    """Lat/lon de un pueblo (GET /municipios, una vez). Para «cerca de Tahal»."""
+    if not _municipios:
+        try:
+            for m in _peticion("GET", "/api/v1/municipios") or []:
+                _municipios[m["nombre"]] = (m["lat"], m["lon"])
+        except (ApiNoDisponible, ErrorApi, KeyError, TypeError):
+            return None
+    return _municipios.get(nombre)

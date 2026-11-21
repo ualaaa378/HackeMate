@@ -6,7 +6,7 @@ import logging
 import re
 import unicodedata
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from app import api_cliente, telegram
@@ -138,8 +138,13 @@ def buscar(msg: MensajeEntrante, texto: str, usuario: dict | None,
                                   pedir_ubicacion=True)]
             return ["¿En qué pueblo estás? (Lucainena, Senés, Velefique, Uleila o Tahal)"]
 
+    if c.cerca_de:
+        c.centro = api_cliente.coordenadas_municipio(c.cerca_de)
+        if c.centro is None:  # sin coordenadas, al menos ese pueblo
+            c.municipio, c.cerca_de = c.cerca_de, None
+
     gustos = _gustos(msg.de, usuario)
-    generico = not (c.municipio or c.categorias or c.cerca)
+    generico = not (c.municipio or c.categorias or c.cerca or c.detallada)
     if generico and usuario and usuario.get("id"):
         try:
             recos = api_cliente.recomendaciones(usuario["id"], limite=10)
@@ -152,10 +157,12 @@ def buscar(msg: MensajeEntrante, texto: str, usuario: dict | None,
             return _presentar(msg, [r["evento"] for r in recos], f"Te recomiendo {c.periodo}:",
                               motivos={r["evento"]["id"]: r.get("motivo") for r in recos})
 
+    ampliado = False  # no había nada en esas fechas y se ha mirado más adelante
     try:
         eventos = api_cliente.buscar_eventos(c.parametros(lat, lon))
         cabecera = f"Esto es lo que hay {c.periodo}" + (f" en {c.municipio}" if c.municipio else "") + ":"
         if not eventos and (c.hasta and (c.hasta - c.desde).days < 25):
+            ampliado = True
             c.hasta = None  # nada en esas fechas: miramos más adelante
             eventos = api_cliente.buscar_eventos(c.parametros(lat, lon))
             cabecera = f"No hay nada {c.periodo}" + (f" en {c.municipio}" if c.municipio else "") + \
@@ -165,6 +172,8 @@ def buscar(msg: MensajeEntrante, texto: str, usuario: dict | None,
 
     if len(c.categorias) > 1:
         eventos = [e for e in eventos if e.get("categoria") in c.categorias]
+    if c.detallada:  # búsqueda con lenguaje natural: franja, gratis y criterios blandos (con IA)
+        return _buscar_detallada(msg, texto, c, eventos, ampliado)
     if not eventos:
         return ["No he encontrado planes con esa búsqueda 😕 Prueba con otro pueblo o con «¿qué hay este mes?»."]
     # Primero lo que le gusta; dentro, por fecha
@@ -172,6 +181,26 @@ def buscar(msg: MensajeEntrante, texto: str, usuario: dict | None,
     motivos = {e["id"]: f"Te gusta: {NOMBRE_CATEGORIA.get(e['categoria'], e['categoria'])}"
                for e in eventos if e.get("categoria") in gustos}
     return _presentar(msg, eventos, cabecera, motivos)
+
+
+def _buscar_detallada(msg: MensajeEntrante, texto: str, c: busqueda.Consulta, eventos: list[dict],
+                      ampliado: bool = False) -> list:
+    """«algo para ir con niños el domingo por la tarde cerca de Tahal»: lo concreto filtra; lo blando, la IA."""
+    tz = ZoneInfo(get_settings().zona_horaria)
+    candidatos = [e for e in eventos if busqueda.en_franja(e, c.franja, tz) and (not c.gratis or busqueda.es_gratis(e))]
+    elegidos, motivos, _ = busqueda.afinar(texto, candidatos, c)
+    if elegidos:
+        if ampliado:  # se dice que no es lo que pidió: es de otro día
+            return _presentar(msg, elegidos, f"No hay nada {c.descripcion()} 😕 Más adelante hay esto:", motivos)
+        return _presentar(msg, elegidos, f"Planes {c.descripcion()}:", motivos)
+    # Nada encaja del todo: se dice y se enseña lo más cercano a lo que pidió, sin fingir que encaja
+    pedido = c.descripcion()
+    if candidatos:
+        return [f"No he encontrado planes {pedido} que lo digan claramente 🤔 Esto es lo que hay que se acerca más:"] \
+            + _presentar(msg, candidatos, "", {})[1:]
+    if eventos:
+        return [f"No hay planes {pedido} 😕 Pero {c.periodo} hay esto:"] + _presentar(msg, eventos, "", {})[1:]
+    return [f"No he encontrado planes {pedido} 😕 Prueba con otro día o con «¿qué hay este mes?»."]
 
 
 def _presentar(msg: MensajeEntrante, eventos: list[dict], cabecera: str, motivos: dict | None = None) -> list:
@@ -373,6 +402,47 @@ def inscribir(msg: MensajeEntrante, evento_id: str | None, usuario: dict | None)
         return [f"Ahora mismo está lleno{nombre}: estás en lista de espera" +
                 (f" (puesto {puesto})" if puesto else "") + ". Si queda sitio, te aviso 🙌"]
     return [f"✅ ¡Apuntado/a{nombre}! Te avisaré si hay cambios. ¡Nos vemos allí! 🎉"]
+
+
+# ---------- «¿Qué tal fue?» (tarea programada de la API) ----------
+
+MARCA_QUE_TAL = "¿Qué tal fue"  # la misma que services/api/app/tareas_programadas.py
+VALORACIONES = {"muy_bien": "😍 ¡Muy bien!", "bien": "🙂 Bien", "regular": "😕 Regular"}
+ESPERA_VALORACION = timedelta(hours=48)
+valoraciones_pendientes: dict[str, tuple[str, datetime]] = {}  # contacto → (evento_id, hasta cuándo)
+
+
+def botones_valoracion(evento_id: str) -> list[tuple[str, str]]:
+    return [(f"valora:{evento_id}:{k}", v) for k, v in VALORACIONES.items()]
+
+
+def esperar_valoracion(contacto: str, evento_id: str) -> None:
+    valoraciones_pendientes[contacto] = (evento_id, _ahora() + ESPERA_VALORACION)
+
+
+def valoracion_pendiente(contacto: str) -> str | None:
+    pendiente = valoraciones_pendientes.get(contacto)
+    if not pendiente or pendiente[1] < _ahora():
+        valoraciones_pendientes.pop(contacto, None)
+        return None
+    return pendiente[0]
+
+
+def valorar(msg: MensajeEntrante, evento_id: str, texto: str, usuario: dict | None) -> list:
+    """El botón o el mensaje que contesta a «¿qué tal fue?» → comentario del plan, con su nombre."""
+    valoraciones_pendientes.pop(msg.de, None)
+    if not (usuario or {}).get("id"):
+        return ["¡Gracias por contármelo! 🙏"]
+    try:
+        api_cliente.comentar_en_chat(evento_id, usuario["id"], texto)
+    except (ApiNoDisponible, ErrorApi) as e:
+        log.warning("No se pudo guardar la valoración: %s", e)
+        return ["¡Gracias! 🙏 Ahora mismo no puedo guardarlo, pero me lo apunto."]
+    if texto in VALORACIONES.values():  # con el botón: puede añadir un comentario con sus palabras
+        esperar_valoracion(msg.de, evento_id)
+        return ["¡Gracias por contármelo! 🙌 Se lo paso a quienes lo organizaron. Si quieres añadir algo más (qué "
+                "te gustó, qué mejorarías), escríbemelo."]
+    return ["¡Gracias! 🙌 Lo he dejado en el plan para quienes lo organizaron."]
 
 
 # ---------- Desapuntarse (N6b) ----------

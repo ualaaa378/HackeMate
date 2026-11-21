@@ -138,7 +138,10 @@ def _usuario(contacto: str) -> dict | None:
         usuario = api_cliente.usuario_por_contacto(contacto)
     except (ApiNoDisponible, ErrorApi):
         return None
-    _usuarios[contacto] = (time.monotonic(), usuario)
+    # Solo se guarda lo encontrado: «no existe» puede dejar de ser verdad al momento (el bot da de alta al decir
+    # sus gustos, al aceptar avisos o al apuntarse) y no puede quedarse 60 s olvidando a la persona
+    if usuario is not None:
+        _usuarios[contacto] = (time.monotonic(), usuario)
     return usuario
 
 
@@ -177,6 +180,9 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
         return vecino.desinscribir(msg, evento_id, insc_id, _usuario(msg.de))
     if t == "insc_ok":
         return ["👍 ¡Nos vemos allí!"]
+    if t.startswith("valora:"):  # botón de «¿qué tal fue?»
+        _, evento_id, nivel = msg.boton_id.split(":", 2)
+        return vecino.valorar(msg, evento_id, vecino.VALORACIONES.get(nivel, nivel), _usuario(msg.de))
     if t.startswith("info:"):
         return vecino.info(msg, msg.boton_id.split(":", 1)[1])
     if msg.lat is not None and msg.lon is not None and not texto:
@@ -212,6 +218,12 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
     # D1: «avísame» / «no quiero avisos» (también con los botones de la pregunta o en una nota de voz)
     if not es_cartel and (acepta := avisos.que_quiere(msg, texto)) is not None:
         return eco + avisos.responder(msg, acepta, _usuario(msg.de))
+
+    # Contesta a «¿qué tal fue?» con sus palabras (o una nota de voz): si no está buscando ni apuntándose, es la
+    # valoración del plan y va como comentario
+    if not es_cartel and texto and (evento_valorado := vecino.valoracion_pendiente(msg.de)):
+        if intencion.detectar(texto).tipo not in ("buscar", "inscribir", "desinscribir", "gustos"):
+            return eco + vecino.valorar(msg, evento_valorado, f"💬 {texto[:900]}", _usuario(msg.de))
 
     # Un cartel siempre es para publicar; texto y notas de voz pueden ser de un vecino que busca planes
     if not es_cartel:
