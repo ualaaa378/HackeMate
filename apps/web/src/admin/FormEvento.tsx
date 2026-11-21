@@ -92,7 +92,7 @@ const Formulario: React.FC<Props> = ({ evento, publicadores, publicadorFijo, onG
   return (
     <>
       <IonHeader>
-        <IonToolbar color="primary">
+        <IonToolbar color="secondary">
           <IonTitle>{evento ? 'Editar plan' : 'Nuevo plan'}</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={onCerrar}>Cerrar</IonButton>
