@@ -88,7 +88,7 @@ def test_lista_publica_paginada_sin_contacto(api):
 
 def test_lista_filtra_por_municipio_y_estado(api, db):
     r = api.get("/api/v1/publicadores", params={"municipio": "Velefique"})
-    assert [p["nombre"] for p in r.json()["items"]] == ["Amigos de Velefique"]
+    assert [p["nombre"] for p in r.json()["items"]] == ["Amigos de Velefique", "Ayto. de Velefique"]
 
     _cambiar_estado(db, AMIGOS_VELEFIQUE, "pausado")
     # El público no ve los que no están aprobados, aunque los pida.

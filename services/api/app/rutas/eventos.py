@@ -24,6 +24,7 @@ from app.paginacion import Pagina, pagina, paginar, paginar_lista
 from app.rutas.publico import dentro_del_radio, en_caja, es_uuid, hay_radio
 from app.chat import anuncio_automatico
 from app.inscripciones import avisar_inscritos, promocionar, texto_cambio
+from app.avisos_planes import avisar_interesados
 from app.notificaciones import enviar_en_segundo_plano, notificar_moderadores
 from app.seguridad import (
     Quien,
@@ -367,6 +368,8 @@ def crear_evento(
             db, "moderacion", f"Evento para revisar: «{evento.titulo}» ({de}). Motivo: {evento.motivo_moderacion}",
             evento_id=evento.id, enviar=False,
         )
+    elif evento.estado == "publicado":
+        avisos = avisar_interesados(db, evento)  # A10
     db.commit()
     enviar_en_segundo_plano(background_tasks, db, avisos)
     # Quien lo propone con su sesión ve lo que acaba de enviar, también los datos para el ayuntamiento.

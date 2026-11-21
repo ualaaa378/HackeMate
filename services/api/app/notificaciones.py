@@ -19,9 +19,9 @@ solo quien consigue la reserva (`rowcount == 1`) llama al bot. Se usa `intentos`
 bloqueo de escritura de SQLite mientras se espera al bot. Si el proceso muere tras reservar, el aviso sigue
 `pendiente` con ese intento ya contado y el siguiente ciclo lo recoge.
 
-Destino (contracts/schemas/notificacion.json): `telefono` E.164 es obligatorio y `contacto` (`tg:<chat_id>`) va
-aparte; si viene, el bot envía ahí. Un usuario solo de Telegram (sin telefono) no se puede avisar con el contrato
-actual: su aviso se guarda como `fallida` con `ultimo_error = "sin telefono"`.
+Destino (contracts/schemas/notificacion.json, D1): basta con `telefono` (E.164) o con `contacto` (`tg:<chat_id>`);
+si viene `contacto`, el bot envía ahí. Quien solo usa Telegram se avisa por su `contacto`. Un aviso sin ninguno de
+los dos se guarda como `fallida` con `ultimo_error = "sin destino"`.
 """
 
 import logging
@@ -42,7 +42,10 @@ from app.telefonos import normalizar_telefono
 log = logging.getLogger(__name__)
 
 MAX_BOTONES = 3  # contracts/schemas/notificacion.json
-SIN_TELEFONO = "sin telefono"
+SIN_DESTINO = "sin destino"
+NO_ACEPTA_AVISOS = "no acepta avisos"
+# D1 (A8): estos avisos solo salen a quien ha aceptado los avisos; los demás (cambios de hora, respuestas…) siempre.
+TIPOS_CON_CONSENTIMIENTO = ("recomendacion",)
 
 # Transporte de httpx. None = red real; los tests ponen un httpx.MockTransport.
 _transporte: httpx.BaseTransport | None = None
@@ -60,7 +63,6 @@ def _cuerpo(n: Notificacion) -> dict:
     """Cuerpo de POST /notify según contracts/schemas/notificacion.json."""
     cuerpo = {
         "id": n.id,
-        "telefono": n.telefono,
         "tipo": n.tipo,
         "texto": n.texto,
         "formato": n.formato,
@@ -68,6 +70,8 @@ def _cuerpo(n: Notificacion) -> dict:
         "evento_id": n.evento_id,
         "botones": list(n.botones or []),
     }
+    if n.telefono:
+        cuerpo["telefono"] = n.telefono
     if n.contacto:
         cuerpo["contacto"] = n.contacto
     if n.plantilla:
@@ -101,11 +105,15 @@ def _post_notify(n: Notificacion) -> tuple[str | None, bool]:
     return None, False
 
 
+def _tiene_destino(n: Notificacion) -> bool:
+    return bool(n.telefono or n.contacto)
+
+
 def _intentar(n: Notificacion, ya_contado: bool = False) -> tuple[bool, bool]:
     """Un intento de envío; actualiza estado_envio, intentos y ultimo_error. (ha salido, el bot no responde).
     `ya_contado`: el intento ya se ha sumado al reservarlo (`_reservar`)."""
-    if not n.telefono:
-        n.estado_envio, n.ultimo_error = "fallida", SIN_TELEFONO
+    if not _tiene_destino(n):
+        n.estado_envio, n.ultimo_error = "fallida", SIN_DESTINO
         return False, False
     if not ya_contado:
         n.intentos = (n.intentos or 0) + 1
@@ -169,11 +177,14 @@ def notificar(
     try:
         db.add(n)
         db.flush()
-        if enviar:
+        if tipo in TIPOS_CON_CONSENTIMIENTO and usuario is not None and not usuario.acepta_avisos:
+            n.estado_envio, n.ultimo_error = "fallida", NO_ACEPTA_AVISOS
+            db.flush()
+        elif enviar:
             _intentar(n)
             db.flush()
-        elif not n.telefono:
-            n.estado_envio, n.ultimo_error = "fallida", SIN_TELEFONO
+        elif not _tiene_destino(n):
+            n.estado_envio, n.ultimo_error = "fallida", SIN_DESTINO
             db.flush()
     except Exception:  # noqa: BLE001 — el aviso nunca tumba la ruta que lo pide
         log.exception("no se pudo guardar el aviso %s", n.id)
@@ -257,9 +268,9 @@ def _enviar_lote(db: Session, avisos: Iterable[Notificacion]) -> int:
     for n in avisos:
         if n.estado_envio != "pendiente":
             continue
-        if n.telefono and not _reservar(db, n):
+        if _tiene_destino(n) and not _reservar(db, n):
             continue  # otro envío lo tiene
-        enviada, bot_caido = _intentar(n, ya_contado=bool(n.telefono))
+        enviada, bot_caido = _intentar(n, ya_contado=_tiene_destino(n))
         enviadas += enviada
         if bot_caido:
             break

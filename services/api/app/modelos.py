@@ -119,7 +119,8 @@ class Usuario(Base):
     gustos: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     etiquetas_interes: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     formato_aviso: Mapped[str] = mapped_column(_enum("formato_aviso", FORMATOS_AVISO), default="texto", nullable=False)
-    acepta_avisos: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # D1 (A8): solo recibe avisos de planes nuevos y recomendaciones quien lo acepta en el bot («Sí, avísame»).
+    acepta_avisos: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     radio_km: Mapped[float | None] = mapped_column(Float)
     publicador_id: Mapped[str | None] = mapped_column(ForeignKey("publicadores.id", use_alter=True))
     creado_en: Mapped[datetime] = _creado()

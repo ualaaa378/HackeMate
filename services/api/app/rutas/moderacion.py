@@ -16,6 +16,7 @@ from app.db import get_db
 from app.errores import ErrorApi
 from app.modelos import Evento, Publicador
 from app.moderacion import registrar_aprobacion_en_bd
+from app.avisos_planes import avisar_interesados
 from app.notificaciones import enviar_en_segundo_plano, notificar_publicador
 from app.paginacion import Pagina, pagina, paginar_lista
 from app.rutas.eventos import _buscar, _ficha
@@ -142,6 +143,7 @@ def decidir(
             db, publicador, "moderacion", _texto_aviso(evento, datos.decision, motivo),
             evento_id=evento.id, enviar=False,
         )
+    interesados = avisar_interesados(db, evento) if destino == "publicado" else []  # A10
     db.commit()
-    enviar_en_segundo_plano(background_tasks, db, [aviso])
+    enviar_en_segundo_plano(background_tasks, db, [aviso, *interesados])
     return _ficha(db, _buscar(db, evento.id), privados=revisor != REVISOR_INTERNO)
