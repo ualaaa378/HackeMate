@@ -1,4 +1,7 @@
-FROM python:3.13-slim
+# 3.12 y no 3.13: con python:3.13-slim (3.13.18) el proceso muere con «Segmentation fault» (exit 139) cuando
+# llegan unas 12 peticiones a la vez, como hace la web al abrir la agenda. Reproducido en Docker el sáb 21/11;
+# con 3.12 aguanta 1800 peticiones en paralelo y pasan los 592 tests.
+FROM python:3.12-slim
 WORKDIR /srv
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 COPY requirements.txt .
