@@ -255,8 +255,8 @@ export function actualizarPerfil(cambios: UsuarioEditar): Promise<Usuario> {
 
 // ---------- propuestas de planes ----------
 // Una propuesta es un evento que entra «en_revision» y le llega al moderador del ayuntamiento.
-// POST /eventos hoy solo acepta el token interno: hasta que acepte el JWT del vecino
-// (y el contrato tenga los datos para el ayuntamiento) se guarda en modo demo.
+// Con la sesión real del vecino va a POST /eventos con sus datos privados en `datos_ayuntamiento`.
+// Sin API o sin sesión real (código de la demo), se guarda en modo demo y entra en la bandeja de mocks.
 export interface PropuestaEnviada {
   evento: Evento;
   ayuntamiento: DatosAyuntamiento;
@@ -269,7 +269,9 @@ export async function proponerEvento(datos: EventoCrear, ayuntamiento: DatosAyun
   const conSesionReal = !USAR_MOCKS && token && token !== 'demo';
   if (conSesionReal) {
     try {
-      const evento = await peticion<Evento>('/eventos', { method: 'POST', body: JSON.stringify(datos) });
+      const { frase_portada, ...privados } = ayuntamiento;
+      const cuerpo: EventoCrear = { ...datos, frase_portada: frase_portada || null, datos_ayuntamiento: privados };
+      const evento = await peticion<Evento>('/eventos', { method: 'POST', body: JSON.stringify(cuerpo) });
       return { evento, ayuntamiento, demo: false };
     } catch (e) {
       if (e instanceof ErrorApi && e.status !== 401 && e.status !== 403) throw e;

@@ -63,7 +63,7 @@ Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **vis
 
 ## 🔗 Pendiente entre flujos
 
-Revisado el 21/11/2026 a las 09:20. Todo esto ya lo usa la app web (flujo C) o el bot (flujo B), pero depende de otro flujo. Mientras no esté, **la web vuelve sola a los datos de prueba (mocks) y el bot guarda la petición en cola**, así que nada se rompe, pero la demo no usa datos reales. Al cerrar cada punto, se borra de esta lista.
+Revisado el 21/11/2026 a las 10:15. Todo esto ya lo usa la app web (flujo C) o el bot (flujo B), pero depende de otro flujo. Mientras no esté, **la web vuelve sola a los datos de prueba (mocks) y el bot guarda la petición en cola**, así que nada se rompe, pero la demo no usa datos reales. Al cerrar cada punto, se borra de esta lista.
 
 > **Regla del equipo (ver `CLAUDE.md`):** cada flujo apunta aquí, bajo el flujo responsable, lo que necesita de los demás. Antes de empezar una tarea, revisa tu apartado.
 
@@ -76,7 +76,7 @@ Quién hace qué ahora. Cada uno marca su línea al terminar y apunta los fallos
 - [ ] `scripts/smoke_test.sh` hasta «SMOKE TEST EN VERDE». Si falla, `docker compose -f infra/docker-compose.yml logs api` y el error a Benas.
 - [ ] Guion sin móvil con `scripts/simular_chat.py` y, después, los siete pasos con Telegram y la web en `http://localhost:8080` (`DEMO_MODE=true`). Ver [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md) §0 y §3.
 - [ ] Tests de la web (`cd apps/web && npm ci && npm run test:unit`, y `npm run test:e2e`), que Benas no puede pasar sin Node.
-- [ ] Conectar en `/admin/panel` el botón «Simular caída de la IA» y el coste en tokens con `GET /admin/bot/metricas` y `POST /admin/bot/simular-caida` (ya en la API).
+- [x] Conectar en `/admin/panel` el botón «Simular caída de la IA» y el coste en tokens con `GET /admin/bot/metricas` y `POST /admin/bot/simular-caida` (H2, sáb 10:15).
 - [ ] Entre ensayos, `scripts/demo_reset.sh`.
 
 **Benas (flujo A) · API**
@@ -95,6 +95,7 @@ Quién hace qué ahora. Cada uno marca su línea al terminar y apunta los fallos
 Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen en la API (ninguna queda con `x-implementado: false`).
 
 - **Frase de portada automática:** `frase_portada` ya se guarda y se devuelve (`POST`/`PATCH /eventos`, confirmar). Si llega vacía, la API se la pedirá al bot cuando exista `POST /ai/frase` (ver flujo B); mientras, la web pone una frase fija por tipo de plan.
+- **Revisión a mano o automática (nivel 1):** la regla del equipo (`apps/web/src/admin/confianza.ts`, H2.3) es que solo hay dos modos: a mano (todo pasa por la bandeja) o automática (nivel 2). En la API, un publicador de nivel 1 publica sin revisión los planes de sus categorías habituales (`services/api/app/moderacion.py`, `decidir_estado`). Probado el 21/11: «Amigos de Velefique» (nivel 1) crea una ruta deportiva desde `/admin/eventos` y sale publicada sin pasar por la bandeja, aunque la web le dice «revisión a mano». Propuesta: que el nivel 1 vaya siempre a `en_revision` (como el 0), o decidir juntos que el nivel 1 es «automática solo en lo habitual» y la web lo enseña así.
 - **Una propuesta de un vecino sin asociación:** entra en revisión y el moderador ve sus `datos_ayuntamiento`, pero el vecino solo los ve en la respuesta del alta (la API no guarda quién propuso el plan si no es un publicador).
 
 ### Flujos A y B · a acordar (Benas + Francisco)
@@ -112,7 +113,6 @@ Regla en `CLAUDE.md` § «Canales de mensajería». Cómo se elige el canal hoy,
 
 ### Flujo C · web (Adán), lo que pide el bot
 
-- Botón «Simular caída de la IA» y coste en tokens en `/admin/panel`: la API ya los expone en `GET /admin/bot/metricas` y `POST /admin/bot/simular-caida` (con la sesión del moderador; el `INTERNAL_TOKEN` no va al navegador).
 - Opcional, como plan C de la demo: un chat simulado en la web que llame a `bot POST /dev/mensaje`.
 
 ### Flujo B · bot (Francisco), alta de asociaciones
@@ -137,6 +137,8 @@ Probado con `scripts/simular_chat.py` (bot con `CANAL=console`, sin Gemini ni Fr
 Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
 
 ### Ya resuelto
+
+- La web (flujo C, H2) ya usa la API real en la zona del ayuntamiento: bandeja (`/moderacion/*`), publicadores (`/aprobar`, `/pausar`, `/verificar-identidad`), planes con JWT, `GET /estadisticas`, panel del bot y «Proponer un plan» con `datos_ayuntamiento`. Los botones de la demo en `/admin` entran con `POST /auth/demo`, así que la API tiene que arrancar con `DEMO_MODE=true` en el `.env` (si no, la web vuelve a los mocks y lo marca como «modo demo»).
 
 - Docker compose arranca el bot real de `services/bot` (PR #23, probado en Docker).
 - El aviso al vecino usa el contacto que tenga: la API manda `contacto` en `POST /notify` (`tg:<telegram_id>` si existe, si no `telefono`) en vez de suponer WhatsApp.

@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import BloqueConfianza from '../../admin/BloqueConfianza';
 import PaginaAdmin from '../../admin/PaginaAdmin';
+import { useAcceso } from '../../admin/acceso';
 import { aprobarPublicador, decidir, getPendientes } from '../../api/admin';
 import { CATEGORIAS, NECESIDADES, PUBLICOS, type PendienteBandeja } from '../../api/types';
 import { fechaLarga, horaEvento, precio } from '../../utils/formato';
@@ -56,11 +57,15 @@ const Bandeja: React.FC = () => {
   const [rechazando, setRechazando] = useState<PendienteBandeja | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
 
+  const { rol } = useAcceso();
+
+  // Se carga al entrar con un rol: la página existe antes de que se elija moderador en la puerta.
   const cargar = useCallback(() => {
+    if (rol !== 'moderador') return;
     getPendientes()
       .then((p) => setItems(p.items))
       .catch(() => setError('No hemos podido cargar la bandeja.'));
-  }, []);
+  }, [rol]);
 
   useEffect(cargar, [cargar]);
 

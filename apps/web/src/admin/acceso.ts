@@ -6,9 +6,10 @@ export interface AccesoAdmin {
   nombre: string;
   /** Para el publicador: solo ve y crea sus planes. */
   publicadorId: string | null;
-  /** true si se ha entrado con el selector de rol de la demo (todo con mocks). */
+  /** true si se trabaja con mocks: no hay API o no deja entrar sin cuenta (DEMO_MODE). */
   demo: boolean;
-  entrarDemo: (rol: RolAdmin) => void;
+  /** Entra sin cuenta con el usuario de la demo de ese rol. Con la API en DEMO_MODE, con sesión real. */
+  entrarDemo: (rol: RolAdmin) => Promise<void>;
   salir: () => void;
 }
 

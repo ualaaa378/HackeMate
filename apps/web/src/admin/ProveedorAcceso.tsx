@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 
-import { setAdminDemo } from '../api/admin';
+import { entrarDemo, setAdminDemo } from '../api/admin';
 import { useSesion } from '../cuenta/sesion';
 
 import { type AccesoAdmin, ContextoAcceso, type RolAdmin } from './acceso';
 
-// Publicador de la demo: Amigos de Velefique (revisión a mano: sus planes pasan por la bandeja).
+// Publicador de los mocks: Amigos de Velefique (revisión a mano: sus planes pasan por la bandeja).
 const PUBLICADOR_DEMO = { id: '7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a01', nombre: 'Amigos de Velefique' };
 const CLAVE = 'hm-admin-demo';
 
@@ -19,7 +19,8 @@ function leerDemo(): RolAdmin | null {
 }
 
 const ProveedorAcceso: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { usuario } = useSesion();
+  const sesion = useSesion();
+  const { usuario } = sesion;
   const [rolDemo, setRolDemo] = useState<RolAdmin | null>(leerDemo);
 
   const rolReal = usuario?.rol === 'moderador' || usuario?.rol === 'publicador' ? usuario.rol : null;
@@ -34,14 +35,34 @@ const ProveedorAcceso: React.FC<{ children: React.ReactNode }> = ({ children }) 
         // sin almacenamiento dura lo que la pestaña
       }
     };
-    const base = { entrarDemo: (r: RolAdmin) => guardar(r), salir: () => guardar(null) };
-    if (rolReal && usuario) return { ...base, rol: rolReal, nombre: usuario.nombre, publicadorId: null, demo: false };
+    const base = {
+      // Primero con la API (POST /auth/demo): así la bandeja, el panel y los planes son los de verdad.
+      entrarDemo: async (r: RolAdmin) => {
+        const token = await entrarDemo(r);
+        if (token) {
+          guardar(null);
+          sesion.entrar(token);
+        } else guardar(r);
+      },
+      salir: () => {
+        guardar(null);
+        if (rolReal) sesion.salir();
+      },
+    };
+    if (rolReal && usuario)
+      return {
+        ...base,
+        rol: rolReal,
+        nombre: usuario.nombre,
+        publicadorId: rolReal === 'publicador' ? (usuario.publicador_id ?? null) : null,
+        demo: false,
+      };
     if (rolDemo === 'publicador')
       return { ...base, rol: rolDemo, nombre: PUBLICADOR_DEMO.nombre, publicadorId: PUBLICADOR_DEMO.id, demo: true };
     if (rolDemo === 'moderador')
       return { ...base, rol: rolDemo, nombre: 'Moderación del ayuntamiento', publicadorId: null, demo: true };
     return { ...base, rol: null, nombre: '', publicadorId: null, demo: true };
-  }, [rolReal, rolDemo, usuario]);
+  }, [rolReal, rolDemo, usuario, sesion]);
 
   // En el render y no en un efecto: las páginas piden datos en su primer efecto y ya deben saber el modo.
   setAdminDemo(valor.demo);

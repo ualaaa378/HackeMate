@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 
 import BloqueConfianza from '../../admin/BloqueConfianza';
 import PaginaAdmin from '../../admin/PaginaAdmin';
+import { useAcceso } from '../../admin/acceso';
 import { deberiaVolverAManual, modoRevision, puedeSerAutomatica } from '../../admin/confianza';
 import {
   aprobarPublicador,
@@ -49,11 +50,13 @@ const Publicadores: React.FC = () => {
   const [lista, setLista] = useState<PublicadorAdmin[] | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
+  const { rol } = useAcceso();
   useEffect(() => {
+    if (rol !== 'moderador') return;
     getPublicadores()
       .then((p) => setLista(p.items))
       .catch(() => setLista([]));
-  }, []);
+  }, [rol]);
 
   const reemplazar = (p: PublicadorAdmin) => setLista((xs) => xs?.map((x) => (x.id === p.id ? p : x)) ?? null);
 

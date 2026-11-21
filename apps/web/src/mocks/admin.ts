@@ -207,7 +207,7 @@ export const pendientesMock: PendienteBandeja[] = [
 export const estadisticasMock: Estadisticas = {
   periodo: { desde: '2026-11-01T00:00:00+01:00', hasta: '2026-11-30T23:59:59+01:00' },
   actividades: 30,
-  pct_importadas_auto: 0.73,
+  pct_importadas_auto: 73,
   inscripciones: 148,
   asistencias: 121,
   ocupacion_por_categoria: {
@@ -218,7 +218,7 @@ export const estadisticasMock: Estadisticas = {
     ludica: 0.45,
     comercio: 0.38,
   },
-  pct_otro_pueblo: 0.34,
+  pct_otro_pueblo: 34,
   solapamientos: [
     {
       evento_a: '9d7e4f77-d668-53af-9f88-b16e6db81f74',

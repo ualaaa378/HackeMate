@@ -168,7 +168,12 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Agenda y mapa. Público solo ve `publicado`. */
+    /**
+     * Agenda y mapa. Público solo ve `publicado`.
+     * @description Sin sesión, el público ve `publicado` (por defecto) y también puede pedir `estado=finalizado`
+     *     (planes ya pasados, para la pestaña «Recuerdos»). Los demás estados solo los ven el moderador
+     *     y el publicador (sus eventos). `datos_ayuntamiento` nunca aparece en esta lista pública.
+     */
     get: {
       parameters: {
         query?: {
@@ -181,7 +186,7 @@ export interface paths {
           radio_km?: number;
           /** @description Texto libre en título y descripción */
           q?: string;
-          /** @description Solo moderador y publicador (sus eventos). Por defecto `publicado`. */
+          /** @description Por defecto `publicado`. Sin sesión también se admite `finalizado` (planes pasados, «Recuerdos»). Los demás estados, solo moderador y publicador (sus eventos). */
           estado?: components['schemas']['EstadoEvento'];
           publicador_id?: string;
           page?: components['parameters']['Page'];
@@ -231,6 +236,7 @@ export interface paths {
         };
         401: components['responses']['Error'];
         403: components['responses']['Error'];
+        /** @description 422 `validacion` o `imagen_invalida` (imagen_url no es URL http(s) ni data URL de imagen, o pasa de ~1,5 MB) */
         422: components['responses']['Error'];
       };
     };
@@ -249,7 +255,10 @@ export interface paths {
       };
       cookie?: never;
     };
-    /** Ficha del evento */
+    /**
+     * Ficha del evento
+     * @description `datos_ayuntamiento` solo aparece si quien pide es el organizador del evento o un moderador (con sesión bearer).
+     */
     get: {
       parameters: {
         query?: never;
@@ -303,8 +312,14 @@ export interface paths {
             'application/json': components['schemas']['evento'];
           };
         };
+        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
+        401: components['responses']['Error'];
+        /** @description 403 `prohibido` (solo el organizador del evento o un moderador) */
         403: components['responses']['Error'];
+        /** @description 404 `evento_no_encontrado` */
         404: components['responses']['Error'];
+        /** @description 422 `validacion`, `fechas_invalidas` (fecha_fin anterior a fecha_inicio) o `imagen_invalida` (imagen_url no es URL http(s) ni data URL de imagen, o pasa de ~1,5 MB) */
+        422: components['responses']['Error'];
       };
     };
     trace?: never;
@@ -353,7 +368,11 @@ export interface paths {
             'application/json': components['schemas']['ResultadoImportacion'];
           };
         };
+        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+        401: components['responses']['Error'];
+        /** @description 403 `publicador_pausado` o `publicador_rechazado` (la solicitud del publicador fue rechazada) */
         403: components['responses']['Error'];
+        /** @description 422 `validacion`, `no_es_evento`, `publicador_no_encontrado` o `municipio_no_encontrado` */
         422: components['responses']['Error'];
       };
     };
@@ -399,9 +418,16 @@ export interface paths {
             'application/json': components['schemas']['ResultadoImportacion'];
           };
         };
+        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+        401: components['responses']['Error'];
+        /** @description 403 `publicador_pausado` o `publicador_rechazado` */
         403: components['responses']['Error'];
+        /** @description 404 `evento_no_encontrado` */
         404: components['responses']['Error'];
+        /** @description 409 `estado_invalido` (el evento no está en `pendiente_confirmacion`) */
         409: components['responses']['Error'];
+        /** @description 422 `faltan_campos` (details.faltan), `validacion`, `municipio_no_encontrado` o `fechas_invalidas` */
+        422: components['responses']['Error'];
       };
     };
     delete?: never;
@@ -440,7 +466,12 @@ export interface paths {
             'application/json': components['schemas']['inscripcion'][];
           };
         };
+        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
+        401: components['responses']['Error'];
+        /** @description 403 `prohibido` (solo el organizador del evento o un moderador) */
         403: components['responses']['Error'];
+        /** @description 404 `evento_no_encontrado` */
+        404: components['responses']['Error'];
       };
     };
     put?: never;
@@ -469,9 +500,16 @@ export interface paths {
             'application/json': components['schemas']['inscripcion'];
           };
         };
+        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
         401: components['responses']['Error'];
+        /** @description 403 `prohibido` (con sesión solo puedes inscribirte a ti mismo) */
+        403: components['responses']['Error'];
+        /** @description 404 `evento_no_encontrado` o `usuario_no_encontrado` */
         404: components['responses']['Error'];
+        /** @description 409 `ya_inscrito` (details.inscripcion_id), `evento_no_inscribible` (el evento no está publicado) o `evento_terminado` */
         409: components['responses']['Error'];
+        /** @description 422 `falta_usuario_id` (con X-Internal-Token hay que indicar usuario_id) o `validacion` */
+        422: components['responses']['Error'];
       };
     };
     delete?: never;
@@ -515,8 +553,14 @@ export interface paths {
             'application/json': components['schemas']['inscripcion'];
           };
         };
+        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
+        401: components['responses']['Error'];
+        /** @description 403 `prohibido` (solo quien se apuntó, el organizador o un moderador) */
         403: components['responses']['Error'];
+        /** @description 404 `evento_no_encontrado` o `inscripcion_no_encontrada` */
         404: components['responses']['Error'];
+        /** @description 409 `inscripcion_cerrada` (ya se marcó la asistencia) */
+        409: components['responses']['Error'];
       };
     };
     options?: never;
@@ -550,6 +594,16 @@ export interface paths {
             'application/json': components['schemas']['inscripcion'];
           };
         };
+        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
+        401: components['responses']['Error'];
+        /** @description 403 `prohibido` (solo el organizador del evento o un moderador) */
+        403: components['responses']['Error'];
+        /** @description 404 `evento_no_encontrado` o `inscripcion_no_encontrada` */
+        404: components['responses']['Error'];
+        /** @description 409 `inscripcion_sin_plaza` (solo se marca la asistencia de quien tenía plaza) */
+        409: components['responses']['Error'];
+        /** @description 422 `validacion` */
+        422: components['responses']['Error'];
       };
     };
     trace?: never;
@@ -587,6 +641,10 @@ export interface paths {
             'application/json': components['schemas']['PaginaMensajes'];
           };
         };
+        /** @description 401 `token_invalido` o `token_caducado` (se envió una sesión no válida; sin sesión es público) */
+        401: components['responses']['Error'];
+        /** @description 404 `evento_no_encontrado` */
+        404: components['responses']['Error'];
       };
     };
     put?: never;
@@ -618,9 +676,16 @@ export interface paths {
             };
           };
         };
+        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
         401: components['responses']['Error'];
+        /** @description 403 `prohibido` (escribir en nombre de otro, o un anuncio sin ser organizador ni moderador) o `usuario_silenciado` (el organizador o un moderador le ha silenciado en el chat de este evento) */
         403: components['responses']['Error'];
+        /** @description 404 `evento_no_encontrado` o `usuario_no_encontrado` */
+        404: components['responses']['Error'];
+        /** @description 409 `chat_cerrado` (el evento no admite mensajes por su estado; details.estado) */
         409: components['responses']['Error'];
+        /** @description 422 `mensaje_spam` (details.score_spam y details.motivo), `falta_usuario_id`, `mensaje_no_encontrado` (en_respuesta_a no es de este evento) o `validacion` */
+        422: components['responses']['Error'];
       };
     };
     delete?: never;
@@ -661,6 +726,8 @@ export interface paths {
           'application/json': {
             fijado?: boolean;
             oculto?: boolean;
+            /** @description Solo organizador o moderador: el autor no puede volver a escribir en el chat de este evento */
+            silenciar_autor?: boolean;
           };
         };
       };
@@ -674,7 +741,16 @@ export interface paths {
             'application/json': components['schemas']['mensaje_evento'];
           };
         };
+        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
+        401: components['responses']['Error'];
+        /** @description 403 `prohibido` (solo el organizador o un moderador fijan, ocultan o silencian; el autor solo puede ocultar su propio mensaje) */
         403: components['responses']['Error'];
+        /** @description 404 `evento_no_encontrado` o `mensaje_no_encontrado` */
+        404: components['responses']['Error'];
+        /** @description 409 `no_silenciable` (con `silenciar_autor: true`, el autor es el organizador del evento o un moderador, o el mensaje no tiene autor, como las respuestas de la IA) */
+        409: components['responses']['Error'];
+        /** @description 422 `validacion` */
+        422: components['responses']['Error'];
       };
     };
     trace?: never;
@@ -688,7 +764,12 @@ export interface paths {
       };
       cookie?: never;
     };
-    /** Evento en formato iCalendar (zona Europe/Madrid) */
+    /**
+     * Evento en formato iCalendar (zona Europe/Madrid)
+     * @description Las fechas (`DTSTART`, `DTEND`, `DTSTAMP`) van en UTC con sufijo `Z`: equivalen a la hora de Europe/Madrid
+     *     del evento y cada calendario las muestra en su zona local. Excepción: los eventos con la etiqueta
+     *     `sin_hora` van de día completo (`VALUE=DATE`, con la fecha de Madrid). Sin `fecha_fin`, dura 2 horas.
+     */
     get: {
       parameters: {
         query?: never;
@@ -788,7 +869,14 @@ export interface paths {
             };
           };
         };
+        /** @description 401 `no_autenticado` (sin sesión ni X-Internal-Token), `token_invalido` o `token_caducado` */
+        401: components['responses']['Error'];
+        /** @description 403 `prohibido` (solo puedes ver tus propias recomendaciones, salvo moderador) */
+        403: components['responses']['Error'];
+        /** @description 404 `usuario_no_encontrado` */
         404: components['responses']['Error'];
+        /** @description 422 `validacion` (usuario_id no es UUID o limite fuera de 1-20) */
+        422: components['responses']['Error'];
       };
     };
     put?: never;
@@ -828,7 +916,12 @@ export interface paths {
             'application/json': components['schemas']['PaginaPendientes'];
           };
         };
+        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+        401: components['responses']['Error'];
+        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
         403: components['responses']['Error'];
+        /** @description 422 `validacion` (page o size fuera de rango) */
+        422: components['responses']['Error'];
       };
     };
     put?: never;
@@ -877,8 +970,16 @@ export interface paths {
             'application/json': components['schemas']['evento'];
           };
         };
+        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+        401: components['responses']['Error'];
+        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
         403: components['responses']['Error'];
+        /** @description 404 `evento_no_encontrado` */
         404: components['responses']['Error'];
+        /** @description 409 `estado_invalido` (la decisión no vale para el estado actual, p. ej. otro moderador ya decidió; details.estado y details.decision) */
+        409: components['responses']['Error'];
+        /** @description 422 `validacion` */
+        422: components['responses']['Error'];
       };
     };
     delete?: never;
@@ -894,7 +995,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Lista de publicadores */
+    /**
+     * Lista de publicadores
+     * @description `responsable` y `actividad` solo aparecen con sesión de moderador.
+     */
     get: {
       parameters: {
         query?: {
@@ -944,6 +1048,11 @@ export interface paths {
             'application/json': components['schemas']['publicador'];
           };
         };
+        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+        401: components['responses']['Error'];
+        /** @description 409 `publicador_ya_existe` (ya hay un publicador con ese teléfono; details.publicador_id) */
+        409: components['responses']['Error'];
+        /** @description 422 `validacion` o `municipio_no_encontrado` */
         422: components['responses']['Error'];
       };
     };
@@ -962,7 +1071,10 @@ export interface paths {
       };
       cookie?: never;
     };
-    /** Ficha del publicador */
+    /**
+     * Ficha del publicador
+     * @description `responsable` y `actividad` solo aparecen con sesión de moderador.
+     */
     get: {
       parameters: {
         query?: never;
@@ -1005,7 +1117,20 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** El moderador aprueba (o rechaza) la entidad */
+    /**
+     * El moderador aprueba (o rechaza) la entidad
+     * @description También sirve para cambiar `nivel_confianza` de un publicador que ya está `aprobado` (con `aprobar: true`):
+     *     la web lo usa para pasarlo a revisión automática (nivel 2) o devolverlo a revisión a mano (nivel 0 o 1).
+     *     En un publicador ya aprobado, si no se envía `nivel_confianza`, el nivel no cambia.
+     *
+     *     Pasar a nivel 2 exige las reglas de `apps/web/src/admin/confianza.ts`, calculadas por la API:
+     *     - responsable identificado: `responsable` con `dni` y `residencia` y `identidad_verificada = true`;
+     *     - al menos 3 planes aprobados en los últimos 60 días (`actividad.planes_60_dias >= 3`);
+     *     - ningún plan rechazado en los últimos 60 días (`actividad.rechazados_60_dias = 0`);
+     *     - algún plan aprobado en los últimos 90 días (`actividad.ultimo_plan`).
+     *     Si falta alguna, 409 `reglas_confianza_no_cumplidas` con `details.faltan` = lista de las que fallan
+     *     (`identidad_verificada`, `planes_60_dias`, `rechazados_60_dias`, `ultimo_plan`). Los niveles 0 y 1 no exigen nada.
+     */
     post: {
       parameters: {
         query?: never;
@@ -1039,7 +1164,72 @@ export interface paths {
             'application/json': components['schemas']['publicador'];
           };
         };
+        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+        401: components['responses']['Error'];
+        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
         403: components['responses']['Error'];
+        /** @description 404 `publicador_no_encontrado` */
+        404: components['responses']['Error'];
+        /** @description 409 `estado_invalido` (el publicador no está pendiente de aprobación ni aprobado, o se intenta rechazar uno ya aprobado; details.estado) o `reglas_confianza_no_cumplidas` (nivel 2 sin cumplir las reglas; details.faltan) */
+        409: components['responses']['Error'];
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/publicadores/{id}/verificar-identidad': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components['parameters']['Id'];
+      };
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * El moderador marca como comprobados el DNI y la residencia del responsable
+     * @description Pone `responsable.identidad_verificada` (por defecto `true`). Es uno de los requisitos para el nivel 2.
+     *     Desmarcarla no baja el nivel por sí sola: para eso, `POST /publicadores/{id}/aprobar` con otro nivel.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: components['parameters']['Id'];
+        };
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          'application/json': {
+            /** @default true */
+            identidad_verificada?: boolean;
+          };
+        };
+      };
+      responses: {
+        /** @description Publicador (con `responsable` actualizado) */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['publicador'];
+          };
+        };
+        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+        401: components['responses']['Error'];
+        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+        403: components['responses']['Error'];
+        /** @description 404 `publicador_no_encontrado` */
+        404: components['responses']['Error'];
+        /** @description 409 `sin_datos_responsable` (el publicador no tiene responsable con dni y residencia) */
         409: components['responses']['Error'];
       };
     };
@@ -1089,7 +1279,16 @@ export interface paths {
             'application/json': components['schemas']['publicador'];
           };
         };
+        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+        401: components['responses']['Error'];
+        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
         403: components['responses']['Error'];
+        /** @description 404 `publicador_no_encontrado` */
+        404: components['responses']['Error'];
+        /** @description 409 `estado_invalido` (solo se pausa o reactiva un publicador aprobado; details.estado) */
+        409: components['responses']['Error'];
+        /** @description 422 `validacion` */
+        422: components['responses']['Error'];
       };
     };
     delete?: never;
@@ -1138,7 +1337,15 @@ export interface paths {
             'application/json': components['schemas']['publicador'];
           };
         };
+        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+        401: components['responses']['Error'];
         403: components['responses']['Error'];
+        /** @description 404 `publicador_no_encontrado` */
+        404: components['responses']['Error'];
+        /** @description 409 `fuente_ya_existe` (details.publicador_id) o `estado_invalido` (el publicador está rechazado) */
+        409: components['responses']['Error'];
+        /** @description 422 `validacion` */
+        422: components['responses']['Error'];
       };
     };
     delete?: never;
@@ -1181,7 +1388,10 @@ export interface paths {
             'application/json': components['schemas']['Token'];
           };
         };
+        /** @description 401 `token_google_invalido` o `email_no_verificado` */
         401: components['responses']['Error'];
+        /** @description 503 `google_no_configurado` (falta GOOGLE_CLIENT_ID) o `google_no_disponible` */
+        503: components['responses']['Error'];
       };
     };
     delete?: never;
@@ -1228,6 +1438,7 @@ export interface paths {
             };
           };
         };
+        /** @description 429 `demasiados_codigos` (details.maximo_por_hora) */
         429: components['responses']['Error'];
       };
     };
@@ -1272,7 +1483,61 @@ export interface paths {
             'application/json': components['schemas']['Token'];
           };
         };
+        /** @description 401 `codigo_invalido` (incorrecto o caducado) */
         401: components['responses']['Error'];
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/auth/demo': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Solo en modo demo (DEMO_MODE=true): sesión como un usuario o rol sin login
+     * @description Existe solo si la API arranca con `DEMO_MODE=true` (por defecto `false`); si no, responde 404.
+     *     Sirve para que el panel y la app entren en la demo como la moderadora o como una vecina sin cuentas
+     *     de Google. Con `usuario_id` da la sesión de ese usuario; con `rol`, la del usuario más antiguo con ese rol.
+     *     Nunca se activa fuera de la presentación.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            usuario_id?: string;
+            /** @enum {unknown} */
+            rol?: 'vecino' | 'publicador' | 'moderador';
+          };
+        };
+      };
+      responses: {
+        /** @description Sesión */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Token'];
+          };
+        };
+        404: components['responses']['Error'];
+        422: components['responses']['Error'];
       };
     };
     delete?: never;
@@ -1313,7 +1578,12 @@ export interface paths {
             'application/json': components['schemas']['usuario'];
           };
         };
+        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+        401: components['responses']['Error'];
+        /** @description 409 `usuario_ya_existe` (details.usuario_id) */
         409: components['responses']['Error'];
+        /** @description 422 `validacion` o `municipio_no_encontrado` */
+        422: components['responses']['Error'];
       };
     };
     delete?: never;
@@ -1352,7 +1622,12 @@ export interface paths {
             'application/json': components['schemas']['usuario'];
           };
         };
+        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+        401: components['responses']['Error'];
+        /** @description 404 `usuario_no_encontrado` */
         404: components['responses']['Error'];
+        /** @description 422 `telefono_invalido` (no está en formato E.164) */
+        422: components['responses']['Error'];
       };
     };
     put?: never;
@@ -1525,7 +1800,69 @@ export interface paths {
             'application/json': components['schemas']['usuario'];
           };
         };
+        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` */
         401: components['responses']['Error'];
+        /** @description 409 `telefono_en_uso` (ese teléfono ya es de otro usuario) */
+        409: components['responses']['Error'];
+        /** @description 422 `validacion` o `municipio_no_encontrado` */
+        422: components['responses']['Error'];
+      };
+    };
+    trace?: never;
+  };
+  '/api/v1/usuarios/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components['parameters']['Id'];
+      };
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Editar las preferencias de un usuario desde el bot (gustos, pueblo, formato de aviso…)
+     * @description Igual que `PATCH /usuarios/me`, pero para servicios internos: el bot guarda lo que la vecina le dice
+     *     por chat («me gustan las rutas», «avísame con audios»). Solo cambia los campos que se envían.
+     *     `/usuarios/me` sigue igual (su ruta es fija y no choca con `{id}`, que es un UUID).
+     */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: components['parameters']['Id'];
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['UsuarioEditar'];
+        };
+      };
+      responses: {
+        /** @description Usuario */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['usuario'];
+          };
+        };
+        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+        401: components['responses']['Error'];
+        /** @description 404 `usuario_no_encontrado` */
+        404: components['responses']['Error'];
+        /** @description 409 `telefono_en_uso` (ese teléfono ya es de otro usuario) */
+        409: components['responses']['Error'];
+        /** @description 422 `validacion` o `municipio_no_encontrado` */
+        422: components['responses']['Error'];
       };
     };
     trace?: never;
@@ -1560,6 +1897,10 @@ export interface paths {
             'application/json': components['schemas']['Estadisticas'];
           };
         };
+        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión de moderador ni X-Internal-Token) */
+        401: components['responses']['Error'];
+        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+        403: components['responses']['Error'];
       };
     };
     put?: never;
@@ -1600,6 +1941,108 @@ export interface paths {
           };
           content?: never;
         };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/bot/metricas': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cifras del bot para el panel de robustez (tokens por proveedor, últimas llamadas, cola, caída simulada)
+     * @description La API llama a `bot GET /metrics` con su `X-Internal-Token` y devuelve el JSON tal cual, para no poner
+     *     el token interno en el navegador.
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Métricas del bot */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['MetricasBot'];
+          };
+        };
+        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+        401: components['responses']['Error'];
+        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+        403: components['responses']['Error'];
+        /** @description 502 `bot_no_disponible` (el bot respondió con error; details.status) */
+        502: components['responses']['Error'];
+        /** @description 503 `bot_no_disponible` (el bot no responde) */
+        503: components['responses']['Error'];
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/bot/simular-caida': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Activa o desactiva la caída simulada de la IA en el bot (demo de robustez)
+     * @description La API reenvía el cuerpo a `bot POST /admin/simular-caida` con su `X-Internal-Token` y devuelve lo que
+     *     responde el bot. Con la caída activa, el bot sigue funcionando solo con reglas.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['CaidaSimulada'];
+        };
+      };
+      responses: {
+        /** @description Estado de la caída simulada tras el cambio */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['CaidaSimulada'];
+          };
+        };
+        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+        401: components['responses']['Error'];
+        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+        403: components['responses']['Error'];
+        /** @description 422 `validacion` */
+        422: components['responses']['Error'];
+        /** @description 502 `bot_no_disponible` (el bot respondió con error; details.status) */
+        502: components['responses']['Error'];
+        /** @description 503 `bot_no_disponible` (el bot no responde) */
+        503: components['responses']['Error'];
       };
     };
     delete?: never;
@@ -2062,6 +2505,9 @@ export interface components {
          * @example evento_finalizado
          * @example sin_permiso
          * @example token_interno_invalido
+         * @example no_encontrado
+         * @example bot_no_disponible
+         * @example reglas_confianza_no_cumplidas
          */
         code: string;
         message: string;
@@ -2140,7 +2586,11 @@ export interface components {
       precio_eur?: number | null;
       es_gratuito?: boolean;
       plazas_totales?: number | null;
+      /** @description URL http(s) o data URL de imagen (data:image/webp;base64,…) de hasta ~1,5 MB; si no, 422 imagen_invalida */
       imagen_url?: string | null;
+      /** @description Frase corta y pública para la portada del carrusel. Si llega vacía, la API puede pedírsela al bot */
+      frase_portada?: string | null;
+      datos_ayuntamiento?: components['schemas']['DatosAyuntamiento'];
       /** Format: uuid */
       publicador_id?: string | null;
     };
@@ -2160,7 +2610,11 @@ export interface components {
       precio_eur?: number | null;
       es_gratuito?: boolean;
       plazas_totales?: number | null;
+      /** @description URL http(s) o data URL de imagen (data:image/webp;base64,…) de hasta ~1,5 MB; si no, 422 imagen_invalida */
       imagen_url?: string | null;
+      /** @description Frase corta y pública para la portada del carrusel. Si llega vacía, la API puede pedírsela al bot */
+      frase_portada?: string | null;
+      datos_ayuntamiento?: components['schemas']['DatosAyuntamiento'];
       /** @enum {unknown} */
       estado?: 'cancelado' | 'archivado';
     };
@@ -2199,7 +2653,7 @@ export interface components {
       posible_duplicado_de?: string | null;
     };
     ConfirmarEvento: {
-      /** @description Valores que faltaban o que el publicador corrige (mismos nombres que EventoCrear) */
+      /** @description Valores que faltaban o que el publicador corrige (mismos nombres que EventoCrear, incluida `frase_portada`) */
       campos?: {
         [key: string]: unknown;
       };
@@ -2244,6 +2698,7 @@ export interface components {
     Decision: {
       /** @enum {unknown} */
       decision: 'aprobar' | 'rechazar' | 'retirar';
+      /** @description Motivo que se guarda en el evento y se manda al publicador. En `retirar` es opcional (por defecto «Retirado por moderación»). */
       motivo?: string | null;
     };
     PublicadorCrear: {
@@ -2255,6 +2710,18 @@ export interface components {
       telefono: components['schemas']['Telefono'];
       /** Format: email */
       email?: string | null;
+      /**
+       * @description PRIVADO (dato personal). Responsable de la entidad, lo pide el bot en el alta. Se guarda lo mínimo y solo
+       *     lo ven los moderadores. `identidad_verificada` no se envía aquí (si llega, se ignora): la marca el
+       *     moderador con `POST /publicadores/{id}/verificar-identidad`. Sin estos datos nunca podrá llegar al nivel 2.
+       */
+      responsable?: {
+        nombre?: string;
+        /** @description DNI o NIE */
+        dni?: string;
+        /** @description Pueblo o dirección donde vive */
+        residencia?: string;
+      } | null;
     };
     UsuarioCrear: {
       telefono: components['schemas']['Telefono'];
@@ -2289,6 +2756,51 @@ export interface components {
       token_type: 'bearer';
       usuario: components['schemas']['usuario'];
     };
+    /**
+     * @description PRIVADO. Datos de la propuesta para el ayuntamiento (evento.datos_ayuntamiento): solo los ven el organizador
+     *     del evento y los moderadores. Mismos nombres que DatosAyuntamiento de apps/web/src/api/types.ts
+     *     (si la web manda además `frase_portada` aquí, la API la ignora; va en EventoCrear.frase_portada).
+     */
+    DatosAyuntamiento: {
+      responsable?: string;
+      telefono?: string;
+      /** @enum {unknown} */
+      entidad?: 'particular' | 'asociacion' | 'comercio' | 'otra';
+      entidad_nombre?: string | null;
+      /** @enum {unknown} */
+      publico?: 'todos' | 'infantil' | 'adultos' | 'mayores';
+      necesidades?: (
+        'espacio' | 'calle' | 'material' | 'luz' | 'musica' | 'comida' | 'seguridad' | 'limpieza' | 'difusion'
+      )[];
+      /** @enum {unknown} */
+      seguro_rc?: 'si' | 'no' | 'nose';
+      observaciones?: string | null;
+    } | null;
+    CaidaSimulada: {
+      /** @description true = todas las IAs «fallan» y el bot sigue solo con reglas */
+      activa: boolean;
+    };
+    /** @description Lo que devuelve `bot GET /metrics` (services/bot/app/main.py). Schema abierto. */
+    MetricasBot: {
+      /** @description Acumulado por proveedor de IA */
+      totales?: {
+        [key: string]: {
+          llamadas?: number;
+          /** @description Tokens de entrada */
+          entrada?: number;
+          /** @description Tokens de salida */
+          salida?: number;
+          fallos?: number;
+        };
+      };
+      /** @description Últimas llamadas a la IA (hasta 20) */
+      ultimas?: components['schemas']['MetricaTokens'][];
+      /** @description Peticiones a la API pendientes en la cola del bot */
+      eventos_en_cola?: number;
+      caida_simulada?: boolean;
+    } & {
+      [key: string]: unknown;
+    };
     /** @description Lo que ya envía services/bot/app/metrics.py */
     MetricaTokens: {
       proveedor: string;
@@ -2309,12 +2821,15 @@ export interface components {
         hasta?: string | null;
       };
       actividades?: number;
+      /** @description Porcentaje en escala 0-100 */
       pct_importadas_auto?: number;
       inscripciones?: number;
       asistencias?: number;
+      /** @description Ocupación media por categoría, fracción en escala 0-1 (no porcentaje) */
       ocupacion_por_categoria?: {
         [key: string]: number;
       };
+      /** @description Porcentaje en escala 0-100 */
       pct_otro_pueblo?: number;
       solapamientos?: {
         /** Format: uuid */
@@ -2404,7 +2919,38 @@ export interface components {
       /** Format: uuid */
       publicador_id?: string | null;
       publicador_nombre?: string | null;
+      /** @description Foto o cartel del plan: URL http(s) o data URL de imagen (p. ej. data:image/webp;base64,…) de hasta ~1,5 MB. Si se pasa o no es una imagen, 422 imagen_invalida. */
       imagen_url?: string | null;
+      /** @description Frase corta y pública bajo la foto del carrusel de Inicio. La escribe quien publica; si llega vacía, la API puede pedírsela al bot. */
+      frase_portada?: string | null;
+      /** @description PRIVADO. Datos de la propuesta que solo ven el organizador del evento y los moderadores. La API nunca los devuelve en rutas públicas ni sin sesión, tampoco con X-Internal-Token (no llegan al bot ni a la IA): en esos casos el campo no aparece. Mismos nombres que DatosAyuntamiento de apps/web/src/api/types.ts. */
+      datos_ayuntamiento?: {
+        /** @description Persona responsable del plan */
+        responsable?: string;
+        /** @description Teléfono de contacto del responsable (texto libre) */
+        telefono?: string;
+        /**
+         * @description Quién organiza
+         * @enum {unknown}
+         */
+        entidad?: 'particular' | 'asociacion' | 'comercio' | 'otra';
+        entidad_nombre?: string | null;
+        /**
+         * @description Público al que va dirigido
+         * @enum {unknown}
+         */
+        publico?: 'todos' | 'infantil' | 'adultos' | 'mayores';
+        /** @description Lo que se pide al ayuntamiento */
+        necesidades?: (
+          'espacio' | 'calle' | 'material' | 'luz' | 'musica' | 'comida' | 'seguridad' | 'limpieza' | 'difusion'
+        )[];
+        /**
+         * @description ¿Tiene seguro de responsabilidad civil?
+         * @enum {unknown}
+         */
+        seguro_rc?: 'si' | 'no' | 'nose';
+        observaciones?: string | null;
+      } | null;
       origen: {
         /** @enum {unknown} */
         canal: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual' | 'telegram';
@@ -2534,6 +3080,28 @@ export interface components {
        * @description Usuario responsable
        */
       usuario_id?: string | null;
+      /** @description PRIVADO (dato personal). Responsable de la entidad. Solo se devuelve con sesión de moderador (bearer): nunca en rutas públicas, a otros usuarios ni con X-Internal-Token (en esos casos el campo no aparece). Se envía al dar de alta (PublicadorCrear.responsable). Mismos nombres que DatosResponsable de apps/web/src/api/types.ts. */
+      responsable?: {
+        nombre: string;
+        /** @description DNI o NIE. La web lo enseña oculto salvo los 4 últimos caracteres */
+        dni: string;
+        /** @description Pueblo o dirección donde vive */
+        residencia: string;
+        /** @description Un moderador ha comprobado el DNI y la residencia (POST /publicadores/{id}/verificar-identidad) */
+        identidad_verificada: boolean;
+      } | null;
+      /** @description Actividad reciente. La calcula la API (no se envía). Solo con sesión de moderador, igual que responsable. Mismos nombres que ActividadPublicador de apps/web/src/api/types.ts. */
+      readonly actividad?: {
+        /** @description Planes aprobados (publicados) en los últimos 60 días */
+        planes_60_dias: number;
+        /** @description Planes rechazados en los últimos 60 días */
+        rechazados_60_dias: number;
+        /**
+         * Format: date-time
+         * @description Fecha del último plan aprobado; null si no hay ninguno
+         */
+        ultimo_plan: string | null;
+      };
       /** Format: date-time */
       creado_en?: string;
     };
@@ -2605,7 +3173,10 @@ export interface components {
     };
   };
   responses: {
-    /** @description Error con el formato común */
+    /**
+     * @description Error con el formato común. Una ruta que no existe responde 404 con code `no_encontrado` (manejador genérico),
+     *     distinto de los 404 de recurso inexistente (`evento_no_encontrado`, `publicador_no_encontrado`…).
+     */
     Error: {
       headers: {
         [name: string]: unknown;

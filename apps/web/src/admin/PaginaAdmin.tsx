@@ -9,8 +9,10 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
+import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
+import { NOMBRE_CANAL } from '../canal';
 import SelectorLetra from '../components/SelectorLetra';
 import { useSesion } from '../cuenta/sesion';
 
@@ -55,6 +57,11 @@ const PaginaAdmin: React.FC<{
 const Puerta: React.FC<{ rolActual: RolAdmin | null }> = ({ rolActual }) => {
   const { entrarDemo } = useAcceso();
   const { abrirCuenta } = useSesion();
+  const [entrando, setEntrando] = useState(false);
+  const entrar = (r: RolAdmin) => {
+    setEntrando(true);
+    void entrarDemo(r).finally(() => setEntrando(false));
+  };
   return (
     <IonCard className="puerta-admin">
       <IonCardContent>
@@ -65,17 +72,17 @@ const Puerta: React.FC<{ rolActual: RolAdmin | null }> = ({ rolActual }) => {
           <>
             <h2 className="titulo-caja">Zona del ayuntamiento y las asociaciones</h2>
             <p>
-              Aquí se revisan los planes que llegan por WhatsApp, Telegram o la web, se aprueban las asociaciones y se
-              ven las cifras de la agenda.
+              Aquí se revisan los planes que llegan por {NOMBRE_CANAL} o la web, se aprueban las asociaciones y se ven
+              las cifras de la agenda.
             </p>
             <IonButton expand="block" size="large" onClick={abrirCuenta}>
               Entrar con mi móvil
             </IonButton>
             <p className="nota-demo">Para la demo, entra sin cuenta con uno de estos papeles:</p>
-            <IonButton expand="block" fill="outline" onClick={() => entrarDemo('moderador')}>
+            <IonButton expand="block" fill="outline" disabled={entrando} onClick={() => entrar('moderador')}>
               🏛️ Moderación del ayuntamiento
             </IonButton>
-            <IonButton expand="block" fill="outline" onClick={() => entrarDemo('publicador')}>
+            <IonButton expand="block" fill="outline" disabled={entrando} onClick={() => entrar('publicador')}>
               🤝 Asociación (Amigos de Velefique)
             </IonButton>
             <IonButton expand="block" fill="clear" routerLink="/agenda">
