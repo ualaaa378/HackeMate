@@ -232,6 +232,30 @@ def test_rechazar_no_sale_en_la_agenda(api, db):
     assert "Es una actividad privada" in _avisos(db, TEL_NIVEL0)[-1].texto
 
 
+def test_restaurar_un_rechazado_lo_devuelve_a_la_bandeja(api, db):
+    _publicador(db, TEL_NIVEL0, nivel=0)
+    evento = _evento_confirmado(api, TEL_NIVEL0)
+    assert _decidir(api, evento["id"], "rechazar", "Por error").status_code == 200
+    avisos_antes = len(_avisos(db, TEL_NIVEL0))
+
+    r = _decidir(api, evento["id"], "restaurar")
+    assert r.status_code == 200, r.text
+    _valida(EVENTO, r.json())
+    assert r.json()["estado"] == "en_revision"
+    assert r.json()["moderacion"]["motivo"] == "Restaurado por moderación: pendiente de revisar de nuevo"
+    assert len(_avisos(db, TEL_NIVEL0)) == avisos_antes
+    assert _decidir(api, evento["id"], "aprobar").status_code == 200
+    assert evento["id"] in _publicados(api)
+
+
+def test_restaurar_solo_desde_rechazado(api, db):
+    _publicador(db, TEL_NIVEL0, nivel=0)
+    evento = _evento_confirmado(api, TEL_NIVEL0)
+    _error(_decidir(api, evento["id"], "restaurar"), 409, "estado_invalido")
+    assert _decidir(api, evento["id"], "aprobar").status_code == 200
+    _error(_decidir(api, evento["id"], "restaurar"), 409, "estado_invalido")
+
+
 def test_retirar_un_publicado_lo_quita_de_la_agenda(api, db):
     _publicador(db, TEL_NIVEL0, nivel=0)
     evento = _evento_confirmado(api, TEL_NIVEL0)

@@ -120,6 +120,14 @@ export function decidir(eventoId: string, decision: Decision): Promise<Evento> {
       const i = pendientesMock.findIndex((p) => p.evento?.id === eventoId);
       const e = i >= 0 ? pendientesMock[i].evento! : todosLosEventos().find((x) => x.id === eventoId);
       if (!e) return Promise.reject(new Error('evento_no_encontrado'));
+      if (decision.decision === 'restaurar') {
+        e.estado = 'en_revision';
+        e.moderacion = { ...e.moderacion, motivo: 'Restaurado por moderación: pendiente de revisar de nuevo' };
+        const j = eventosInternos.indexOf(e);
+        if (j >= 0) eventosInternos.splice(j, 1);
+        pendientesMock.push({ tipo: 'evento', motivo: 'Restaurado tras un rechazo', score_spam: null, evento: e });
+        return esperar(e);
+      }
       if (i >= 0) pendientesMock.splice(i, 1);
       e.moderacion = { ...e.moderacion, motivo: decision.motivo ?? null, revisado_por: 'moderador' };
       contarEnActividad(e.publicador_id, decision.decision === 'aprobar');

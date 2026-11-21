@@ -30,6 +30,19 @@ describe('interfaz del ayuntamiento en modo demo', () => {
     expect(rechazados.items.map((e) => e.id)).toContain(apuestas.evento!.id);
   });
 
+  it('restaurar un rechazado lo devuelve a la bandeja', async () => {
+    const api = await cargar();
+    const apuestas = (await api.getPendientes()).items.find((p) => p.evento?.titulo.includes('apuestas'))!.evento!;
+    await api.decidir(apuestas.id, { decision: 'rechazar' });
+
+    const restaurado = await api.decidir(apuestas.id, { decision: 'restaurar' });
+
+    expect(restaurado.estado).toBe('en_revision');
+    expect((await api.getPendientes()).items.some((p) => p.evento?.id === apuestas.id)).toBe(true);
+    const rechazados = await api.getEventosAdmin({ estado: 'rechazado' });
+    expect(rechazados.items.map((e) => e.id)).not.toContain(apuestas.id);
+  });
+
   it('aprobar un evento lo publica en la agenda y en su ficha', async () => {
     const api = await cargar();
     const { items } = await api.getPendientes();

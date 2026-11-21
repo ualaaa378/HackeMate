@@ -59,6 +59,13 @@ Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **vis
 
 **Primera versión completa para probar (sáb 21/11).** La API (flujo A) tiene todos los endpoints del contrato y el guion de la demo funciona de punta a punta con el bot en local. Cómo probarla y qué revisar: [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md).
 
+**Progreso sáb 21/11 11:45 (punto de partida común para corregir y seguir):**
+- ✅ **Prueba completa en Docker con PostgreSQL** en la máquina de Adán (`down -v` + `up --build`, `CANAL=console`, sin IA): `smoke_test.ps1` en verde, `scripts/simular_chat.py` de punta a punta, `/admin` contra la API real (aprobar, rechazar y ver lo aprobado en la agenda) y la web (ficha, apuntarse, Recuerdos, Proponer un plan con el código de alta que sale en `docker compose … logs bot`). Detalle en la PR #48.
+- ✅ **Arreglado en la web:** tras reiniciar la base, la sesión vieja ya no rompe la ficha (la web la cierra sola y repite sin token).
+- ✅ **Nuevo: restaurar un plan rechazado.** En `/admin` → Planes → Rechazados, el moderador pulsa «Restaurar» y el plan vuelve a la bandeja para decidir otra vez. Contrato: `Decision.decision` acepta `restaurar` (solo desde `rechazado`, pasa a `en_revision` y no avisa al publicador).
+- ⏳ **Falta:** Telegram real con IA y audios (pasos 1 con audio, 6 y 7) en la máquina de la demo. De los fallos de la prueba, el de duplicados ya está resuelto (A, ver «Ya resuelto») y el de «este finde» va en la rama `Flujo-B`.
+- 🔑 **Un solo `.env` en la raíz para Docker:** las claves del bot que solo estaban en `services/bot/.env` no llegaban a Docker. Adán pasa por privado el `.env` unificado (con `DEMO_MODE=true`); el `INTERNAL_TOKEN` de ese archivo es el de todo el equipo.
+
 👉 **Para hoy:** propuesta de cómo trabajamos, revisión conjunta de la v1 a las 10:00 y decisiones pendientes en [`docs/SINCRONIZACION_SABADO.md`](docs/SINCRONIZACION_SABADO.md). Para revisarla entre los tres.
 
 ## 🔗 Pendiente entre flujos
@@ -74,7 +81,7 @@ Acordado por Adán el sábado a las 11:00, después de revisar todo `develop` (t
 #### Dónde estamos (sáb 11:00)
 
 - **El código va por delante del plan.** La API tiene todas las rutas del contrato (568 tests), el bot funciona con Telegram (108 tests) y la web tiene H0, H1 y H2 contra la API real.
-- **Falta probarlo todo junto.** Todavía no se ha hecho ningún `up --build` con Telegram, la tabla del §5 de `SINCRONIZACION_SABADO.md` está en blanco y no hay ninguna etiqueta (`v0.1`, `v0.2`).
+- **Docker probado (sáb 11:30, ver «Estado»).** Falta el `up --build` con Telegram, la tabla del §5 de `SINCRONIZACION_SABADO.md` está en blanco y no hay ninguna etiqueta (`v0.1`, `v0.2`).
 - **Web, H3 a medias:** ya están la inscripción, el `.ics` y el chat. Faltan «Para ti» (recomendaciones), el login y el service worker de la PWA. H4: el panel, el coste y la letra grande van a medias, y falta el APK.
 
 #### Riesgos que ordenan el reparto (de más a menos grave)
@@ -103,7 +110,7 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 
 | Hito | Hasta | Tarea |
 |---|---|---|
-| H2 · CP2 | sáb 13:00 | - [ ] **C1.** `docker compose --env-file .env -f infra/docker-compose.yml down -v`, `up --build`, `scripts/smoke_test.sh` en verde y pasos 1–3 con Telegram (`DEMO_MODE=true`). Rellenar la columna «Docker + Telegram» de `SINCRONIZACION_SABADO.md` §5. Si sale bien, etiqueta `v0.2`. |
+| H2 · CP2 | sáb 13:00 | - [ ] **C1.** *(sáb 11:30: Docker, smoke test, guion por chat y `/admin` en verde con `CANAL=console`; falta Telegram.)* `docker compose --env-file .env -f infra/docker-compose.yml down -v`, `up --build`, `scripts/smoke_test.sh` en verde y pasos 1–3 con Telegram (`DEMO_MODE=true`). Rellenar la columna «Docker + Telegram» de `SINCRONIZACION_SABADO.md` §5. Si sale bien, etiqueta `v0.2`. |
 | H3 · CP3 | sáb 19:00 | - [ ] **C2.** «Para ti» en la agenda con `GET /recomendaciones` y el motivo legible (Carmen ve la II Ruta Solidaria la primera). |
 | H3 · CP3 | sáb 19:00 | - [ ] **C3.** **URL pública de la web:** que el `nginx.conf` de la web pase `/api/` a `api:8000`, que la web use una URL relativa (`VITE_API_URL` vacío) y un segundo túnel a `web:8080`. Es infra de A: lo hace Adán porque Benas no puede ejecutar Docker, en una PR que mira Benas. |
 | H3 · CP3 | sáb 19:00 | - [ ] **C4.** PWA instalable: service worker e icono (el `manifest.json` ya existe). |
@@ -199,7 +206,8 @@ Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PAR
 ### Ya resuelto
 
 - **El compose no leía las variables `${…}` del `.env` de la raíz** (encontrado por Francisco en su ensayo con Docker): todos los comandos llevan ahora `--env-file .env` (cabecera del compose, README, `CLAUDE.md`, `PLAN.md`, `PLAN_FLUJO_A.md`, `PRUEBAS_V1.md` y `scripts/demo_reset.sh`). Desde la raíz del repo: `docker compose --env-file .env -f infra/docker-compose.yml up --build`. Sin él, `FREELLM_URL_DOCKER`, `VITE_*`, `WEB_URL` y `POSTGRES_*` se quedaban con su valor por defecto y el bot caía a reglas.
-
+- **Restaurar un plan rechazado** (pedido por Adán, 21/11): `POST /moderacion/{id}/decision` con `decision: restaurar` (contrato, API con tests y botón en `/admin` → Planes → Rechazados).
+- **Sesión caducada tras reiniciar la base** (C): la web cierra la sesión ante 401 `token_invalido`/`token_caducado` y repite la petición sin token.
 - **Duplicados en la bandeja (prueba en Docker de Adán, sáb 11:15):** ya lo resuelve la #43. Antes, un plan que iba a revisión por otro motivo no se marcaba como duplicado; ahora el segundo envío del mismo post llega a la bandeja con el motivo «Posible duplicado de «Taller de esparto»». Comprobado a mano con `simular_chat.py` dos veces (bot y API de `develop`) y con un test nuevo (`test_mismo_post_dos_veces_del_mismo_publicador_avisa_duplicado`). Si en Docker sigue saliendo, es una imagen anterior: `docker compose --env-file .env -f infra/docker-compose.yml up --build`.
 
 - **Solo dos modos de publicación (a mano y automática), sin semiautomático** (decisión del equipo, 21/11): la API ya no usa el nivel 1 (si llega, lo guarda como 0) ni sube de nivel sola; la migración 0008 pasa a «a mano» los que estaban en 1, y en el seed las asociaciones son «a mano» y los ayuntamientos y el bar, «automática». Un posible duplicado de una asociación «a mano» llega a la bandeja con el motivo «Posible duplicado de…». La web ya manda `nivel_confianza: 0` para «a mano» (`cambiarRevision` en `apps/web/src/api/admin.ts`).

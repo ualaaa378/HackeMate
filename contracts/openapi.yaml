@@ -492,7 +492,7 @@ paths:
       - { name: id, in: path, required: true, description: ID del evento, schema: { type: string, format: uuid } }
     post:
       tags: [moderacion]
-      summary: Aprobar, rechazar o retirar un evento
+      summary: Aprobar, rechazar, retirar o restaurar un evento
       security: [{ bearer: [] }, { interno: [] }]
       x-implementado: true
       requestBody:
@@ -1525,7 +1525,9 @@ components:
       type: object
       required: [decision]
       properties:
-        decision: { enum: [aprobar, rechazar, retirar] }
+        decision:
+          enum: [aprobar, rechazar, retirar, restaurar]
+          description: "`aprobar` y `rechazar` desde `en_revision`; `retirar` desde `publicado` (pasa a `archivado`); `restaurar` desde `rechazado` (vuelve a `en_revision`, a la bandeja, sin avisar al publicador)."
         motivo:
           type: [string, "null"]
           description: "Motivo que se guarda en el evento y se manda al publicador. En `retirar` es opcional (por defecto «Retirado por moderación»)."
