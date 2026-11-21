@@ -19,6 +19,7 @@ from app.notificaciones import enviar_en_segundo_plano, notificar_moderadores, n
 from app.paginacion import Pagina, pagina, respuesta
 from app.rutas.eventos import quien_opcional
 from app.rutas.publico import es_uuid
+from app.rutas.usuarios import comprobar_edad
 from app.seguridad import REVISOR_INTERNO, Quien, es_moderador_con_sesion, exigir_moderador, exigir_token_interno
 from app.serializar import publicador_a_dict, publicador_privado_a_dict, publicadores_a_dict
 from app.telefonos import validar_telefono
@@ -40,6 +41,7 @@ class ResponsableCrear(BaseModel):
     nombre: Annotated[str, Field(min_length=1, max_length=120)]
     dni: Annotated[str, Field(min_length=1, max_length=20)]
     residencia: Annotated[str, Field(min_length=1, max_length=200)]
+    edad: int | None = None
 
 
 class PublicadorCrear(BaseModel):
@@ -124,6 +126,8 @@ def crear_publicador(datos: PublicadorCrear, background_tasks: BackgroundTasks, 
             "dni": dni,
             "residencia": datos.responsable.residencia.strip(),
         }
+        if datos.responsable.edad is not None:  # P4a: solo si la da
+            responsable["edad"] = comprobar_edad(datos.responsable.edad, "responsable.edad")
     # Si quien lo pide ya es usuario (el bot lo da de alta al primer mensaje), queda como responsable.
     usuario = db.scalar(select(Usuario).where(Usuario.telefono == datos.telefono))
     publicador = Publicador(

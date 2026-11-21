@@ -5,22 +5,22 @@ lo decide aquí una persona. El `{id}` de la decisión es siempre un evento (as�
 los publicadores se aprueban en `POST /publicadores/{id}/aprobar`.
 """
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, StringConstraints
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
 from app.errores import ErrorApi
-from app.modelos import Evento, Publicador
+from app.modelos import Evento, Publicador, Usuario, ahora
 from app.moderacion import registrar_aprobacion_en_bd
 from app.avisos_planes import avisar_interesados
-from app.notificaciones import enviar_en_segundo_plano, notificar_publicador
+from app.notificaciones import enviar_en_segundo_plano, notificar, notificar_moderadores, notificar_publicador
 from app.paginacion import Pagina, pagina, paginar_lista
-from app.rutas.eventos import _buscar, _ficha
-from app.seguridad import REVISOR_INTERNO, exigir_moderador
+from app.rutas.eventos import Quien, _buscar, _ficha, quien_llama
+from app.seguridad import REVISOR_INTERNO, es_organizador, exigir_moderador
 from app.serializar import eventos_a_dict, publicadores_a_dict
 
 router = APIRouter(prefix="/api/v1", tags=["moderacion"])
@@ -143,7 +143,66 @@ def decidir(
             db, publicador, "moderacion", _texto_aviso(evento, datos.decision, motivo),
             evento_id=evento.id, enviar=False,
         )
+    elif evento.propuesto_por_id and datos.decision != "restaurar":
+        # Vecino sin asociación (P5a): también se entera, con el evento_id para que el bot ponga [Apelar] (P3a).
+        quien_propuso = db.get(Usuario, evento.propuesto_por_id)
+        if quien_propuso is not None:
+            aviso = notificar(db, tipo="moderacion", texto=_texto_aviso(evento, datos.decision, motivo),
+                              usuario=quien_propuso, evento_id=evento.id, enviar=False)
     interesados = avisar_interesados(db, evento) if destino == "publicado" else []  # A10
     db.commit()
     enviar_en_segundo_plano(background_tasks, db, [aviso, *interesados])
     return _ficha(db, _buscar(db, evento.id), privados=revisor != REVISOR_INTERNO)
+
+
+# --- P3a: apelaciones -------------------------------------------------------------------------------
+
+MotivoApelacion = Annotated[str, StringConstraints(strip_whitespace=True, min_length=10, max_length=500)]
+
+
+class Apelacion(BaseModel):
+    """Cuerpo de POST /eventos/{id}/apelacion."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    motivo: MotivoApelacion
+    usuario_id: str | None = None  # obligatorio con X-Internal-Token (el bot apela en nombre de alguien)
+
+
+@router.post("/eventos/{id}/apelacion")
+def apelar(id: str, datos: Apelacion, background_tasks: BackgroundTasks, quien: Quien = Depends(quien_llama),
+           db: Session = Depends(get_db)):
+    """Quien propuso un plan rechazado pide que se revise otra vez, una sola vez: vuelve a la bandeja con el motivo
+    «Apelación: …». El moderador decide con los botones de siempre; un segundo rechazo es definitivo."""
+    evento = _buscar(db, id)
+    usuario = quien.usuario
+    if quien.interno and usuario is None:
+        if not datos.usuario_id:
+            raise ErrorApi(422, "validacion", "Falta usuario_id: quién apela", {"campos": ["usuario_id"]})
+        usuario = db.get(Usuario, datos.usuario_id)
+    if not es_organizador(usuario, evento):
+        raise ErrorApi(403, "prohibido", "Solo quien propuso el plan puede apelar")
+    if evento.apelacion_en is not None:
+        raise ErrorApi(409, "apelacion_usada", "Este plan ya se apeló una vez: la segunda decisión es definitiva",
+                       {"apelacion_en": evento.apelacion_en.isoformat()})
+    if evento.estado != "rechazado":
+        raise ErrorApi(409, "estado_invalido", "Solo se puede apelar un plan rechazado", {"estado": evento.estado})
+
+    motivo = f"Apelación: {datos.motivo}"
+    # Atómico: dos apelaciones a la vez no pasan las dos.
+    cambiadas = db.execute(
+        update(Evento)
+        .where(Evento.id == evento.id, Evento.estado == "rechazado", Evento.apelacion_en.is_(None))
+        .values(estado="en_revision", apelacion_motivo=datos.motivo, apelacion_en=ahora(),
+                motivo_moderacion=motivo, revisado_por=None)
+        .execution_options(synchronize_session=False)
+    ).rowcount
+    if cambiadas == 0:
+        db.rollback()
+        raise ErrorApi(409, "apelacion_usada", "Este plan ya se ha apelado")
+    db.refresh(evento)
+    avisos = notificar_moderadores(db, "moderacion", f"Apelación de «{evento.titulo}»: {datos.motivo}",
+                                   evento_id=evento.id, enviar=False)
+    db.commit()
+    enviar_en_segundo_plano(background_tasks, db, avisos)
+    return _ficha(db, _buscar(db, evento.id), privados=True)

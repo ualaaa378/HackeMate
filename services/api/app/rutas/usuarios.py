@@ -37,6 +37,7 @@ class UsuarioCrear(BaseModel):
     telefono: str
     nombre: Annotated[str, Field(max_length=120)] | None = None
     municipio: str | None = None
+    edad: int | None = None
 
     _telefono = field_validator("telefono")(validar_telefono)
 
@@ -58,8 +59,26 @@ def _municipio(db: Session, nombre: str | None) -> Municipio | None:
     return municipio
 
 
-def _nuevo_usuario(telefono: str, nombre: str | None, municipio: Municipio | None) -> Usuario:
+EDAD_MINIMA = 14  # LOPDGDD art. 7: edad mínima para dar el consentimiento de datos en España
+EDAD_MAXIMA = 120
+
+
+def comprobar_edad(edad: int | None, campo: str = "edad") -> int | None:
+    """P4a. None vale (es opcional). Menos de 14: 422 `edad_minima`; más de 120: 422 `validacion`."""
+    if edad is None:
+        return None
+    if edad < EDAD_MINIMA:
+        raise ErrorApi(422, "edad_minima", f"Hace falta tener al menos {EDAD_MINIMA} años para registrarse",
+                       {"campo": campo, "minimo": EDAD_MINIMA})
+    if edad > EDAD_MAXIMA:
+        raise ErrorApi(422, "validacion", "La edad no es válida", {"campo": campo, "maximo": EDAD_MAXIMA})
+    return edad
+
+
+def _nuevo_usuario(telefono: str, nombre: str | None, municipio: Municipio | None,
+                   edad: int | None = None) -> Usuario:
     return Usuario(
+        edad=comprobar_edad(edad),
         nombre=(nombre or "").strip() or NOMBRE_POR_DEFECTO,
         rol="vecino",
         telefono=telefono,
@@ -77,7 +96,7 @@ def crear_usuario(datos: UsuarioCrear, db: Session = Depends(get_db)):
     if existente is not None:
         raise _ya_existe(existente.id)
 
-    usuario = _nuevo_usuario(datos.telefono, datos.nombre, municipio)
+    usuario = _nuevo_usuario(datos.telefono, datos.nombre, municipio, datos.edad)
     db.add(usuario)
     try:
         db.commit()
@@ -120,6 +139,7 @@ class UsuarioVincular(BaseModel):
     contacto: str  # se valida en la ruta para responder `contacto_invalido`
     nombre: Annotated[str, Field(max_length=120)] | None = None
     municipio: str | None = None
+    edad: int | None = None
 
     _telefono = field_validator("telefono")(validar_telefono)
 
@@ -155,7 +175,7 @@ def vincular_usuario(datos: UsuarioVincular, db: Session = Depends(get_db)):
 
     creado = usuario is None
     if creado:
-        usuario = _nuevo_usuario(datos.telefono, datos.nombre, municipio)
+        usuario = _nuevo_usuario(datos.telefono, datos.nombre, municipio, datos.edad)
         db.add(usuario)
     setattr(usuario, canal.campo, valor)
     try:
@@ -189,6 +209,7 @@ class UsuarioEditar(BaseModel):
     acepta_avisos: bool = None
     radio_km: Annotated[float, Field(ge=0, le=500)] | None = None
     telefono: str = None
+    edad: int | None = None
 
     _telefono = field_validator("telefono")(validar_telefono)
 
@@ -247,7 +268,9 @@ def _editar_usuario(db: Session, usuario: Usuario, datos: UsuarioEditar) -> dict
             usuario.telefono = telefono
             # El número nuevo no está verificado hasta que confirme el código (/auth/whatsapp/verificar).
             usuario.whatsapp_verificado = False
-    # lat, lon, formato_aviso, acepta_avisos, radio_km: tal cual
+    if "edad" in cambios:
+        comprobar_edad(cambios["edad"])
+    # lat, lon, formato_aviso, acepta_avisos, radio_km, edad: tal cual
     for campo, valor in cambios.items():
         setattr(usuario, campo, valor)
 
