@@ -87,7 +87,7 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 |---|---|
 | sáb 19:00 | - [x] **C2.** *(sáb 16:30: hecho. Sección «Para ti» en la agenda con sesión iniciada, `GET /recomendaciones` y el motivo debajo de cada tarjeta; se recarga al volver a la agenda o al deslizar. Sin API, planes con plazas de los mocks.)* Paso 4. |
 | sáb 19:00 | - [x] **Refresco sin recargar** *(sáb 16:30: hecho. Ficha al entrar, al deslizar y cada 20 s; chat cada 12 s; bandeja cada 10 s salvo mientras se decide un plan. Solo con la pestaña visible.)* |
-| sáb 19:00 | - [ ] **B3 con Fran.** FreeLLMAPI en Docker en la máquina de Adán y ensayo del paso 7 (audios). |
+| sáb 19:00 | - [x] **B3 con Fran.** *(sáb 21/11: hecho, ver B3 en el apartado de Francisco.)* FreeLLMAPI en Docker en la máquina de Adán y ensayo del paso 7 (audios). |
 | dom 00:00 | - [ ] **C9.** APK de debug con Capacitor (`@capacitor/android`, `appId: 'es.hackemate.app'`), con pantalla de ajustes «Dirección del servidor» para pegar la URL nueva del túnel sin reinstalar. Android Studio + JDK 21. El `.apk` va a `C:\Users\aalva\Desktop\Hackaton`. Si a las 23:00 no sale, plan B = C4. |
 | dom 00:00 | - [ ] **C4.** PWA instalable: service worker e icono (el `manifest.json` ya existe). **Sin caché de `/api/`**, solo estáticos. |
 | dom 00:00 | - [ ] **C6.** Panel: % de importados de Facebook y coste en tokens con NIM. Accesibilidad: teclado y letra grande en agenda y ficha. |
@@ -113,7 +113,7 @@ Notas: `frase_portada` ya se guarda; si llega vacía la pedirá a `bot POST /ai/
 
 | Hasta | Tarea |
 |---|---|
-| sáb 19:00 | - [ ] **B3.** Pasar por privado a Adán `freellmapi.config.json` y `.env` de `services/bot/freellmapi/` y ensayar juntos el paso 7 en su máquina. |
+| sáb 19:00 | - [x] **B3.** *(sáb 21/11: hecho. Configuración de FreeLLMAPI pasada por privado a Adán; con FreeLLMAPI en Docker en su máquina, las notas de voz por Telegram funcionan (paso 7): el bot las transcribe y responde. Los audios ya no dependen del portátil de Francisco.)* Pasar por privado a Adán `freellmapi.config.json` y `.env` de `services/bot/freellmapi/` y ensayar juntos el paso 7 en su máquina. |
 | dom 00:00 | - [ ] **B5b.** Solo si sobra tiempo: `POST /ai/frase` (primero en el contrato, antes de CP3): frase breve y alegre (≤ 90 letras, sin inventar datos) a partir de título, categoría y pueblo. Mientras, la web pone una frase fija por tipo de plan. |
 | sáb 19:00 | - [x] **B7 (D1).** *(sáb 21/11: hecho. `/notify` acepta solo `contacto` (422 `sin_destino` si no hay ninguno); `app/avisos.py`: tras los gustos pregunta con botones [🔔 Sí, avísame] [No, gracias] una vez, y «no quiero avisos», «deja de avisarme», «avísame» cambian `acepta_avisos` con `PATCH /usuarios/{id}`; en Telegram sin vincular pide antes el número. Probado contra la API real: el campo cambia en la base.)* Bot: aceptar `/notify` sin `telefono` si viene `contacto`; tras decir sus gustos, preguntar «¿Quieres que te avise de planes nuevos que te puedan gustar?» [Sí] [No] y guardar `acepta_avisos`; entender «no quiero avisos» y «avísame». |
 | sáb 19:00 | - [x] **B8 (D2).** *(sáb 21/11: hecho. `t.me/HackeMate_bot?start=codigo` pide «Compartir mi número» y luego dice «Vuelve a la web y pulsa *Pedir el código*»; si ya lo había compartido, lo dice directamente. De paso, `?start=alta` abre el alta de asociaciones.)* Bot: `/start codigo` (el enlace de la web) pide «Compartir mi número» y, al compartirlo, dice que ya puede pedir el código en la web. |
