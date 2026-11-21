@@ -60,7 +60,9 @@ const ProveedorAcceso: React.FC<{ children: React.ReactNode }> = ({ children }) 
           sesion.entrar(token);
           return 'ok';
         } catch (e) {
-          return e instanceof ErrorApi && e.code === 'credenciales_invalidas' ? 'credenciales' : 'sin_api';
+          if (e instanceof ErrorApi && e.code === 'credenciales_invalidas') return 'credenciales';
+          if (e instanceof ErrorApi && e.code === 'demasiados_intentos') return 'bloqueado';
+          return 'sin_api';
         }
       },
       salir: () => {

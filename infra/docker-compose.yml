@@ -18,7 +18,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hackemate}
       POSTGRES_DB: ${POSTGRES_DB:-hackemate}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Solo en este ordenador (PUERTOS_IP en .env): nadie de la wifi entra en la BD, la API o el bot directamente.
+      - "${PUERTOS_IP:-127.0.0.1}:${DB_PORT:-5432}:5432"
     volumes:
       # Los datos de la demo y lo que hace la gente viven aquí: sobreviven a down/up y a reinicios.
       # Solo se borran con «down -v» o con scripts/demo_reset.sh: no usarlos en mitad de la demo.
@@ -42,7 +43,7 @@ services:
       # Fixtures que carga el seed al arrancar (app.seed hace también alembic upgrade head)
       - ../contracts:/srv/contracts:ro
     ports:
-      - "8000:8000"
+      - "${PUERTOS_IP:-127.0.0.1}:8000:8000"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
@@ -78,7 +79,7 @@ services:
     volumes:
       - bot_data:/srv/data
     ports:
-      - "8001:8001"
+      - "${PUERTOS_IP:-127.0.0.1}:8001:8001"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
       interval: 10s
