@@ -145,7 +145,7 @@ describe('revisión a mano o automática', () => {
     await api.decidir(apuestas.evento!.id, { decision: 'rechazar' });
     const bar = (await api.getPublicadores()).items.find((p) => p.nombre === 'Bar La Plaza')!;
     expect(deberiaVolverAManual(bar)).toBe(true);
-    expect((await api.cambiarRevision(bar.id, 'manual')).nivel_confianza).toBe(1);
+    expect((await api.cambiarRevision(bar.id, 'manual')).nivel_confianza).toBe(0);
   });
 
   it('el DNI nunca sale entero', async () => {

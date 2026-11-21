@@ -193,11 +193,11 @@ export function pausarPublicador(
 }
 
 /**
- * Pasa a revisión automática (nivel 2) o a mano (nivel 1). En el contrato no hay ruta propia:
+ * Pasa a revisión automática (nivel 2) o a mano (nivel 0). En el contrato no hay ruta propia:
  * se usa /publicadores/{id}/aprobar con el nuevo nivel. A tiene que aceptarlo en un publicador ya aprobado.
  */
 export function cambiarRevision(id: string, modo: ModoRevision): Promise<PublicadorAdmin> {
-  const nivel = modo === 'automatica' ? 2 : 1;
+  const nivel = modo === 'automatica' ? 2 : 0;
   return llamar(
     () =>
       peticion(`/publicadores/${id}/aprobar`, {

@@ -1,6 +1,6 @@
 // Reglas para que una asociación publique sin revisión. Solo hay dos modos:
 // a mano (el moderador revisa cada plan) o automática (sale directo, salvo que el antispam lo pare).
-// En el contrato, «automática» es nivel_confianza 2 y «a mano» es 0 o 1.
+// En el contrato, «automática» es nivel_confianza 2 y «a mano» es 0 (el 1 está obsoleto y la API lo trata como 0).
 
 import type { PublicadorAdmin } from '../api/types';
 
