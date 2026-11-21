@@ -607,3 +607,15 @@ def test_chat_publico_de_plan_pasado_del_seed(api, db):
     _inscribir(db, ficha, CARMEN)
     m = _publicar(api, CINE_PASADO, CARMEN, texto="Gran noche de cine", imagen_url=FOTO)["mensaje"]
     assert [i["id"] for i in _listar(api, CINE_PASADO) if i["imagen_url"] == FOTO] == [m["id"]]
+
+
+def test_mas_de_8_mensajes_por_minuto_da_429(api, db):
+    e = _evento(db)
+    for i in range(8):
+        _publicar(api, e.id, CARMEN, texto=f"Mensaje {i}")
+    r = api.post(_url(e.id), json={"texto": "Uno más"}, headers=_bearer(CARMEN))
+    _error(r, 429, "demasiados_mensajes")
+    # Otra persona no se ve afectada, y la moderadora no tiene límite
+    _publicar(api, e.id, JOSE, texto="Yo también voy")
+    for i in range(9):
+        _publicar(api, e.id, LUCIA, texto=f"Aviso {i}")

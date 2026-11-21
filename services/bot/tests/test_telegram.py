@@ -95,3 +95,20 @@ def test_avisos_a_telegram_van_como_texto_aunque_el_canal_sea_meta(tg, monkeypat
     get_settings.cache_clear()
     canales.enviar_plantilla("tg:555", "cambio_hora", ["Ruta", "10:00"], texto_alternativo="La ruta cambia a las 10:00")
     assert tg[-1] == ("sendMessage", {"chat_id": "555", "text": "La ruta cambia a las 10:00", "parse_mode": "HTML"})
+
+
+def test_sin_telegram_secret_se_deriva_uno_del_token(monkeypatch):
+    # Sin TELEGRAM_SECRET el webhook público no puede quedar abierto: se usa uno derivado del token.
+    monkeypatch.setenv("TELEGRAM_TOKEN", "123:abc")
+    monkeypatch.setenv("TELEGRAM_SECRET", "")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    try:
+        secreto = telegram.secreto_webhook()
+        assert secreto and "123:abc" not in secreto
+        assert cliente.post("/webhook/telegram", json=_update_texto("hola")).status_code == 403
+        cab = {"X-Telegram-Bot-Api-Secret-Token": secreto}
+        assert cliente.post("/webhook/telegram", headers=cab, json={"update_id": 999}).status_code == 200
+    finally:
+        get_settings.cache_clear()

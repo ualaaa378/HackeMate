@@ -1,6 +1,8 @@
 """Canal de Telegram (Bot API): gratis, sin límite de mensajes y sin verificar negocio.
 Los usuarios se identifican como «tg:<chat_id>» porque Telegram no da el teléfono."""
 
+import hashlib
+import hmac
 import html
 import logging
 import re
@@ -107,11 +109,27 @@ def descargar_archivo(file_id: str) -> bytes | None:
         return None
 
 
-def configurar_webhook(url: str) -> dict | None:
+def secreto_webhook() -> str:
+    """Secreto de la cabecera X-Telegram-Bot-Api-Secret-Token. TELEGRAM_SECRET si está; si no, uno derivado del
+    TELEGRAM_TOKEN: así el webhook público nunca acepta mensajes falsos (alguien que se haga pasar por el moderador
+    con su telegram_id). Vacío solo sin TELEGRAM_TOKEN (sin Telegram no hay nada que proteger)."""
     s = get_settings()
+    if s.telegram_secret:
+        return s.telegram_secret
+    if not s.telegram_token:
+        return ""
+    return hmac.new(s.telegram_token.encode(), b"hackemate-webhook", hashlib.sha256).hexdigest()
+
+
+def secreto_valido(recibido: str | None) -> bool:
+    esperado = secreto_webhook()
+    return not esperado or hmac.compare_digest((recibido or "").encode(), esperado.encode())
+
+
+def configurar_webhook(url: str) -> dict | None:
     return _llamar("setWebhook", {
         "url": url,
-        "secret_token": s.telegram_secret,
+        "secret_token": secreto_webhook(),
         "allowed_updates": ["message", "callback_query"],
         # False: lo que escriban mientras el bot se reinicia llega igual al volver
         "drop_pending_updates": False,

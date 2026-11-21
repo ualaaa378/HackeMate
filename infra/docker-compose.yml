@@ -57,6 +57,8 @@ services:
     # Si se cae, vuelve sola. Al arrancar, el seed solo añade lo que falte (--solo-nuevos en el Dockerfile):
     # un reinicio no deshace lo que han hecho las personas.
     restart: unless-stopped
+    # Ningún proceso del contenedor puede ganar privilegios (setuid/sudo) aunque alguien entre en él
+    security_opt: ["no-new-privileges:true"]
 
   bot:
     <<: *env
@@ -88,6 +90,8 @@ services:
       start_period: 15s
     # Sin depends_on de api: el bot arranca aunque la api esté caída
     restart: unless-stopped
+    # Ningún proceso del contenedor puede ganar privilegios (setuid/sudo) aunque alguien entre en él
+    security_opt: ["no-new-privileges:true"]
 
   web:
     # App Ionic (Flujo C) y puerta de entrada pública: su nginx sirve la web en /, pasa /api/ a
@@ -109,6 +113,8 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
+    # Ningún proceso del contenedor puede ganar privilegios (setuid/sudo) aunque alguien entre en él
+    security_opt: ["no-new-privileges:true"]
 
   tunnel:
     # Túnel rápido de Cloudflare (sin cuenta, decisión D3) hacia la web: una sola URL pública
