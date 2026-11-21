@@ -37,6 +37,8 @@ TRANSICIONES = {
     # Retirar un evento ya publicado: deja de verse, pero no es una cancelación (no se avisa a los inscritos
     # como si el evento no se celebrara) ni un rechazo de algo que nunca salió.
     "retirar": (("publicado",), "archivado"),
+    # Deshacer un rechazo (p. ej. por error o tras corregir el plan): vuelve a la bandeja y se decide de nuevo.
+    "restaurar": (("rechazado",), "en_revision"),
 }
 
 
@@ -45,7 +47,7 @@ class Decision(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
-    decision: Literal["aprobar", "rechazar", "retirar"]
+    decision: Literal["aprobar", "rechazar", "retirar", "restaurar"]
     motivo: str | None = None
 
 
@@ -95,6 +97,7 @@ MOTIVO_POR_DEFECTO = {
     "aprobar": "Aprobado por el moderador",
     "rechazar": "Rechazado por el moderador",
     "retirar": "Retirado por moderación",
+    "restaurar": "Restaurado por moderación: pendiente de revisar de nuevo",
 }
 
 
@@ -133,7 +136,8 @@ def decidir(
     if datos.decision == "aprobar" and publicador is not None:
         registrar_aprobacion_en_bd(db, publicador.id)
     aviso = None
-    if publicador is not None:
+    # Restaurar no es una decisión final: el publicador recibe el aviso cuando se apruebe o rechace otra vez.
+    if publicador is not None and datos.decision != "restaurar":
         aviso = notificar_publicador(
             db, publicador, "moderacion", _texto_aviso(evento, datos.decision, motivo),
             evento_id=evento.id, enviar=False,
