@@ -23,6 +23,7 @@ import CarruselPlanes from '../components/CarruselPlanes';
 import FiltrosEventos from '../components/FiltrosEventos';
 import { CabeceraPueblo, TarjetasPueblos } from '../components/FotosPueblo';
 import Marca from '../components/Marca';
+import ParaTi from '../components/ParaTi';
 import SelectorLetra from '../components/SelectorLetra';
 import TarjetaEvento from '../components/TarjetaEvento';
 import TusPlanes from '../components/TusPlanes';
@@ -70,6 +71,8 @@ const Agenda: React.FC = () => {
   // Todos los próximos planes, sin filtros: alimentan «Tus planes» y el carrusel.
   const [todos, setTodos] = useState<Evento[]>([]);
   const { usuario } = useSesion();
+  // Sube al volver a la agenda o al deslizar: «Para ti» cambia cuando la persona se apunta a algo.
+  const [recarga, setRecarga] = useState(0);
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -97,7 +100,10 @@ const Agenda: React.FC = () => {
   }, []);
 
   // También al volver de la ficha tras apuntarse («Tus planes») o de la bandeja tras aprobar un plan (la agenda).
-  useIonViewWillEnter(() => void Promise.all([cargar(), cargarTodos()]), [cargar, cargarTodos]);
+  useIonViewWillEnter(() => {
+    setRecarga((n) => n + 1);
+    void Promise.all([cargar(), cargarTodos()]);
+  }, [cargar, cargarTodos]);
 
   const proximos = eventos.filter((e) => !yaPaso(e));
   const mios = misPlanes();
@@ -122,7 +128,10 @@ const Agenda: React.FC = () => {
       <IonContent className="contenido-agenda">
         <IonRefresher
           slot="fixed"
-          onIonRefresh={(ev) => void Promise.all([cargar(), cargarTodos()]).then(() => ev.detail.complete())}
+          onIonRefresh={(ev) => {
+            setRecarga((n) => n + 1);
+            void Promise.all([cargar(), cargarTodos()]).then(() => ev.detail.complete());
+          }}
         >
           <IonRefresherContent />
         </IonRefresher>
@@ -133,6 +142,7 @@ const Agenda: React.FC = () => {
             {usuario ? `¡Hola, ${usuario.nombre.split(' ')[0]}! ` : ''}¿Qué hacemos hoy en el pueblo?
           </h1>
           <TusPlanes eventos={tusPlanes} />
+          {usuario && <ParaTi usuarioId={usuario.id} recarga={recarga} />}
           {destacados.length > 0 && (
             <>
               <h2 className="titulo-seccion">Próximos planes</h2>

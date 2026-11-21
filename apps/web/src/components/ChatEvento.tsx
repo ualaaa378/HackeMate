@@ -5,6 +5,8 @@ import { enviarMensaje, getMensajes } from '../api/client';
 import type { MensajeEvento } from '../api/types';
 import { useSesion } from '../cuenta/sesion';
 
+export const REFRESCO_CHAT_MS = 12_000;
+
 // Chat de la ficha: se lee sin cuenta; para preguntar hay que tenerla.
 const ChatEvento: React.FC<{ eventoId: string }> = ({ eventoId }) => {
   const { usuario, conCuenta } = useSesion();
@@ -15,13 +17,21 @@ const ChatEvento: React.FC<{ eventoId: string }> = ({ eventoId }) => {
 
   const cargar = useCallback(() => getMensajes(eventoId).then((p) => setMensajes(p.items)), [eventoId]);
 
+  // Se vuelve a pedir cada poco mientras la ficha está abierta y la pestaña visible:
+  // así se ven las preguntas de otros vecinos y las respuestas sin recargar.
   useEffect(() => {
     let vivo = true;
-    getMensajes(eventoId)
-      .then((p) => vivo && setMensajes(p.items))
-      .catch(() => vivo && setError('No hemos podido cargar las preguntas.'));
+    const traer = (primera: boolean) =>
+      getMensajes(eventoId)
+        .then((p) => vivo && setMensajes(p.items))
+        .catch(() => vivo && primera && setError('No hemos podido cargar las preguntas.'));
+    void traer(true);
+    const reloj = setInterval(() => {
+      if (document.visibilityState === 'visible') void traer(false);
+    }, REFRESCO_CHAT_MS);
     return () => {
       vivo = false;
+      clearInterval(reloj);
     };
   }, [eventoId]);
 

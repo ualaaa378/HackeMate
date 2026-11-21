@@ -12,7 +12,7 @@ import {
   IonText,
   IonToast,
 } from '@ionic/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import BloqueConfianza from '../../admin/BloqueConfianza';
 import PaginaAdmin from '../../admin/PaginaAdmin';
@@ -67,7 +67,19 @@ const Bandeja: React.FC = () => {
       .catch(() => setError('No hemos podido cargar la bandeja.'));
   }, [rol]);
 
-  useEffect(cargar, [cargar]);
+  // Los posts nuevos (bot, Facebook, web) llegan solos, como en el Panel. No se refresca mientras
+  // el moderador decide uno, para que la tarjeta no le cambie debajo del dedo.
+  const decidiendo = useRef(false);
+  useEffect(() => {
+    decidiendo.current = ocupado !== null || rechazando !== null;
+  }, [ocupado, rechazando]);
+  useEffect(() => {
+    cargar();
+    const t = setInterval(() => {
+      if (!decidiendo.current && document.visibilityState === 'visible') cargar();
+    }, 10_000);
+    return () => clearInterval(t);
+  }, [cargar]);
 
   const quitar = (p: PendienteBandeja) => setItems((xs) => xs?.filter((x) => x !== p) ?? null);
 

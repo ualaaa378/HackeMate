@@ -85,8 +85,8 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 
 | Hasta | Tarea |
 |---|---|
-| sáb 19:00 | - [ ] **C2.** «Para ti» en la agenda con `GET /recomendaciones` y el motivo legible (Carmen ve la II Ruta Solidaria la primera). Paso 4. |
-| sáb 19:00 | - [ ] **Refresco sin recargar** (pedido por Benas): **Ficha** (`src/pages/Ficha.tsx`) con `useIonViewWillEnter` + `IonRefresher`; **chat** (`src/components/ChatEvento.tsx`) pide `GET /eventos/{id}/mensajes` cada 10–15 s (paso 5); **bandeja** (`src/pages/admin/Bandeja.tsx`) cada 10 s (paso 3). |
+| sáb 19:00 | - [x] **C2.** *(sáb 16:30: hecho. Sección «Para ti» en la agenda con sesión iniciada, `GET /recomendaciones` y el motivo debajo de cada tarjeta; se recarga al volver a la agenda o al deslizar. Sin API, planes con plazas de los mocks.)* Paso 4. |
+| sáb 19:00 | - [x] **Refresco sin recargar** *(sáb 16:30: hecho. Ficha al entrar, al deslizar y cada 20 s; chat cada 12 s; bandeja cada 10 s salvo mientras se decide un plan. Solo con la pestaña visible.)* |
 | sáb 19:00 | - [ ] **B3 con Fran.** FreeLLMAPI en Docker en la máquina de Adán y ensayo del paso 7 (audios). |
 | dom 00:00 | - [ ] **C9.** APK de debug con Capacitor (`@capacitor/android`, `appId: 'es.hackemate.app'`), con pantalla de ajustes «Dirección del servidor» para pegar la URL nueva del túnel sin reinstalar. Android Studio + JDK 21. El `.apk` va a `C:\Users\aalva\Desktop\Hackaton`. Si a las 23:00 no sale, plan B = C4. |
 | dom 00:00 | - [ ] **C4.** PWA instalable: service worker e icono (el `manifest.json` ya existe). **Sin caché de `/api/`**, solo estáticos. |
