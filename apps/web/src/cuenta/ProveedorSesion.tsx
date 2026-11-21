@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { setToken } from '../api/client';
+import { alCaducarSesion, setToken } from '../api/client';
 import type { Token, Usuario } from '../api/types';
 
 import ModalCuenta from './ModalCuenta';
@@ -36,6 +36,11 @@ const ProveedorSesion: React.FC<{ children: React.ReactNode }> = ({ children }) 
       // sin almacenamiento la sesión dura lo que la pestaña
     }
   }, []);
+
+  useEffect(() => {
+    alCaducarSesion(() => guardar(null));
+    return () => alCaducarSesion(null);
+  }, [guardar]);
 
   const valor = useMemo<Sesion>(
     () => ({

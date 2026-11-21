@@ -31,6 +31,14 @@ export function setToken(nuevo: string | null) {
   token = nuevo;
 }
 
+// La API ya no acepta la sesión guardada (p. ej. tras reiniciar la base de la demo, el usuario ya no existe).
+const CODIGOS_SESION_CADUCADA = new Set(['token_invalido', 'token_caducado']);
+let alCaducar: (() => void) | null = null;
+/** La registra el proveedor de sesión para olvidar la sesión guardada cuando la API la rechaza. */
+export function alCaducarSesion(fn: (() => void) | null): void {
+  alCaducar = fn;
+}
+
 export class ErrorApi extends Error {
   constructor(
     public code: string,
@@ -61,6 +69,12 @@ export async function peticion<T>(ruta: string, opciones: RequestInit = {}): Pro
   }
   if (!resp.ok) {
     const cuerpo = (await resp.json().catch(() => null)) as Partial<ApiError> | null;
+    // Sesión que ya no vale: se cierra y se repite la petición como anónimo, en vez de fallar la pantalla.
+    if (resp.status === 401 && token && CODIGOS_SESION_CADUCADA.has(cuerpo?.error?.code ?? '')) {
+      setToken(null);
+      alCaducar?.();
+      return peticion<T>(ruta, opciones);
+    }
     // La API responde a una ruta que aún no existe con el código genérico «no_encontrado» (o 405);
     // los 404 de negocio llevan un código propio, como «evento_no_encontrado».
     const rutaSinImplementar = resp.status === 405 || cuerpo?.error?.code === 'no_encontrado';
