@@ -136,6 +136,8 @@ def limpiar_estado():
     vecino.preferencias_locales.clear()
     vecino.ubicaciones.clear()
     conversacion.idiomas_por_contacto.clear()
+    from app import alta
+    alta.altas.clear()
     from app.llm import router
     router.forzar_caida(None)
     conversacion._usuarios.clear()
