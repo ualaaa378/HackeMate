@@ -5,7 +5,7 @@ import { useSesion } from '../cuenta/sesion';
 
 import { type AccesoAdmin, ContextoAcceso, type RolAdmin } from './acceso';
 
-// Publicador de la demo: Amigos de Velefique (nivel 1, sus planes pasan por la bandeja).
+// Publicador de la demo: Amigos de Velefique (revisión a mano: sus planes pasan por la bandeja).
 const PUBLICADOR_DEMO = { id: '7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a01', nombre: 'Amigos de Velefique' };
 const CLAVE = 'hm-admin-demo';
 

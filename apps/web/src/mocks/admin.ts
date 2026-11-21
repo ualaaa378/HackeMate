@@ -2,7 +2,7 @@
 // Salen de contracts/fixtures y del guion de la demo: el caso «apuestas» de Bar La Plaza,
 // un evento que entra por WhatsApp, un plan propuesto por una vecina y una asociación por aprobar.
 
-import type { Estadisticas, Evento, PendienteBandeja, Publicador } from '../api/types';
+import type { DatosResponsable, Estadisticas, Evento, PendienteBandeja, PublicadorAdmin } from '../api/types';
 
 import publicadoresFixture from './publicadores.json';
 
@@ -44,8 +44,66 @@ export function nuevoEventoMock(datos: Partial<Evento> & Pick<Evento, 'titulo' |
   };
 }
 
-export const publicadoresMock: Publicador[] = [
-  ...(publicadoresFixture as Publicador[]),
+const haceDias = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+
+// Datos del responsable y actividad reciente: aún no están en el contrato ni en los fixtures.
+// DNI de ejemplo (con la letra bien calculada); no son de nadie.
+const EXTRA: Record<
+  string,
+  { responsable: DatosResponsable | null; planes: number; rechazados: number; ultimo: number }
+> = {
+  'Amigos de Velefique': {
+    responsable: { nombre: 'Antonio Martínez', dni: '45871236J', residencia: 'Velefique', identidad_verificada: true },
+    planes: 2,
+    rechazados: 0,
+    ultimo: 6,
+  },
+  'Ayto. Lucainena de las Torres': {
+    responsable: {
+      nombre: 'Secretaría municipal',
+      dni: '27450913E',
+      residencia: 'Lucainena de las Torres',
+      identidad_verificada: true,
+    },
+    planes: 6,
+    rechazados: 0,
+    ultimo: 2,
+  },
+  'Bar La Plaza': {
+    responsable: { nombre: 'Juan Rodríguez', dni: '75302814D', residencia: 'Senés', identidad_verificada: true },
+    planes: 4,
+    rechazados: 0,
+    ultimo: 3,
+  },
+  'Asociación de Mujeres de Senés': {
+    responsable: { nombre: 'Encarna Sánchez', dni: '34618027Z', residencia: 'Senés', identidad_verificada: false },
+    planes: 5,
+    rechazados: 0,
+    ultimo: 4,
+  },
+  'Peña Cultural Uleila': { responsable: null, planes: 3, rechazados: 0, ultimo: 10 },
+  'Ayto. Tahal': {
+    responsable: { nombre: 'Secretaría municipal', dni: '23016548B', residencia: 'Tahal', identidad_verificada: true },
+    planes: 0,
+    rechazados: 0,
+    ultimo: 104,
+  },
+};
+
+export const publicadoresMock: PublicadorAdmin[] = [
+  ...(publicadoresFixture as PublicadorAdmin[]).map((p) => {
+    const extra = EXTRA[p.nombre];
+    if (!extra) return p;
+    return {
+      ...p,
+      responsable: extra.responsable,
+      actividad: {
+        planes_60_dias: extra.planes,
+        rechazados_60_dias: extra.rechazados,
+        ultimo_plan: haceDias(extra.ultimo),
+      },
+    };
+  }),
   {
     id: '7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a07',
     nombre: 'Club Ciclista Sierra de Tahal',
@@ -62,6 +120,8 @@ export const publicadoresMock: Publicador[] = [
     fuentes: [],
     usuario_id: null,
     creado_en: '2026-11-20T20:10:00+01:00',
+    responsable: { nombre: 'Rocío Fernández', dni: '48120375M', residencia: 'Tahal', identidad_verificada: false },
+    actividad: { planes_60_dias: 0, rechazados_60_dias: 0, ultimo_plan: null },
   },
 ];
 
@@ -74,7 +134,7 @@ export const pendientesMock: PendienteBandeja[] = [
   {
     tipo: 'evento',
     motivo:
-      'Posible spam: anuncia apuestas con premio en metálico y repite el texto de otro mensaje de hoy. Bar La Plaza ya publicó 3 planes esta semana.',
+      'Posible spam: anuncia apuestas con premio en metálico y repite el texto de otro mensaje de hoy. Bar La Plaza publica sin revisión, pero el antispam lo ha parado.',
     score_spam: 0.91,
     evento: nuevoEventoMock({
       titulo: 'Gran porra de apuestas: gana 500 € viendo el fútbol',
@@ -94,7 +154,7 @@ export const pendientesMock: PendienteBandeja[] = [
   {
     tipo: 'evento',
     motivo:
-      'Publicador de nivel 1: sus planes se revisan a mano. La IA ha sacado todos los datos del audio y no ve nada raro.',
+      'Revisión a mano: la Peña Cultural aún no ha aportado el DNI y la residencia de su responsable. La IA ha sacado todos los datos del audio y no ve nada raro.',
     score_spam: 0.04,
     evento: nuevoEventoMock({
       titulo: 'Concierto de la banda municipal en la plaza',
@@ -137,7 +197,8 @@ export const pendientesMock: PendienteBandeja[] = [
   },
   {
     tipo: 'publicador',
-    motivo: 'Ha verificado su WhatsApp y pide publicar planes en Tahal. Es nuevo: empieza en nivel 0.',
+    motivo:
+      'Ha verificado su teléfono y pide publicar planes en Tahal. Ha aportado DNI y residencia: compruébalos antes de aprobar. Empezará con revisión a mano.',
     score_spam: null,
     publicador: publicadoresMock[publicadoresMock.length - 1],
   },

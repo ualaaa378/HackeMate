@@ -3,6 +3,7 @@
 // POST/PATCH /eventos solo aceptan X-Internal-Token y la moderación no está implementada.
 // Por eso, mientras no haya una sesión real de moderador o publicador, todo va con mocks (modo demo).
 
+import { puedeSerAutomatica, type ModoRevision } from '../admin/confianza';
 import { COORDENADAS, estadisticasMock, nuevoEventoMock, pendientesMock, publicadoresMock } from '../mocks/admin';
 
 import { conRespaldo, esperar, mockEventos, peticion, propuestasMock, query } from './client';
@@ -15,7 +16,7 @@ import type {
   EventoEditar,
   Pagina,
   PendienteBandeja,
-  Publicador,
+  PublicadorAdmin,
 } from './types';
 
 let demo = true;
@@ -85,6 +86,7 @@ export function decidir(eventoId: string, decision: Decision): Promise<Evento> {
       if (!e) return Promise.reject(new Error('evento_no_encontrado'));
       if (i >= 0) pendientesMock.splice(i, 1);
       e.moderacion = { ...e.moderacion, motivo: decision.motivo ?? null, revisado_por: 'moderador' };
+      contarEnActividad(e.publicador_id, decision.decision === 'aprobar');
       if (decision.decision === 'aprobar') pasarAPublicado(e);
       else {
         e.estado = decision.decision === 'rechazar' ? 'rechazado' : 'archivado';
@@ -97,8 +99,18 @@ export function decidir(eventoId: string, decision: Decision): Promise<Evento> {
   );
 }
 
+// La frecuencia y los rechazos cuentan para pasar a revisión automática (en la API real los calcula A).
+function contarEnActividad(publicadorId: string | null | undefined, aprobado: boolean) {
+  const p = publicadoresMock.find((x) => x.id === publicadorId);
+  if (!p) return;
+  const a = p.actividad ?? { planes_60_dias: 0, rechazados_60_dias: 0, ultimo_plan: null };
+  p.actividad = aprobado
+    ? { ...a, planes_60_dias: a.planes_60_dias + 1, ultimo_plan: new Date().toISOString() }
+    : { ...a, rechazados_60_dias: a.rechazados_60_dias + 1 };
+}
+
 // ---------- publicadores ----------
-export function getPublicadores(): Promise<Pagina<Publicador>> {
+export function getPublicadores(): Promise<Pagina<PublicadorAdmin>> {
   return llamar(
     () => peticion('/publicadores?size=100'),
     () => esperar(pagina([...publicadoresMock])),
@@ -107,15 +119,20 @@ export function getPublicadores(): Promise<Pagina<Publicador>> {
 
 export function aprobarPublicador(
   id: string,
-  cuerpo: { aprobar: boolean; nivel_confianza?: 0 | 1 | 2; motivo?: string | null },
-): Promise<Publicador> {
+  cuerpo: { aprobar: boolean; motivo?: string | null },
+): Promise<PublicadorAdmin> {
   return llamar(
-    () => peticion(`/publicadores/${id}/aprobar`, { method: 'POST', body: JSON.stringify(cuerpo) }),
+    // Toda asociación nueva empieza con revisión a mano (nivel 0).
+    () =>
+      peticion(`/publicadores/${id}/aprobar`, {
+        method: 'POST',
+        body: JSON.stringify({ ...cuerpo, nivel_confianza: 0 }),
+      }),
     () => {
       const p = publicadoresMock.find((x) => x.id === id);
       if (!p) return Promise.reject(new Error('publicador_no_encontrado'));
       p.estado = cuerpo.aprobar ? 'aprobado' : 'rechazado';
-      p.nivel_confianza = cuerpo.nivel_confianza ?? p.nivel_confianza;
+      p.nivel_confianza = 0;
       const i = pendientesMock.findIndex((x) => x.publicador?.id === id);
       if (i >= 0) pendientesMock.splice(i, 1);
       return esperar({ ...p });
@@ -126,7 +143,7 @@ export function aprobarPublicador(
 export function pausarPublicador(
   id: string,
   cuerpo: { que: 'publicador' | 'automatizaciones'; pausado: boolean },
-): Promise<Publicador> {
+): Promise<PublicadorAdmin> {
   return llamar(
     () => peticion(`/publicadores/${id}/pausar`, { method: 'POST', body: JSON.stringify(cuerpo) }),
     () => {
@@ -137,6 +154,40 @@ export function pausarPublicador(
       return esperar({ ...p });
     },
   );
+}
+
+/**
+ * Pasa a revisión automática (nivel 2) o a mano (nivel 1). En el contrato no hay ruta propia:
+ * se usa /publicadores/{id}/aprobar con el nuevo nivel. A tiene que aceptarlo en un publicador ya aprobado.
+ */
+export function cambiarRevision(id: string, modo: ModoRevision): Promise<PublicadorAdmin> {
+  const nivel = modo === 'automatica' ? 2 : 1;
+  return llamar(
+    () =>
+      peticion(`/publicadores/${id}/aprobar`, {
+        method: 'POST',
+        body: JSON.stringify({ aprobar: true, nivel_confianza: nivel }),
+      }),
+    () => {
+      const p = publicadoresMock.find((x) => x.id === id);
+      if (!p) return Promise.reject(new Error('publicador_no_encontrado'));
+      if (modo === 'automatica' && !puedeSerAutomatica(p))
+        return Promise.reject(new Error(`${p.nombre} aún no cumple los requisitos para publicar sin revisión.`));
+      p.nivel_confianza = nivel;
+      return esperar({ ...p });
+    },
+  );
+}
+
+/**
+ * El moderador marca como comprobados el DNI y la residencia del responsable.
+ * Sin ruta en el contrato todavía: solo funciona en modo demo (pendiente de A, ver README).
+ */
+export function verificarIdentidad(id: string): Promise<PublicadorAdmin> {
+  const p = publicadoresMock.find((x) => x.id === id);
+  if (!p?.responsable) return Promise.reject(new Error('Falta que el responsable aporte sus datos.'));
+  p.responsable = { ...p.responsable, identidad_verificada: true };
+  return esperar({ ...p });
 }
 
 // ---------- eventos ----------
@@ -162,8 +213,8 @@ export function getEventosAdmin(
 }
 
 /**
- * Crea un evento desde el panel. El moderador publica directamente; un publicador de nivel 2 también,
- * y uno de nivel 0 o 1 lo deja en la bandeja (en la API real esto lo decide A).
+ * Crea un evento desde el panel. El moderador publica directamente; una asociación con revisión automática
+ * también, y una con revisión a mano lo deja en la bandeja (en la API real esto lo decide A).
  */
 export function crearEvento(datos: EventoCrear, autor: { rol: 'moderador' | 'publicador' }): Promise<Evento> {
   return llamar(
@@ -185,7 +236,7 @@ export function crearEvento(datos: EventoCrear, autor: { rol: 'moderador' | 'pub
       else
         pendientesMock.push({
           tipo: 'evento',
-          motivo: `Publicador de nivel ${pub?.nivel_confianza ?? 0}: sus planes se revisan a mano.`,
+          motivo: `Revisión a mano: ${pub?.nombre ?? 'esta asociación'} aún no cumple los requisitos para publicar sin revisión.`,
           score_spam: 0.02,
           evento: e,
         });

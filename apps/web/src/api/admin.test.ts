@@ -98,6 +98,62 @@ describe('interfaz del ayuntamiento en modo demo', () => {
   });
 });
 
+describe('revisión a mano o automática', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_API_URL', '');
+  });
+
+  it('una asociación sin DNI comprobado o con pocos planes no puede publicar sin revisión', async () => {
+    const api = await cargar();
+    const { puedeSerAutomatica } = await import('../admin/confianza');
+    const { items } = await api.getPublicadores();
+    const mujeres = items.find((p) => p.nombre === 'Asociación de Mujeres de Senés')!;
+    const amigos = items.find((p) => p.nombre === 'Amigos de Velefique')!;
+    expect(puedeSerAutomatica(mujeres)).toBe(false); // DNI aportado pero sin comprobar
+    expect(puedeSerAutomatica(amigos)).toBe(false); // solo 2 de 3 planes
+    await expect(api.cambiarRevision(mujeres.id, 'automatica')).rejects.toThrow(/requisitos/);
+
+    const verificada = await api.verificarIdentidad(mujeres.id);
+    expect(puedeSerAutomatica(verificada)).toBe(true);
+    expect((await api.cambiarRevision(mujeres.id, 'automatica')).nivel_confianza).toBe(2);
+  });
+
+  it('aprobar un plan cuenta para la frecuencia', async () => {
+    const api = await cargar();
+    const { puedeSerAutomatica } = await import('../admin/confianza');
+    const amigos = (await api.getPublicadores()).items.find((p) => p.nombre === 'Amigos de Velefique')!;
+    const plan = await api.crearEvento(
+      {
+        titulo: 'Ruta nocturna',
+        categoria: 'deportiva',
+        municipio: 'Velefique',
+        fecha_inicio: '2026-12-12T19:00:00+01:00',
+        publicador_id: amigos.id,
+      },
+      { rol: 'publicador' },
+    );
+    await api.decidir(plan.id, { decision: 'aprobar' });
+    const despues = (await api.getPublicadores()).items.find((p) => p.id === amigos.id)!;
+    expect(despues.actividad?.planes_60_dias).toBe(3);
+    expect(puedeSerAutomatica(despues)).toBe(true);
+  });
+
+  it('rechazar las apuestas deja a Bar La Plaza pendiente de volver a revisión a mano', async () => {
+    const api = await cargar();
+    const { deberiaVolverAManual } = await import('../admin/confianza');
+    const apuestas = (await api.getPendientes()).items.find((p) => p.evento?.titulo.includes('apuestas'))!;
+    await api.decidir(apuestas.evento!.id, { decision: 'rechazar' });
+    const bar = (await api.getPublicadores()).items.find((p) => p.nombre === 'Bar La Plaza')!;
+    expect(deberiaVolverAManual(bar)).toBe(true);
+    expect((await api.cambiarRevision(bar.id, 'manual')).nivel_confianza).toBe(1);
+  });
+
+  it('el DNI nunca sale entero', async () => {
+    const { dniOculto } = await import('../admin/confianza');
+    expect(dniOculto('45871236J')).toBe('•••••236J');
+  });
+});
+
 describe('isoMadrid', () => {
   it('usa +01:00 en invierno y +02:00 en verano', async () => {
     const { isoMadrid } = await import('../utils/formato');
