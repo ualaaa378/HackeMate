@@ -76,6 +76,7 @@ volumes:
   bot_data:
 ```
 
+- **FreeLLMAPI en Docker:** ya no hace falta la app de escritorio de Francisco. `services/bot/freellmapi/` lo levanta en cualquier máquina (README allí). Con ese compose, en el `.env` de la raíz: `FREELLM_URL_DOCKER=http://host.docker.internal:3001/v1` y su clave unificada en `FREELLM_API_KEY`. No hay que tocar `infra/`.
 - **Nadie depende del bot para arrancar.** Si falla, `api` y `web` siguen funcionando.
 - **Variables:** en Docker, el bot lee el `.env` de la raíz, así que ahí tienen que estar `TELEGRAM_TOKEN`, `TELEGRAM_SECRET`, `FREELLM_API_KEY` e `INTERNAL_TOKEN` (las claves, por privado).
 - **Telegram necesita la URL pública del túnel:**
