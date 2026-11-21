@@ -141,6 +141,14 @@ def descargar_posts(paginas: list[dict[str, str]], token: str, actor: str, max_p
     return items or []
 
 
+def nombre_pagina(nombre: str | None) -> str | None:
+    """Apify a veces da el nombre como trozo de URL («Ayuntamiento-de-Sen%C3%A9s»): se deja legible."""
+    if not nombre:
+        return None
+    nombre = urllib.parse.unquote(nombre)
+    return nombre.replace("-", " ") if " " not in nombre else nombre
+
+
 def resumir_post(item: dict, paginas: list[dict[str, str]]) -> dict | None:
     """Solo lo necesario de cada post de Apify. None si no tiene URL ni texto (no sirve para nada)."""
     url = item.get("url") or item.get("topLevelUrl")
@@ -155,7 +163,7 @@ def resumir_post(item: dict, paginas: list[dict[str, str]]) -> dict | None:
     return {
         "url": url,
         "pagina_url": entrada or (pagina["url"] if pagina else None),
-        "pagina": item.get("pageName") or (item.get("user") or {}).get("name"),
+        "pagina": nombre_pagina((item.get("user") or {}).get("name") or item.get("pageName")),
         "publicador_id": pagina["publicador_id"] if pagina else None,
         "fecha": item.get("time"),
         "texto": texto,
@@ -179,7 +187,8 @@ def guardar_posts(posts: list[dict], paginas: list[dict[str, str]], ruta: Path =
 
 
 def cargar_posts(ruta: Path = JSON_POSTS) -> list[dict]:
-    return json.loads(ruta.read_text(encoding="utf-8")).get("posts", [])
+    posts = json.loads(ruta.read_text(encoding="utf-8")).get("posts", [])
+    return [{**p, "pagina": nombre_pagina(p.get("pagina"))} for p in posts]
 
 
 # ---------- 2-4. IA del bot, importar y confirmar ----------

@@ -50,7 +50,7 @@ def test_resumir_post_guarda_solo_lo_necesario():
     item = {
         "url": POST["url"], "inputUrl": PAGINA["url"] + "/", "pageName": "Ayuntamiento de Uleila del Campo",
         "time": POST["fecha"], "text": POST["texto"], "likes": 30,
-        "user": {"id": "1", "name": "Ayuntamiento", "profilePic": "https://…"},
+        "user": {"id": "1", "name": "Ayuntamiento de Uleila del Campo", "profilePic": "https://…"},
         "media": [{"ocrText": "RUTA DE LA TAPA", "url": "https://…"}, {"url": "sin texto"}],
     }
     assert fb.resumir_post(item, [PAGINA]) == POST
@@ -60,6 +60,12 @@ def test_resumir_post_guarda_solo_lo_necesario():
     # Solo cartel y página sin alta: se guarda sin asociación.
     solo_foto = fb.resumir_post({"url": "https://www.facebook.com/otra/posts/2", "media": [{"ocrText": "FIESTA"}]}, [PAGINA])
     assert solo_foto["texto_fotos"] == ["FIESTA"] and solo_foto["publicador_id"] is None
+
+
+def test_nombre_de_pagina_legible():
+    assert fb.nombre_pagina("Ayuntamiento-de-Sen%C3%A9s") == "Ayuntamiento de Senés"
+    assert fb.nombre_pagina("Ayuntamiento de Uleila del Campo") == "Ayuntamiento de Uleila del Campo"
+    assert fb.nombre_pagina(None) is None
 
 
 def test_texto_para_ia_deja_la_fecha_de_publicacion_al_final():
