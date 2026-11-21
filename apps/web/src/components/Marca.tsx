@@ -6,7 +6,7 @@ const Marca: React.FC = () => (
     </span>
     <span>
       <span className="marca__nombre">Reactiva tu pueblo</span>
-      <span className="marca__sub">Agenda de 5 pueblos de Almería</span>
+      <span className="marca__sub">5 pueblos de Almería</span>
     </span>
   </div>
 );
