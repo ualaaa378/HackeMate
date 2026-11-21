@@ -56,7 +56,7 @@ const Panel: React.FC = () => {
     <PaginaAdmin titulo="📊 Panel" roles={['moderador']}>
       <div className="cifras">
         <Cifra valor={miles(datos.actividades)} texto="planes publicados" />
-        <Cifra valor={pct100(datos.pct_importadas_auto)} texto="importados solos por la IA" />
+        <Cifra valor={pct100(datos.pct_importadas_auto)} texto="importados de Facebook y webs por la IA" />
         <Cifra valor={miles(datos.inscripciones)} texto="personas apuntadas" />
         <Cifra valor={pct(asistencia)} texto="de los apuntados fueron" />
         <Cifra valor={pct100(datos.pct_otro_pueblo)} texto="vienen de otro pueblo" />

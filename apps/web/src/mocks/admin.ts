@@ -229,6 +229,7 @@ export const estadisticasMock: Estadisticas = {
   tokens: {
     por_proveedor: {
       gemini: { llamadas: 212, entrada: 168_400, salida: 31_250, coste_eur: 0.04 },
+      nim: { llamadas: 58, entrada: 41_200, salida: 7_900, coste_eur: 0 },
       freellm: { llamadas: 37, entrada: 29_800, salida: 6_100, coste_eur: 0 },
       claude: { llamadas: 9, entrada: 7_300, salida: 1_650, coste_eur: 0.05 },
       reglas: { llamadas: 14, entrada: 0, salida: 0, coste_eur: 0 },
