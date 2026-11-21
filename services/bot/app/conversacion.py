@@ -172,6 +172,11 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
         return _decidir(msg, t)
     if t.startswith("insc:"):
         return vecino.inscribir(msg, msg.boton_id.split(":", 1)[1], _usuario(msg.de))
+    if t.startswith("desinsc:"):  # N6b: [Desapuntarme]
+        _, evento_id, insc_id = msg.boton_id.split(":", 2)
+        return vecino.desinscribir(msg, evento_id, insc_id, _usuario(msg.de))
+    if t == "insc_ok":
+        return ["👍 ¡Nos vemos allí!"]
     if t.startswith("info:"):
         return vecino.info(msg, msg.boton_id.split(":", 1)[1])
     if msg.lat is not None and msg.lon is not None and not texto:
@@ -220,6 +225,8 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
             return eco + vecino.gustos(msg, texto, usuario) + avisos.pregunta_si_toca(msg, usuario)
         if tipo == "inscribir":
             return eco + vecino.inscribir(msg, None, _usuario(msg.de))
+        if tipo == "desinscribir":
+            return eco + vecino.desinscribir(msg, None, None, _usuario(msg.de))
         if tipo == "pregunta_evento":
             return eco + vecino.pregunta(msg, texto, _usuario(msg.de))
 

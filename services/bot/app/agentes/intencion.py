@@ -7,9 +7,12 @@ from typing import Literal
 
 from app.agentes.extractor import _normalizar
 
-Tipo = Literal["publicar", "buscar", "gustos", "inscribir", "pregunta_evento"]
+Tipo = Literal["publicar", "buscar", "gustos", "inscribir", "desinscribir", "pregunta_evento"]
 
 _GUSTOS = r"\bme (gusta|gustan|encanta|encantan|interesa|interesan|chifla|chiflan)\b|\bmis gustos\b|\bme van\b"
+_DESINSCRIBIR = (r"\b(desapuntame|desapuntarme|me desapunto|borrame|quitame|darme de baja) (de|del)\b|"
+                 r"\bya no (voy|puedo ir|podemos ir)\b|\bcancela(r)? mi (plaza|inscripcion|reserva)\b|"
+                 r"\bno voy a poder ir\b")
 _INSCRIBIR = r"\b(apuntame|apuntarme|me apunto|inscribeme|inscribirme|reservame|quiero ir|vamos a ir|me quiero apuntar)\b"
 _BUSCAR = (r"\b(que hay|que se hace|que planes?|planes|algo que hacer|que puedo hacer|que hacer|actividades|agenda|"
            r"eventos?|donde (ir|salir)|alguna (fiesta|ruta|actividad)|hay algo|recomiendame|recomendacion(es)?)\b")
@@ -42,6 +45,8 @@ def detectar(texto: str, mirando_evento: bool = False) -> Intencion:
 
     if re.search(_GUSTOS, t) and not re.search(_FECHA_U_HORA, t):
         return Intencion("gustos")
+    if re.search(_DESINSCRIBIR, t):  # N6b, antes que inscribir
+        return Intencion("desinscribir")
     if re.search(_INSCRIBIR, t):
         return Intencion("inscribir")
     # Un post largo con fecha u hora es alguien publicando, aunque lleve un «¿te apuntas?»
