@@ -177,6 +177,58 @@ def test_fecha_sin_zona_se_entiende_en_hora_de_madrid(api):
     assert datos["periodo"]["desde"] == "2026-08-01T00:00:00+02:00"
 
 
+def _importadas(datos: dict) -> int:
+    return round(datos["pct_importadas_auto"] * datos["actividades"] / 100)
+
+
+def _importar_y_confirmar(api, titulo: str, canal: str, publicador_id: str, url: str | None) -> dict:
+    """Lo mismo que hacen scripts/importar_facebook.py (canal facebook) y el bot (telegram)."""
+    from tests.test_importar import _extraccion
+
+    extraccion = _extraccion()
+    extraccion["campos"]["titulo"]["valor"] = titulo
+    cuerpo = {
+        "extraccion": extraccion,
+        "origen": {"canal": canal, "url": url, "importado_auto": canal == "facebook"},
+        "publicador_id": publicador_id,
+    }
+    r = api.post("/api/v1/eventos/importar", json=cuerpo, headers=TOKEN)
+    assert r.status_code == 201, r.text
+    id_ = r.json()["evento"]["id"]
+    r = api.post(f"/api/v1/eventos/{id_}/confirmar", json={"campos": {}}, headers=TOKEN)
+    assert r.status_code == 200, r.text
+    return r.json()["evento"]
+
+
+def test_lo_importado_de_facebook_cuenta_en_el_porcentaje(api):
+    """A4: lo que entra por la ingesta de Facebook sube `pct_importadas_auto`; lo de Telegram, no."""
+    antes = api.get(URL, headers=TOKEN).json()
+
+    ayto = "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a02"  # Ayto. Lucainena, automática
+    fb = _importar_y_confirmar(api, "Mercadillo navideño", "facebook", ayto, "https://www.facebook.com/p/1")
+    assert fb["estado"] == "publicado" and fb["origen"]["importado_auto"] is True
+    tg = _importar_y_confirmar(api, "Taller de belenes", "telegram", ayto, None)
+    assert tg["estado"] == "publicado" and tg["origen"]["importado_auto"] is False
+
+    despues = api.get(URL, headers=TOKEN).json()
+    _valida(RESPUESTA, despues)
+    assert despues["actividades"] == antes["actividades"] + 2
+    assert _importadas(despues) == _importadas(antes) + 1
+
+    # Un post de Facebook de una asociación «a mano» no cuenta hasta que el moderador lo aprueba
+    amigos = "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a01"
+    revision = _importar_y_confirmar(api, "Concierto de villancicos", "facebook", amigos, "https://www.facebook.com/p/2")
+    assert revision["estado"] == "en_revision"
+    assert api.get(URL, headers=TOKEN).json()["actividades"] == despues["actividades"]
+
+    r = api.post(f"/api/v1/moderacion/{revision['id']}/decision", json={"decision": "aprobar", "motivo": None},
+                 headers=_bearer(LUCIA_MODERADORA, "moderador"))
+    assert r.status_code == 200, r.text
+    final = api.get(URL, headers=TOKEN).json()
+    assert final["actividades"] == despues["actividades"] + 1
+    assert _importadas(final) == _importadas(despues) + 1
+
+
 def test_rechazados_y_en_revision_no_cuentan(api, db):
     from app.modelos import Evento
 

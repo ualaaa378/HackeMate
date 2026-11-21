@@ -99,7 +99,7 @@ Opcional (lo pide el bot, plan C de la demo): un chat simulado en la web que lla
 
 | Hasta | Tarea |
 |---|---|
-| dom 00:00 | - [ ] **A4.** `GET /estadisticas`: que el % de importadas cuente las de Facebook (llegan con `importado_auto`). |
+| dom 00:00 | - [x] **A4.** `GET /estadisticas`: que el % de importadas cuente las de Facebook (llegan con `importado_auto`). *(sáb 21/11: ya lo hacía, ahora con test de punta a punta. `pct_importadas_auto` = planes `publicado`/`finalizado` que llegaron solos (Facebook, Instagram, web externa) sobre el total del periodo. Lo de Telegram, la web y el panel no cuenta como importado. Un post de Facebook que va a la bandeja cuenta cuando el moderador lo aprueba. **Adán (C6):** basta con pintar `pct_importadas_auto`; no hace falta cambiar el contrato.)* |
 | dom 07:00 | - [ ] **A5.** Arreglos `fix/*` de los ensayos y repaso de la sección del backend del README. |
 | — | - [ ] **D4 (decidir con Adán).** Lo importado de Facebook de los ayuntamientos (modo «automática») hoy se publica sin revisión; pasarlo siempre por la bandeja son dos líneas en `decidir_estado`, sin tocar el contrato. Además, los Aytos. de Uleila y Senés no son publicadores: sus posts llegan «Sin publicador identificado» (van a revisión). |
 
