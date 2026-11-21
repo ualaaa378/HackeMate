@@ -65,6 +65,29 @@ Revisado el 21/11/2026 a las 09:20. Todo esto ya lo usa la app web (flujo C) o e
 
 > **Regla del equipo (ver `CLAUDE.md`):** cada flujo apunta aquí, bajo el flujo responsable, lo que necesita de los demás. Antes de empezar una tarea, revisa tu apartado.
 
+### 📋 Reparto del sábado 21/11 (09:30) · prueba de la v1
+
+Quién hace qué ahora. Cada uno marca su línea al terminar y apunta los fallos en el apartado del flujo que los tiene que arreglar (más abajo).
+
+**Adán (flujo C) · Docker y web**
+- [ ] `git pull` de `develop` (ya lleva la API de la #35), `docker compose -f infra/docker-compose.yml down -v` (borra la base vieja para probar la migración 0007 en PostgreSQL), `cp .env.example .env` con las claves y `up --build`.
+- [ ] `scripts/smoke_test.sh` hasta «SMOKE TEST EN VERDE». Si falla, `docker compose -f infra/docker-compose.yml logs api` y el error a Benas.
+- [ ] Guion sin móvil con `scripts/simular_chat.py` y, después, los siete pasos con Telegram y la web en `http://localhost:8080` (`DEMO_MODE=true`). Ver [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md) §0 y §3.
+- [ ] Tests de la web (`cd apps/web && npm ci && npm run test:unit`, y `npm run test:e2e`), que Benas no puede pasar sin Node.
+- [ ] Conectar en `/admin/panel` el botón «Simular caída de la IA» y el coste en tokens con `GET /admin/bot/metricas` y `POST /admin/bot/simular-caida` (ya en la API).
+- [ ] Entre ensayos, `scripts/demo_reset.sh`.
+
+**Benas (flujo A) · API**
+- [x] PR `Flujo-A` → `develop` fusionada (#35, 09:21). Adán ya puede empezar la prueba con Docker.
+- [ ] Arreglar lo que salga de la prueba con Docker (apartado «Flujo A» de abajo).
+- [ ] Con Francisco: avisos a quien solo usa Telegram y código de acceso por Telegram («Flujos A y B · a acordar»).
+
+**Francisco (flujo B) · bot**
+- [ ] Hallazgos de la prueba de la v1: título sin IA, pregunta por chat privado y post de spam sin fecha (apartado «hallazgos» de abajo).
+- [ ] Pedir nombre, DNI y residencia del responsable en el alta de asociaciones (la API ya lo acepta).
+- [ ] `POST /ai/frase` para la frase de portada (primero en el contrato).
+- [ ] Con Benas: avisos a quien solo usa Telegram y código de acceso por Telegram.
+
 ### Flujo A · API (Benas)
 
 Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen en la API (ninguna queda con `x-implementado: false`).
