@@ -333,13 +333,18 @@ def test_demo_desactivado_404(api):
     _error(api.post(DEMO, json={"rol": "moderador"}), 404, "no_encontrado")
 
 
-def test_demo_activado_da_token_de_lucia(api, monkeypatch):
+def test_demo_activado_nunca_da_sesion_de_moderador(api, monkeypatch):
+    # La demo va por una URL pública: la moderación entra solo con usuario y contraseña (POST /auth/admin).
     _ajustes(monkeypatch, DEMO_MODE="true")
-    r = api.post(DEMO, json={"rol": "moderador"})
+    _error(api.post(DEMO, json={"rol": "moderador"}), 403, "demo_sin_moderador")
+    _error(api.post(DEMO, json={"usuario_id": LUCIA}), 403, "demo_sin_moderador")
+
+
+def test_demo_activado_da_token_de_otros_roles(api, monkeypatch):
+    _ajustes(monkeypatch, DEMO_MODE="true")
+    r = api.post(DEMO, json={"rol": "publicador"})
     assert r.status_code == 200, r.text
-    claims = _token_valido(r.json())
-    assert claims["sub"] == LUCIA and claims["rol"] == "moderador"
-    assert api.get(PENDIENTES, headers={"Authorization": f"Bearer {r.json()['access_token']}"}).status_code == 200
+    assert _token_valido(r.json())["rol"] == "publicador"
 
     r = api.post(DEMO, json={"usuario_id": CARMEN})
     assert r.status_code == 200 and r.json()["usuario"]["nombre"] == "Carmen"

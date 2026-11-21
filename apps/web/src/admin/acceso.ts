@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 
 export type RolAdmin = 'moderador' | 'publicador';
 /** ok: dentro · credenciales: usuario o contraseña mal · sin_api: no se puede comprobar ahora. */
-export type ResultadoAcceso = 'ok' | 'credenciales' | 'sin_api';
+export type ResultadoAcceso = 'ok' | 'credenciales' | 'bloqueado' | 'sin_api';
 export interface AccesoAdmin {
   rol: RolAdmin | null;
   nombre: string;

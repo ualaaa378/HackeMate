@@ -55,3 +55,47 @@ def test_avisa_si_la_contrasena_es_la_de_ejemplo_fuera_de_la_demo():
     assert any("ADMIN_CONTRASENA" in a for a in avisos)
     assert not any("ADMIN_CONTRASENA" in a for a in
                    avisar_configuracion_insegura(Settings(demo_mode=False, jwt_secret="x" * 32, admin_contrasena="buena")))
+
+
+@pytest.fixture(autouse=True)
+def _sin_fallos_previos():
+    from app.rutas import auth
+
+    auth._fallos_admin.clear()
+    yield
+    auth._fallos_admin.clear()
+
+
+def test_cinco_fallos_bloquean_la_ip_con_429(api):
+    for _ in range(5):
+        assert api.post(URL, json={"usuario": "admin", "contrasena": "mal"}).status_code == 401
+    r = api.post(URL, json={"usuario": "admin", "contrasena": "1234"})
+    assert r.status_code == 429 and r.json()["error"]["code"] == "demasiados_intentos"
+    # Otra IP (por el túnel, CF-Connecting-IP) sigue pudiendo entrar
+    otra = api.post(URL, json={"usuario": "admin", "contrasena": "1234"}, headers={"CF-Connecting-IP": "203.0.113.9"})
+    assert otra.status_code == 200
+
+
+def test_entrar_bien_borra_los_fallos(api):
+    for _ in range(4):
+        api.post(URL, json={"usuario": "admin", "contrasena": "mal"})
+    assert api.post(URL, json={"usuario": "admin", "contrasena": "1234"}).status_code == 200
+    for _ in range(4):
+        assert api.post(URL, json={"usuario": "admin", "contrasena": "mal"}).status_code == 401
+
+
+def test_tope_total_frena_a_quien_cambia_de_ip(api, monkeypatch):
+    from app.rutas import auth
+
+    monkeypatch.setattr(auth, "ADMIN_FALLOS_TOTALES", 3)
+    for i in range(3):
+        api.post(URL, json={"usuario": "admin", "contrasena": "mal"}, headers={"CF-Connecting-IP": f"198.51.100.{i}"})
+    r = api.post(URL, json={"usuario": "admin", "contrasena": "1234"}, headers={"CF-Connecting-IP": "198.51.100.99"})
+    assert r.status_code == 429
+
+
+def test_avisa_tambien_en_modo_demo():
+    avisos = avisar_configuracion_insegura(Settings(demo_mode=True))
+    assert any("ADMIN_CONTRASENA" in a for a in avisos)
+    assert any("JWT_SECRET" in a for a in avisos)
+    assert any("INTERNAL_TOKEN" in a for a in avisos)

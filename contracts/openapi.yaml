@@ -844,6 +844,7 @@ paths:
               schema: { $ref: "#/components/schemas/Token" }
         "401": { $ref: "#/components/responses/Error", description: "401 `credenciales_invalidas` (no dice cuál de los dos falla)" }
         "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
+        "429": { $ref: "#/components/responses/Error", description: "429 `demasiados_intentos`: 5 fallos desde la misma IP (o 30 en total) en 10 minutos; `details.reintentar_en_s`" }
         "503": { $ref: "#/components/responses/Error", description: "503 `sin_moderador` (no hay ningún usuario moderador)" }
 
   /api/v1/auth/demo:
@@ -854,6 +855,7 @@ paths:
         Existe solo si la API arranca con `DEMO_MODE=true` (por defecto `false`); si no, responde 404.
         Sirve para que el panel y la app entren en la demo como la moderadora o como una vecina sin cuentas
         de Google. Con `usuario_id` da la sesión de ese usuario; con `rol`, la del usuario más antiguo con ese rol.
+        Nunca da sesión de moderador (403 `demo_sin_moderador`): la moderación entra con `POST /auth/admin`.
         Nunca se activa fuera de la presentación.
       security: [{}]
       x-implementado: true
@@ -872,6 +874,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Token" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `demo_sin_moderador`" }
         "404": { $ref: "#/components/responses/Error" }
         "422": { $ref: "#/components/responses/Error" }
 

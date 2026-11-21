@@ -1611,6 +1611,8 @@ export interface paths {
         401: components['responses']['Error'];
         /** @description 422 `validacion` */
         422: components['responses']['Error'];
+        /** @description 429 `demasiados_intentos`: 5 fallos desde la misma IP (o 30 en total) en 10 minutos; `details.reintentar_en_s` */
+        429: components['responses']['Error'];
         /** @description 503 `sin_moderador` (no hay ningún usuario moderador) */
         503: components['responses']['Error'];
       };
@@ -1635,6 +1637,7 @@ export interface paths {
      * @description Existe solo si la API arranca con `DEMO_MODE=true` (por defecto `false`); si no, responde 404.
      *     Sirve para que el panel y la app entren en la demo como la moderadora o como una vecina sin cuentas
      *     de Google. Con `usuario_id` da la sesión de ese usuario; con `rol`, la del usuario más antiguo con ese rol.
+     *     Nunca da sesión de moderador (403 `demo_sin_moderador`): la moderación entra con `POST /auth/admin`.
      *     Nunca se activa fuera de la presentación.
      */
     post: {
@@ -1664,6 +1667,8 @@ export interface paths {
             'application/json': components['schemas']['Token'];
           };
         };
+        /** @description 403 `demo_sin_moderador` */
+        403: components['responses']['Error'];
         404: components['responses']['Error'];
         422: components['responses']['Error'];
       };

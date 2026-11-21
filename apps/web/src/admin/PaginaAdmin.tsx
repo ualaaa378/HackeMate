@@ -62,6 +62,7 @@ const PaginaAdmin: React.FC<{
 
 const MENSAJES: Record<Exclude<ResultadoAcceso, 'ok'>, string> = {
   credenciales: 'Usuario o contraseña incorrectos.',
+  bloqueado: 'Demasiados intentos fallidos. Espera unos minutos y vuelve a probar.',
   sin_api: 'Ahora no se puede comprobar el acceso. Inténtalo de nuevo en un momento.',
 };
 

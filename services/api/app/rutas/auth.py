@@ -11,11 +11,14 @@ import hashlib
 import hmac
 import logging
 import secrets
+import threading
+import time
+from collections import deque
 from datetime import timedelta
 from typing import Annotated, Literal
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -287,16 +290,67 @@ def _igual(a: str, b: str) -> bool:
     return hmac.compare_digest(a.encode("utf-8"), b.encode("utf-8"))
 
 
+# Fuerza bruta: como mucho ADMIN_FALLOS_POR_IP fallos por IP y ADMIN_FALLOS_TOTALES entre todas en
+# ADMIN_VENTANA_S; después, 429 hasta que caduquen. El tope total frena a quien cambia de IP. En memoria: un solo
+# proceso de la API (se reinicia a cero al reiniciar, suficiente para la demo).
+ADMIN_FALLOS_POR_IP = 5
+ADMIN_FALLOS_TOTALES = 30
+ADMIN_VENTANA_S = 10 * 60
+_fallos_admin: dict[str, deque[float]] = {}
+_cerrojo_fallos = threading.Lock()
+
+
+def _ip_cliente(request: Request) -> str:
+    """Por el túnel, Cloudflare pone la IP real en CF-Connecting-IP (y sobrescribe la que mande el cliente)."""
+    return request.headers.get("cf-connecting-ip") or (request.client.host if request.client else "") or "?"
+
+
+def _limpiar_fallos(limite: float) -> int:
+    total = 0
+    for ip in list(_fallos_admin):
+        cola = _fallos_admin[ip]
+        while cola and cola[0] <= limite:
+            cola.popleft()
+        if cola:
+            total += len(cola)
+        else:
+            del _fallos_admin[ip]
+    return total
+
+
+def _comprobar_bloqueo_admin(ip: str) -> None:
+    ahora_s = time.monotonic()
+    with _cerrojo_fallos:
+        total = _limpiar_fallos(ahora_s - ADMIN_VENTANA_S)
+        cola = _fallos_admin.get(ip)
+        if (cola and len(cola) >= ADMIN_FALLOS_POR_IP) or total >= ADMIN_FALLOS_TOTALES:
+            espera = int(ADMIN_VENTANA_S - (ahora_s - (cola[0] if cola else ahora_s))) + 1
+            log.warning("acceso de moderación bloqueado por demasiados fallos")
+            raise ErrorApi(429, "demasiados_intentos", "Demasiados intentos fallidos: espera unos minutos",
+                           {"reintentar_en_s": max(espera, 1)})
+
+
+def _anotar_fallo_admin(ip: str) -> None:
+    with _cerrojo_fallos:
+        _fallos_admin.setdefault(ip, deque()).append(time.monotonic())
+
+
 @router.post("/admin")
-def login_admin(datos: LoginAdmin, db: Session = Depends(get_db)):
+def login_admin(datos: LoginAdmin, request: Request, db: Session = Depends(get_db)):
     """Usuario y contraseña de la moderación (ADMIN_USUARIO / ADMIN_CONTRASENA) → sesión del moderador más antiguo.
-    Funciona con y sin DEMO_MODE. Comparación en tiempo constante; el error no dice cuál de los dos falla."""
+    Funciona con y sin DEMO_MODE. Comparación en tiempo constante; el error no dice cuál de los dos falla.
+    429 `demasiados_intentos` tras ADMIN_FALLOS_POR_IP fallos seguidos desde la misma IP."""
     ajustes = get_settings()
+    ip = _ip_cliente(request)
+    _comprobar_bloqueo_admin(ip)
     usuario_ok = _igual(datos.usuario.strip(), ajustes.admin_usuario)
     contrasena_ok = bool(ajustes.admin_contrasena) and _igual(datos.contrasena, ajustes.admin_contrasena)
     if not (usuario_ok and contrasena_ok):
+        _anotar_fallo_admin(ip)
         log.info("acceso de moderación rechazado")
         raise ErrorApi(401, "credenciales_invalidas", "Usuario o contraseña incorrectos")
+    with _cerrojo_fallos:
+        _fallos_admin.pop(ip, None)
     moderador = db.scalar(
         select(Usuario).where(Usuario.rol == "moderador").order_by(Usuario.creado_en, Usuario.id).limit(1)
     )
@@ -317,7 +371,8 @@ class LoginDemo(BaseModel):
 
 @router.post("/demo")
 def login_demo(datos: LoginDemo, db: Session = Depends(get_db)):
-    """Solo con DEMO_MODE=true: sesión como un usuario concreto o como el primero (más antiguo) con ese rol."""
+    """Solo con DEMO_MODE=true: sesión como un usuario concreto o como el primero (más antiguo) con ese rol.
+    Nunca de moderador (403 `demo_sin_moderador`)."""
     if not get_settings().demo_mode:
         raise ErrorApi(404, "no_encontrado", "Not Found")
     if datos.usuario_id is not None:
@@ -330,4 +385,7 @@ def login_demo(datos: LoginDemo, db: Session = Depends(get_db)):
         raise ErrorApi(422, "validacion", "Indica usuario_id o rol", {"campos": ["usuario_id", "rol"]})
     if usuario is None:
         raise ErrorApi(404, "usuario_no_encontrado", "No hay ningún usuario así")
+    # La URL de la demo es pública (túnel): la moderación solo con usuario y contraseña (POST /auth/admin).
+    if usuario.rol == "moderador":
+        raise ErrorApi(403, "demo_sin_moderador", "La moderación entra con usuario y contraseña")
     return respuesta_token(usuario)

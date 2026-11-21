@@ -13,6 +13,7 @@ _ENV_FILES = ((_rutas[3] / ".env",) if len(_rutas) > 3 else ()) + (".env",)
 JWT_SECRET_POR_DEFECTO = "cambia-esto-tambien"
 # Acceso a la zona del ayuntamiento (POST /auth/admin). Provisional para la demo: se cambia en el .env.
 ADMIN_CONTRASENA_POR_DEFECTO = "1234"
+INTERNAL_TOKEN_POR_DEFECTO = "cambia-esto"
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class Settings(BaseSettings):
 
     # Sin .env: SQLite en services/api/hackemate.db. Docker fija la de PostgreSQL en el compose.
     database_url: str = "sqlite:///./hackemate.db"
-    internal_token: str = "cambia-esto"
+    internal_token: str = INTERNAL_TOKEN_POR_DEFECTO
     # Login (app/seguridad.py y app/rutas/auth.py)
     jwt_secret: str = JWT_SECRET_POR_DEFECTO
     jwt_expira_min: int = 1440
@@ -73,18 +74,21 @@ class Settings(BaseSettings):
 
 
 def avisar_configuracion_insegura(ajustes: Settings | None = None) -> list[str]:
-    """Registra un WARNING por cada ajuste peligroso fuera del modo demo. No bloquea el arranque (la demo y el
-    compose dependen de que la API arranque). Devuelve los avisos."""
+    """Registra un WARNING por cada ajuste peligroso, también con DEMO_MODE (la demo va por una URL pública).
+    No bloquea el arranque (la demo y el compose dependen de que la API arranque). Devuelve los avisos."""
     ajustes = ajustes or get_settings()
     avisos = []
-    if not ajustes.demo_mode and ajustes.jwt_secret in (JWT_SECRET_POR_DEFECTO, ""):
+    if ajustes.jwt_secret in (JWT_SECRET_POR_DEFECTO, ""):
         avisos.append(
             "JWT_SECRET tiene el valor de ejemplo: cualquiera podría firmar sesiones válidas. "
             "Pon un secreto aleatorio en .env (p. ej. python -c \"import secrets; print(secrets.token_urlsafe(32))\")."
         )
-    if not ajustes.demo_mode and ajustes.admin_contrasena in (ADMIN_CONTRASENA_POR_DEFECTO, ""):
+    if ajustes.admin_contrasena in (ADMIN_CONTRASENA_POR_DEFECTO, ""):
         avisos.append("ADMIN_CONTRASENA tiene el valor de ejemplo (1234): cualquiera podría entrar en la moderación. "
                       "Pon otra en .env.")
+    if ajustes.internal_token in (INTERNAL_TOKEN_POR_DEFECTO, ""):
+        avisos.append("INTERNAL_TOKEN tiene el valor de ejemplo: cualquiera podría hacerse pasar por el bot. "
+                      "Pon un secreto aleatorio en .env (el mismo para api y bot).")
     for aviso in avisos:
         log.warning(aviso)
     return avisos

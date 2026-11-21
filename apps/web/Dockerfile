@@ -17,5 +17,6 @@ RUN npm run build
 # Etapa 2: nginx sirve los estáticos
 FROM nginx:1.27-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY cabeceras-seguridad.conf /etc/nginx/cabeceras-seguridad.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080

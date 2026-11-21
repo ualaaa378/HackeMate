@@ -209,6 +209,8 @@ Opcional (lo pide el bot, plan C de la demo): un chat simulado en la web que lla
 | sáb 21/11 | - [x] **Tareas programadas (Francisco)** (`app/tareas_programadas.py`, en el arranque de `app/main.py` junto al bucle de reintentos). Cada `TAREAS_CADA_MIN` (10) minutos: **1)** recordatorio 24 h antes («⏰ Mañana a las 9:00 tienes «Ruta…» en Velefique») a quien está `confirmada`; **2)** «¿Qué tal fue «…»?» a quien fue a un plan que terminó en las últimas 24 h (el bot pone botones y deja la respuesta como comentario del plan); **3)** resumen semanal por pueblo (`RESUMEN_DIA_SEMANA`/`RESUMEN_HORA`, lunes 9:00) con los planes de los 7 días siguientes, solo a quien acepta avisos (`tipo: recomendacion`). Cada aviso sale una vez por persona (se mira la marca del texto). La lista de espera ya avisaba sola (`promocionar`). Variables nuevas en `.env.example`; 5 tests nuevos, **652 en verde**. Probado de punta a punta en Docker: los tres avisos llegan y la valoración queda en el chat del plan. Sin cambio de contrato. |
 | sáb 21/11 | - [x] **D4.** Lo importado solo (Facebook de los ayuntamientos, `importado_auto`) **pasa siempre por la bandeja**, aunque la asociación esté en automática (motivo «Importado automáticamente…»). Lo que publica la asociación por el bot o la web sigue saliendo solo. Se cambia sin tocar código con `MODERACION_IMPORTADOS_A_BANDEJA=false` en el `.env` (por defecto `true`). Sin cambio de contrato. *Comprobado además el scraping (sáb 21/11, 16:15): Apify en vivo (5 páginas, 7 posts, solo los nuevos) y los 20 posts guardados con la IA de NIM → 14 a la bandeja, 5 descartados, 1 pendiente sin título.* |
 
+| sáb 21/11 | - [x] **Seguridad de `/admin` (Adán, auditoría sáb 21/11 23:00).** Hecho en la API, **Francisco: revísalo cuando puedas**: `POST /auth/demo` ya **nunca da sesión de moderador** (403 `demo_sin_moderador`; la web solo lo usa para «Asociación»); `POST /auth/admin` bloquea con 429 `demasiados_intentos` tras 5 fallos por IP (o 30 en total) en 10 min; el aviso del log por `JWT_SECRET`, `ADMIN_CONTRASENA` o `INTERNAL_TOKEN` de ejemplo sale también con `DEMO_MODE`. En infra: nginx borra `X-Internal-Token` en `/api/` y `/webhook/` (el bot llama a `api:8000` por dentro, no le afecta) y añade cabeceras de seguridad; el compose publica db, api y bot solo en `127.0.0.1` (`PUERTOS_IP=0.0.0.0` en el `.env` si otro ordenador necesita la API o el bot directamente). Contrato: solo se añaden las respuestas 403 y 429. **En la máquina de la demo:** `ADMIN_CONTRASENA`, `JWT_SECRET` e `INTERNAL_TOKEN` propios en el `.env`. |
+
 Notas: `frase_portada` ya se guarda; si llega vacía, la web pone su frase fija por tipo de plan (B5b, `/ai/frase`, se ha quedado fuera). Un vecino sin asociación que propone un plan solo ve sus `datos_ayuntamiento` en la respuesta del alta.
 
 ### Francisco (flujo B) · bot e IA
@@ -320,11 +322,12 @@ La lista completa y comentada está en `.env.example` (manda sobre esta tabla).
 |---|---|---|
 | `DATABASE_URL` | `sqlite:///./hackemate.db` | Base de datos. En Docker el compose la fija a PostgreSQL (`db`). |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `DB_PORT` | `hackemate` / … / `5432` | Contenedor `db`. |
-| `INTERNAL_TOKEN` | `cambia-esto` | Cabecera `X-Internal-Token` entre api y bot. Cambiarlo en la demo. |
-| `JWT_SECRET` / `JWT_EXPIRA_MIN` | `cambia-esto-tambien` / `1440` | Firma y duración de las sesiones. Con el valor de ejemplo y `DEMO_MODE=false`, la api arranca igual pero escribe un `WARNING` en el log: pon un secreto aleatorio. |
+| `INTERNAL_TOKEN` | `cambia-esto` | Cabecera `X-Internal-Token` entre api y bot. Cambiarlo en la demo (con el de ejemplo la api escribe un `WARNING`). Desde fuera no llega nunca: el nginx de la web la borra. |
+| `JWT_SECRET` / `JWT_EXPIRA_MIN` | `cambia-esto-tambien` / `1440` | Firma y duración de las sesiones. Con el valor de ejemplo, la api arranca igual pero escribe un `WARNING` en el log (también con `DEMO_MODE`): pon un secreto aleatorio. |
+| `PUERTOS_IP` | `127.0.0.1` | IP donde Docker publica db, api y bot. `127.0.0.1` = solo este ordenador (la web y el túnel van por el 8080). |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_TOKENINFO_URL` / `GOOGLE_TIMEOUT_S` | vacío / URL de Google / `5` | Login con Google (vacío → `/auth/google` responde 503). |
-| `DEMO_MODE` | `false` | `true` habilita `POST /api/v1/auth/demo`. Solo en la presentación. |
-| `ADMIN_USUARIO` / `ADMIN_CONTRASENA` | `admin` / `1234` | Acceso de la moderación del ayuntamiento en la web (`POST /auth/admin`). Provisional: cambiar la contraseña en la máquina de la demo. |
+| `DEMO_MODE` | `false` | `true` habilita `POST /api/v1/auth/demo` (vecino o asociación; nunca moderador). Solo en la presentación. |
+| `ADMIN_USUARIO` / `ADMIN_CONTRASENA` | `admin` / `1234` | Acceso de la moderación del ayuntamiento en la web (`POST /auth/admin`). Cambiar la contraseña en la máquina de la demo. 5 fallos por IP en 10 min → 429. |
 | `BOT_URL` | `http://bot:8001` | Dónde están `/notify` y `/ai/*`. |
 | `API_URL` | `http://api:8000` | La usa el bot para llamar a la api. |
 | `APP_VERSION` | vacío | Versión de `/health` (vacío = la del código). |
@@ -416,7 +419,7 @@ El smoke test solo usa HTTP. Lee `API_URL` (por defecto `http://localhost:8000`)
 
 ### Modo demo
 
-Con `DEMO_MODE=true`, `POST /api/v1/auth/demo` con `{"rol": "moderador"}` o `{"usuario_id": "<uuid>"}` devuelve un JWT sin login (Carmen, la vecina de la demo, es `5a5e0000-0000-4000-8000-000000000001`). Con `false` responde 404. No dejarlo activo fuera de la presentación.
+Con `DEMO_MODE=true`, `POST /api/v1/auth/demo` con `{"rol": "publicador"}` o `{"usuario_id": "<uuid>"}` devuelve un JWT sin login (Carmen, la vecina de la demo, es `5a5e0000-0000-4000-8000-000000000001`). Nunca de moderador (403 `demo_sin_moderador`): la URL de la demo es pública, así que la moderación entra siempre con `POST /auth/admin`. Con `false` responde 404. No dejarlo activo fuera de la presentación.
 
 ### Guion de la demo y qué lo sostiene en la api
 
