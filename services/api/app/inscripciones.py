@@ -16,7 +16,7 @@ Ninguna función hace commit: lo hace la ruta, y los avisos (creados con `enviar
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, select, update
+from sqlalchemy import case, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -222,3 +222,25 @@ def avisar_inscritos(db: Session, evento: Evento, tipo: str, texto: str) -> list
         .order_by(Inscripcion.creado_en)
     ).all()
     return [notificar(db, tipo=tipo, texto=texto, usuario=u, evento_id=evento.id, enviar=False) for _, u in filas]
+
+
+def recalcular_plazas(db: Session) -> int:
+    """N6: `plazas_libres = plazas_totales - inscritos en la plataforma` (suma de plazas de las inscripciones
+    `confirmada`, las de la web y las del bot). Lo usan el seed y la migración 0009: los inscritos inventados de los
+    fixtures dejan de contar. Solo planes con aforo que no han terminado (los `finalizado` guardan su ocupación
+    histórica para las estadísticas). Devuelve cuántos planes cambian. No hace commit."""
+    ocupadas = (
+        select(func.coalesce(func.sum(Inscripcion.plazas), 0))
+        .where(Inscripcion.evento_id == Evento.id, Inscripcion.estado == "confirmada")
+        .scalar_subquery()
+    )
+    libres = case((Evento.plazas_totales - ocupadas < 0, 0), else_=Evento.plazas_totales - ocupadas)
+    resultado = db.execute(
+        update(Evento)
+        .where(Evento.plazas_totales.is_not(None), Evento.estado != "finalizado",
+               or_(Evento.plazas_libres.is_(None), Evento.plazas_libres != libres))
+        .values(plazas_libres=libres)
+        .execution_options(synchronize_session=False)
+    )
+    db.expire_all()
+    return resultado.rowcount

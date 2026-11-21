@@ -108,7 +108,8 @@ def test_carmen_ruta_solidaria_primera_con_motivo(db):
     assert primera.evento.id == RUTA
     assert primera.motivo.startswith("Te gusta el senderismo")
     assert "Velefique (a 5 km)" in primera.motivo
-    assert "8 plazas" in primera.motivo
+    # N6: 39 plazas libres reales (40 − 1 confirmada), no las 8 inventadas del fixture: ya no son «las últimas»
+    assert "plazas" not in primera.motivo and primera.evento.plazas_libres == 39
     assert primera.distancia_km == pytest.approx(4.9, abs=0.3)
     assert primera.puntuacion > lista[1].puntuacion
     assert [r.puntuacion for r in lista] == sorted((r.puntuacion for r in lista), reverse=True)
@@ -209,7 +210,7 @@ def test_ruta_carmen_por_api_con_token_interno(api, db):
     assert len(cuerpo["items"]) == 5  # límite por defecto
     primera = cuerpo["items"][0]
     assert primera["evento"]["id"] == RUTA
-    assert primera["motivo"] == "Te gusta el senderismo, es en Velefique (a 5 km) y quedan las últimas 8 plazas"
+    assert primera["motivo"] == "Te gusta el senderismo, es en Velefique (a 5 km) y es dentro de 9 días"
     assert primera["distancia_km"] == pytest.approx(4.9, abs=0.3)
 
 

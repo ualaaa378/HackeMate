@@ -224,3 +224,46 @@ def test_0008_pasa_el_nivel_1_obsoleto_a_mano(url):
         niveles = dict(c.execute(text("SELECT id, nivel_confianza FROM publicadores")).all())
     motor.dispose()
     assert niveles == {"p0": 0, "p1": 0, "p2": 2}
+
+
+def test_0009_plazas_libres_salen_de_las_inscripciones(url):
+    """0009 (N6): plazas_libres = plazas_totales − inscritos confirmados. Los finalizados y los sin aforo no cambian."""
+    from datetime import datetime, timezone
+
+    from sqlalchemy.orm import Session
+
+    from app.modelos import Evento, Inscripcion, Municipio, Usuario
+
+    cfg = _config(url)
+    command.upgrade(cfg, "0008")
+    motor = crear_motor(url)
+    fecha = datetime(2026, 12, 1, 10, 0, tzinfo=timezone.utc)
+    with Session(motor) as db:
+        db.add(Municipio(nombre="Senés", lat=37.1983, lon=-2.3447))
+        db.flush()
+
+        def evento(id_, estado, total, libres):
+            db.add(Evento(id=id_, titulo=id_, categoria="cultural", municipio="Senés", lat=0, lon=0,
+                          fecha_inicio=fecha, estado=estado, plazas_totales=total, plazas_libres=libres))
+
+        evento("abierto", "publicado", 10, 2)  # 8 inscritos inventados en el fixture
+        evento("pasado", "finalizado", 10, 1)
+        evento("sin_aforo", "publicado", None, None)
+        evento("lleno", "publicado", 1, 1)
+        db.flush()
+        for i, (ev, estado, plazas) in enumerate((("abierto", "confirmada", 2), ("abierto", "confirmada", 1),
+                                                   ("abierto", "lista_espera", 1), ("abierto", "cancelada", 1),
+                                                   ("lleno", "confirmada", 1), ("pasado", "asistio", 1))):
+            u = Usuario(nombre=f"u{i}")
+            db.add(u)
+            db.flush()
+            db.add(Inscripcion(evento_id=ev, usuario_id=u.id, estado=estado, plazas=plazas, canal="web"))
+        db.commit()
+    motor.dispose()
+
+    command.upgrade(cfg, "head")
+    motor = crear_motor(url)
+    with motor.connect() as c:
+        libres = dict(c.execute(text("SELECT id, plazas_libres FROM eventos")).all())
+    motor.dispose()
+    assert libres == {"abierto": 7, "pasado": 1, "sin_aforo": None, "lleno": 0}
