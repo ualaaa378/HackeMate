@@ -181,7 +181,7 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 
 | Hito | Hasta | Tarea |
 |---|---|---|
-| H2 · CP2 | sáb 13:00 | - [ ] **C1.** *(sáb 11:30: Docker, smoke test, guion por chat y `/admin` en verde con `CANAL=console`; falta Telegram.)* `docker compose --env-file .env -f infra/docker-compose.yml down -v`, `up --build`, `scripts/smoke_test.sh` en verde y pasos 1–3 con Telegram (`DEMO_MODE=true`). Rellenar la columna «Docker + Telegram» de `SINCRONIZACION_SABADO.md` §5. Si sale bien, etiqueta `v0.2`. |
+| H2 · CP2 | sáb 13:00 | - [x] **C1.** *(sáb 13:20: CP2 cerrado. Docker, smoke test, guion y `/admin` en verde en la máquina de Adán; pasos 1–3 con Telegram real en el portátil de Francisco. Etiqueta `v0.2` sobre `develop` en `3496f65`.)* `docker compose --env-file .env -f infra/docker-compose.yml down -v`, `up --build`, `scripts/smoke_test.sh` en verde y pasos 1–3 con Telegram (`DEMO_MODE=true`). |
 | H3 · CP3 | sáb 19:00 | - [ ] **C2.** «Para ti» en la agenda con `GET /recomendaciones` y el motivo legible (Carmen ve la II Ruta Solidaria la primera). |
 | H3 · CP3 | sáb 19:00 | - [-] **C3.** *(sustituida por C8 y C8b en «🚨 PRIORIDAD», arriba)* **URL pública de la web:** que el `nginx.conf` de la web pase `/api/` a `api:8000`, que la web use una URL relativa (`VITE_API_URL` vacío) y un segundo túnel a `web:8080`. Es infra de A: lo hace Adán porque Benas no puede ejecutar Docker, en una PR que mira Benas. |
 | H3 · CP3 | sáb 19:00 | - [ ] **C4.** PWA instalable: service worker e icono (el `manifest.json` ya existe). |
@@ -196,7 +196,7 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 |---|---|---|
 | H2 · CP2 | sáb 13:00 | - [x] **A1.** Arreglar lo que salga de la prueba con Docker de Adán (apartado «Flujo A» de abajo). *(sáb: el único hallazgo de A, los duplicados en la bandeja, ya lo resolvía la #43; test añadido)* |
 | H3 · CP3 | sáb 19:00 | - [x] **A2.** *(sáb 21/11: hecho. Primera descarga real de las 4 páginas: 20 posts guardados en `facebook_posts.json`. Revisión diaria con `--cada 24` o el servicio `ingesta` del compose, apagado por defecto)* **`scripts/importar_facebook.py`** (solo Python, sin Docker): 1) lanza «Facebook Posts Scraper» sobre las páginas de `FUENTES.md` (token en `.env`, por ejemplo `FB_SCRAPER_TOKEN`, y la variable en `.env.example` vacía); 2) guarda los posts en `contracts/fixtures/facebook_posts.json`; 3) por cada post llama a `bot POST /ai/extraer` con `X-Internal-Token`; 4) manda el resultado a `POST /eventos/importar` con `origen.canal="facebook"`, `origen.url` del post e `importado_auto=true`. Opción `--desde-json` para repetirlo sin red. Si el bot no responde, el post se queda en el JSON y no se inventa nada. |
-| H3 · CP3 | sáb 19:00 | - [ ] **A3.** Decidir **D1** con Francisco antes de que se congelen los contratos a las 19:00 (quitar o no el `required` de `telefono` en `schemas/notificacion.json` para avisar a quien solo usa Telegram). |
+| Aplazada | — | - [ ] **A3.** *(sáb 13:20, Adán: **D1 aplazada**, se retoma más tarde y ya no tiene la fecha límite de las 19:00. Mientras, en la demo los inscritos comparten su número)* Decidir **D1** con Francisco (quitar o no el `required` de `telefono` en `schemas/notificacion.json` para avisar a quien solo usa Telegram). |
 | H4 · CP4 | dom 00:00 | - [ ] **A4.** `GET /estadisticas`: que el % de importadas cuente las de Facebook (ya llegan con `importado_auto`). Revisar la PR de C3 (nginx y túnel). |
 | H5 | dom 07:00 | - [ ] **A5.** Arreglos `fix/*` de los ensayos y repasar la sección del backend del README. |
 
@@ -207,7 +207,7 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 | H2 · CP2 | sáb 13:00 | - [x] **B1.** Los tres hallazgos sin IA, que afectan a los pasos 1, 3 y 5: título por reglas, pregunta por chat privado y post de spam sin fecha. *(sáb 21/11: hecho y probado contra la API con la IA caída. «Taller de esparto en Senés el sábado…» → título «Taller de esparto»; «¿A qué hora empieza la ruta solidaria?» por privado → «Empieza el 29/11 a las 09:00» (lo que no está en la ficha va al chat del evento); el post de apuestas sin fecha lo para el antispam del bot en vez de preguntar la fecha. Además: el bot ya no contesta en francés a «apúntame a la ruta» y apunta al plan que se nombra.)* |
 | H3 · CP3 | sáb 19:00 | - [ ] **B2.** **NVIDIA NIM como proveedor del `llm_router`**, en el orden Gemini → NIM → FreeLLM → Claude → reglas. NIM es compatible con OpenAI, así que basta con otra instancia como la de `FreeLLM` en `app/llm/proveedores.py`, con `NIM_URL`, `NIM_API_KEY` y `NIM_MODELO` en `.env.example` (vacías). Que `/ai/extraer` lo use para A2 y que sus tokens salgan en `/metrics` y en `/metrics/tokens` de la API. |
 | H3 · CP3 | sáb 19:00 | - [ ] **B3.** **Audios fuera del portátil de Fran.** Decidido (sáb 21/11): **FreeLLMAPI con Docker en la máquina de Adán**, sin plan B dentro del bot. Fran le pasa por privado `freellmapi.config.json` y `.env` de `services/bot/freellmapi/`; Adán hace `docker compose up -d` allí y pone en el `.env` de la raíz `FREELLM_URL_DOCKER=http://host.docker.internal:3001/v1` y **su** clave unificada en `FREELLM_API_KEY` (ver `services/bot/freellmapi/README.md`). Falta ensayar el paso 7 juntos en su máquina. |
-| H3 · CP3 | sáb 19:00 | - [ ] **B4.** Decidir **D1** con Benas (ver A3). |
+| Aplazada | — | - [ ] **B4.** Decidir **D1** con Benas (ver A3, aplazada por Adán el sáb 13:20). |
 | H4 · CP4 | dom 00:00 | - [ ] **B5.** Solo si sobra tiempo: `POST /ai/frase` (primero en el contrato) y pedir nombre, DNI y residencia en el alta de asociaciones. |
 | H5 | dom 07:00 | - [ ] **B6.** Escribir la sección del bot del README y tener las claves de IA de la demo en el `.env` de Adán (por privado). |
 
@@ -217,7 +217,7 @@ Los tres, a las 13:00. Orden del día:
 
 1. Adán enseña los pasos 1–3 en Docker con Telegram (C1). Si salen, se pone `v0.2`.
 2. Cada uno dice en una frase cómo va con su tarea y si algo le bloquea más de 20 minutos (si es así, se recorta).
-3. Benas y Francisco confirman cómo va la ingesta de Facebook (A2 + B2) y quedan para cerrar D1 antes de las 19:00.
+3. Benas y Francisco confirman cómo va la ingesta de Facebook (A2 + B2) (D1 queda aplazada: ver A3).
 4. Se actualiza este apartado: se marca lo hecho y se mueve lo que no llegue.
 
 Siguientes puntos fijos: **CP3 sáb 19:00** (pasos 4–7, contratos congelados, `v0.3`), **CP4 dom 00:00** (feature freeze, `v0.9`), **REL dom 07:00** (`v1.0` en `main`). La entrega a la organización es el domingo a las 11:00.
@@ -234,7 +234,7 @@ Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen 
 
 ### Flujos A y B · a acordar (Benas + Francisco)
 
-- **Avisos a quien solo usa Telegram (paso 6 de la demo):** el bot ya lee `contacto` en `POST /notify`, pero el contrato (`schemas/notificacion.json`) y el modelo del bot siguen exigiendo `telefono`. Un vecino que entró por Telegram sin «Compartir mi número» no tiene teléfono y la API deja su aviso como `fallida` («sin telefono»). Quitar el `required` no es un cambio aditivo: hay que decidirlo juntos. Mientras tanto, en la demo, todos los inscritos tienen que haber compartido su número.
+- **Avisos a quien solo usa Telegram (paso 6 de la demo) · D1, aplazada por Adán (sáb 13:20):** el bot ya lee `contacto` en `POST /notify`, pero el contrato (`schemas/notificacion.json`) y el modelo del bot siguen exigiendo `telefono`. Un vecino que entró por Telegram sin «Compartir mi número» no tiene teléfono y la API deja su aviso como `fallida` («sin telefono»). Quitar el `required` no es un cambio aditivo: hay que decidirlo juntos. Mientras tanto, en la demo, todos los inscritos tienen que haber compartido su número.
 
 - **Código de acceso por mensajería (Telegram y WhatsApp):** `POST /auth/whatsapp/codigo` tiene que pedir al bot (`POST /notify`) que mande el código. El nombre de la ruta no se cambia (el contrato no renombra), pero vale para los dos canales. Con Telegram, el bot no puede escribir a un móvil que nunca le ha hablado. Hace falta acordar el paso previo: por ejemplo, que la web enseñe el enlace `t.me/HackeMate_bot?start=alta` y el vecino comparta su número con «Compartir mi número» (`POST /usuarios/vincular`) antes de pedir el código. Si hace falta un campo `canal` en la petición, se añade como opcional con `contract-change`.
 
