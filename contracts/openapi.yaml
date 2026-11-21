@@ -1047,7 +1047,7 @@ paths:
         `reglas`: nunca falla por la IA. No guarda nada: cada llamada calcula de nuevo. «Descartar» lo hace la web.
         La IA propone y una persona decide: nada se publica sin pasar por la bandeja.
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       parameters:
         - { name: municipio, in: query, schema: { type: string }, description: "Solo planes de ese pueblo" }
         - { name: limite, in: query, schema: { type: integer, minimum: 1, maximum: 3, default: 3 } }
@@ -1069,7 +1069,7 @@ paths:
         ajusta la fecha y lo que haga falta (`PATCH /eventos/{id}`) y lo aprueba (`POST /moderacion/{id}/decision`).
         Al aprobarlo se avisa a los interesados como a cualquier plan nuevo (A10).
       security: [{ bearer: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:

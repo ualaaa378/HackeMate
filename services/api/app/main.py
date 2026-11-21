@@ -23,6 +23,7 @@ from app.rutas import (
     publicadores,
     publico,
     recomendaciones,
+    sugerencias,
     usuarios,
 )
 
@@ -101,6 +102,7 @@ app.include_router(calendario.router)
 app.include_router(recomendaciones.router)
 app.include_router(estadisticas.router)
 app.include_router(admin.router)
+app.include_router(sugerencias.router)
 
 
 @app.get("/health")
