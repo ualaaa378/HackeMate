@@ -63,32 +63,86 @@ Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **vis
 
 ## 🔗 Pendiente entre flujos
 
-Revisado el 21/11/2026 a las 10:15. Todo esto ya lo usa la app web (flujo C) o el bot (flujo B), pero depende de otro flujo. Mientras no esté, **la web vuelve sola a los datos de prueba (mocks) y el bot guarda la petición en cola**, así que nada se rompe, pero la demo no usa datos reales. Al cerrar cada punto, se borra de esta lista.
+Revisado el 21/11/2026 a las 11:00. Todo esto ya lo usa la app web (flujo C) o el bot (flujo B), pero depende de otro flujo. Mientras no esté, **la web vuelve sola a los datos de prueba (mocks) y el bot guarda la petición en cola**, así que nada se rompe, pero la demo no usa datos reales. Al cerrar cada punto, se borra de esta lista.
 
 > **Regla del equipo (ver `CLAUDE.md`):** cada flujo apunta aquí, bajo el flujo responsable, lo que necesita de los demás. Antes de empezar una tarea, revisa tu apartado.
 
-### 📋 Reparto del sábado 21/11 (09:30) · prueba de la v1
+### 📋 Reparto del sábado 21/11 (11:00) · hasta la entrega
 
-Quién hace qué ahora. Cada uno marca su línea al terminar y apunta los fallos en el apartado del flujo que los tiene que arreglar (más abajo).
+Acordado por Adán el sábado a las 11:00, después de revisar todo `develop` (tras las PR #41, #43 y #44). **Para los tres y para vuestros Claudes:** antes de empezar, leed este apartado entero y vuestra parte. Cada uno marca `[x]` en el mismo commit en que termina la tarea y apunta los fallos que encuentre en el apartado del flujo que los tiene que arreglar (más abajo), con el formato de `docs/SINCRONIZACION_SABADO.md` §3.
 
-**Adán (flujo C) · Docker y web**
-- [ ] `git pull` de `develop` (ya lleva la API de la #35), `docker compose -f infra/docker-compose.yml down -v` (borra la base vieja para probar la migración 0007 en PostgreSQL), `cp .env.example .env` con las claves y `up --build`.
-- [ ] `scripts/smoke_test.sh` hasta «SMOKE TEST EN VERDE». Si falla, `docker compose -f infra/docker-compose.yml logs api` y el error a Benas.
-- [ ] Guion sin móvil con `scripts/simular_chat.py` y, después, los siete pasos con Telegram y la web en `http://localhost:8080` (`DEMO_MODE=true`). Ver [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md) §0 y §3.
-- [ ] Tests de la web (`cd apps/web && npm ci && npm run test:unit`, y `npm run test:e2e`), que Benas no puede pasar sin Node.
-- [x] Conectar en `/admin/panel` el botón «Simular caída de la IA» y el coste en tokens con `GET /admin/bot/metricas` y `POST /admin/bot/simular-caida` (H2, sáb 10:15).
-- [ ] Entre ensayos, `scripts/demo_reset.sh`.
+#### Dónde estamos (sáb 11:00)
 
-**Benas (flujo A) · API**
-- [x] PR `Flujo-A` → `develop` fusionada (#35, 09:21). Adán ya puede empezar la prueba con Docker.
-- [ ] Arreglar lo que salga de la prueba con Docker (apartado «Flujo A» de abajo).
-- [ ] Con Francisco: avisos a quien solo usa Telegram y código de acceso por Telegram («Flujos A y B · a acordar»).
+- **El código va por delante del plan.** La API tiene todas las rutas del contrato (568 tests), el bot funciona con Telegram (108 tests) y la web tiene H0, H1 y H2 contra la API real.
+- **Falta probarlo todo junto.** Todavía no se ha hecho ningún `up --build` con Telegram, la tabla del §5 de `SINCRONIZACION_SABADO.md` está en blanco y no hay ninguna etiqueta (`v0.1`, `v0.2`).
+- **Web, H3 a medias:** ya están la inscripción, el `.ics` y el chat. Faltan «Para ti» (recomendaciones), el login y el service worker de la PWA. H4: el panel, el coste y la letra grande van a medias, y falta el APK.
 
-**Francisco (flujo B) · bot**
-- [ ] Hallazgos de la prueba de la v1: título sin IA, pregunta por chat privado y post de spam sin fecha (apartado «hallazgos» de abajo).
-- [ ] Pedir nombre, DNI y residencia del responsable en el alta de asociaciones (la API ya lo acepta).
-- [ ] `POST /ai/frase` para la frase de portada (primero en el contrato).
-- [ ] Con Benas: avisos a quien solo usa Telegram y código de acceso por Telegram.
+#### Riesgos que ordenan el reparto (de más a menos grave)
+
+1. **El jurado no puede usar la web desde fuera.** El túnel (`infra/docker-compose.yml`, servicio `tunnel`) solo expone `bot:8001`, y la web lleva `VITE_API_URL=http://localhost:8000` incrustado en el build. Desde el móvil del jurado o desde el APK, `localhost` no es nuestra API y la web cae a los mocks. → Tarea C3.
+2. **El paso 7 (audios) depende del portátil de Fran.** La transcripción solo va por FreeLLM (`services/bot/app/agentes/medios.py`). Si su portátil o su red fallan, no hay plan B. → Tarea B3.
+3. **Sin IA, la demo se ve floja** (títulos largos, el spam sin fecha no llega al antispam). → Tareas B1 y B2.
+4. **Ningún checkpoint cerrado.** → Tarea C1 y la puesta en común de las 13:00.
+
+#### Decisión nueva: eventos de Facebook con «Facebook Posts Scraper» y NVIDIA NIM
+
+Para el paso 1 de la demo («post → ficha») y para llenar la agenda con datos reales. **No hace falta cambiar el contrato:** `POST /eventos/importar` ya acepta `origen.canal="facebook"`, `origen.url` y `origen.importado_auto`.
+
+```
+Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai/extraer (NVIDIA NIM) ──> api POST /eventos/importar ──> bandeja del moderador ──> agenda web
+     (páginas de los Aytos)        (A, Benas)                    (B, Francisco)                         (ya existe)
+```
+
+- **Páginas con Facebook activo:** Ayuntamientos de Uleila del Campo, Lucainena de las Torres y Senés, y Monte-Sión (ver `contracts/fixtures/FUENTES.md`).
+- **Reglas que se mantienen:** solo el bot habla con la IA (NIM va en el `llm_router` del bot, nunca en el script ni en la API). Solo la API decide estados: lo importado de una asociación «a mano» pasa por la bandeja. Coste 0: plan gratuito del scraper y de NIM, claves solo en `.env` (nunca en `*.example`), y **cada ejecución guarda los posts en un JSON** para poder repetir la importación sin red ni créditos.
+- Las descargas (APK, vídeos, exportaciones del scraper) van a `C:\Users\aalva\Desktop\Hackaton`.
+
+#### Hitos y tareas por persona
+
+**Adán (flujo C) · máquina de la demo, web y entrega**
+
+| Hito | Hasta | Tarea |
+|---|---|---|
+| H2 · CP2 | sáb 13:00 | - [ ] **C1.** `docker compose -f infra/docker-compose.yml down -v`, `up --build`, `scripts/smoke_test.sh` en verde y pasos 1–3 con Telegram (`DEMO_MODE=true`). Rellenar la columna «Docker + Telegram» de `SINCRONIZACION_SABADO.md` §5. Si sale bien, etiqueta `v0.2`. |
+| H3 · CP3 | sáb 19:00 | - [ ] **C2.** «Para ti» en la agenda con `GET /recomendaciones` y el motivo legible (Carmen ve la II Ruta Solidaria la primera). |
+| H3 · CP3 | sáb 19:00 | - [ ] **C3.** **URL pública de la web:** que el `nginx.conf` de la web pase `/api/` a `api:8000`, que la web use una URL relativa (`VITE_API_URL` vacío) y un segundo túnel a `web:8080`. Es infra de A: lo hace Adán porque Benas no puede ejecutar Docker, en una PR que mira Benas. |
+| H3 · CP3 | sáb 19:00 | - [ ] **C4.** PWA instalable: service worker e icono (el `manifest.json` ya existe). |
+| H3 | — | - [-] **Login con Google: recortado.** En la demo se entra con el modo demo (`/auth/demo`). El código por Telegram, solo si sobra tiempo (D2). |
+| H4 · CP4 | dom 00:00 | - [ ] **C5.** APK de debug con Capacitor que apunta a la URL de C3. Si en 30 min no sale, la demo va con la PWA instalada. |
+| H4 · CP4 | dom 00:00 | - [ ] **C6.** Panel: % de eventos importados de Facebook y coste en tokens con NIM incluido (cuando A2 y B2 estén). Accesibilidad: teclado y letra grande en agenda y ficha. |
+| H5 | dom 07:00 | - [ ] **C7.** Vídeo de respaldo, sección de la web en el README con capturas, dos ensayos seguidos del guion y `v1.0` en `main`. |
+
+**Benas (flujo A) · API e ingesta de Facebook, en remoto y sin Docker**
+
+| Hito | Hasta | Tarea |
+|---|---|---|
+| H2 · CP2 | sáb 13:00 | - [ ] **A1.** Arreglar lo que salga de la prueba con Docker de Adán (apartado «Flujo A» de abajo). |
+| H3 · CP3 | sáb 19:00 | - [ ] **A2.** **`scripts/importar_facebook.py`** (solo Python, sin Docker): 1) lanza «Facebook Posts Scraper» sobre las páginas de `FUENTES.md` (token en `.env`, por ejemplo `FB_SCRAPER_TOKEN`, y la variable en `.env.example` vacía); 2) guarda los posts en `contracts/fixtures/facebook_posts.json`; 3) por cada post llama a `bot POST /ai/extraer` con `X-Internal-Token`; 4) manda el resultado a `POST /eventos/importar` con `origen.canal="facebook"`, `origen.url` del post e `importado_auto=true`. Opción `--desde-json` para repetirlo sin red. Si el bot no responde, el post se queda en el JSON y no se inventa nada. |
+| H3 · CP3 | sáb 19:00 | - [ ] **A3.** Decidir **D1** con Francisco antes de que se congelen los contratos a las 19:00 (quitar o no el `required` de `telefono` en `schemas/notificacion.json` para avisar a quien solo usa Telegram). |
+| H4 · CP4 | dom 00:00 | - [ ] **A4.** `GET /estadisticas`: que el % de importadas cuente las de Facebook (ya llegan con `importado_auto`). Revisar la PR de C3 (nginx y túnel). |
+| H5 | dom 07:00 | - [ ] **A5.** Arreglos `fix/*` de los ensayos y repasar la sección del backend del README. |
+
+**Francisco (flujo B) · bot e IA**
+
+| Hito | Hasta | Tarea |
+|---|---|---|
+| H2 · CP2 | sáb 13:00 | - [ ] **B1.** Los tres hallazgos sin IA (apartado «hallazgos» de abajo), que afectan a los pasos 1, 3 y 5: título por reglas, pregunta por chat privado y post de spam sin fecha. |
+| H3 · CP3 | sáb 19:00 | - [ ] **B2.** **NVIDIA NIM como proveedor del `llm_router`**, en el orden Gemini → NIM → FreeLLM → Claude → reglas. NIM es compatible con OpenAI, así que basta con otra instancia como la de `FreeLLM` en `app/llm/proveedores.py`, con `NIM_URL`, `NIM_API_KEY` y `NIM_MODELO` en `.env.example` (vacías). Que `/ai/extraer` lo use para A2 y que sus tokens salgan en `/metrics` y en `/metrics/tokens` de la API. |
+| H3 · CP3 | sáb 19:00 | - [ ] **B3.** **Plan B de los audios** fuera de su portátil (por ejemplo, la transcripción de Gemini o la de NIM si la tiene) y ensayar el paso 7 con la máquina de Adán. |
+| H3 · CP3 | sáb 19:00 | - [ ] **B4.** Decidir **D1** con Benas (ver A3). |
+| H4 · CP4 | dom 00:00 | - [ ] **B5.** Solo si sobra tiempo: `POST /ai/frase` (primero en el contrato) y pedir nombre, DNI y residencia en el alta de asociaciones. |
+| H5 | dom 07:00 | - [ ] **B6.** Escribir la sección del bot del README y tener las claves de IA de la demo en el `.env` de Adán (por privado). |
+
+#### ⏰ Puesta en común · sáb 13:00 (CP2), llamada de 30 min
+
+Los tres, a las 13:00. Orden del día:
+
+1. Adán enseña los pasos 1–3 en Docker con Telegram (C1). Si salen, se pone `v0.2`.
+2. Cada uno dice en una frase cómo va con su tarea y si algo le bloquea más de 20 minutos (si es así, se recorta).
+3. Benas y Francisco confirman cómo va la ingesta de Facebook (A2 + B2) y quedan para cerrar D1 antes de las 19:00.
+4. Se actualiza este apartado: se marca lo hecho y se mueve lo que no llegue.
+
+Siguientes puntos fijos: **CP3 sáb 19:00** (pasos 4–7, contratos congelados, `v0.3`), **CP4 dom 00:00** (feature freeze, `v0.9`), **REL dom 07:00** (`v1.0` en `main`). La entrega a la organización es el domingo a las 11:00.
 
 ### Flujo A · API (Benas)
 
@@ -96,6 +150,9 @@ Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen 
 
 - **Frase de portada automática:** `frase_portada` ya se guarda y se devuelve (`POST`/`PATCH /eventos`, confirmar). Si llega vacía, la API se la pedirá al bot cuando exista `POST /ai/frase` (ver flujo B); mientras, la web pone una frase fija por tipo de plan.
 - **Una propuesta de un vecino sin asociación:** entra en revisión y el moderador ve sus `datos_ayuntamiento`, pero el vecino solo los ve en la respuesta del alta (la API no guarda quién propuso el plan si no es un publicador).
+
+- **Ingesta de Facebook (A2):** `scripts/importar_facebook.py` con «Facebook Posts Scraper», que usa `bot POST /ai/extraer` (con NIM, tarea B2 de Francisco) y `POST /eventos/importar`. Lo necesita C para el % de importadas del panel (C6) y la demo para el paso 1.
+- **Revisar la PR de la URL pública (C3):** Adán cambia el `nginx.conf` de la web y añade un segundo túnel en `infra/docker-compose.yml` porque Benas no puede ejecutar Docker. Como el compose es de A, la mira Benas antes de fusionarla.
 
 ### Flujos A y B · a acordar (Benas + Francisco)
 
@@ -110,9 +167,18 @@ Regla en `CLAUDE.md` § «Canales de mensajería». Cómo se elige el canal hoy,
 - **API (A):** guarda los dos contactos (`telefono` E.164 y `telegram_id`) y los distingue en `services/api/app/canales.py`. Nada de la API puede dar por hecho un canal concreto.
 - **Web (C):** `VITE_CANAL=telegram|whatsapp` (en `.env.example`, el compose y el `Dockerfile`) elige qué canal nombra la web en el alta y en los avisos (`apps/web/src/canal.ts`).
 
-### Flujo C · web (Adán), lo que pide el bot
+### Flujo C · web (Adán)
 
+- **URL pública de la web (C3):** hoy la web solo funciona en la máquina de la demo (`VITE_API_URL=http://localhost:8000` y el túnel solo al bot). Lo necesitan el jurado, el APK (C5) y cualquiera que pruebe desde fuera.
+- **«Para ti» (C2):** la API ya da `GET /recomendaciones`; falta enseñarlo en la agenda para el paso 4.
+
+Lo que pide el bot:
 - Opcional, como plan C de la demo: un chat simulado en la web que llame a `bot POST /dev/mensaje`.
+
+### Flujo B · bot (Francisco), NVIDIA NIM y audios
+
+- **NIM en el `llm_router` (B2):** lo usa la ingesta de Facebook de Benas (A2) a través de `/ai/extraer`, y C enseña sus tokens en el panel (C6).
+- **Audios sin depender del portátil de Fran (B3):** hoy la transcripción solo va por FreeLLM. Lo necesita el paso 7 de la demo en la máquina de Adán.
 
 ### Flujo B · bot (Francisco), alta de asociaciones
 
