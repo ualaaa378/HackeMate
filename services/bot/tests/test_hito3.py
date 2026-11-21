@@ -206,3 +206,39 @@ def test_notify_recomendacion_con_boton_de_apuntarse(monkeypatch):
         "telefono": "+34600000201", "contacto": "tg:9", "tipo": "recomendacion",
         "texto": "Te puede gustar: Ruta por la sierra", "evento_id": "e1"})
     assert enviados == [("tg:9", [("insc:e1", "✋ Apuntarme"), ("info:e1", "ℹ️ Más info")])]
+
+
+# ---------- Planes terminados (contrato: 409 evento_finalizado) ----------
+
+def test_apuntarse_a_un_plan_terminado_no_dice_ya_estabas(agenda):
+    agenda.finalizados.add("e1")
+    r = conversacion.procesar(_msg("", boton_id="insc:e1"))
+    assert "ya ha terminado" in r[0] and "Ya estabas" not in r[0]
+
+
+def test_ya_apuntado_sigue_funcionando(agenda, monkeypatch):
+    from app import api_cliente
+    from app.api_cliente import ErrorApi
+
+    def ya(*a, **k):
+        raise ErrorApi(409, "ya_inscrito", "Ya inscrito")
+
+    monkeypatch.setattr(api_cliente, "inscribir", ya)
+    assert "Ya estabas" in conversacion.procesar(_msg("", boton_id="insc:e1"))[0]
+
+
+def test_ficha_de_un_plan_pasado_sin_boton_de_apuntarse(agenda):
+    agenda.agenda.append(_ev("viejo", "Fiesta pasada", "Senés", "fiestas", -3))
+    r = conversacion.procesar(_msg("", boton_id="info:viejo"))
+    assert "ya terminó" in r[0] and canales.bandeja_consola[-1]["botones"] == []
+    # Y si aun así pulsa un botón viejo de «Apuntarme», ni se llama a la api
+    antes = len(agenda.llamadas)
+    assert "ya ha terminado" in conversacion.procesar(_msg("", boton_id="insc:viejo"))[0]
+    assert not any(r.endswith("/inscripciones") for _, r, _ in agenda.llamadas[antes:])
+
+
+def test_terminado():
+    assert vecino.terminado({"estado": "finalizado", "fecha_inicio": "2099-01-01T10:00:00+01:00"})
+    assert vecino.terminado({"fecha_inicio": "2020-01-01T10:00:00+01:00"})
+    assert not vecino.terminado({"fecha_inicio": "2099-01-01T10:00:00+01:00"})
+    assert not vecino.terminado({"fecha_inicio": "2020-01-01T10:00:00+01:00", "fecha_fin": "2099-01-01T10:00:00+01:00"})
