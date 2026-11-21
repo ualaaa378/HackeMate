@@ -201,3 +201,26 @@ def test_portada_ayuntamiento_y_responsable_se_pueden_deshacer_y_rehacer(url):
         assert c.execute(text("SELECT count(*) FROM notificaciones WHERE evento_id = 'e'")).scalar() == 1
     motor.dispose()
     command.upgrade(cfg, "head")
+
+
+def test_0008_pasa_el_nivel_1_obsoleto_a_mano(url):
+    """0008: solo dos modos de publicación. Los publicadores con nivel 1 pasan a 0; el 0 y el 2 no cambian."""
+    cfg = _config(url)
+    command.upgrade(cfg, "0007")
+    motor = crear_motor(url)
+    with motor.begin() as c:
+        c.execute(text("INSERT INTO municipios (nombre, lat, lon) VALUES ('Senés', 37.1983, -2.3447)"))
+        for id, nivel in (("p0", 0), ("p1", 1), ("p2", 2)):
+            c.execute(text(
+                "INSERT INTO publicadores (id, nombre, tipo, municipio, estado, nivel_confianza, aprobaciones, "
+                "automatizaciones_pausadas, categorias_habituales, identidad_verificada, creado_en) VALUES (:id, "
+                ":id, 'otro', 'Senés', 'aprobado', :nivel, 0, 0, '[]', 0, '2026-11-20 10:00:00')"
+            ), {"id": id, "nivel": nivel})
+    motor.dispose()
+
+    command.upgrade(cfg, "head")
+    motor = crear_motor(url)
+    with motor.connect() as c:
+        niveles = dict(c.execute(text("SELECT id, nivel_confianza FROM publicadores")).all())
+    motor.dispose()
+    assert niveles == {"p0": 0, "p1": 0, "p2": 2}

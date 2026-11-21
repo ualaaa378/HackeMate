@@ -248,18 +248,19 @@ def _aprobar(api, id: str, cuerpo: dict | None = None, headers=TOKEN):
     return api.post(f"/api/v1/publicadores/{id}/aprobar", json=cuerpo, headers=headers)
 
 
-def test_aprobar_publicador_con_nivel(api, db):
+def test_aprobar_publicador_con_nivel_1_obsoleto_queda_a_mano(api, db):
+    # Solo hay dos modos: un nivel 1 (web antigua) se guarda como 0, «a mano».
     id = _alta(api)
     r = _aprobar(api, id, {"aprobar": True, "nivel_confianza": 1})
     assert r.status_code == 200, r.text
     _valida(r.json())
-    assert r.json()["estado"] == "aprobado" and r.json()["nivel_confianza"] == 1
+    assert r.json()["estado"] == "aprobado" and r.json()["nivel_confianza"] == 0
     # Ya es público.
     assert api.get(f"/api/v1/publicadores/{id}").status_code == 200
     # Aviso al publicador (no es usuario: va a su teléfono).
-    assert any("ya puede publicar" in n.texto for n in _avisos(db, NUEVO["telefono"]))
+    assert any("ya puede publicar" in n.texto and "revisará" in n.texto for n in _avisos(db, NUEVO["telefono"]))
     # Ya aprobado: sin nivel no cambia nada; rechazarlo, 409.
-    assert _aprobar(api, id).json()["nivel_confianza"] == 1
+    assert _aprobar(api, id).json()["nivel_confianza"] == 0
     _error(_aprobar(api, id, {"aprobar": False}), 409, "estado_invalido")
 
 

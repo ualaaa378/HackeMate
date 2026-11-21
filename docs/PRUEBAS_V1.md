@@ -99,7 +99,8 @@ Las claves se pasan por privado y **nunca se suben**. Hay que alinear esto:
 
 | Quién | Contacto | Para qué |
 |---|---|---|
-| Publicador (asociación con confianza) | `+34600000101` | Pasos 1 y 2: su post se publica directamente |
+| Amigos de Velefique (asociación, publica «a mano») | `+34600000101` | Pasos 1–3: su post va a la bandeja y el moderador lo aprueba (desde el 21/11 solo hay dos modos) |
+| Ayto. de Tahal (publicación automática) | `+34600000106` | Si hace falta que un plan salga publicado al momento |
 | Carmen, vecina de Senés (aviso en audio) | `+34600000201` · id `5a5e0000-0000-4000-8000-000000000001` | Pasos 4 a 7 |
 | Moderador | `POST /api/v1/auth/demo {"rol":"moderador"}` (con `DEMO_MODE=true`) | Paso 3 en el panel |
 | II Ruta Solidaria | id `1e5d0000-0000-4000-8000-000000000001` | Recomendación, chat y cambio de hora |
@@ -109,7 +110,7 @@ Las claves se pasan por privado y **nunca se suben**. Hay que alinear esto:
 | Paso | Qué se hizo | Resultado |
 |---|---|---|
 | 1. Post → ficha | El publicador manda el post del taller de esparto | 🟡 La ficha sale con todos los campos, pero **sin IA el título es el post entero recortado** (bot, reglas) |
-| 2. El publicador confirma | «sí» | 🟢 «¡Publicado!», sale en la agenda |
+| 2. El publicador confirma | «sí» | 🟢 «¡Publicado!», sale en la agenda (*antes del cambio a dos modos; ahora Amigos de Velefique publica «a mano»: el bot dice «El moderador lo revisará» y el post va a la bandeja*) |
 | 3. Moderador y antispam | `GET /moderacion/pendientes` | 🟢 Dos pendientes: el grafiti (publicador de nivel 0) y el de apuestas (`score_spam` 0,95). 🟡 Un post de apuestas **nuevo** mandado por el bot sin fecha se queda en «¿Qué día…?» y no llega al antispam |
 | 4. Recomendación e inscripción | Carmen: «¿Qué planes hay este finde?» y apuntarse | 🟢 La Ruta Solidaria sale primera, con el motivo; inscripción `confirmada` |
 | 5. Pregunta en el chat del evento | `POST /eventos/{ruta}/mensajes` | 🟢 Responde con la ficha (recorrido corto de 4 km). 🟡 La misma pregunta **por el chat privado del bot** no se responde: enseña la ficha |

@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     # Vacío = contracts/fixtures del monorepo. En Docker se monta en /srv/contracts/fixtures.
     fixtures_dir: str = ""
     # Moderación (app/moderacion.py)
-    moderacion_aprobaciones_subir_nivel: int = 3
+    moderacion_aprobaciones_subir_nivel: int = 3  # sin uso desde la 0008 (solo dos modos): se conserva por compatibilidad
     moderacion_umbral_spam: float = 0.7
     # Cola de avisos (app/notificaciones.py)
     notificaciones_timeout_s: float = 3.0

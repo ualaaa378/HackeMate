@@ -1,4 +1,4 @@
-"""Núcleo de moderación: puntuación de spam, niveles de confianza y decisión de estado (H2.4).
+"""Núcleo de moderación: puntuación de spam, modo de publicación (a mano o automática) y decisión de estado (H2.4).
 
 La IA (bot /ai/spam) propone una puntuación; aquí se decide el estado. Si el bot no responde,
 se usan reglas locales baratas. Nada de esto lanza excepciones hacia la ruta que lo llama.
@@ -160,15 +160,23 @@ def clasificar_spam(
     return score, "reglas: " + ("; ".join(razones) if razones else "sin indicios")
 
 
-def _tiene_publicados_de_categoria(db: Session, publicador: Publicador, categoria: str, excluir_id: str | None) -> bool:
-    consulta = select(Evento.id).where(
-        Evento.publicador_id == publicador.id,
-        Evento.categoria == categoria,
-        Evento.estado == "publicado",
-    )
-    if excluir_id:
-        consulta = consulta.where(Evento.id != excluir_id)
-    return db.scalar(consulta.limit(1)) is not None
+# Modos de publicación. El nivel 1 (semiautomático) ya no se asigna: se guarda como 0.
+NIVEL_A_MANO = 0
+NIVEL_AUTOMATICA = 2
+MOTIVO_A_MANO = "Publicación a mano: la revisa el moderador"
+
+
+def motivo_con_duplicado(estado: str, motivo: str, titulo_parecido: str | None) -> tuple[str, str]:
+    """Un posible duplicado manda a revisión lo que iba a publicarse y, en lo que ya iba a revisión solo por ser
+    «a mano», sustituye el motivo genérico por uno más útil para el moderador. El spam y las pausas mandan."""
+    if titulo_parecido is not None and (estado == "publicado" or motivo == MOTIVO_A_MANO):
+        return "en_revision", f"Posible duplicado de «{titulo_parecido}»"
+    return estado, motivo
+
+
+def normalizar_nivel(nivel: int) -> int:
+    """El nivel 1 obsoleto que aún pueda llegar (web antigua) cuenta como «a mano»."""
+    return NIVEL_AUTOMATICA if nivel == NIVEL_AUTOMATICA else NIVEL_A_MANO
 
 
 def decidir_estado(
@@ -193,60 +201,26 @@ def decidir_estado(
         detalle = motivo_spam or "sin detalle"
         return "en_revision", f"Posible spam ({score:.2f}): {detalle}"
 
-    nivel = publicador.nivel_confianza
-    if nivel <= 0:
-        return "en_revision", "Publicador nuevo (nivel 0)"
-    if nivel == 1:
-        habituales = publicador.categorias_habituales or []
-        if evento.categoria in habituales or _tiene_publicados_de_categoria(db, publicador, evento.categoria, evento.id):
-            return "publicado", "Publicador de nivel 1, categoría habitual"
-        return "en_revision", f"Categoría fuera de lo habitual ({evento.categoria})"
-    return "publicado", "Publicador de confianza (nivel 2)"
-
-
-# La subida automática por aprobaciones llega como mucho a este nivel. El nivel 2 (revisión automática) solo lo
-# da un moderador con POST /publicadores/{id}/aprobar y si se cumplen las reglas de app/confianza.py.
-NIVEL_MAXIMO_AUTOMATICO = 1
+    # Solo hay dos modos (enums.md): automática (nivel 2) o a mano (cualquier otro, incluido el 1 obsoleto).
+    if publicador.nivel_confianza == NIVEL_AUTOMATICA:
+        return "publicado", "Publicación automática"
+    return "en_revision", MOTIVO_A_MANO
 
 
 def registrar_aprobacion(publicador: Publicador) -> bool:
-    """Suma una aprobación y sube de nivel cada N aprobaciones (N = MODERACION_APROBACIONES_SUBIR_NIVEL),
-    hasta NIVEL_MAXIMO_AUTOMATICO.
-
-    `aprobaciones` es el total acumulado (como dice el schema) y no se reinicia: el tramo de cada nivel
-    se cuenta con el módulo, así que sube al llegar a N aprobaciones. Devuelve True si subió.
-    No hace commit."""
-    n = max(get_settings().moderacion_aprobaciones_subir_nivel, 1)
+    """Suma una aprobación (acumulado para estadísticas). Ya no sube de nivel: solo un moderador pasa una
+    asociación a automática. Devuelve siempre False (se conserva la firma). No hace commit."""
     publicador.aprobaciones = (publicador.aprobaciones or 0) + 1
-    if publicador.nivel_confianza < NIVEL_MAXIMO_AUTOMATICO and publicador.aprobaciones % n == 0:
-        publicador.nivel_confianza += 1
-        return True
     return False
 
 
 def registrar_aprobacion_en_bd(db: Session, publicador_id: str) -> bool:
-    """Como `registrar_aprobacion`, pero con UPDATE atómicos: dos aprobaciones a la vez (de eventos distintos
-    del mismo publicador) no se pisan el contador ni suben dos veces de nivel. Devuelve True si subió.
-    No hace commit."""
-    n = max(get_settings().moderacion_aprobaciones_subir_nivel, 1)
+    """Como `registrar_aprobacion`, con un UPDATE atómico: dos aprobaciones a la vez no se pisan el contador.
+    Devuelve siempre False. No hace commit."""
     db.execute(
         update(Publicador)
         .where(Publicador.id == publicador_id)
         .values(aprobaciones=func.coalesce(Publicador.aprobaciones, 0) + 1)
         .execution_options(synchronize_session=False)
     )
-    publicador = db.get(Publicador, publicador_id)
-    if publicador is None:
-        return False
-    db.refresh(publicador)
-    nivel = publicador.nivel_confianza
-    if nivel >= NIVEL_MAXIMO_AUTOMATICO or publicador.aprobaciones % n != 0:
-        return False
-    subido = db.execute(
-        update(Publicador)
-        .where(Publicador.id == publicador_id, Publicador.nivel_confianza == nivel)
-        .values(nivel_confianza=nivel + 1)
-        .execution_options(synchronize_session=False)
-    ).rowcount
-    db.refresh(publicador)
-    return subido > 0
+    return False

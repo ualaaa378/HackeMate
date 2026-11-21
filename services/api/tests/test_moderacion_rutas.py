@@ -136,7 +136,7 @@ def test_bandeja_muestra_evento_en_revision_con_motivo(api, db):
     assert evento["estado"] == "en_revision"
 
     item = next(i for i in _bandeja(api) if i["tipo"] == "evento" and i["evento"]["id"] == evento["id"])
-    assert item["motivo"] == "Publicador nuevo (nivel 0)"
+    assert item["motivo"] == "Publicación a mano: la revisa el moderador"
     assert item["score_spam"] == 0.0
     assert "publicador" not in item
 
@@ -190,7 +190,7 @@ def test_aprobar_publica_y_avisa_al_publicador(api, db):
     # Al quedar en revisión se avisa a los moderadores (con el bot caído queda en cola).
     avisos_mod = [n for n in _avisos(db, TEL_MODERADOR) if n.evento_id == evento["id"]]
     assert len(avisos_mod) == 1 and avisos_mod[0].tipo == "moderacion"
-    assert "Publicador nuevo" in avisos_mod[0].texto and avisos_mod[0].estado_envio == "pendiente"
+    assert "Publicación a mano" in avisos_mod[0].texto and avisos_mod[0].estado_envio == "pendiente"
 
     r = _decidir(api, evento["id"], "aprobar")
     assert r.status_code == 200, r.text
@@ -206,19 +206,18 @@ def test_aprobar_publica_y_avisa_al_publicador(api, db):
     assert avisos[0].usuario_id is not None
 
 
-def test_tres_aprobaciones_suben_a_nivel_1(api, db):
+def test_aprobaciones_no_lo_pasan_a_automatica(api, db):
+    # Solo hay dos modos: por muchas aprobaciones, una asociación «a mano» sigue a mano.
     p = _publicador(db, TEL_NIVEL0, nivel=0)
     n = get_settings().moderacion_aprobaciones_subir_nivel
     for i in range(n):
         evento = _evento_confirmado(api, TEL_NIVEL0, n=i)
         assert _decidir(api, evento["id"], "aprobar").status_code == 200
-        db.expire_all()
-        assert db.get(Publicador, p.id).nivel_confianza == (1 if i == n - 1 else 0)
+    db.expire_all()
+    assert db.get(Publicador, p.id).nivel_confianza == 0
     assert db.get(Publicador, p.id).aprobaciones == n
-    # El último aviso cuenta la subida de nivel (sin usuario: va al teléfono del publicador).
-    assert "nivel de confianza 1" in _avisos(db, TEL_NIVEL0)[-1].texto
-    # Ya es nivel 1 y la categoría es la habitual: el siguiente sale sin revisión.
-    assert _evento_confirmado(api, TEL_NIVEL0, n=99, titulo="Carrera popular de otoño")["estado"] == "publicado"
+    assert all("nivel" not in a.texto for a in _avisos(db, TEL_NIVEL0))
+    assert _evento_confirmado(api, TEL_NIVEL0, n=99, titulo="Carrera popular de otoño")["estado"] == "en_revision"
 
 
 def test_rechazar_no_sale_en_la_agenda(api, db):
