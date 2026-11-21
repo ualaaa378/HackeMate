@@ -226,10 +226,41 @@ def test_ya_apuntado_sigue_funcionando(agenda, monkeypatch):
     from app.api_cliente import ErrorApi
 
     def ya(*a, **k):
-        raise ErrorApi(409, "ya_inscrito", "Ya inscrito")
+        raise ErrorApi(409, "ya_inscrito", "Ya inscrito", {"inscripcion_id": "i9"})
 
     monkeypatch.setattr(api_cliente, "inscribir", ya)
-    assert "Ya estabas" in conversacion.procesar(_msg("", boton_id="insc:e1"))[0]
+    assert "Ya estás apuntado" in conversacion.procesar(_msg("", boton_id="insc:e1"))[0]
+    # N6b: [Desapuntarme] con los dos ids y [Vale]
+    assert canales.bandeja_consola[-1]["botones"] == [("desinsc:e1:i9", "❌ Desapuntarme"), ("insc_ok", "👍 Vale")]
+
+
+def test_desapuntarse_con_el_boton(agenda, monkeypatch):
+    from app import api_cliente
+    borrados = []
+    monkeypatch.setattr(api_cliente, "desinscribir", lambda ev, insc: borrados.append((ev, insc)) or {})
+    r = conversacion.procesar(_msg("", boton_id="desinsc:e1:i9"))
+    assert borrados == [("e1", "i9")] and "te he desapuntado" in r[0] and "plaza queda libre" in r[0]
+
+
+def test_desapuntarse_escribiendo_busca_el_plan_y_su_inscripcion(agenda, monkeypatch):
+    from app import api_cliente
+    agenda.agenda[0]["titulo"] = "II Ruta Solidaria Sierra de Velefique"
+    borrados = []
+    monkeypatch.setattr(api_cliente, "inscripcion_de", lambda ev, uid: {"id": "i7", "estado": "confirmada"})
+    monkeypatch.setattr(api_cliente, "desinscribir", lambda ev, insc: borrados.append((ev, insc)) or {})
+    conversacion.procesar(_msg("¿Qué hay en Velefique?"))
+    r = conversacion.procesar(_msg("desapúntame de la ruta solidaria"))
+    assert borrados == [("e1", "i7")] and "II Ruta Solidaria" in r[0]
+
+
+def test_desapuntarse_de_un_plan_al_que_no_estaba_apuntado(agenda, monkeypatch):
+    from app import api_cliente
+    agenda.agenda[0]["titulo"] = "II Ruta Solidaria Sierra de Velefique"
+    monkeypatch.setattr(api_cliente, "inscripcion_de", lambda ev, uid: None)
+    monkeypatch.setattr(api_cliente, "desinscribir", lambda ev, insc: pytest.fail("no debe borrar nada"))
+    conversacion.procesar(_msg("¿Qué hay en Velefique?"))
+    r = conversacion.procesar(_msg("ya no voy a la ruta solidaria"))
+    assert "No estás apuntado" in r[0]
 
 
 def test_ficha_de_un_plan_pasado_sin_boton_de_apuntarse(agenda):
