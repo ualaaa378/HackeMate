@@ -67,6 +67,7 @@ api ──▶ POST /notify ──▶ canales.py ──▶ telegram.py / Graph AP
 |---|---|
 | **Telegram como canal activo** | Gratis, sin límite de mensajes, sin verificar negocio. Tiene botones, notas de voz y ubicación |
 | **WhatsApp Cloud API (Meta) como canal de producción** | Es la vía oficial y la más barata para un ayuntamiento: responder a quien escribe es gratis y solo se pagan las plantillas que inicia el bot fuera de las 24 h. **Bloqueado ahora:** la API de Meta devuelve `141010` (negocio sin verificar), `141006` (sin método de pago) y `131031` (cuenta bloqueada). Verificar exige documentos reales de una entidad (CIF…); **no se inventan datos**. Si la Diputación o la UAL tienen un portfolio verificado, basta con poner `CANAL=meta` |
+| FreeLLMAPI replicable en Docker (`services/bot/freellmapi/`) | Que la IA gratis no dependa de un portátil concreto: plantilla con los 7 proveedores, compose aparte del principal, claves fuera de git. Cada persona usa sus propias claves |
 | Twilio y otros sandboxes, solo como alternativa | 100 mensajes (Twilio), 100 al mes (Vonage) o 25 (360dialog): se quedan cortos. El adaptador de Twilio sigue en el código (`CANAL=twilio`) |
 | **IA: gratis primero** | Somos estudiantes, coste 0. Claude solo entra si alguien pone `ANTHROPIC_API_KEY` |
 | FreeLLMAPI con varios modelos en orden y 8 s por intento | Los planes gratuitos van a tirones (0,5–12 s, 429). Primero `qwen3.8-27b` (Groq, ~1 s) |

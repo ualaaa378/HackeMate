@@ -1,0 +1,4 @@
+# Llevan secretos en claro: nunca se suben
+.env
+freellmapi.config.json
+backup/
