@@ -92,6 +92,12 @@ Otros puntos de la API:
 - **Planes terminados para «Recuerdos»:** la pestaña pide `GET /eventos?hasta=<ahora>`, pero el seed omite los eventos ya terminados, así que con la API real sale vacía. Hace falta sembrar algunos planes pasados (estado `finalizado`) o que el seed no los borre.
 - **Datos para el ayuntamiento al proponer un plan** (responsable, teléfono, público, necesidades, seguro): la web los tiene en `DatosAyuntamiento` (`apps/web/src/api/types.ts`), pero no están en el contrato. Hay que añadirlos como objeto opcional y privado (PR con etiqueta `contract-change`).
 
+- **Revisión a mano o automática de las asociaciones (lo pide la web `/admin` → Asociaciones):** solo hay dos modos. Toda asociación empieza **a mano** (`nivel_confianza` 0 o 1) y pasa a **automática** (`nivel_confianza` 2) cuando el moderador lo decide y cumple las reglas de `apps/web/src/admin/confianza.ts`: responsable identificado (DNI y residencia comprobados), al menos 3 planes aprobados en 60 días, ningún rechazo en 60 días y algún plan en los últimos 90 días. Hace falta en la API:
+  - Objeto opcional y privado `responsable` en el publicador (`nombre`, `dni`, `residencia`, `identidad_verificada`), que solo vea el moderador (PR `contract-change`). Hoy está en `DatosResponsable` de `apps/web/src/api/types.ts`. Es un dato personal: guardar lo mínimo y no devolverlo nunca en las rutas públicas.
+  - Una ruta para que el moderador marque la identidad como comprobada (por ejemplo `POST /publicadores/{id}/verificar-identidad`), primero en el contrato. Sin ella, el botón solo funciona en modo demo.
+  - Actividad reciente en el publicador (`planes_60_dias`, `rechazados_60_dias`, `ultimo_plan`), calculada por la API. Hoy la web la tiene en `ActividadPublicador` con mocks.
+  - Que `POST /publicadores/{id}/aprobar` acepte cambiar `nivel_confianza` en un publicador ya aprobado (la web lo usa para pasar a automática o volver a mano), y que la API rechace el nivel 2 si no se cumplen las reglas.
+
 ### Flujos A y B · a acordar (Benas + Francisco)
 
 - **`PATCH /usuarios/{id}`:** el bot lo usa para guardar los gustos de la vecina (`services/bot/app/api_cliente.py`, `guardar_preferencias`), pero no está en el contrato, que solo tiene `PATCH /usuarios/me`. O se añade al contrato con `X-Internal-Token`, o el bot pasa a usar otra ruta.
@@ -110,6 +116,10 @@ Pendiente: Benas y Francisco, que el aviso al vecino use el contacto que tenga (
 
 - Botón «Simular caída de la IA» y coste en tokens en `/admin/panel`, en cuanto la API los exponga (ver arriba).
 - Opcional, como plan C de la demo: un chat simulado en la web que llame a `bot POST /dev/mensaje`.
+
+### Flujo B · bot (Francisco), alta de asociaciones
+
+- **Datos del responsable al dar de alta una asociación:** cuando alguien pide publicar por Telegram (y por WhatsApp cuando Meta lo permita, con el mismo flujo de conversación), el bot tiene que pedir el nombre, el DNI y el pueblo donde vive el responsable, y mandarlos a la API en el alta (cuando el campo `responsable` esté en el contrato, ver flujo A). Sin esos datos la asociación nunca podrá publicar sin revisión.
 
 ### Flujo B · bot (Francisco), opcional en el compose
 

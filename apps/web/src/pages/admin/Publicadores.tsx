@@ -6,17 +6,23 @@ import {
   IonCardHeader,
   IonCardSubtitle,
   IonCardTitle,
-  IonSelect,
-  IonSelectOption,
   IonSpinner,
   IonToast,
   IonToggle,
 } from '@ionic/react';
 import { useEffect, useState } from 'react';
 
+import BloqueConfianza from '../../admin/BloqueConfianza';
 import PaginaAdmin from '../../admin/PaginaAdmin';
-import { aprobarPublicador, getPublicadores, pausarPublicador } from '../../api/admin';
-import type { Publicador } from '../../api/types';
+import { deberiaVolverAManual, modoRevision, puedeSerAutomatica } from '../../admin/confianza';
+import {
+  aprobarPublicador,
+  cambiarRevision,
+  getPublicadores,
+  pausarPublicador,
+  verificarIdentidad,
+} from '../../api/admin';
+import type { Publicador, PublicadorAdmin } from '../../api/types';
 
 const TIPOS: Record<Publicador['tipo'], string> = {
   asociacion: 'Asociación',
@@ -34,16 +40,14 @@ const ESTADOS: Record<Publicador['estado'], { texto: string; color: string }> = 
   pausado: { texto: 'Pausado', color: 'danger' },
 };
 
-const NIVELES = {
-  0: 'Nivel 0 · se revisa todo',
-  1: 'Nivel 1 · se revisa a mano',
-  2: 'Nivel 2 · publica directo',
+const MODOS = {
+  manual: { texto: '✋ Revisión a mano', color: 'medium' },
+  automatica: { texto: '⚡ Publica sin revisión', color: 'primary' },
 } as const;
 
 const Publicadores: React.FC = () => {
-  const [lista, setLista] = useState<Publicador[] | null>(null);
+  const [lista, setLista] = useState<PublicadorAdmin[] | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
-  const [nivelNuevo, setNivelNuevo] = useState<Record<string, 0 | 1 | 2>>({});
 
   useEffect(() => {
     getPublicadores()
@@ -51,9 +55,9 @@ const Publicadores: React.FC = () => {
       .catch(() => setLista([]));
   }, []);
 
-  const reemplazar = (p: Publicador) => setLista((xs) => xs?.map((x) => (x.id === p.id ? p : x)) ?? null);
+  const reemplazar = (p: PublicadorAdmin) => setLista((xs) => xs?.map((x) => (x.id === p.id ? p : x)) ?? null);
 
-  const ejecutar = async (accion: () => Promise<Publicador>, texto: (p: Publicador) => string) => {
+  const ejecutar = async (accion: () => Promise<PublicadorAdmin>, texto: (p: PublicadorAdmin) => string) => {
     try {
       const p = await accion();
       reemplazar(p);
@@ -68,7 +72,8 @@ const Publicadores: React.FC = () => {
   return (
     <PaginaAdmin titulo="🤝 Asociaciones" roles={['moderador']}>
       <p className="intro-admin">
-        Quién puede publicar planes. Cuantos más planes aprobados, más sube su nivel de confianza.
+        Quién puede publicar planes. Toda asociación empieza con revisión a mano. Pasa a publicar sin revisión cuando su
+        responsable está identificado y publica a menudo sin rechazos.
       </p>
       {!lista && (
         <div className="centrado">
@@ -83,12 +88,14 @@ const Publicadores: React.FC = () => {
             <IonCardHeader>
               <div className="chips-pendiente">
                 <IonBadge color={ESTADOS[p.estado].color}>{ESTADOS[p.estado].texto}</IonBadge>
-                <IonBadge color="light">{NIVELES[p.nivel_confianza]}</IonBadge>
+                {!porAprobar(p) && (
+                  <IonBadge color={MODOS[modoRevision(p)].color}>{MODOS[modoRevision(p)].texto}</IonBadge>
+                )}
               </div>
               <IonCardTitle>{p.nombre}</IonCardTitle>
               <IonCardSubtitle>
                 {TIPOS[p.tipo]} · 📍 {p.municipio}
-                {p.aprobaciones != null && ` · ${p.aprobaciones} planes aprobados`}
+                {p.aprobaciones != null && ` · ${p.aprobaciones} planes aprobados en total`}
               </IonCardSubtitle>
             </IonCardHeader>
             <IonCardContent>
@@ -99,29 +106,64 @@ const Publicadores: React.FC = () => {
                 </p>
               )}
 
+              <BloqueConfianza publicador={p} conRequisitos={!porAprobar(p)} />
+              {deberiaVolverAManual(p) && (
+                <p className="aviso-confianza" role="alert">
+                  ⚠️ Ya no cumple todos los requisitos. Te recomendamos pasarla a revisión a mano.
+                </p>
+              )}
+              <div className="botones-confianza">
+                {p.responsable && !p.responsable.identidad_verificada && (
+                  <IonButton
+                    fill="outline"
+                    onClick={() =>
+                      void ejecutar(
+                        () => verificarIdentidad(p.id),
+                        (x) => `Identidad del responsable de ${x.nombre} comprobada.`,
+                      )
+                    }
+                  >
+                    🪪 He comprobado su DNI y residencia
+                  </IonButton>
+                )}
+                {p.estado === 'aprobado' && modoRevision(p) === 'manual' && (
+                  <IonButton
+                    disabled={!puedeSerAutomatica(p)}
+                    onClick={() =>
+                      void ejecutar(
+                        () => cambiarRevision(p.id, 'automatica'),
+                        (x) => `${x.nombre} ya publica sin revisión.`,
+                      )
+                    }
+                  >
+                    ⚡ Pasar a publicar sin revisión
+                  </IonButton>
+                )}
+                {p.estado === 'aprobado' && modoRevision(p) === 'automatica' && (
+                  <IonButton
+                    fill="outline"
+                    color={deberiaVolverAManual(p) ? 'danger' : 'primary'}
+                    onClick={() =>
+                      void ejecutar(
+                        () => cambiarRevision(p.id, 'manual'),
+                        (x) => `Revisaremos a mano los planes de ${x.nombre}.`,
+                      )
+                    }
+                  >
+                    ✋ Pasar a revisión a mano
+                  </IonButton>
+                )}
+              </div>
               {porAprobar(p) ? (
                 <>
-                  <IonSelect
-                    label="Nivel de confianza al aprobar"
-                    labelPlacement="stacked"
-                    fill="outline"
-                    value={nivelNuevo[p.id] ?? 0}
-                    onIonChange={(ev) => setNivelNuevo((n) => ({ ...n, [p.id]: ev.detail.value as 0 | 1 | 2 }))}
-                  >
-                    {([0, 1, 2] as const).map((n) => (
-                      <IonSelectOption key={n} value={n}>
-                        {NIVELES[n]}
-                      </IonSelectOption>
-                    ))}
-                  </IonSelect>
                   <div className="botones-decision">
                     <IonButton
                       color="success"
                       size="large"
                       onClick={() =>
                         void ejecutar(
-                          () => aprobarPublicador(p.id, { aprobar: true, nivel_confianza: nivelNuevo[p.id] ?? 0 }),
-                          (x) => `${x.nombre} ya puede publicar.`,
+                          () => aprobarPublicador(p.id, { aprobar: true }),
+                          (x) => `${x.nombre} ya puede publicar, con revisión a mano.`,
                         )
                       }
                     >
@@ -153,12 +195,12 @@ const Publicadores: React.FC = () => {
                           () => pausarPublicador(p.id, { que: 'automatizaciones', pausado: !ev.detail.checked }),
                           (x) =>
                             x.automatizaciones_pausadas
-                              ? `Ya no importamos solos los planes de ${x.nombre}.`
-                              : `Volvemos a importar los planes de ${x.nombre}.`,
+                              ? `Ya no recogemos solos los planes de ${x.nombre}.`
+                              : `Volvemos a recoger solos los planes de ${x.nombre}.`,
                         )
                       }
                     >
-                      Importar sus planes automáticamente
+                      Recoger solos sus planes de redes y web
                     </IonToggle>
                     <IonButton
                       fill="outline"

@@ -57,7 +57,32 @@ export interface DatosAyuntamiento {
 export type Publicador = Esquemas['publicador'];
 export type Pendiente = Esquemas['Pendiente'];
 /** Elemento de la bandeja. `propuesta` son los datos privados de un plan vecinal (aún fuera del contrato). */
-export type PendienteBandeja = Pendiente & { propuesta?: DatosAyuntamiento };
+export type PendienteBandeja = Omit<Pendiente, 'publicador'> & {
+  publicador?: PublicadorAdmin;
+  propuesta?: DatosAyuntamiento;
+};
+
+/**
+ * Datos del responsable de una asociación o comercio. Solo los ve el moderador.
+ * Aún NO están en el contrato (pendiente de contract-change con A).
+ */
+export interface DatosResponsable {
+  nombre: string;
+  dni: string;
+  /** Pueblo o dirección donde vive. */
+  residencia: string;
+  /** El moderador ha comprobado el DNI y la residencia. */
+  identidad_verificada: boolean;
+}
+
+/** Actividad reciente del publicador. Aún NO está en el contrato: la calcularía la API. */
+export interface ActividadPublicador {
+  planes_60_dias: number;
+  rechazados_60_dias: number;
+  ultimo_plan: string | null;
+}
+
+export type PublicadorAdmin = Publicador & { responsable?: DatosResponsable | null; actividad?: ActividadPublicador };
 export type Decision = Esquemas['Decision'];
 export type Estadisticas = Esquemas['Estadisticas'];
 export type EventoEditar = Esquemas['EventoEditar'];
