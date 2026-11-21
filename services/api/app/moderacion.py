@@ -104,8 +104,18 @@ def reiniciar_circuito_spam() -> None:
     _circuito_spam.clear()
 
 
+# N9b: lo que el bot marca como `tipo: fraude` lleva este prefijo en el motivo, siempre va a la bandeja y el motivo
+# de la bandeja empieza por «Posible fraude» (la web pone el chip «⚠️ Posible fraude»).
+PREFIJO_FRAUDE = "Posible fraude: "
+
+
+def es_motivo_fraude(motivo: str | None) -> bool:
+    return bool(motivo) and motivo.startswith(PREFIJO_FRAUDE)
+
+
 def _llamar_bot_spam(texto: str, publicador_id: str | None, contexto: str = "evento") -> tuple[float, str] | None:
-    """POST {BOT_URL}/ai/spam. Devuelve (score, motivo) o None si el bot no está o responde mal."""
+    """POST {BOT_URL}/ai/spam. Devuelve (score, motivo) o None si el bot no está o responde mal.
+    Con `tipo: fraude` (campo opcional del contrato) el motivo empieza por `PREFIJO_FRAUDE`."""
     ajustes = get_settings()
     if not ajustes.bot_url:
         return None
@@ -140,6 +150,10 @@ def _llamar_bot_spam(texto: str, publicador_id: str | None, contexto: str = "eve
     fuente = f"IA ({proveedor})" if isinstance(proveedor, str) and proveedor else "IA"
     motivo = datos.get("motivo")
     detalle = motivo if isinstance(motivo, str) and motivo.strip() else ("parece spam" if datos["es_spam"] else "sin indicios")
+    if datos.get("tipo") == "fraude":
+        # El bot ya suele empezar su motivo por «posible fraude:»; se quita para no repetirlo.
+        detalle = re.sub(r"^\s*posible fraude:\s*", "", detalle, flags=re.IGNORECASE) or "señales de fraude"
+        return round(float(score), 2), f"{PREFIJO_FRAUDE}{fuente}: {detalle}"
     return round(float(score), 2), f"{fuente}: {detalle}"
 
 
@@ -148,7 +162,7 @@ def clasificar_spam(
 ) -> tuple[float, str]:
     """Puntuación de spam con su motivo. Primero la IA del bot; si falla, reglas locales.
     `contexto`: «evento» (una ficha) o «mensaje» (el chat de un evento); el bot no admite otros valores.
-    El motivo empieza por la fuente («IA…» o «reglas»). Nunca lanza."""
+    El motivo empieza por la fuente («IA…» o «reglas»), o por `PREFIJO_FRAUDE` si el bot ve fraude. Nunca lanza."""
     texto = texto or ""
     try:
         resultado = _llamar_bot_spam(texto, publicador.id if publicador is not None else None, contexto)
@@ -192,6 +206,9 @@ def decidir_estado(
     umbral = get_settings().moderacion_umbral_spam
     score = score_spam or 0.0
 
+    if es_motivo_fraude(motivo_spam):
+        # El fraude va siempre a la bandeja, aunque la IA le dé menos puntuación que el umbral de spam.
+        return "en_revision", f"Posible fraude ({score:.2f}): {motivo_spam[len(PREFIJO_FRAUDE):]}"
     if publicador is None:
         return "en_revision", "Sin publicador identificado"
     if publicador.estado == "pausado":
