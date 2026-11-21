@@ -57,6 +57,8 @@ Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **vis
 
 ## 🚧 Estado
 
+> **📋 Traspaso del flujo A (Benas, sáb 21/11 por la tarde):** todo lo que se ha hecho hoy en la API, qué tiene que revisar cada uno (Adán: **probar el acceso con contraseña de `/admin`**, que se mergeó sin compilar; Fran: los avisos de planes nuevos) y cómo actualizar las máquinas → [`docs/RESUMEN_FLUJO_A.md`](docs/RESUMEN_FLUJO_A.md).
+
 **Sáb 21/11, 16:00 (tras la #67).** `develop` tiene los tres flujos y la demo funciona de punta a punta por la URL pública del túnel, con Telegram e IA, en dos máquinas (Francisco y Adán; **solo una a la vez con Telegram**). Tests: api 602, bot 149. Cómo probar la v1: [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md). Etiquetas: `v0.2` en `3496f65` (CP2 cerrado).
 
 **Próximos puntos fijos:** **CP3 sáb 19:00** (pasos 4–7, contratos congelados, `v0.3`) · **CP4 dom 00:00** (feature freeze, `v0.9`) · **REL dom 07:00** (`v1.0` en `main`) · entrega dom 11:00.
