@@ -1,4 +1,8 @@
-"""Eventos: agenda y mapa (GET), ficha, alta a mano (POST) y edición (PATCH)."""
+"""Eventos: agenda y mapa (GET), ficha, alta a mano (POST) y edición (PATCH).
+
+Privacidad: `datos_ayuntamiento` solo sale hacia el organizador del evento o un moderador con sesión bearer
+(`ve_datos_privados`). Las listas públicas, el bot (X-Internal-Token) y la IA nunca lo reciben.
+"""
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -11,14 +15,24 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
 from app.config import get_settings
+from app.duplicados import buscar_posible_duplicado
 from app.errores import ErrorApi
-from app.modelos import CATEGORIAS, ESTADOS_EVENTO, Evento, Municipio, Publicador
+from app.imagenes import validar_imagen
+from app.modelos import CATEGORIAS, ESTADOS_EVENTO, Evento, Municipio, Publicador, Usuario
+from app.moderacion import clasificar_spam, decidir_estado
 from app.paginacion import Pagina, pagina, paginar, paginar_lista
 from app.rutas.publico import dentro_del_radio, en_caja, es_uuid, hay_radio
 from app.chat import anuncio_automatico
 from app.inscripciones import avisar_inscritos, promocionar, texto_cambio
-from app.notificaciones import enviar_en_segundo_plano
-from app.seguridad import Quien, es_servicio_interno, exigir_token_interno, puede_gestionar, quien_llama
+from app.notificaciones import enviar_en_segundo_plano, notificar_moderadores
+from app.seguridad import (
+    Quien,
+    es_servicio_interno,
+    puede_gestionar,
+    quien_llama,
+    usuario_actual,
+    ve_datos_privados,
+)
 from app.serializar import evento_a_dict, eventos_a_dict, inscritos_por_evento
 
 router = APIRouter(prefix="/api/v1", tags=["eventos"])
@@ -31,6 +45,29 @@ EnteroNoNegativo = Annotated[int, Field(ge=0)]
 
 # Estados cuya ficha puede ver cualquiera (un inscrito tiene que poder ver que se ha cancelado).
 VISIBLES_EN_FICHA = ("publicado", "cancelado", "finalizado")
+# Estados que se pueden pedir en GET /eventos sin ser servicio interno: la agenda y los «Recuerdos».
+VISIBLES_EN_LISTA = ("publicado", "finalizado")
+# Foto o cartel del evento: data URL de hasta ~1,5 MB (de imagen decodificada).
+MAX_BYTES_IMAGEN_EVENTO = 1536 * 1024
+FrasePortada = Annotated[str, Field(max_length=90)]
+
+
+class DatosAyuntamiento(BaseModel):
+    """components/schemas/DatosAyuntamiento (PRIVADO). Lo desconocido se ignora (p. ej. `frase_portada`, que va
+    en el evento)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    responsable: Annotated[str, Field(max_length=120)] = None
+    telefono: Annotated[str, Field(max_length=20)] = None
+    entidad: Literal["particular", "asociacion", "comercio", "otra"] = None
+    entidad_nombre: Annotated[str, Field(max_length=120)] | None = None
+    publico: Literal["todos", "infantil", "adultos", "mayores"] = None
+    necesidades: list[
+        Literal["espacio", "calle", "material", "luz", "musica", "comida", "seguridad", "limpieza", "difusion"]
+    ] = None
+    seguro_rc: Literal["si", "no", "nose"] = None
+    observaciones: Annotated[str, Field(max_length=1000)] | None = None
 
 
 class EventoCrear(BaseModel):
@@ -52,6 +89,8 @@ class EventoCrear(BaseModel):
     es_gratuito: bool | None = None
     plazas_totales: EnteroNoNegativo | None = None
     imagen_url: str | None = None
+    frase_portada: FrasePortada | None = None
+    datos_ayuntamiento: DatosAyuntamiento | None = None
     publicador_id: str | None = None
 
 
@@ -74,6 +113,8 @@ class EventoEditar(BaseModel):
     es_gratuito: bool = None
     plazas_totales: EnteroNoNegativo | None = None
     imagen_url: str | None = None
+    frase_portada: FrasePortada | None = None
+    datos_ayuntamiento: DatosAyuntamiento | None = None
     estado: Literal["cancelado", "archivado"] = None
 
 
@@ -88,8 +129,44 @@ def _buscar(db: Session, id: str) -> Evento:
     return evento
 
 
-def _ficha(db: Session, evento: Evento) -> dict:
-    return evento_a_dict(evento, inscritos_por_evento(db, [evento.id]).get(evento.id, 0))
+def _ficha(db: Session, evento: Evento, privados: bool = False) -> dict:
+    """`privados`: incluir `datos_ayuntamiento` (ver `ve_datos_privados`)."""
+    return evento_a_dict(evento, inscritos_por_evento(db, [evento.id]).get(evento.id, 0), privados)
+
+
+def normalizar_extras(cambios: dict) -> dict:
+    """imagen_url, frase_portada y datos_ayuntamiento tal como se guardan: textos sin espacios sobrantes (vacío
+    = null), la imagen validada (422 `imagen_invalida`) y los datos del ayuntamiento como dict JSON."""
+    if "imagen_url" in cambios:
+        imagen = (cambios["imagen_url"] or "").strip() or None
+        if imagen is not None:
+            validar_imagen(imagen, MAX_BYTES_IMAGEN_EVENTO, status_grande=422, code_grande="imagen_invalida")
+        cambios["imagen_url"] = imagen
+    if "frase_portada" in cambios:
+        cambios["frase_portada"] = (cambios["frase_portada"] or "").strip() or None
+    if "datos_ayuntamiento" in cambios:
+        datos = cambios["datos_ayuntamiento"]
+        if isinstance(datos, BaseModel):
+            datos = datos.model_dump(exclude_unset=True)
+        cambios["datos_ayuntamiento"] = datos or None
+    return cambios
+
+
+def comprobar_puede_publicar(publicador: Publicador | None) -> None:
+    """403 si el publicador está pausado o su solicitud fue rechazada."""
+    if publicador is None:
+        return
+    if publicador.estado == "pausado":
+        raise ErrorApi(403, "publicador_pausado", "El publicador está pausado y no puede publicar")
+    if publicador.estado == "rechazado":
+        raise ErrorApi(403, "publicador_rechazado", "La solicitud del publicador fue rechazada: no puede publicar")
+
+
+def quien_opcional(
+    x_internal_token: str | None = Header(None), usuario: Usuario | None = Depends(usuario_actual)
+) -> Quien:
+    """Como `quien_llama`, pero sin exigir nada (rutas públicas que enseñan más a quien tiene permiso)."""
+    return Quien(es_servicio_interno(x_internal_token), usuario)
 
 
 def _ocupadas(db: Session, evento_id: str) -> int:
@@ -128,8 +205,9 @@ def listar_eventos(
     x_internal_token: str | None = Header(None),
     db: Session = Depends(get_db),
 ):
-    # Hasta que haya login (H3) solo los servicios internos pueden pedir otro estado; el público ve `publicado`.
-    if not es_servicio_interno(x_internal_token):
+    # Sin token interno solo se admiten `publicado` (agenda) y `finalizado` («Recuerdos»); cualquier otro estado
+    # se cambia por `publicado`, como antes. `datos_ayuntamiento` nunca sale en esta lista.
+    if not es_servicio_interno(x_internal_token) and estado not in VISIBLES_EN_LISTA:
         estado = "publicado"
     consulta = (
         select(Evento)
@@ -165,43 +243,100 @@ def listar_eventos(
 
 
 @router.get("/eventos/{id}")
-def ver_evento(id: str, x_internal_token: str | None = Header(None), db: Session = Depends(get_db)):
+def ver_evento(id: str, quien: Quien = Depends(quien_opcional), db: Session = Depends(get_db)):
     evento = _buscar(db, id)
-    # Borradores, pendientes, en revisión, rechazados y archivados no existen para el público.
-    if evento.estado not in VISIBLES_EN_FICHA and not es_servicio_interno(x_internal_token):
+    # Borradores, pendientes, en revisión, rechazados y archivados no existen para el público; sí para el bot,
+    # el organizador del evento y los moderadores.
+    if evento.estado not in VISIBLES_EN_FICHA and not puede_gestionar(quien, evento):
         raise ErrorApi(404, "evento_no_encontrado", "No existe ese evento")
-    return _ficha(db, evento)
+    return _ficha(db, evento, ve_datos_privados(quien, evento))
 
 
-@router.post("/eventos", status_code=201, dependencies=[Depends(exigir_token_interno)])
-def crear_evento(datos: EventoCrear, db: Session = Depends(get_db)):
-    # H3: con el JWT, publicador (sus eventos) o moderador. Hasta entonces solo servicios internos.
-    municipio = db.get(Municipio, datos.municipio)
-    if municipio is None:
-        raise _error_validacion("municipio_no_encontrado", "Ese municipio no está en la plataforma", "municipio")
+def _publicador_de_la_peticion(db: Session, datos: EventoCrear, usuario: Usuario | None) -> Publicador | None:
+    """Publicador del evento. `usuario`: el de la sesión (None si llama un servicio interno). Un usuario que no es
+    moderador solo publica a nombre de su entidad (403 `prohibido` si manda otra); si no manda ninguna y es
+    publicador, se usa la suya."""
+    publicador = None
     if datos.publicador_id is not None:
         publicador = db.get(Publicador, datos.publicador_id) if es_uuid(datos.publicador_id) else None
         if publicador is None:
             raise _error_validacion("publicador_no_encontrado", "No existe ese publicador", "publicador_id")
-        if publicador.estado == "pausado":
-            raise ErrorApi(403, "publicador_pausado", "El publicador está pausado y no puede publicar")
+        if usuario is not None and usuario.rol != "moderador":
+            if usuario.publicador_id != publicador.id and publicador.usuario_id != usuario.id:
+                raise ErrorApi(
+                    403, "prohibido", "Solo puedes publicar a nombre de tu propia entidad", {"campo": "publicador_id"}
+                )
+    elif usuario is not None and usuario.rol != "moderador":
+        if usuario.publicador_id is not None:
+            publicador = db.get(Publicador, usuario.publicador_id)
+        if publicador is None:
+            publicador = db.scalar(
+                select(Publicador).where(Publicador.usuario_id == usuario.id).order_by(Publicador.creado_en)
+            )
+    comprobar_puede_publicar(publicador)
+    return publicador
 
-    campos = datos.model_dump(exclude={"lat", "lon", "es_gratuito"})
+
+@router.post("/eventos", status_code=201)
+def crear_evento(
+    datos: EventoCrear,
+    background_tasks: BackgroundTasks,
+    quien: Quien = Depends(quien_llama),
+    db: Session = Depends(get_db),
+):
+    """Alta a mano. Según quién llama:
+    - servicio interno (X-Internal-Token): queda `en_revision`, como siempre;
+    - moderador (bearer): `publicado` directamente;
+    - vecino o publicador (bearer, la web «Proponer»): moderación automática como al confirmar (spam y nivel de
+      confianza del publicador; sin publicador, `en_revision`). Si queda en revisión se avisa a los moderadores.
+    """
+    usuario = None if quien.interno else quien.usuario
+    municipio = db.get(Municipio, datos.municipio)
+    if municipio is None:
+        raise _error_validacion("municipio_no_encontrado", "Ese municipio no está en la plataforma", "municipio")
+    publicador = _publicador_de_la_peticion(db, datos, usuario)
+
+    campos = datos.model_dump(exclude={"lat", "lon", "es_gratuito", "publicador_id", "datos_ayuntamiento"})
+    # Solo lo que se ha enviado de los datos para el ayuntamiento (sin rellenar con null lo que no viene).
+    campos = normalizar_extras(campos | {"datos_ayuntamiento": datos.datos_ayuntamiento})
     campos["fecha_inicio"], campos["fecha_fin"] = _con_zona(datos.fecha_inicio), _con_zona(datos.fecha_fin)
     evento = Evento(
         **campos,
+        publicador_id=publicador.id if publicador is not None else None,
         lat=datos.lat if datos.lat is not None else municipio.lat,
         lon=datos.lon if datos.lon is not None else municipio.lon,
         es_gratuito=datos.es_gratuito if datos.es_gratuito is not None else datos.precio_eur == 0,
         plazas_libres=datos.plazas_totales,
-        # Sin moderación todavía (H2): lo creado a mano espera a que un moderador lo revise.
         estado="en_revision",
-        origen_canal="manual",
+        origen_canal="manual" if usuario is None else "web",
     )
     _comprobar_fechas(evento)
+
+    if usuario is not None and usuario.rol == "moderador":
+        evento.estado, evento.revisado_por = "publicado", usuario.nombre
+        evento.motivo_moderacion = "Publicado por el moderador"
+    elif usuario is not None:
+        texto = "\n".join(t for t in (evento.titulo, evento.descripcion) if t)
+        score, motivo_spam = clasificar_spam(texto, publicador)
+        estado, motivo = decidir_estado(db, evento, publicador, score, motivo_spam)
+        parecido = buscar_posible_duplicado(db, evento.titulo, evento.fecha_inicio, evento.municipio)
+        if parecido is not None and estado == "publicado":
+            estado, motivo = "en_revision", f"Posible duplicado de «{parecido.titulo}»"
+        evento.estado, evento.score_spam, evento.motivo_moderacion = estado, score, motivo
     db.add(evento)
+    db.flush()
+
+    avisos = []
+    if usuario is not None and evento.estado == "en_revision":
+        de = publicador.nombre if publicador is not None else f"propuesta de {usuario.nombre}"
+        avisos = notificar_moderadores(
+            db, "moderacion", f"Evento para revisar: «{evento.titulo}» ({de}). Motivo: {evento.motivo_moderacion}",
+            evento_id=evento.id, enviar=False,
+        )
     db.commit()
-    return _ficha(db, _buscar(db, evento.id))
+    enviar_en_segundo_plano(background_tasks, db, avisos)
+    # Quien lo propone con su sesión ve lo que acaba de enviar, también los datos para el ayuntamiento.
+    return _ficha(db, _buscar(db, evento.id), privados=usuario is not None)
 
 
 @router.patch("/eventos/{id}")
@@ -217,7 +352,7 @@ def editar_evento(
     evento = _buscar(db, id)
     if not puede_gestionar(quien, evento):
         raise ErrorApi(403, "prohibido", "Solo el organizador del evento o un moderador pueden editarlo")
-    cambios = datos.model_dump(exclude_unset=True)
+    cambios = normalizar_extras(datos.model_dump(exclude_unset=True))
     for campo in ("fecha_inicio", "fecha_fin"):
         if campo in cambios:
             cambios[campo] = _con_zona(cambios[campo])
@@ -249,4 +384,5 @@ def editar_evento(
 
     db.commit()
     enviar_en_segundo_plano(background_tasks, db, avisos)
-    return _ficha(db, _buscar(db, evento.id))
+    evento = _buscar(db, evento.id)
+    return _ficha(db, evento, ve_datos_privados(quien, evento))

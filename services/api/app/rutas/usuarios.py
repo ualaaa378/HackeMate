@@ -1,5 +1,6 @@
 """Usuarios: alta, búsqueda por teléfono o por contacto de cualquier canal (WhatsApp, Telegram…) y
-vinculación de un canal con el teléfono, para el bot (token interno). Y `/usuarios/me` (sesión del usuario)."""
+vinculación de un canal con el teléfono y edición de preferencias (PATCH /usuarios/{id}), para el bot (token
+interno). Y `/usuarios/me` (sesión del usuario)."""
 
 from typing import Annotated, Literal
 
@@ -14,6 +15,7 @@ from app.canales import buscar_usuario_por_contacto, parsear_contacto
 from app.db import get_db
 from app.errores import ErrorApi
 from app.modelos import CATEGORIAS, FORMATOS_AVISO, Municipio, Publicador, Usuario
+from app.rutas.publico import es_uuid
 from app.seguridad import exigir_token_interno, exigir_usuario
 from app.serializar import usuario_a_dict
 from app.telefonos import normalizar_telefono, validar_telefono
@@ -202,6 +204,22 @@ def mi_perfil(usuario: Usuario = Depends(exigir_usuario)):
 
 @router_me.patch("/usuarios/me")
 def editar_mi_perfil(datos: UsuarioEditar, usuario: Usuario = Depends(exigir_usuario), db: Session = Depends(get_db)):
+    return _editar_usuario(db, usuario, datos)
+
+
+# Va en router_me (después de /usuarios/me) para que PATCH /usuarios/me no caiga aquí: el router de servicios
+# internos se registra antes y exigiría el token interno a la propia sesión.
+@router_me.patch("/usuarios/{id}", dependencies=[Depends(exigir_token_interno)])
+def editar_usuario(id: str, datos: UsuarioEditar, db: Session = Depends(get_db)):
+    """El bot guarda lo que la vecina le dice por chat (gustos, pueblo, formato de aviso…). Igual que /usuarios/me."""
+    usuario = db.get(Usuario, id) if es_uuid(id) else None
+    if usuario is None:
+        raise ErrorApi(404, "usuario_no_encontrado", "No existe ese usuario")
+    return _editar_usuario(db, usuario, datos)
+
+
+def _editar_usuario(db: Session, usuario: Usuario, datos: UsuarioEditar) -> dict:
+    """Aplica solo los campos enviados. 422 `validacion`/`municipio_no_encontrado`, 409 `telefono_en_uso`."""
     cambios = datos.model_dump(exclude_unset=True)
 
     if "nombre" in cambios:

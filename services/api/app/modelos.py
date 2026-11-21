@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import JSON, Boolean, CheckConstraint, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, CheckConstraint, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator
 
@@ -145,6 +145,10 @@ class Publicador(Base):
     automatizaciones_pausadas: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     categorias_habituales: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     usuario_id: Mapped[str | None] = mapped_column(ForeignKey("usuarios.id"))
+    # PRIVADO (solo moderadores): {nombre, dni, residencia} del responsable de la entidad.
+    responsable: Mapped[dict | None] = mapped_column(JSON)
+    # Lo marca un moderador (verificar-identidad); se devuelve dentro de `responsable.identidad_verificada`.
+    identidad_verificada: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false(), nullable=False)
     creado_en: Mapped[datetime] = _creado()
 
     fuentes: Mapped[list["Fuente"]] = relationship(
@@ -189,7 +193,12 @@ class Evento(Base):
         _enum("estado_evento", ESTADOS_EVENTO), default="borrador", nullable=False, index=True
     )
     publicador_id: Mapped[str | None] = mapped_column(ForeignKey("publicadores.id"), index=True)
-    imagen_url: Mapped[str | None] = mapped_column(String(500))
+    # URL http(s) o data URL de imagen (hasta ~1,5 MB): Text. En SQLite sigue siendo VARCHAR(500), que no limita
+    # la longitud; así la migración 0007 no tiene que recrear la tabla (ver su docstring).
+    imagen_url: Mapped[str | None] = mapped_column(Text().with_variant(String(500), "sqlite"))
+    frase_portada: Mapped[str | None] = mapped_column(String(90))
+    # PRIVADO (solo organizador y moderadores): datos de la propuesta para el ayuntamiento.
+    datos_ayuntamiento: Mapped[dict | None] = mapped_column(JSON)
     # origen
     origen_canal: Mapped[str] = mapped_column(_enum("canal_origen", CANALES), default="manual", nullable=False)
     origen_url: Mapped[str | None] = mapped_column(String(500), index=True)  # duplicados (H2)

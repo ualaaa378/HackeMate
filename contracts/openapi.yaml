@@ -937,7 +937,7 @@ paths:
         por chat («me gustan las rutas», «avísame con audios»). Solo cambia los campos que se envían.
         `/usuarios/me` sigue igual (su ruta es fija y no choca con `{id}`, que es un UUID).
       security: [{ interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:

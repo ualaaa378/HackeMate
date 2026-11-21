@@ -23,7 +23,6 @@ umbral (MODERACION_UMBRAL_SPAM) se rechaza con 422 `mensaje_spam` y el motivo: a
 y no queda basura oculta en la base. Los teléfonos del texto se sustituyen por «[teléfono oculto]».
 """
 
-import re
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header
@@ -42,6 +41,7 @@ from app.chat import (
 from app.config import get_settings
 from app.db import get_db
 from app.errores import ErrorApi
+from app.imagenes import validar_imagen as _validar_imagen
 from app.inscripciones import estuvo_inscrito, plan_terminado
 from app.modelos import Evento, MensajeEvento, Silenciado, Usuario
 from app.moderacion import clasificar_spam
@@ -79,24 +79,12 @@ def _prohibido(mensaje: str) -> ErrorApi:
     return ErrorApi(403, "prohibido", mensaje)
 
 
-MAX_URL_IMAGEN = 2048
 MAX_BYTES_IMAGEN = 2 * 1024 * 1024
-_URL_HTTP = re.compile(r"https?://[^\s/?#]+[^\s]*", re.IGNORECASE)
-_DATA_URL = re.compile(r"data:image/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/]*={0,2})")
 
 
 def validar_imagen(imagen_url: str) -> str:
-    """URL http(s) o data URL de imagen en base64. 422 `imagen_invalida` o 413 `imagen_demasiado_grande`."""
-    if imagen_url.startswith("data:"):
-        coincide = _DATA_URL.fullmatch(imagen_url)
-        if coincide is None or not coincide.group(2):
-            raise ErrorApi(422, "imagen_invalida", "La foto debe ser una data URL PNG, JPEG, WebP o GIF en base64",
-                           {"campo": "imagen_url"})
-        datos = coincide.group(2).rstrip("=")
-        if len(datos) * 3 // 4 > MAX_BYTES_IMAGEN:
-            raise ErrorApi(413, "imagen_demasiado_grande", "La foto ocupa más de 2 MB",
-                           {"campo": "imagen_url", "max_bytes": MAX_BYTES_IMAGEN})
-        return imagen_url
+    """URL http(s) o data URL de imagen en base64. 422 `imagen_invalida` o 413 `imagen_demasiado_grande` (2 MB)."""
+    return _validar_imagen(imagen_url, MAX_BYTES_IMAGEN)
     if len(imagen_url) > MAX_URL_IMAGEN or _URL_HTTP.fullmatch(imagen_url) is None:
         raise ErrorApi(422, "imagen_invalida", "La foto debe ser una URL http(s) o una data URL de imagen",
                        {"campo": "imagen_url"})

@@ -152,3 +152,52 @@ def test_imagen_de_mensajes_se_puede_deshacer_y_rehacer(url):
     columnas = {c["name"]: c for c in inspect(motor).get_columns("mensajes_evento")}
     assert "imagen_url" in columnas and columnas["imagen_url"]["nullable"]
     motor.dispose()
+
+
+def test_portada_ayuntamiento_y_responsable_se_pueden_deshacer_y_rehacer(url):
+    """0007: frase_portada y datos_ayuntamiento en eventos; responsable e identidad_verificada (false por defecto,
+    también en filas que ya existían) en publicadores. Con datos y tablas hijas (claves foráneas activas): la
+    migración no puede recrear `eventos` ni `publicadores`."""
+    cfg = _config(url)
+    command.upgrade(cfg, "0006")
+    motor = crear_motor(url)
+    with motor.begin() as c:
+        c.execute(text("INSERT INTO municipios (nombre, lat, lon) VALUES ('Senés', 37.1983, -2.3447)"))
+        c.execute(text(
+            "INSERT INTO publicadores (id, nombre, tipo, municipio, estado, nivel_confianza, aprobaciones, "
+            "automatizaciones_pausadas, categorias_habituales, creado_en) VALUES ('p', 'Prueba', 'otro', 'Senés', "
+            "'aprobado', 0, 0, 0, '[]', '2026-11-20 10:00:00')"
+        ))
+        c.execute(text(
+            "INSERT INTO eventos (id, titulo, categoria, etiquetas, municipio, lat, lon, fecha_inicio, es_gratuito, "
+            "estado, origen_canal, importado_auto, faltan, creado_en, actualizado_en, publicador_id) VALUES ('e', "
+            "'Prueba', 'cultural', '[]', 'Senés', 0, 0, '2026-11-20 10:00:00', 0, 'borrador', 'manual', 0, '[]', "
+            "'2026-11-20 10:00:00', '2026-11-20 10:00:00', 'p')"
+        ))
+        c.execute(text(
+            "INSERT INTO notificaciones (id, telefono, tipo, texto, formato, botones, estado_envio, intentos, "
+            "creado_en, evento_id) VALUES ('n', '+34600000201', 'anuncio', 'Hola', 'texto', '[]', 'pendiente', 0, "
+            "'2026-11-20 10:00:00', 'e')"
+        ))
+    motor.dispose()
+
+    command.upgrade(cfg, "head")
+    motor = crear_motor(url)
+    assert {"frase_portada", "datos_ayuntamiento"} <= {c["name"] for c in inspect(motor).get_columns("eventos")}
+    assert {"responsable", "identidad_verificada"} <= {c["name"] for c in inspect(motor).get_columns("publicadores")}
+    imagen = "data:image/png;base64," + "A" * 2000
+    with motor.begin() as c:
+        assert c.execute(text("SELECT identidad_verificada FROM publicadores WHERE id = 'p'")).scalar() in (0, False)
+        # En SQLite la columna sigue siendo VARCHAR(500), que no limita la longitud.
+        c.execute(text("UPDATE eventos SET imagen_url = :imagen WHERE id = 'e'"), {"imagen": imagen})
+        assert c.execute(text("SELECT imagen_url FROM eventos WHERE id = 'e'")).scalar() == imagen
+    motor.dispose()
+
+    command.downgrade(cfg, "0006")
+    motor = crear_motor(url)
+    assert "frase_portada" not in {c["name"] for c in inspect(motor).get_columns("eventos")}
+    assert "responsable" not in {c["name"] for c in inspect(motor).get_columns("publicadores")}
+    with motor.connect() as c:
+        assert c.execute(text("SELECT count(*) FROM notificaciones WHERE evento_id = 'e'")).scalar() == 1
+    motor.dispose()
+    command.upgrade(cfg, "head")

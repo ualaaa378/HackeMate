@@ -242,9 +242,10 @@ NUEVO = {
 
 
 def test_post_sin_token_da_401_con_formato(api):
+    # Admite X-Internal-Token o sesión bearer: sin ninguno, 401 no_autenticado.
     r = api.post("/api/v1/eventos", json=NUEVO)
     assert r.status_code == 401
-    assert r.json()["error"]["code"] == "token_interno_invalido"
+    assert r.json()["error"]["code"] == "no_autenticado"
 
 
 def test_post_con_token_crea_y_aparece_en_la_ficha(api, db):

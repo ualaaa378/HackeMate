@@ -19,7 +19,7 @@ from app.moderacion import registrar_aprobacion_en_bd
 from app.notificaciones import enviar_en_segundo_plano, notificar_publicador
 from app.paginacion import Pagina, pagina, paginar_lista
 from app.rutas.eventos import _buscar, _ficha
-from app.seguridad import exigir_moderador
+from app.seguridad import REVISOR_INTERNO, exigir_moderador
 from app.serializar import eventos_a_dict, publicador_a_dict
 
 router = APIRouter(prefix="/api/v1", tags=["moderacion"])
@@ -50,9 +50,10 @@ class Decision(BaseModel):
 
 
 @router.get("/moderacion/pendientes")
-def pendientes(p: Pagina = Depends(pagina), _: str = Depends(exigir_moderador), db: Session = Depends(get_db)):
+def pendientes(p: Pagina = Depends(pagina), revisor: str = Depends(exigir_moderador), db: Session = Depends(get_db)):
     """Eventos en revisión y publicadores por aprobar, mezclados y del más antiguo al más reciente.
-    La bandeja es pequeña (unas decenas como mucho): se junta y pagina en memoria."""
+    La bandeja es pequeña (unas decenas como mucho): se junta y pagina en memoria.
+    `datos_ayuntamiento` solo va con sesión de moderador, no al bot (X-Internal-Token)."""
     eventos = db.scalars(
         select(Evento)
         .options(selectinload(Evento.publicador))
@@ -69,7 +70,7 @@ def pendientes(p: Pagina = Depends(pagina), _: str = Depends(exigir_moderador), 
     items = [
         (e.creado_en, {"tipo": "evento", "motivo": e.motivo_moderacion or "Pendiente de revisión",
                        "score_spam": e.score_spam, "evento": datos})
-        for e, datos in zip(eventos, eventos_a_dict(db, list(eventos)))
+        for e, datos in zip(eventos, eventos_a_dict(db, list(eventos), privados=revisor != REVISOR_INTERNO))
     ]
     items += [
         (pub.creado_en, {"tipo": "publicador", "motivo": MOTIVO_PUBLICADOR[pub.estado], "score_spam": None,
@@ -144,4 +145,4 @@ def decidir(
         )
     db.commit()
     enviar_en_segundo_plano(background_tasks, db, [aviso])
-    return _ficha(db, _buscar(db, evento.id))
+    return _ficha(db, _buscar(db, evento.id), privados=revisor != REVISOR_INTERNO)

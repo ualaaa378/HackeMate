@@ -60,7 +60,9 @@ def inscritos_por_evento(db: Session, ids: Iterable[str]) -> dict[str, int]:
     return {evento_id: int(total) for evento_id, total in filas}
 
 
-def evento_a_dict(e: Evento, inscritos: int = 0) -> dict:
+def evento_a_dict(e: Evento, inscritos: int = 0, privados: bool = False) -> dict:
+    """`privados=True` solo para el organizador del evento o un moderador con sesión (bearer): añade
+    `datos_ayuntamiento`. Nunca en rutas públicas, hacia el bot (X-Internal-Token) ni hacia la IA."""
     datos = {
         "id": e.id,
         "titulo": e.titulo,
@@ -81,6 +83,7 @@ def evento_a_dict(e: Evento, inscritos: int = 0) -> dict:
         "publicador_id": e.publicador_id,
         "publicador_nombre": e.publicador.nombre if e.publicador else None,
         "imagen_url": e.imagen_url,
+        "frase_portada": e.frase_portada,
         "origen": {"canal": e.origen_canal, "url": e.origen_url, "importado_auto": e.importado_auto},
         "moderacion": {"motivo": e.motivo_moderacion, "score_spam": e.score_spam, "revisado_por": e.revisado_por},
         "creado_en": fecha_iso(e.creado_en),
@@ -89,12 +92,14 @@ def evento_a_dict(e: Evento, inscritos: int = 0) -> dict:
     # En el schema `descripcion` es string (no admite null): si no hay, no se envia.
     if e.descripcion is not None:
         datos["descripcion"] = e.descripcion
+    if privados:
+        datos["datos_ayuntamiento"] = e.datos_ayuntamiento
     return datos
 
 
-def eventos_a_dict(db: Session, eventos: list[Evento]) -> list[dict]:
+def eventos_a_dict(db: Session, eventos: list[Evento], privados: bool = False) -> list[dict]:
     inscritos = inscritos_por_evento(db, (e.id for e in eventos))
-    return [evento_a_dict(e, inscritos.get(e.id, 0)) for e in eventos]
+    return [evento_a_dict(e, inscritos.get(e.id, 0), privados) for e in eventos]
 
 
 def publicador_a_dict(p: Publicador, con_contacto: bool = True) -> dict:

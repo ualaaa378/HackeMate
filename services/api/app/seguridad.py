@@ -230,3 +230,11 @@ def puede_gestionar(quien: Quien, evento: Evento) -> bool:
         return True
     u = quien.usuario
     return u is not None and (u.rol == "moderador" or es_organizador(u, evento))
+
+
+def ve_datos_privados(quien: Quien | None, evento: Evento) -> bool:
+    """`evento.datos_ayuntamiento`: solo el organizador del evento o un moderador, con sesión bearer.
+    Con X-Internal-Token nunca (el bot y la IA no los reciben), aunque venga también una sesión."""
+    if quien is None or quien.interno or quien.usuario is None:
+        return False
+    return quien.usuario.rol == "moderador" or es_organizador(quien.usuario, evento)

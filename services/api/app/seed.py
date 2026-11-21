@@ -92,6 +92,15 @@ def _fila_evento(e: dict) -> dict:
     return fila
 
 
+def _fila_publicador(p: dict) -> dict:
+    """`responsable.identidad_verificada` del fixture va en su propia columna; `responsable` guarda el resto."""
+    fila = _columnas(Publicador, p, ("creado_en",))
+    responsable = dict(p.get("responsable") or {})
+    fila["identidad_verificada"] = bool(responsable.pop("identidad_verificada", False))
+    fila["responsable"] = responsable or None
+    return fila
+
+
 def migrar(url: str | None = None) -> None:
     cfg = Config(str(API_DIR / "alembic.ini"))
     cfg.attributes["configurar_logs"] = False
@@ -132,7 +141,7 @@ def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None 
     publicadores = _leer("publicadores.json", directorio)
     fuentes = 0
     for p in publicadores:
-        db.merge(Publicador(**_columnas(Publicador, p, ("creado_en",))))
+        db.merge(Publicador(**_fila_publicador(p)))
         db.flush()
         for f in p.get("fuentes", []):
             db.merge(Fuente(**_columnas(Fuente, f), publicador_id=p["id"]))

@@ -24,13 +24,17 @@ from app.moderacion import clasificar_spam, decidir_estado
 from app.notificaciones import enviar_en_segundo_plano, notificar_moderadores
 from app.rutas.eventos import (
     Categoria,
+    DatosAyuntamiento,
     EnteroNoNegativo,
+    FrasePortada,
     NoNegativo,
     Titulo,
     _buscar,
     _comprobar_fechas,
     _con_zona,
     _ficha,
+    comprobar_puede_publicar,
+    normalizar_extras,
 )
 from app.rutas.publico import es_uuid
 from app.seguridad import exigir_token_interno
@@ -139,6 +143,22 @@ def _entero(valor: Any) -> int | None:
     return int(numero) if numero is not None and numero == int(numero) else None
 
 
+def _imagen(valor: Any) -> str | None:
+    """Una imagen que no es URL http(s) ni data URL válida es como si faltara."""
+    texto = _texto(valor)
+    if texto is None:
+        return None
+    try:
+        return normalizar_extras({"imagen_url": texto})["imagen_url"]
+    except ErrorApi:
+        return None
+
+
+def _frase(valor: Any) -> str | None:
+    texto = _texto(valor)
+    return texto[:90].strip() if texto else None
+
+
 def _municipio(db: Session, valor: Any) -> Municipio | None:
     nombre = _texto(valor)
     if nombre is None:
@@ -166,16 +186,6 @@ def _publicador_por_fuente(db: Session, url: str | None) -> Publicador | None:
     return mejor.publicador if mejor else None
 
 
-def _comprobar_puede_publicar(publicador: Publicador | None) -> None:
-    """403 si el publicador está pausado o su solicitud fue rechazada."""
-    if publicador is None:
-        return
-    if publicador.estado == "pausado":
-        raise ErrorApi(403, "publicador_pausado", "El publicador está pausado y no puede publicar")
-    if publicador.estado == "rechazado":
-        raise ErrorApi(403, "publicador_rechazado", "La solicitud del publicador fue rechazada: no puede publicar")
-
-
 def _primero_con_url(db: Session, url: str, excluir_id: str | None = None) -> Evento | None:
     """El evento más antiguo con ese origen_url (desempate por id: dos peticiones a la vez eligen el mismo)."""
     consulta = select(Evento).where(Evento.origen_url == url)
@@ -194,7 +204,7 @@ def _asociar_publicador(db: Session, datos: ImportarEvento) -> Publicador | None
             raise ErrorApi(422, "publicador_no_encontrado", "No existe ese publicador", {"campo": "publicador_id"})
     if publicador is None and datos.contacto is not None:
         publicador = buscar_publicador_por_contacto(db, datos.contacto)
-    _comprobar_puede_publicar(publicador)
+    comprobar_puede_publicar(publicador)
     # H2.4: según el estado y el nivel de confianza del publicador se decidirá luego la moderación.
     return publicador
 
@@ -284,7 +294,8 @@ def importar_evento(datos: ImportarEvento, db: Session = Depends(get_db)):
         es_gratuito=es_gratuito,
         plazas_totales=plazas,
         plazas_libres=plazas,
-        imagen_url=_texto(_valor(campos, "imagen_url")),
+        imagen_url=_imagen(_valor(campos, "imagen_url")),
+        frase_portada=_frase(_valor(campos, "frase_portada")),
         estado="pendiente_confirmacion",
         publicador_id=publicador.id if publicador else None,
         origen_canal=datos.origen.canal,
@@ -346,6 +357,8 @@ class CamposConfirmar(BaseModel):
     es_gratuito: bool = None
     plazas_totales: EnteroNoNegativo | None = None
     imagen_url: str | None = None
+    frase_portada: FrasePortada | None = None
+    datos_ayuntamiento: DatosAyuntamiento | None = None
 
 
 class ConfirmarEvento(BaseModel):
@@ -359,8 +372,8 @@ class ConfirmarEvento(BaseModel):
 
 def _aplicar_campos(db: Session, evento: Evento, campos: CamposConfirmar) -> set[str]:
     """Aplica al evento los campos enviados y devuelve los que quedan rellenos (con un valor real)."""
-    cambios = campos.model_dump(exclude_unset=True)
-    for nombre in ("descripcion", "lugar", "imagen_url"):
+    cambios = normalizar_extras(campos.model_dump(exclude_unset=True))
+    for nombre in ("descripcion", "lugar"):
         if nombre in cambios:
             cambios[nombre] = _texto(cambios[nombre])
     for nombre in ("fecha_inicio", "fecha_fin"):
@@ -404,7 +417,7 @@ def confirmar_evento(
             409, "estado_invalido", "El evento no está pendiente de confirmación", {"estado": evento.estado}
         )
     publicador = evento.publicador
-    _comprobar_puede_publicar(publicador)
+    comprobar_puede_publicar(publicador)
 
     try:
         rellenos = _aplicar_campos(db, evento, datos.campos)
