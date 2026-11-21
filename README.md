@@ -126,9 +126,9 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 
 | Hito | Hasta | Tarea |
 |---|---|---|
-| H2 · CP2 | sáb 13:00 | - [ ] **B1.** Los tres hallazgos sin IA (apartado «hallazgos» de abajo), que afectan a los pasos 1, 3 y 5: título por reglas, pregunta por chat privado y post de spam sin fecha. |
+| H2 · CP2 | sáb 13:00 | - [x] **B1.** Los tres hallazgos sin IA, que afectan a los pasos 1, 3 y 5: título por reglas, pregunta por chat privado y post de spam sin fecha. *(sáb 21/11: hecho y probado contra la API con la IA caída. «Taller de esparto en Senés el sábado…» → título «Taller de esparto»; «¿A qué hora empieza la ruta solidaria?» por privado → «Empieza el 29/11 a las 09:00» (lo que no está en la ficha va al chat del evento); el post de apuestas sin fecha lo para el antispam del bot en vez de preguntar la fecha. Además: el bot ya no contesta en francés a «apúntame a la ruta» y apunta al plan que se nombra.)* |
 | H3 · CP3 | sáb 19:00 | - [ ] **B2.** **NVIDIA NIM como proveedor del `llm_router`**, en el orden Gemini → NIM → FreeLLM → Claude → reglas. NIM es compatible con OpenAI, así que basta con otra instancia como la de `FreeLLM` en `app/llm/proveedores.py`, con `NIM_URL`, `NIM_API_KEY` y `NIM_MODELO` en `.env.example` (vacías). Que `/ai/extraer` lo use para A2 y que sus tokens salgan en `/metrics` y en `/metrics/tokens` de la API. |
-| H3 · CP3 | sáb 19:00 | - [ ] **B3.** **Plan B de los audios** fuera de su portátil (por ejemplo, la transcripción de Gemini o la de NIM si la tiene) y ensayar el paso 7 con la máquina de Adán. |
+| H3 · CP3 | sáb 19:00 | - [ ] **B3.** **Audios fuera del portátil de Fran.** Decidido (sáb 21/11): **FreeLLMAPI con Docker en la máquina de Adán**, sin plan B dentro del bot. Fran le pasa por privado `freellmapi.config.json` y `.env` de `services/bot/freellmapi/`; Adán hace `docker compose up -d` allí y pone en el `.env` de la raíz `FREELLM_URL_DOCKER=http://host.docker.internal:3001/v1` y **su** clave unificada en `FREELLM_API_KEY` (ver `services/bot/freellmapi/README.md`). Falta ensayar el paso 7 juntos en su máquina. |
 | H3 · CP3 | sáb 19:00 | - [ ] **B4.** Decidir **D1** con Benas (ver A3). |
 | H4 · CP4 | dom 00:00 | - [ ] **B5.** Solo si sobra tiempo: `POST /ai/frase` (primero en el contrato) y pedir nombre, DNI y residencia en el alta de asociaciones. |
 | H5 | dom 07:00 | - [ ] **B6.** Escribir la sección del bot del README y tener las claves de IA de la demo en el `.env` de Adán (por privado). |
@@ -178,7 +178,7 @@ Lo que pide el bot:
 ### Flujo B · bot (Francisco), NVIDIA NIM y audios
 
 - **NIM en el `llm_router` (B2):** lo usa la ingesta de Facebook de Benas (A2) a través de `/ai/extraer`, y C enseña sus tokens en el panel (C6).
-- **Audios sin depender del portátil de Fran (B3):** hoy la transcripción solo va por FreeLLM. Lo necesita el paso 7 de la demo en la máquina de Adán.
+- **Audios sin depender del portátil de Fran (B3):** la transcripción va por FreeLLM, que ya corre en Docker (`services/bot/freellmapi/`). En la demo, Adán levanta su propio FreeLLMAPI en su máquina con la configuración que le pasa Fran por privado. Lo necesita el paso 7.
 
 ### Flujo B · bot (Francisco), alta de asociaciones
 
@@ -187,13 +187,6 @@ Lo que pide el bot:
 ### Flujo B · bot (Francisco), frase de portada con IA
 
 - **`POST /ai/frase`** (o el nombre que se acuerde, primero en el contrato): a partir del título, la categoría y el pueblo, devolver una frase breve, espontánea y alegre (máx. 90 letras, sin inventar datos del plan) para la portada del carrusel. La llama la API cuando el publicador no escribe la suya. Mientras no exista, la web elige una frase fija por tipo de plan y la marca como «✨ Frase automática».
-
-### Flujo B · bot (Francisco), hallazgos de la prueba de la v1 (sin claves de IA)
-
-Probado con `scripts/simular_chat.py` (bot con `CANAL=console`, sin Gemini ni FreeLLM: solo reglas). Detalle en [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md) §4.
-- **Título por reglas:** sin IA, el título de la ficha es el post entero recortado («Taller de esparto en Senés el sábado 28 de noviembre a las 11:00 en la plaza. Gr»). Conviene cortar en la primera frase o antes de « en <pueblo>»/« el <día>».
-- **Pregunta sobre un plan por chat privado** («¿Hay que llevar agua a la ruta solidaria?»): el bot la trata como una búsqueda y enseña la ficha, sin responder. En el chat del evento sí se responde (la API llama a `/ai/responder-ficha`).
-- **Post de apuestas por el bot:** sin fecha, el bot se queda pidiendo «¿Qué día y a qué hora empieza?» y no llega a la API, así que el antispam no lo ve. Para el paso 3, el post de spam tiene que llevar fecha (el del seed ya está en la bandeja con `score_spam` 0,95).
 
 ### Flujo B · bot (Francisco), opcional en el compose
 

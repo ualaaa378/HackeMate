@@ -16,7 +16,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from app import api_cliente, canales, telegram, vecino
-from app.agentes import extractor, idiomas, intencion, medios, voz
+from app.agentes import antispam, extractor, idiomas, intencion, medios, voz
 from app.api_cliente import ApiNoDisponible, ErrorApi
 from app.config import get_settings
 from app.respuestas import Respuesta
@@ -193,6 +193,8 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
     # Un cartel siempre es para publicar; texto y notas de voz pueden ser de un vecino que busca planes
     if not es_cartel:
         tipo = intencion.detectar(texto, vecino.mirando_evento(msg.de)).tipo
+        if tipo == "buscar" and intencion.es_pregunta_concreta(texto) and vecino.plan_nombrado(msg, texto):
+            tipo = "pregunta_evento"  # pregunta por un plan que nombra: se responde, no se busca
         if tipo == "buscar":
             return eco + vecino.buscar(msg, texto, _usuario(msg.de))
         if tipo == "gustos":
@@ -212,6 +214,14 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
     aviso = _importar(msg, est)
     if aviso is not None:
         return eco + [aviso]
+    if extraccion.faltan_obligatorios():
+        # La API pasa el antispam al confirmar, y sin fecha no se puede confirmar: si es spam, no preguntamos
+        spam = antispam.puntuar(texto)
+        if spam.es_spam:
+            estados[msg.de] = Estado()
+            log.info("Post descartado por el antispam del bot (%.2f): %s", spam.score_spam, spam.motivo)
+            return eco + ["No puedo publicar esto: parece publicidad o spam 🚫\n"
+                          "Si es un error, habla con el ayuntamiento para que lo revise."]
     return eco + _siguiente_paso(est)
 
 

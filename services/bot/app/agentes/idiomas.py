@@ -12,7 +12,8 @@ from app.llm import router
 NOMBRES = {"es": "español", "en": "inglés", "fr": "francés", "de": "alemán", "it": "italiano", "pt": "portugués"}
 
 _PALABRAS = {
-    "es": "el la los las que de y en un una hay para por con es este esta qué cuándo dónde hola gracias quiero me".split(),
+    "es": ("el la los las que de y en un una hay para por con es este esta qué cuándo dónde hola gracias quiero me "
+           "a al del mi se lo no si sí ya más apúntame apuntame apuntarme ruta plan planes pueblo fin semana").split(),
     "en": "the and is are what where when there this weekend near me any events hello hi thanks please i want can how".split(),
     "fr": "le la les et est sont quoi où quand il y a ce week-end près de moi bonjour merci je veux des".split(),
     "de": "der die das und ist sind was wo wann gibt es dieses wochenende in der nähe hallo danke ich möchte".split(),
@@ -28,7 +29,8 @@ def detectar(texto: str) -> str | None:
         return None
     puntos = {idioma: sum(p in lista for p in palabras) for idioma, lista in _PALABRAS.items()}
     mejor = max(puntos, key=puntos.get)
-    if puntos[mejor] < 2 or puntos[mejor] <= puntos["es"] and mejor != "es":
+    # Casi todos los usuarios escriben en español: otro idioma tiene que ganarle con claridad
+    if puntos[mejor] < 2 or mejor != "es" and puntos[mejor] <= puntos["es"] + 1:
         return "es" if puntos["es"] >= 2 else None
     return mejor
 
