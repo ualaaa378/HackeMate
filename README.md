@@ -59,6 +59,17 @@ Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **vis
 
 **Primera versión completa para probar (sáb 21/11).** La API (flujo A) tiene todos los endpoints del contrato y el guion de la demo funciona de punta a punta con el bot en local. Cómo probarla y qué revisar: [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md).
 
+**📣 Cambios del flujo A (Benas), sáb 21/11 por la tarde: qué ha cambiado y qué tenéis que hacer**
+
+| PR | Qué cambia | Qué tenéis que hacer |
+|---|---|---|
+| #49 | **Ingesta de Facebook** (`scripts/importar_facebook.py`): los posts de los Aytos. de Uleila, Lucainena y Senés y de Monte-Sión → IA del bot → bandeja. Servicio `ingesta` del compose (revisión diaria, **apagado por defecto**) y 20 posts reales en `contracts/fixtures/facebook_posts.json` | Solo la máquina de la demo, si quiere la revisión diaria: `FB_SCRAPER_TOKEN` en el `.env` (por privado) y `--profile ingesta up -d ingesta`. Sin token: importar los posts guardados con `--desde-json` |
+| #53 | **El compose lee el `.env` de la raíz** solo con `--env-file .env` (sin él, el bot iba sin IA en Docker) | **Siempre, desde la raíz del repo:** `docker compose --env-file .env -f infra/docker-compose.yml …` (también en `exec`, `logs` y `--profile ingesta`) |
+| #61 | **API detrás del nginx y del túnel:** `uvicorn --proxy-headers` y CORS para el APK (`https://localhost`, `capacitor://localhost`). Arranque con la URL pública (`scripts/url_publica.py`) en el README y en `CLAUDE.md` | Si vuestro `.env` es anterior, copiad la línea `CORS_ORIGENES` de `.env.example` (solo hace falta para el APK) |
+| #63 | **Lo que hace la gente ya no se pierde al reiniciar:** antes, cada arranque de la API devolvía los datos de la demo a los fixtures (horas, decisiones del moderador, gustos) y **volvía a poner las plazas libres aunque hubiera inscritos**. Ahora el seed del arranque solo añade lo que falta. Además, `db` y `api` se levantan solas si se caen y la cola del bot va en el volumen `bot_data` | `git pull` y `up -d --build` **sin `-v`**. En la demo, **ni `down -v` ni `demo_reset`** (borran la base). Qué conserva cada comando: «⚙️ Backend» → «Qué se guarda» |
+
+**Pendiente que sale de esta revisión** (detalle en «🔗 Pendiente entre flujos»): **Adán**, que la ficha, el chat y la bandeja se refresquen solos (hoy cargan una vez y no se ve lo que hacen los demás) y que el service worker de la PWA no guarde `/api/` en caché. **Fran**, al recrear el bot (lo hace `url_publica.py`) se pierden las conversaciones a medias.
+
 **Progreso sáb 21/11 11:45 (punto de partida común para corregir y seguir):**
 - ✅ **Prueba completa en Docker con PostgreSQL** en la máquina de Adán (`down -v` + `up --build`, `CANAL=console`, sin IA): `smoke_test.ps1` en verde, `scripts/simular_chat.py` de punta a punta, `/admin` contra la API real (aprobar, rechazar y ver lo aprobado en la agenda) y la web (ficha, apuntarse, Recuerdos, Proponer un plan con el código de alta que sale en `docker compose … logs bot`). Detalle en la PR #48.
 - ✅ **Arreglado en la web:** tras reiniciar la base, la sesión vieja ya no rompe la ficha (la web la cierra sola y repite sin token).
