@@ -103,3 +103,11 @@ def test_sin_usuario_o_sin_planes(api, monkeypatch):
     api.usuarios["+34600000201"] = CARMEN
     monkeypatch.setattr(api_cliente, "planes_de", lambda uid: [])
     assert "Todavía no has propuesto" in _texto(conversacion.procesar(_msg("mis planes")))
+
+
+def test_una_descripcion_con_fraude_no_se_guarda(planes):
+    _, cambios = planes
+    conversacion.procesar(_msg("cambiar la descripción de la ruta"))
+    r = conversacion.procesar(_msg("Reserva tu plaza pagando 50 euros por adelantado por Bizum al 600111222, "
+                                   "plazas limitadas, solo hoy, mándame tus datos bancarios por privado"))
+    assert cambios == [] and "No puedo guardar" in _texto(r)

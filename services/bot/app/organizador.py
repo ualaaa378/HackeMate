@@ -18,7 +18,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from app import api_cliente
-from app.agentes import extractor
+from app.agentes import antispam, extractor
 from app.api_cliente import ApiNoDisponible, ErrorApi
 from app.config import get_settings
 from app.respuestas import Respuesta
@@ -218,6 +218,14 @@ def responder(contacto: str, texto: str) -> list:
     elif campo == "lugar":
         cambios = {"lugar": texto[:200]}
     else:
+        # La API no vuelve a moderar lo que edita el bot (token interno): el antispam y el antifraude van aquí.
+        spam = antispam.puntuar(texto, "evento")
+        if spam.es_spam:
+            cancelar(contacto)
+            log.info("Descripción nueva rechazada por el antispam (%s, %.2f): %s", spam.tipo, spam.score_spam,
+                     spam.motivo)
+            return ["No puedo guardar esa descripción: parece publicidad o pide pagos fuera de la plataforma 🚫 "
+                    "Si es un error, cámbiala desde la web («Mis planes propuestos») y la revisará el ayuntamiento."]
         cambios = {"descripcion": texto[:2000]}
     if not any(v for v in cambios.values()) and campo != "plazas":
         return ["Escríbeme el nuevo valor, o pulsa «Dejarlo como está»."]
