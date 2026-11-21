@@ -236,10 +236,12 @@ const Agenda: React.FC = () => {
             <div className="agenda-zonas__centro">
               <div className="inicio">
                 {saludo}
-                <RecuerdosAgenda />
                 {carrusel}
               </div>
               {agenda}
+              <div className="inicio">
+                <RecuerdosAgenda />
+              </div>
             </div>
           </div>
         ) : (

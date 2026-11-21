@@ -2192,3 +2192,19 @@ ion-content.contenido-agenda--zonas::part(scroll) {
   --placeholder-opacity: 1;
   padding-inline: 0;
 }
+
+/* «Apuntarme» se queda pegado abajo mientras se lee la ficha: es la acción principal de la pantalla. */
+.ficha__apuntarme {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 -16px;
+  padding: 8px 16px calc(8px + var(--ion-safe-area-bottom, 0px));
+  background: var(--ion-background-color, #fcf9f1);
+  box-shadow: 0 -6px 12px -6px rgb(0 0 0 / 18%);
+}
+
+/* «Volver» en minúsculas: las mayúsculas sostenidas se leen peor. */
+ion-back-button {
+  text-transform: none;
+}

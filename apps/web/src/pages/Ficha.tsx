@@ -277,24 +277,26 @@ const Ficha: React.FC = () => {
 
             {!pasado && (
               <>
-                <IonButton
-                  expand="block"
-                  size="large"
-                  onClick={apuntarme}
-                  disabled={apuntando || !!inscrito}
-                  color={inscrito ? 'success' : 'primary'}
-                >
-                  {apuntando ? (
-                    <IonSpinner name="dots" />
-                  ) : inscrito ? (
-                    <>
-                      <IonIcon slot="start" icon={checkmarkCircle} aria-hidden="true" />
-                      {inscrito === 'lista_espera' ? 'En lista de espera' : 'Ya estás apuntado'}
-                    </>
-                  ) : (
-                    '🙋 Apuntarme'
-                  )}
-                </IonButton>
+                <div className={inscrito ? undefined : 'ficha__apuntarme'}>
+                  <IonButton
+                    expand="block"
+                    size="large"
+                    onClick={apuntarme}
+                    disabled={apuntando || !!inscrito}
+                    color={inscrito ? 'success' : 'primary'}
+                  >
+                    {apuntando ? (
+                      <IonSpinner name="dots" />
+                    ) : inscrito ? (
+                      <>
+                        <IonIcon slot="start" icon={checkmarkCircle} aria-hidden="true" />
+                        {inscrito === 'lista_espera' ? 'En lista de espera' : 'Ya estás apuntado'}
+                      </>
+                    ) : (
+                      '🙋 Apuntarme'
+                    )}
+                  </IonButton>
+                </div>
                 {inscrito && miInscripcion(evento.id) && (
                   <IonButton
                     expand="block"

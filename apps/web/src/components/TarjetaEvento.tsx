@@ -33,9 +33,9 @@ const TarjetaEvento: React.FC<{ evento: Evento; distanciaKm?: number }> = ({ eve
             </span>
           </p>
           <p className="tarjeta-evento__chapas">
-            <span className={`chapa ${e.es_gratuito ? 'chapa--gratis' : 'chapa--precio'}`}>
-              {e.es_gratuito || e.precio_eur != null ? precio(e) : 'Precio a consultar'}
-            </span>
+            {(e.es_gratuito || e.precio_eur != null) && (
+              <span className={`chapa ${e.es_gratuito ? 'chapa--gratis' : 'chapa--precio'}`}>{precio(e)}</span>
+            )}
             {n > 0 && (
               <span className="chapa chapa--gente" aria-label={textoApuntados(e)}>
                 <IonIcon icon={peopleOutline} aria-hidden="true" />
