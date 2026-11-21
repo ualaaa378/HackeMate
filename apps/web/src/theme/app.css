@@ -2026,7 +2026,7 @@ ion-content.contenido-agenda--zonas::part(scroll) {
 
 .idea__titulo {
   font-size: 1.1rem;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 .idea p {
@@ -2049,7 +2049,7 @@ ion-content.contenido-agenda--zonas::part(scroll) {
 
 .idea__motivo {
   font-weight: 600;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 .idea__form {
@@ -2073,13 +2073,13 @@ ion-content.contenido-agenda--zonas::part(scroll) {
 
 .idea__hecha {
   font-weight: 600;
-  color: var(--hm-verde-oscuro);
+  color: var(--hm-petroleo-oscuro);
 }
 
 /* ---------- N9c: aviso de posible fraude en la bandeja ---------- */
 .chip-fraude {
-  --background: var(--hm-naranja-claro);
-  --color: var(--hm-naranja-oscuro);
-  border: 1px solid var(--hm-naranja-oscuro);
+  --background: var(--hm-terracota-claro);
+  --color: var(--hm-terracota-oscuro);
+  border: 1px solid var(--hm-terracota-oscuro);
   font-weight: 700;
 }
