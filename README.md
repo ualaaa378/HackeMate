@@ -67,13 +67,8 @@ Revisado el 21/11/2026 a las 01:55. Todo esto ya lo usa la app web (flujo C) o e
 
 ### Flujo A · API (Benas)
 
-Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen en la API, salvo las tres de abajo (`x-implementado: false`).
+Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen en la API (ninguna queda con `x-implementado: false`).
 
-- **Panel de robustez (lo pide la web, pasando por la API):** `GET /admin/bot/metricas` y `POST /admin/bot/simular-caida` ya están en el contrato; falta programarlas en la API (reenvían a `bot GET /metrics` y `bot POST /admin/simular-caida` con el `INTERNAL_TOKEN`, que así no va al navegador).
-- **Revisión a mano o automática de las asociaciones (lo pide la web `/admin` → Asociaciones):** ya está en el contrato y la base de datos tiene `publicadores.responsable` e `identidad_verificada` (el seed los carga). Falta en la API:
-  - Devolver `responsable` y `actividad` (`planes_60_dias`, `rechazados_60_dias`, `ultimo_plan`) solo a moderadores con sesión, y aceptar `responsable` en el alta (`PublicadorCrear`).
-  - `POST /publicadores/{id}/verificar-identidad`.
-  - Que `POST /publicadores/{id}/aprobar` cambie `nivel_confianza` en un publicador ya aprobado y rechace el nivel 2 sin las reglas de `apps/web/src/admin/confianza.ts` (409 `reglas_confianza_no_cumplidas`).
 - **Frase de portada automática:** `frase_portada` ya se guarda y se devuelve (`POST`/`PATCH /eventos`, confirmar). Si llega vacía, la API se la pedirá al bot cuando exista `POST /ai/frase` (ver flujo B); mientras, la web pone una frase fija por tipo de plan.
 - **Una propuesta de un vecino sin asociación:** entra en revisión y el moderador ve sus `datos_ayuntamiento`, pero el vecino solo los ve en la respuesta del alta (la API no guarda quién propuso el plan si no es un publicador).
 
@@ -92,12 +87,12 @@ Pendiente: Benas y Francisco, que el aviso al vecino use el contacto que tenga (
 
 ### Flujo C · web (Adán), lo que pide el bot
 
-- Botón «Simular caída de la IA» y coste en tokens en `/admin/panel`, en cuanto la API los exponga (ver arriba).
+- Botón «Simular caída de la IA» y coste en tokens en `/admin/panel`: la API ya los expone en `GET /admin/bot/metricas` y `POST /admin/bot/simular-caida` (con la sesión del moderador; el `INTERNAL_TOKEN` no va al navegador).
 - Opcional, como plan C de la demo: un chat simulado en la web que llame a `bot POST /dev/mensaje`.
 
 ### Flujo B · bot (Francisco), alta de asociaciones
 
-- **Datos del responsable al dar de alta una asociación:** cuando alguien pide publicar por Telegram (y por WhatsApp cuando Meta lo permita, con el mismo flujo de conversación), el bot tiene que pedir el nombre, el DNI y el pueblo donde vive el responsable, y mandarlos a la API en el alta (cuando el campo `responsable` esté en el contrato, ver flujo A). Sin esos datos la asociación nunca podrá publicar sin revisión.
+- **Datos del responsable al dar de alta una asociación:** cuando alguien pide publicar por Telegram (y por WhatsApp cuando Meta lo permita, con el mismo flujo de conversación), el bot tiene que pedir el nombre, el DNI y el pueblo donde vive el responsable, y mandarlos a la API en el alta (`POST /publicadores` con `responsable` {`nombre`, `dni`, `residencia`}; la API ya lo acepta y responde 422 `dni_invalido` si la letra del DNI/NIE no cuadra). Sin esos datos la asociación nunca podrá publicar sin revisión.
 
 ### Flujo B · bot (Francisco), frase de portada con IA
 
@@ -192,7 +187,10 @@ Todos bajo `/api/v1/` salvo `/health`. Detalle, errores y ejemplos en `contracts
 | H1 · Datos y CRUD | `GET /municipios` · `GET /lugares`, `GET /lugares/{id}` · `GET/POST /eventos` · `GET/PATCH /eventos/{id}` · `GET/POST /publicadores` · `GET /publicadores/{id}` · `POST /usuarios` · `GET /usuarios/by-phone/{e164}`, `/usuarios/by-contacto/{contacto}` · `POST /usuarios/vincular` |
 | H2 · Ingesta y moderación | `POST /eventos/importar` · `POST /eventos/{id}/confirmar` · `GET /moderacion/pendientes` · `POST /moderacion/{id}/decision` · `POST /publicadores/{id}/aprobar`, `/pausar`, `/fuentes` · `POST /auth/whatsapp/codigo`, `/auth/whatsapp/verificar` |
 | H3 · La vecina | `POST /auth/google` · `POST /auth/demo` · `GET/PATCH /usuarios/me` · `GET/POST /eventos/{id}/inscripciones` · `DELETE/PATCH /eventos/{id}/inscripciones/{insc_id}` · `GET/POST /eventos/{id}/mensajes` · `PATCH /eventos/{id}/mensajes/{msg_id}` (fijar, ocultar y silenciar al autor en ese chat con `silenciar_autor`) · `GET /eventos/{id}/ics` · `GET /usuarios/me/ics` · `GET /recomendaciones` |
-| H4 · Jurado | `GET /estadisticas` (panel: actividades, inscripciones vs asistencia, ocupación, solapamientos y coste de la IA) · `POST /metrics/tokens` (el bot registra los tokens por proveedor) |
+| H4 · Jurado | `GET /estadisticas` (panel: actividades, inscripciones vs asistencia, ocupación, solapamientos y coste de la IA) · `POST /metrics/tokens` (el bot registra los tokens por proveedor) · `GET /admin/bot/metricas`, `POST /admin/bot/simular-caida` (panel de robustez: la API reenvía al bot con su `INTERNAL_TOKEN`; 503 `bot_no_disponible` si no responde en 3 s, 502 si responde con error) |
+| Asociaciones (revisión a mano o automática) | `POST /publicadores/{id}/verificar-identidad` · `POST /publicadores/{id}/aprobar` sobre un publicador ya aprobado cambia `nivel_confianza` (el 2 exige las reglas de `apps/web/src/admin/confianza.ts`; si no, 409 `reglas_confianza_no_cumplidas` con `details.faltan`) · `responsable` y `actividad` solo con sesión de moderador · alta con `responsable` (422 `dni_invalido` si el DNI/NIE no es válido) |
+
+Niveles de confianza: la subida automática por aprobaciones (`MODERACION_APROBACIONES_SUBIR_NIVEL`) llega como mucho al nivel 1; el nivel 2 (revisión automática) solo lo da un moderador y solo si se cumplen las reglas. La `actividad` se cuenta por la fecha en que se propuso cada plan (`creado_en`); «aprobados» son los `publicado` y `finalizado`.
 
 ### Sembrar y reiniciar la demo
 

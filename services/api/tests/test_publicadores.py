@@ -258,8 +258,9 @@ def test_aprobar_publicador_con_nivel(api, db):
     assert api.get(f"/api/v1/publicadores/{id}").status_code == 200
     # Aviso al publicador (no es usuario: va a su teléfono).
     assert any("ya puede publicar" in n.texto for n in _avisos(db, NUEVO["telefono"]))
-    # Ya no está pendiente: 409.
-    _error(_aprobar(api, id), 409, "estado_invalido")
+    # Ya aprobado: sin nivel no cambia nada; rechazarlo, 409.
+    assert _aprobar(api, id).json()["nivel_confianza"] == 1
+    _error(_aprobar(api, id, {"aprobar": False}), 409, "estado_invalido")
 
 
 def test_aprobar_sin_cuerpo_desde_whatsapp_verificado(api, db):
@@ -285,7 +286,8 @@ def test_aprobar_errores(api):
     _error(_aprobar(api, id, headers={}), 401, "no_autenticado")
     _error(_aprobar(api, INEXISTENTE), 404, "publicador_no_encontrado")
     _error(_aprobar(api, id, {"nivel_confianza": 5}), 422, "validacion")
-    _error(_aprobar(api, AMIGOS_VELEFIQUE), 409, "estado_invalido")  # ya aprobado
+    # Ya aprobado: rechazarlo no procede (se pausa); aprobarlo otra vez solo cambia el nivel.
+    _error(_aprobar(api, AMIGOS_VELEFIQUE, {"aprobar": False}), 409, "estado_invalido")
 
 
 # --- POST /publicadores/{id}/pausar -------------------------------------------------------------
@@ -303,7 +305,7 @@ def _pausar(api, id: str, que: str, pausado: bool, headers=TOKEN):
 
 def test_pausar_y_reactivar_publicador(api, db):
     id = _alta(api)
-    assert _aprobar(api, id, {"nivel_confianza": 2}).status_code == 200
+    assert _aprobar(api, id, {"nivel_confianza": 1}).status_code == 200
 
     r = _pausar(api, id, "publicador", True)
     assert r.status_code == 200, r.text

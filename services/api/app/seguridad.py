@@ -238,3 +238,9 @@ def ve_datos_privados(quien: Quien | None, evento: Evento) -> bool:
     if quien is None or quien.interno or quien.usuario is None:
         return False
     return quien.usuario.rol == "moderador" or es_organizador(quien.usuario, evento)
+
+
+def es_moderador_con_sesion(quien: Quien | None) -> bool:
+    """`publicador.responsable` y `publicador.actividad`: solo un moderador con sesión bearer.
+    Con X-Internal-Token nunca (no llegan al bot ni a la IA), aunque venga también una sesión."""
+    return quien is not None and not quien.interno and quien.usuario is not None and quien.usuario.rol == "moderador"

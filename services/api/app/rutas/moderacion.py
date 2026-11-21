@@ -20,7 +20,7 @@ from app.notificaciones import enviar_en_segundo_plano, notificar_publicador
 from app.paginacion import Pagina, pagina, paginar_lista
 from app.rutas.eventos import _buscar, _ficha
 from app.seguridad import REVISOR_INTERNO, exigir_moderador
-from app.serializar import eventos_a_dict, publicador_a_dict
+from app.serializar import eventos_a_dict, publicadores_a_dict
 
 router = APIRouter(prefix="/api/v1", tags=["moderacion"])
 
@@ -72,10 +72,13 @@ def pendientes(p: Pagina = Depends(pagina), revisor: str = Depends(exigir_modera
                        "score_spam": e.score_spam, "evento": datos})
         for e, datos in zip(eventos, eventos_a_dict(db, list(eventos), privados=revisor != REVISOR_INTERNO))
     ]
+    # `responsable` y `actividad` del publicador, igual: solo con sesión de moderador.
     items += [
         (pub.creado_en, {"tipo": "publicador", "motivo": MOTIVO_PUBLICADOR[pub.estado], "score_spam": None,
-                         "publicador": publicador_a_dict(pub)})
-        for pub in publicadores
+                         "publicador": datos})
+        for pub, datos in zip(
+            publicadores, publicadores_a_dict(db, list(publicadores), privados=revisor != REVISOR_INTERNO)
+        )
     ]
     items.sort(key=lambda par: par[0])
     return paginar_lista([item for _, item in items], p)

@@ -13,6 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.confianza import actividad_por_publicador
 from app.modelos import Evento, Inscripcion, Lugar, Municipio, Publicador, Usuario
 
 
@@ -102,8 +103,12 @@ def eventos_a_dict(db: Session, eventos: list[Evento], privados: bool = False) -
     return [evento_a_dict(e, inscritos.get(e.id, 0), privados) for e in eventos]
 
 
-def publicador_a_dict(p: Publicador, con_contacto: bool = True) -> dict:
-    """`con_contacto=False` para el público: sin teléfono, email ni telegram_id (el schema no los exige)."""
+def publicador_a_dict(p: Publicador, con_contacto: bool = True, actividad: dict | None = None) -> dict:
+    """`con_contacto=False` para el público: sin teléfono, email ni telegram_id (el schema no los exige).
+
+    `actividad` (de `app.confianza.actividad_por_publicador`) solo se pasa con sesión de moderador (bearer):
+    entonces se añaden los datos privados `responsable` (con `identidad_verificada`) y `actividad`. Nunca en
+    rutas públicas, a otros usuarios ni con X-Internal-Token (el DNI es un dato personal)."""
     datos = {
         "id": p.id,
         "nombre": p.nombre,
@@ -123,7 +128,32 @@ def publicador_a_dict(p: Publicador, con_contacto: bool = True) -> dict:
         datos["telefono"] = p.telefono
         datos["email"] = p.email
         datos["telegram_id"] = p.telegram_id
+    if actividad is not None:
+        datos["responsable"] = (
+            {
+                "nombre": p.responsable.get("nombre") or "",
+                "dni": p.responsable.get("dni") or "",
+                "residencia": p.responsable.get("residencia") or "",
+                "identidad_verificada": bool(p.identidad_verificada),
+            }
+            if p.responsable
+            else None
+        )
+        datos["actividad"] = {**actividad, "ultimo_plan": fecha_iso(actividad.get("ultimo_plan"))}
     return datos
+
+
+def publicadores_a_dict(
+    db: Session, publicadores: list[Publicador], con_contacto: bool = True, privados: bool = False
+) -> list[dict]:
+    """Como `publicador_a_dict` para una página entera; con `privados`, la actividad sale de una sola consulta."""
+    actividades = actividad_por_publicador(db, (p.id for p in publicadores)) if privados else {}
+    return [publicador_a_dict(p, con_contacto, actividades.get(p.id)) for p in publicadores]
+
+
+def publicador_privado_a_dict(db: Session, p: Publicador) -> dict:
+    """Ficha completa para un moderador con sesión (contacto, `responsable` y `actividad`)."""
+    return publicadores_a_dict(db, [p], con_contacto=True, privados=True)[0]
 
 
 def usuario_a_dict(u: Usuario) -> dict:

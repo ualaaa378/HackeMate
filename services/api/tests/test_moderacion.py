@@ -263,14 +263,24 @@ def test_umbral_configurable(base, ajustes):
 
 # --- registrar_aprobacion -------------------------------------------------------
 
-def test_tres_aprobaciones_suben_de_0_a_1_y_luego_a_2(base, ajustes):
+def test_tres_aprobaciones_suben_de_0_a_1_y_no_llegan_solas_a_2(base, ajustes):
+    # El nivel 2 (revisión automática) solo lo da un moderador si se cumplen las reglas (app/confianza.py).
     ajustes(MODERACION_APROBACIONES_SUBIR_NIVEL=3)
     p = _publicador(base, nivel=0)
     assert [moderacion.registrar_aprobacion(p) for _ in range(3)] == [False, False, True]
     assert p.nivel_confianza == 1 and p.aprobaciones == 3
-    assert [moderacion.registrar_aprobacion(p) for _ in range(3)] == [False, False, True]
-    assert p.nivel_confianza == 2 and p.aprobaciones == 6
+    assert not any(moderacion.registrar_aprobacion(p) for _ in range(6))
+    assert p.nivel_confianza == 1 and p.aprobaciones == 9
     base.commit()
+
+
+def test_registrar_aprobacion_en_bd_no_sube_de_1(base, ajustes):
+    ajustes(MODERACION_APROBACIONES_SUBIR_NIVEL=1)
+    p = _publicador(base, nivel=0)
+    base.commit()
+    assert moderacion.registrar_aprobacion_en_bd(base, p.id) is True
+    assert not any(moderacion.registrar_aprobacion_en_bd(base, p.id) for _ in range(3))
+    assert p.nivel_confianza == 1 and p.aprobaciones == 4
 
 
 def test_nivel_2_no_sube_mas(base, ajustes):

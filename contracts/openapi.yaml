@@ -616,7 +616,7 @@ paths:
         Pone `responsable.identidad_verificada` (por defecto `true`). Es uno de los requisitos para el nivel 2.
         Desmarcarla no baja el nivel por sí sola: para eso, `POST /publicadores/{id}/aprobar` con otro nivel.
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: false
         content:
@@ -995,7 +995,7 @@ paths:
         La API llama a `bot GET /metrics` con su `X-Internal-Token` y devuelve el JSON tal cual, para no poner
         el token interno en el navegador.
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       responses:
         "200":
           description: Métricas del bot
@@ -1015,7 +1015,7 @@ paths:
         La API reenvía el cuerpo a `bot POST /admin/simular-caida` con su `X-Internal-Token` y devuelve lo que
         responde el bot. Con la caída activa, el bot sigue funcionando solo con reglas.
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       requestBody:
         required: true
         content:

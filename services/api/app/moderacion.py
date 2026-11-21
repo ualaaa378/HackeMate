@@ -204,15 +204,21 @@ def decidir_estado(
     return "publicado", "Publicador de confianza (nivel 2)"
 
 
+# La subida automática por aprobaciones llega como mucho a este nivel. El nivel 2 (revisión automática) solo lo
+# da un moderador con POST /publicadores/{id}/aprobar y si se cumplen las reglas de app/confianza.py.
+NIVEL_MAXIMO_AUTOMATICO = 1
+
+
 def registrar_aprobacion(publicador: Publicador) -> bool:
-    """Suma una aprobación y sube de nivel cada N aprobaciones (N = MODERACION_APROBACIONES_SUBIR_NIVEL).
+    """Suma una aprobación y sube de nivel cada N aprobaciones (N = MODERACION_APROBACIONES_SUBIR_NIVEL),
+    hasta NIVEL_MAXIMO_AUTOMATICO.
 
     `aprobaciones` es el total acumulado (como dice el schema) y no se reinicia: el tramo de cada nivel
-    se cuenta con el módulo, así que sube al llegar a N, 2N… aprobaciones. Devuelve True si subió.
+    se cuenta con el módulo, así que sube al llegar a N aprobaciones. Devuelve True si subió.
     No hace commit."""
     n = max(get_settings().moderacion_aprobaciones_subir_nivel, 1)
     publicador.aprobaciones = (publicador.aprobaciones or 0) + 1
-    if publicador.nivel_confianza < 2 and publicador.aprobaciones % n == 0:
+    if publicador.nivel_confianza < NIVEL_MAXIMO_AUTOMATICO and publicador.aprobaciones % n == 0:
         publicador.nivel_confianza += 1
         return True
     return False
@@ -234,7 +240,7 @@ def registrar_aprobacion_en_bd(db: Session, publicador_id: str) -> bool:
         return False
     db.refresh(publicador)
     nivel = publicador.nivel_confianza
-    if nivel >= 2 or publicador.aprobaciones % n != 0:
+    if nivel >= NIVEL_MAXIMO_AUTOMATICO or publicador.aprobaciones % n != 0:
         return False
     subido = db.execute(
         update(Publicador)

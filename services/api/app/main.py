@@ -10,6 +10,7 @@ from app import __version__, errores
 from app.config import avisar_configuracion_insegura, get_settings
 from app.notificaciones import ciclo_reintentos
 from app.rutas import (
+    admin,
     auth,
     calendario,
     estadisticas,
@@ -74,6 +75,7 @@ app.include_router(moderacion.router)
 app.include_router(calendario.router)
 app.include_router(recomendaciones.router)
 app.include_router(estadisticas.router)
+app.include_router(admin.router)
 
 
 @app.get("/health")

@@ -1,20 +1,25 @@
-"""Publicadores: lista, ficha, solicitud de alta (E1.5) y, del moderador, aprobar, pausar y fuentes (H2.5-H2.6)."""
+"""Publicadores: lista, ficha, solicitud de alta (E1.5) y, del moderador, aprobar, pausar, fuentes (H2.5-H2.6)
+y verificar la identidad del responsable (revisión a mano o automática, `app/confianza.py`).
+
+Datos privados (`responsable`, `actividad`): solo con sesión de moderador (bearer), nunca con X-Internal-Token."""
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header
+from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
+from app.confianza import normalizar_dni, reglas_nivel_2_que_faltan, tiene_datos_responsable
 from app.errores import ErrorApi
 from app.modelos import ESTADOS_PUBLICADOR, TIPOS_PUBLICADOR, Fuente, Municipio, Publicador, Usuario
 from app.notificaciones import enviar_en_segundo_plano, notificar_moderadores, notificar_publicador
-from app.paginacion import Pagina, pagina, paginar
+from app.paginacion import Pagina, pagina, respuesta
+from app.rutas.eventos import quien_opcional
 from app.rutas.publico import es_uuid
-from app.seguridad import es_servicio_interno, exigir_moderador, exigir_token_interno
-from app.serializar import publicador_a_dict
+from app.seguridad import REVISOR_INTERNO, Quien, es_moderador_con_sesion, exigir_moderador, exigir_token_interno
+from app.serializar import publicador_a_dict, publicador_privado_a_dict, publicadores_a_dict
 from app.telefonos import validar_telefono
 
 router = APIRouter(prefix="/api/v1", tags=["publicadores"])
@@ -24,6 +29,16 @@ router = APIRouter(prefix="/api/v1", tags=["publicadores"])
 VISIBLES_EN_LISTA = ("aprobado",)
 VISIBLES_EN_FICHA = ("aprobado", "pausado")
 PATRON_EMAIL = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+
+
+class ResponsableCrear(BaseModel):
+    """PublicadorCrear.responsable. `identidad_verificada` se ignora si llega: la marca el moderador."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    nombre: Annotated[str, Field(min_length=1, max_length=120)]
+    dni: Annotated[str, Field(min_length=1, max_length=20)]
+    residencia: Annotated[str, Field(min_length=1, max_length=200)]
 
 
 class PublicadorCrear(BaseModel):
@@ -37,6 +52,7 @@ class PublicadorCrear(BaseModel):
     descripcion: str | None = None
     telefono: str
     email: Annotated[str, Field(pattern=PATRON_EMAIL, max_length=254)] | None = None
+    responsable: ResponsableCrear | None = None
 
     _telefono = field_validator("telefono")(validar_telefono)
 
@@ -53,30 +69,33 @@ def listar_publicadores(
     estado: Literal[ESTADOS_PUBLICADOR] | None = None,
     municipio: str | None = None,
     p: Pagina = Depends(pagina),
-    x_internal_token: str | None = Header(None),
+    quien: Quien = Depends(quien_opcional),
     db: Session = Depends(get_db),
 ):
-    interno = es_servicio_interno(x_internal_token)
+    moderador = es_moderador_con_sesion(quien)
+    interno = quien.interno or moderador  # el bot y el moderador ven todos los estados y el contacto
     consulta = (
         select(Publicador).options(selectinload(Publicador.fuentes)).order_by(Publicador.nombre, Publicador.id)
     )
     if estado:
         consulta = consulta.where(Publicador.estado == estado)
     if not interno:
-        # H3: el moderador (JWT) verá todos los estados. El público, solo los aprobados.
         consulta = consulta.where(Publicador.estado.in_(VISIBLES_EN_LISTA))
     if municipio:
         consulta = consulta.where(Publicador.municipio == municipio)
-    return paginar(db, consulta, p, lambda pub: publicador_a_dict(pub, con_contacto=interno))
+    total = db.scalar(select(func.count()).select_from(consulta.order_by(None).subquery())) or 0
+    filas = list(db.scalars(consulta.limit(p.size).offset(p.desde)).all())
+    return respuesta(publicadores_a_dict(db, filas, con_contacto=interno, privados=moderador), total, p)
 
 
 @router.get("/publicadores/{id}")
-def ver_publicador(id: str, x_internal_token: str | None = Header(None), db: Session = Depends(get_db)):
+def ver_publicador(id: str, quien: Quien = Depends(quien_opcional), db: Session = Depends(get_db)):
     publicador = _buscar(db, id)
-    interno = es_servicio_interno(x_internal_token)
-    if not interno and publicador.estado not in VISIBLES_EN_FICHA:
+    if es_moderador_con_sesion(quien):
+        return publicador_privado_a_dict(db, publicador)
+    if not quien.interno and publicador.estado not in VISIBLES_EN_FICHA:
         raise ErrorApi(404, "publicador_no_encontrado", "No existe ese publicador")
-    return publicador_a_dict(publicador, con_contacto=interno)
+    return publicador_a_dict(publicador, con_contacto=quien.interno)
 
 
 @router.post("/publicadores", status_code=201, dependencies=[Depends(exigir_token_interno)])
@@ -91,10 +110,25 @@ def crear_publicador(datos: PublicadorCrear, background_tasks: BackgroundTasks, 
         raise ErrorApi(
             409, "publicador_ya_existe", "Ya hay un publicador con ese teléfono", {"publicador_id": existente.id}
         )
+    responsable = None
+    if datos.responsable is not None:
+        dni = normalizar_dni(datos.responsable.dni)
+        if dni is None:
+            raise ErrorApi(
+                422, "dni_invalido", "El DNI o NIE del responsable no es válido (revisa la letra)",
+                {"campo": "responsable.dni"},
+            )
+        responsable = {
+            "nombre": datos.responsable.nombre.strip(),
+            "dni": dni,
+            "residencia": datos.responsable.residencia.strip(),
+        }
     # Si quien lo pide ya es usuario (el bot lo da de alta al primer mensaje), queda como responsable.
     usuario = db.scalar(select(Usuario).where(Usuario.telefono == datos.telefono))
     publicador = Publicador(
-        **datos.model_dump(),
+        **datos.model_dump(exclude={"responsable"}),
+        responsable=responsable,
+        identidad_verificada=False,
         estado="solicitado",  # hasta verificar el WhatsApp y que lo apruebe el moderador (H2)
         nivel_confianza=0,
         usuario_id=usuario.id if usuario else None,
@@ -117,7 +151,8 @@ class AprobarPublicador(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     aprobar: bool = True
-    nivel_confianza: Literal[0, 1, 2] = 0
+    # Sin enviar: 0 al aprobar una solicitud; en un publicador ya aprobado, el nivel no cambia.
+    nivel_confianza: Literal[0, 1, 2] | None = None
     motivo: str | None = None
 
 
@@ -136,11 +171,13 @@ def aprobar_publicador(
     id: str,
     background_tasks: BackgroundTasks,
     datos: AprobarPublicador | None = None,
-    _: str = Depends(exigir_moderador),
+    revisor: str = Depends(exigir_moderador),
     db: Session = Depends(get_db),
 ):
     datos = datos or AprobarPublicador()
     publicador = _buscar(db, id)
+    if publicador.estado == "aprobado" and datos.aprobar:
+        return _cambiar_nivel(db, publicador, datos.nivel_confianza, background_tasks, revisor)
     if publicador.estado not in POR_APROBAR:
         raise ErrorApi(
             409, "estado_invalido", "El publicador no está pendiente de aprobación", {"estado": publicador.estado}
@@ -148,13 +185,16 @@ def aprobar_publicador(
     # Se admite aprobar desde `solicitado` (sin pasar por /auth/whatsapp/verificar): si el publicador habla
     # con el bot por Telegram o el código no le llega, el moderador asume la verificación.
     motivo = (datos.motivo or "").strip() or None
-    cambios = {"estado": "aprobado", "nivel_confianza": datos.nivel_confianza} if datos.aprobar else {"estado": "rechazado"}
+    nivel = datos.nivel_confianza or 0
+    if datos.aprobar and nivel == 2:
+        _exigir_reglas_nivel_2(db, publicador)
+    cambios = {"estado": "aprobado", "nivel_confianza": nivel} if datos.aprobar else {"estado": "rechazado"}
     # Atómico: si dos moderadores deciden a la vez, solo uno cambia la fila y avisa; el otro recibe 409.
     _transicion(db, publicador, POR_APROBAR, cambios, "El publicador no está pendiente de aprobación")
     if datos.aprobar:
         texto = (
             f"¡Bienvenido! {publicador.nombre} ya puede publicar en HackeMate (nivel de confianza "
-            f"{datos.nivel_confianza}). Mándanos el cartel, el post o un audio y lo preparamos."
+            f"{nivel}). Mándanos el cartel, el post o un audio y lo preparamos."
         )
     else:
         texto = f"Tu solicitud para publicar como {publicador.nombre} no se ha aprobado." + (
@@ -163,7 +203,49 @@ def aprobar_publicador(
     aviso = notificar_publicador(db, publicador, "moderacion", texto, enviar=False)
     db.commit()
     enviar_en_segundo_plano(background_tasks, db, [aviso])
-    return publicador_a_dict(_buscar(db, publicador.id))
+    return _respuesta_moderador(db, publicador.id, revisor)
+
+
+def _respuesta_moderador(db: Session, id: str, revisor: str) -> dict:
+    """Con sesión de moderador, con `responsable` y `actividad`; al bot (X-Internal-Token), sin ellos."""
+    publicador = _buscar(db, id)
+    if revisor == REVISOR_INTERNO:
+        return publicador_a_dict(publicador)
+    return publicador_privado_a_dict(db, publicador)
+
+
+def _exigir_reglas_nivel_2(db: Session, publicador: Publicador) -> None:
+    faltan = reglas_nivel_2_que_faltan(db, publicador)
+    if faltan:
+        raise ErrorApi(
+            409, "reglas_confianza_no_cumplidas",
+            "El publicador aún no cumple las reglas para la revisión automática (nivel 2)", {"faltan": faltan},
+        )
+
+
+def _cambiar_nivel(
+    db: Session, publicador: Publicador, nivel: int | None, background_tasks: BackgroundTasks, revisor: str
+) -> dict:
+    """Publicador ya aprobado: revisión automática (nivel 2) o a mano (0 o 1). Sin nivel, no cambia nada."""
+    if nivel is None or nivel == publicador.nivel_confianza:
+        return _respuesta_moderador(db, publicador.id, revisor)
+    if nivel == 2:
+        _exigir_reglas_nivel_2(db, publicador)
+    anterior = publicador.nivel_confianza
+    # Atómico: solo si sigue aprobado (otro moderador puede haberlo pausado a la vez).
+    _transicion(db, publicador, ("aprobado",), {"nivel_confianza": nivel}, "El publicador ya no está aprobado")
+    aviso = None
+    if (nivel == 2) != (anterior == 2):  # solo se avisa si cambia el modo de revisión
+        texto = (
+            f"{publicador.nombre} pasa a revisión automática: tus planes se publicarán sin esperar revisión "
+            "(salvo que el antispam los pare)."
+            if nivel == 2
+            else f"A partir de ahora revisaremos los planes de {publicador.nombre} antes de publicarlos."
+        )
+        aviso = notificar_publicador(db, publicador, "moderacion", texto, enviar=False)
+    db.commit()
+    enviar_en_segundo_plano(background_tasks, db, [aviso])
+    return _respuesta_moderador(db, publicador.id, revisor)
 
 
 def _transicion(db: Session, publicador: Publicador, origenes: tuple[str, ...], cambios: dict, mensaje: str) -> None:
@@ -186,7 +268,7 @@ def pausar_publicador(
     id: str,
     datos: PausarPublicador,
     background_tasks: BackgroundTasks,
-    _: str = Depends(exigir_moderador),
+    revisor: str = Depends(exigir_moderador),
     db: Session = Depends(get_db),
 ):
     publicador = _buscar(db, id)
@@ -202,7 +284,7 @@ def pausar_publicador(
         db.refresh(publicador)
         if cambiadas == 0:
             db.rollback()
-            return publicador_a_dict(publicador)
+            return _respuesta_moderador(db, publicador.id, revisor)
         texto = (
             "Hemos pausado la importación automática de tus fuentes: lo que publiquemos pasará por revisión."
             if datos.pausado
@@ -216,14 +298,14 @@ def pausar_publicador(
             )
         nuevo = "pausado" if datos.pausado else "aprobado"
         if publicador.estado == nuevo:
-            return publicador_a_dict(publicador)
+            return _respuesta_moderador(db, publicador.id, revisor)
         anterior = "aprobado" if datos.pausado else "pausado"
         try:
             _transicion(db, publicador, (anterior,), {"estado": nuevo},
                         "Solo se pausa o reactiva un publicador aprobado")
         except ErrorApi:
             if publicador.estado == nuevo:  # otra petición igual se ha adelantado: mismo resultado, sin aviso
-                return publicador_a_dict(publicador)
+                return _respuesta_moderador(db, publicador.id, revisor)
             raise
         texto = (
             f"{publicador.nombre} queda en pausa: de momento no puedes publicar eventos nuevos."
@@ -233,7 +315,40 @@ def pausar_publicador(
     aviso = notificar_publicador(db, publicador, "moderacion", texto, enviar=False)
     db.commit()
     enviar_en_segundo_plano(background_tasks, db, [aviso])
-    return publicador_a_dict(_buscar(db, publicador.id))
+    return _respuesta_moderador(db, publicador.id, revisor)
+
+
+class VerificarIdentidad(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    identidad_verificada: bool = True
+
+
+@router.post("/publicadores/{id}/verificar-identidad")
+def verificar_identidad(
+    id: str,
+    datos: VerificarIdentidad | None = None,
+    revisor: str = Depends(exigir_moderador),
+    db: Session = Depends(get_db),
+):
+    """El moderador marca (o desmarca) como comprobados el DNI y la residencia del responsable.
+    Desmarcarla no baja el nivel: para eso, POST /publicadores/{id}/aprobar con otro nivel."""
+    datos = datos or VerificarIdentidad()
+    publicador = _buscar(db, id)
+    if not tiene_datos_responsable(publicador):
+        raise ErrorApi(
+            409, "sin_datos_responsable", "El publicador no tiene responsable con DNI y residencia",
+            {"publicador_id": publicador.id},
+        )
+    db.execute(
+        update(Publicador)
+        .where(Publicador.id == publicador.id)
+        .values(identidad_verificada=datos.identidad_verificada)
+        .execution_options(synchronize_session=False)
+    )
+    db.commit()
+    db.refresh(publicador)
+    return _respuesta_moderador(db, publicador.id, revisor)
 
 
 # --- Fuentes que vigila el bot (H2.6) -----------------------------------------------------------
