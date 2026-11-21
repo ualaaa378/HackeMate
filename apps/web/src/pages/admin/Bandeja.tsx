@@ -48,6 +48,9 @@ function nivelSpam(score: number | null | undefined): { texto: string; clase: st
   return { texto: `Riesgo de spam bajo (${pct} %)`, clase: 'spam spam--bajo' };
 }
 
+/** N9b/N9c: la API empieza el motivo por «Posible fraude» cuando la IA ve señales de estafa. */
+const esFraude = (p: PendienteBandeja) => p.motivo.trimStart().toLowerCase().startsWith('posible fraude');
+
 const clave = (p: PendienteBandeja) => p.evento?.id ?? p.publicador?.id ?? p.motivo;
 
 const Bandeja: React.FC = () => {
@@ -124,7 +127,7 @@ const Bandeja: React.FC = () => {
         return (
           <IonCard
             key={clave(p)}
-            className={`pendiente ${p.score_spam != null && p.score_spam >= 0.7 ? 'pendiente--spam' : ''}`}
+            className={`pendiente ${(p.score_spam != null && p.score_spam >= 0.7) || esFraude(p) ? 'pendiente--spam' : ''}`}
           >
             <IonCardHeader>
               {e ? (
@@ -134,6 +137,7 @@ const Bandeja: React.FC = () => {
                       {CATEGORIAS[e.categoria].emoji} {CATEGORIAS[e.categoria].etiqueta}
                     </IonChip>
                     <IonChip outline>{CANALES[e.origen.canal] ?? e.origen.canal}</IonChip>
+                    {esFraude(p) && <IonChip className="chip-fraude">⚠️ Posible fraude</IonChip>}
                   </div>
                   <IonCardTitle>{e.titulo}</IonCardTitle>
                   <IonCardSubtitle>

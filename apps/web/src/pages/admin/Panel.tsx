@@ -1,8 +1,10 @@
 import { IonButton, IonCard, IonCardContent, IonSpinner } from '@ionic/react';
 import { useCallback, useEffect, useState } from 'react';
 
+import IdeasIA from '../../admin/IdeasIA';
 import PaginaAdmin from '../../admin/PaginaAdmin';
 import { useAcceso } from '../../admin/acceso';
+import { PROVEEDORES } from '../../admin/ideas';
 import { getEstadisticas, getEventosAdmin, getMetricasBot, simularCaida } from '../../api/admin';
 import { ErrorApi } from '../../api/client';
 import { CATEGORIAS, type Categoria, type Estadisticas, type MetricasBot } from '../../api/types';
@@ -19,13 +21,6 @@ const euros = (x: number | undefined) =>
     maximumFractionDigits: 3,
   });
 const miles = (x: number | undefined) => (x ?? 0).toLocaleString('es-ES');
-
-const PROVEEDORES: Record<string, string> = {
-  gemini: 'Gemini (principal)',
-  freellm: 'FreeLLM (respaldo gratis)',
-  claude: 'Claude (respaldo)',
-  reglas: 'Reglas sin IA (si todo cae)',
-};
 
 const Panel: React.FC = () => {
   const [datos, setDatos] = useState<Estadisticas | null>(null);
@@ -55,13 +50,15 @@ const Panel: React.FC = () => {
   return (
     <PaginaAdmin titulo="📊 Panel" roles={['moderador']}>
       <div className="cifras">
-        <Cifra valor={miles(datos.actividades)} texto="planes publicados" />
+        <Cifra valor={miles(datos.actividades)} texto="planes publicados o ya hechos" />
         <Cifra valor={pct100(datos.pct_importadas_auto)} texto="importados de Facebook y webs por la IA" />
         <Cifra valor={miles(datos.inscripciones)} texto="personas apuntadas" />
         <Cifra valor={pct(asistencia)} texto="de los apuntados fueron" />
         <Cifra valor={pct100(datos.pct_otro_pueblo)} texto="vienen de otro pueblo" />
         <Cifra valor={euros(datos.tokens?.coste_total_eur)} texto={`coste de IA en ${miles(llamadas)} llamadas`} />
       </div>
+
+      <IdeasIA />
 
       <IonCard>
         <IonCardContent>
@@ -144,6 +141,11 @@ const Panel: React.FC = () => {
               </tfoot>
             </table>
           </div>
+          <p className="nota-demo">
+            {(datos.tokens?.coste_total_eur ?? 0) === 0
+              ? '0 €: la demo usa solo proveedores gratuitos (Gemini, NVIDIA NIM y FreeLLM).'
+              : 'Solo Claude cuesta dinero; Gemini, NVIDIA NIM y FreeLLM son gratuitos.'}
+          </p>
         </IonCardContent>
       </IonCard>
     </PaginaAdmin>

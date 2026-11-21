@@ -7,6 +7,7 @@ import { COORDENADAS, estadisticasMock, nuevoEventoMock, pendientesMock, publica
 
 import { conRespaldo, ErrorApi, esperar, mockEventos, peticion, propuestasMock, query, USAR_MOCKS } from './client';
 import type {
+  BorradorSugerencia,
   CaidaSimulada,
   Decision,
   EstadoEvento,
@@ -19,6 +20,7 @@ import type {
   PendienteBandeja,
   PublicadorAdmin,
   Rol,
+  Sugerencias,
   Token,
 } from './types';
 
@@ -327,6 +329,69 @@ export function getEstadisticas(): Promise<Estadisticas> {
     () => {
       const publicados = mockEventos.filter((e) => e.estado === 'publicado').length;
       return esperar({ ...estadisticasMock, actividades: publicados });
+    },
+  );
+}
+
+// ---------- N7: ideas de la IA para el moderador ----------
+// La API elige los planes con más participación y el bot propone otros parecidos; si el bot no está, propone por reglas.
+function sugerenciasMock(): Sugerencias {
+  const base = [...mockEventos].sort((a, b) => (b.plazas_totales ?? 0) - (a.plazas_totales ?? 0)).slice(0, 2);
+  return {
+    proveedor_ia: 'reglas',
+    basado_en: base.map((e) => ({
+      evento_id: e.id,
+      titulo: e.titulo,
+      categoria: e.categoria,
+      municipio: e.municipio,
+      fecha_inicio: e.fecha_inicio,
+      plazas_totales: e.plazas_totales ?? null,
+      inscritos: (e.plazas_totales ?? 0) - (e.plazas_libres ?? 0),
+      lista_espera: 0,
+      preguntas_chat: 0,
+      ocupacion: e.plazas_totales ? ((e.plazas_totales ?? 0) - (e.plazas_libres ?? 0)) / e.plazas_totales : null,
+    })),
+    items: base.map((e) => ({
+      titulo: `Otra edición: ${e.titulo}`,
+      descripcion: e.descripcion ?? null,
+      categoria: e.categoria,
+      municipio: e.municipio,
+      fecha_aproximada: 'dentro de unos meses',
+      motivo: 'Es de los planes con más gente apuntada (modo demo, sin IA).',
+      basado_en: [e.id],
+    })),
+  };
+}
+
+export function getSugerencias(): Promise<Sugerencias> {
+  return llamar(
+    () => peticion('/admin/sugerencias'),
+    () => esperar(sugerenciasMock()),
+  );
+}
+
+/** [Crear borrador]: la propuesta entra en la bandeja (`en_revision`) con la fecha que elige el moderador. */
+export function crearBorradorSugerencia(borrador: BorradorSugerencia): Promise<Evento> {
+  return llamar(
+    () => peticion('/admin/sugerencias/borrador', { method: 'POST', body: JSON.stringify(borrador) }),
+    () => {
+      const e = nuevoEventoMock({
+        titulo: borrador.titulo,
+        descripcion: borrador.descripcion ?? '',
+        categoria: borrador.categoria,
+        municipio: borrador.municipio,
+        fecha_inicio: borrador.fecha_inicio,
+        estado: 'en_revision',
+        publicador_nombre: 'Ayuntamiento',
+        origen: { canal: 'panel', url: null, importado_auto: false },
+      });
+      pendientesMock.unshift({
+        tipo: 'evento',
+        motivo: `Propuesto por la IA: ${borrador.motivo}`,
+        score_spam: null,
+        evento: e,
+      });
+      return esperar(e);
     },
   );
 }

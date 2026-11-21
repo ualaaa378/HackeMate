@@ -90,6 +90,9 @@ export type Estadisticas = Esquemas['Estadisticas'];
 export type MetricasBot = Esquemas['MetricasBot'];
 export type CaidaSimulada = Esquemas['CaidaSimulada'];
 export type EventoEditar = Esquemas['EventoEditar'];
+export type Sugerencias = Esquemas['Sugerencias'];
+export type SugerenciaPlan = Esquemas['SugerenciaPlan'];
+export type BorradorSugerencia = Esquemas['BorradorSugerencia'];
 export type Rol = Usuario['rol'];
 
 export interface Pagina<T> {

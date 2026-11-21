@@ -1494,6 +1494,60 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/auth/admin': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Acceso de la moderación del ayuntamiento con usuario y contraseña
+     * @description Comprueba `usuario` y `contrasena` contra `ADMIN_USUARIO` y `ADMIN_CONTRASENA` del `.env` (provisional para
+     *     la demo: `admin` / `1234`; cambiarla en la máquina de la demo) y devuelve la sesión del moderador más antiguo.
+     *     Funciona con y sin `DEMO_MODE`. La web lo pide para entrar en la pestaña de administración (`/admin`).
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            usuario: string;
+            contrasena: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Sesión de moderador */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Token'];
+          };
+        };
+        /** @description 401 `credenciales_invalidas` (no dice cuál de los dos falla) */
+        401: components['responses']['Error'];
+        /** @description 422 `validacion` */
+        422: components['responses']['Error'];
+        /** @description 503 `sin_moderador` (no hay ningún usuario moderador) */
+        503: components['responses']['Error'];
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/auth/demo': {
     parameters: {
       query?: never;
@@ -2052,6 +2106,110 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/sugerencias': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * N7: la IA propone planes nuevos a partir de los que tuvieron mucha participación
+     * @description La API elige los planes con más participación (ocupación, inscritos, lista de espera, asistencias y
+     *     preguntas en el chat; publicados o finalizados) y se los pasa a `bot POST /ai/sugerir-eventos` (N8), que propone
+     *     de 1 a 3 planes nuevos («repetir la Ruta Solidaria en primavera: se llenó y hubo 6 en lista de espera»);
+     *     sus `propuestas` son los `items` de la respuesta.
+     *     Si el bot no responde, la API propone por reglas (repetir el de más participación) y `proveedor_ia` vale
+     *     `reglas`: nunca falla por la IA. No guarda nada: cada llamada calcula de nuevo. «Descartar» lo hace la web.
+     *     La IA propone y una persona decide: nada se publica sin pasar por la bandeja.
+     */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Solo planes de ese pueblo */
+          municipio?: string;
+          limite?: number;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Propuestas y los planes en que se basan */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Sugerencias'];
+          };
+        };
+        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` */
+        401: components['responses']['Error'];
+        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+        403: components['responses']['Error'];
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/sugerencias/borrador': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * N7: [Crear borrador] convierte una propuesta en un plan que espera en la bandeja
+     * @description Crea el evento en `en_revision` con motivo «Propuesto por la IA a partir de …»: el moderador lo revisa,
+     *     ajusta la fecha y lo que haga falta (`PATCH /eventos/{id}`) y lo aprueba (`POST /moderacion/{id}/decision`).
+     *     Al aprobarlo se avisa a los interesados como a cualquier plan nuevo (A10).
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['BorradorSugerencia'];
+        };
+      };
+      responses: {
+        /** @description Evento creado en la bandeja */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['evento'];
+          };
+        };
+        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` */
+        401: components['responses']['Error'];
+        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+        403: components['responses']['Error'];
+        /** @description 422 `validacion` o `municipio_no_encontrado` */
+        422: components['responses']['Error'];
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/webhook/twilio': {
     parameters: {
       query?: never;
@@ -2381,6 +2539,14 @@ export interface paths {
               es_spam: boolean;
               motivo?: string | null;
               proveedor_ia?: string;
+              /**
+               * @description (N9, opcional) Qué es: `spam` (publicidad ajena, apuestas, cadenas, enlaces sospechosos) o
+               *     `fraude` (pide pago por adelantado, Bizum o datos bancarios, precios irreales, suplanta a un
+               *     ayuntamiento o asociación…). `ninguno` si es legítimo. `es_spam` es true en los dos casos, así
+               *     que quien no lea este campo sigue funcionando igual. El moderador ve el tipo en el motivo.
+               * @enum {unknown}
+               */
+              tipo?: 'ninguno' | 'spam' | 'fraude';
             };
           };
         };
@@ -2428,6 +2594,83 @@ export interface paths {
               /** @description false = no está en la ficha */
               puede_responder: boolean;
               respuesta?: string | null;
+              proveedor_ia?: string;
+            };
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/ai/sugerir-eventos': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * (N8) Propone planes nuevos a partir de los que más participación tuvieron
+     * @description La llama la API (N7) con los planes con más participación (ocupación, inscritos, lista de espera, preguntas
+     *     en el chat). Devuelve de 1 a `maximo` propuestas para los administradores, que deciden si crean el borrador.
+     *     La IA solo propone y no inventa datos: cada propuesta dice en qué planes se basa (`basado_en`) y por qué.
+     *     IA con FreeLLM primero; sin IA, propuestas por reglas (repetir el plan que más se llenó).
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            planes: {
+              /** Format: uuid */
+              evento_id?: string;
+              titulo: string;
+              categoria: components['schemas']['Categoria'];
+              municipio: string;
+              /** Format: date-time */
+              fecha_inicio: string;
+              plazas_totales?: number | null;
+              inscritos: number;
+              /** @default 0 */
+              lista_espera?: number;
+              /** @default 0 */
+              preguntas_chat?: number;
+            }[];
+            /** @default 3 */
+            maximo?: number;
+          };
+        };
+      };
+      responses: {
+        /** @description Propuestas (puede venir vacía si nada destaca) */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              propuestas: {
+                titulo: string;
+                categoria: components['schemas']['Categoria'];
+                municipio: string;
+                /** @description Texto libre: «primavera», «mayo de 2027», «el próximo puente» */
+                fecha_aproximada?: string | null;
+                /** @description Por qué, con datos de los planes recibidos (se llenó, 6 en lista de espera…) */
+                motivo: string;
+                /** @description evento_id de los planes en que se basa */
+                basado_en?: string[];
+              }[];
               proveedor_ia?: string;
             };
           };
@@ -2783,6 +3026,52 @@ export interface components {
     CaidaSimulada: {
       /** @description true = todas las IAs «fallan» y el bot sigue solo con reglas */
       activa: boolean;
+    };
+    /** @description N7/N8: cifras de participación de un plan (publicado o finalizado) para proponer otros */
+    ParticipacionPlan: {
+      /** Format: uuid */
+      evento_id: string;
+      titulo: string;
+      categoria: components['schemas']['Categoria'];
+      municipio: string;
+      /** Format: date-time */
+      fecha_inicio: string;
+      estado?: components['schemas']['EstadoEvento'];
+      plazas_totales?: number | null;
+      /** @description Personas (suma de plazas) confirmadas o que asistieron */
+      inscritos: number;
+      lista_espera: number;
+      asistencias?: number;
+      /** @description plazas ocupadas / plazas_totales (en los planes ya hechos incluye a quien se apuntó fuera de la plataforma; nunca menos que inscritos / plazas_totales); null sin aforo */
+      ocupacion?: number | null;
+      /** @description Mensajes de tipo pregunta en el chat del evento */
+      preguntas_chat: number;
+    };
+    /** @description N7: plan nuevo propuesto por la IA (una de las `propuestas` de bot POST /ai/sugerir-eventos). Una persona decide si se crea */
+    SugerenciaPlan: {
+      titulo: string;
+      descripcion?: string | null;
+      categoria: components['schemas']['Categoria'];
+      municipio: string;
+      /** @description Texto libre: «primavera», «mayo de 2027», «el próximo puente» */
+      fecha_aproximada?: string | null;
+      /** @description Por qué, con cifras reales de los planes de basado_en */
+      motivo: string;
+      /** @description evento_id de los planes que la justifican */
+      basado_en?: string[];
+    };
+    /** @description N7: [Crear borrador]. La propuesta tal cual más la fecha que elige el moderador */
+    BorradorSugerencia: components['schemas']['SugerenciaPlan'] & {
+      /** Format: date-time */
+      fecha_inicio: string;
+    };
+    /** @description N7: respuesta de GET /admin/sugerencias */
+    Sugerencias: {
+      items: components['schemas']['SugerenciaPlan'][];
+      /** @description Los planes con más participación que se pasaron a la IA */
+      basado_en: components['schemas']['ParticipacionPlan'][];
+      /** @description Quién propuso (p. ej. freellm:…, nim:…, reglas) */
+      proveedor_ia: string;
     };
     /** @description Lo que devuelve `bot GET /metrics` (services/bot/app/main.py). Schema abierto. */
     MetricasBot: {
@@ -3146,38 +3435,41 @@ export interface components {
     };
     /**
      * Notificacion
-     * @description Aviso que la API pide enviar al bot con POST /notify. Si el bot está caído, queda en cola (estado_envio = pendiente).
+     * @description Aviso que la API pide enviar al bot con POST /notify. Si el bot está caído, queda en cola (estado_envio = pendiente). Destino: `telefono` (E.164), `contacto` (E.164 o tg:<chat_id>) o los dos; si viene `contacto`, manda.
      */
-    notificacion: {
-      /** Format: uuid */
-      id?: string;
-      telefono: string;
-      /** @description Contacto en su canal (E.164 = WhatsApp, tg:<chat_id> = Telegram). Si viene, el bot envía ahí en vez de a `telefono` */
-      contacto?: string;
-      /** @enum {unknown} */
-      tipo: 'recomendacion' | 'cambio_evento' | 'anuncio' | 'respuesta' | 'moderacion' | 'confirmacion';
-      texto: string;
-      /**
-       * @default texto
-       * @enum {unknown}
-       */
-      formato: 'texto' | 'audio';
-      /** Format: uuid */
-      usuario_id?: string | null;
-      /** Format: uuid */
-      evento_id?: string | null;
-      /** @description Respuestas rápidas sugeridas */
-      botones?: string[];
-      /** @description Plantilla aprobada de WhatsApp para avisos fuera de la ventana de 24 h. Los demás canales la ignoran y envían `texto` */
-      plantilla?: string;
-      /** @description Parámetros de la plantilla, en orden */
-      parametros?: string[];
-      /** @enum {unknown} */
-      estado_envio?: 'pendiente' | 'enviada' | 'fallida';
-      intentos?: number;
-      /** Format: date-time */
-      creado_en?: string;
-    };
+    notificacion:
+      | {
+          /** Format: uuid */
+          id?: string;
+          telefono?: string;
+          /** @description Contacto en su canal (E.164 = WhatsApp, tg:<chat_id> = Telegram). Si viene, el bot envía ahí en vez de a `telefono` */
+          contacto?: string;
+          /** @enum {unknown} */
+          tipo: 'recomendacion' | 'cambio_evento' | 'anuncio' | 'respuesta' | 'moderacion' | 'confirmacion';
+          texto: string;
+          /**
+           * @default texto
+           * @enum {unknown}
+           */
+          formato: 'texto' | 'audio';
+          /** Format: uuid */
+          usuario_id?: string | null;
+          /** Format: uuid */
+          evento_id?: string | null;
+          /** @description Respuestas rápidas sugeridas */
+          botones?: string[];
+          /** @description Plantilla aprobada de WhatsApp para avisos fuera de la ventana de 24 h. Los demás canales la ignoran y envían `texto` */
+          plantilla?: string;
+          /** @description Parámetros de la plantilla, en orden */
+          parametros?: string[];
+          /** @enum {unknown} */
+          estado_envio?: 'pendiente' | 'enviada' | 'fallida';
+          intentos?: number;
+          /** Format: date-time */
+          creado_en?: string;
+        }
+      | unknown
+      | unknown;
   };
   responses: {
     /**
