@@ -1,7 +1,7 @@
 # Propuesta de sincronización · sábado 21/11
 
 > Propuesta del flujo A (Benas), 09:45. **Es para revisarla entre los tres**: lo que no os encaje se cambia aquí mismo, por PR o comentándolo en el grupo.
-> Cómo probar y qué salió en la primera prueba: [`PRUEBAS_V1.md`](PRUEBAS_V1.md). Reparto de tareas al momento: `README.md` § «📋 Reparto del sábado».
+> Cómo probar y qué salió en la primera prueba: [`PRUEBAS_V1.md`](PRUEBAS_V1.md). Reparto de tareas al momento: `README.md` § «🔗 Pendiente entre flujos».
 
 ## 1. Dónde estamos
 

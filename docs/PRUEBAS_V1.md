@@ -31,7 +31,7 @@ git fetch origin
 git merge origin/develop        # después de que Benas mergee la PR de Flujo-A
 ```
 
-No hay cambios incompatibles en el contrato: todo lo nuevo son campos o rutas opcionales (lista en `README.md` § «Pendiente entre flujos» → «Ya resuelto»).
+No hay cambios incompatibles en el contrato: todo lo nuevo son campos o rutas opcionales (lista en `README.md` § «Pendiente entre flujos» → «Hecho»).
 
 ## 2. Pruebas automáticas (cada uno en su carpeta)
 
