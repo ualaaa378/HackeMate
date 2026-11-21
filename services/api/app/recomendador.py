@@ -9,6 +9,8 @@ Cada evento `publicado` que aún no ha empezado recibe una puntuación con estas
 | fecha      | hasta +1.5 si es hoy, bajando a 0 a los 30 días                                         |
 | plazas     | +1 si quedan plazas, +1.5 si son las últimas; −3 si está completo (lista de espera)    |
 | historial  | +1 si ya se apuntó antes a eventos de esa categoría                                    |
+| pueblo     | +3 si ya fue a 2 o más planes distintos de ese pueblo («pueblo favorito»: vive allí o le  |
+|            | encanta), aunque nunca haya ido a un plan de ese tipo. No se suma si es su propio pueblo  |
 
 Se excluyen los eventos a los que ya está apuntado (en cualquier estado salvo `cancelada`) y los suyos propios
 como publicador. El motivo junta las 2–3 razones de más peso en una frase:
@@ -38,6 +40,10 @@ PESO_PLAZAS = 1.0
 PESO_ULTIMAS_PLAZAS = 1.5
 PENALIZA_COMPLETO = -3.0
 PESO_HISTORIAL = 1.0
+# Pueblo favorito: quien va a varios planes del mismo pueblo seguramente vive allí o le encanta. Pesa como un gusto
+# para que sus planes salgan aunque sean de un tipo al que nunca ha ido.
+PESO_PUEBLO_FAVORITO = 3.0
+MIN_PLANES_PUEBLO = 2
 # «Últimas plazas»: quedan 5 o menos, o una cuarta parte o menos del total.
 ULTIMAS_PLAZAS_ABS = 5
 ULTIMAS_PLAZAS_FRACCION = 0.25
@@ -91,7 +97,7 @@ FRASE_ETIQUETA = {
 
 
 # Orden en que se leen las razones elegidas para el motivo (las elige el peso; las ordena esto).
-ORDEN_RAZONES = ("gustos", "distancia", "plazas", "fecha", "historial")
+ORDEN_RAZONES = ("gustos", "pueblo", "distancia", "plazas", "fecha", "historial")
 
 
 @dataclass
@@ -196,6 +202,18 @@ def _razon_historial(evento: Evento, categorias_previas: set[str]) -> Razon | No
     return Razon("historial", PESO_HISTORIAL, f"ya te has apuntado a otros planes de {tema}")
 
 
+def pueblos_favoritos(planes_por_pueblo: dict[str, set[str]]) -> dict[str, int]:
+    """{municipio: nº de planes distintos a los que fue} de los pueblos con MIN_PLANES_PUEBLO o más."""
+    return {m: len(ids) for m, ids in planes_por_pueblo.items() if m and len(ids) >= MIN_PLANES_PUEBLO}
+
+
+def razon_pueblo(usuario: Usuario, evento: Evento, favoritos: dict[str, int]) -> Razon | None:
+    veces = favoritos.get(evento.municipio)
+    if not veces or (usuario.municipio and usuario.municipio == evento.municipio):
+        return None  # su propio pueblo ya lo dice la distancia («es en tu pueblo»)
+    return Razon("pueblo", PESO_PUEBLO_FAVORITO, f"has ido a {veces} planes en {evento.municipio}")
+
+
 def componer_motivo(razones: list[Razon]) -> str:
     """Las razones positivas de más peso, en una frase: «A, B y C»."""
     positivas = [r for r in sorted(razones, key=lambda r: -r.peso) if r.frase and r.peso > 0]
@@ -211,12 +229,17 @@ def componer_motivo(razones: list[Razon]) -> str:
 
 def recomendar(db: Session, usuario: Usuario, ahora: datetime, limite: int = 5) -> list[Recomendacion]:
     inscripciones = db.execute(
-        select(Inscripcion.evento_id, Inscripcion.estado, Evento.categoria)
+        select(Inscripcion.evento_id, Inscripcion.estado, Evento.categoria, Evento.municipio)
         .join(Evento, Evento.id == Inscripcion.evento_id)
         .where(Inscripcion.usuario_id == usuario.id)
     ).all()
-    ya_apuntado = {evento_id for evento_id, estado, _ in inscripciones if estado != "cancelada"}
-    categorias_previas = {categoria for _, estado, categoria in inscripciones if estado in ESTADOS_HISTORIAL}
+    ya_apuntado = {evento_id for evento_id, estado, _, _ in inscripciones if estado != "cancelada"}
+    categorias_previas = {categoria for _, estado, categoria, _ in inscripciones if estado in ESTADOS_HISTORIAL}
+    planes_por_pueblo: dict[str, set[str]] = {}
+    for evento_id, estado, _, municipio in inscripciones:
+        if estado in ESTADOS_HISTORIAL:
+            planes_por_pueblo.setdefault(municipio, set()).add(evento_id)
+    favoritos = pueblos_favoritos(planes_por_pueblo)
 
     candidatos = db.scalars(
         select(Evento)
@@ -236,6 +259,7 @@ def recomendar(db: Session, usuario: Usuario, ahora: datetime, limite: int = 5) 
             r
             for r in (
                 _razon_gustos(usuario, evento),
+                razon_pueblo(usuario, evento, favoritos),
                 _razon_distancia(usuario, evento, km),
                 _razon_fecha(evento, ahora),
                 _razon_plazas(evento),

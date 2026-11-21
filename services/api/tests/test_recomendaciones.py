@@ -248,3 +248,49 @@ def test_usuario_inexistente_404(api):
 def test_usuario_id_obligatorio_y_uuid(api):
     _error(api.get(URL, headers=TOKEN), 422, "validacion")
     _error(api.get(URL, params={"usuario_id": "carmen"}, headers=TOKEN), 422, "validacion")
+
+
+# ---------- Pueblo favorito (pedido por Francisco, sáb 21/11) ----------
+
+def _fue_a(db, usuario_id, municipio, n, categoria="fiestas"):
+    """n planes ya pasados en `municipio` a los que fue (de una categoría que no es la del plan a recomendar)."""
+    for i in range(n):
+        ev = Evento(titulo=f"Plan pasado {i} en {municipio}", categoria=categoria, municipio=municipio,
+                    lat=37.18, lon=-2.36, fecha_inicio=VIERNES - timedelta(days=30 + i), estado="finalizado")
+        db.add(ev)
+        db.flush()
+        db.add(Inscripcion(evento_id=ev.id, usuario_id=usuario_id, plazas=1, estado="asistio", canal="web"))
+    db.commit()
+
+
+def test_pueblo_favorito_sube_sus_planes_aunque_nunca_fuera_a_ese_tipo(db):
+    sembrar(db, ahora=VIERNES)
+    db.commit()
+    nueva = Usuario(nombre="Rosa")  # sin gustos, sin pueblo, sin ubicación
+    db.add(nueva)
+    db.commit()
+    taller = db.get(Evento, TALLER_ESPARTO)  # cultural, en Senés
+    antes = {r.evento.id: r for r in recomendar(db, nueva, VIERNES, limite=20)}
+    _fue_a(db, nueva.id, taller.municipio, 2, categoria="fiestas")  # nunca a nada cultural
+    despues = {r.evento.id: r for r in recomendar(db, nueva, VIERNES, limite=20)}
+    assert despues[TALLER_ESPARTO].puntuacion == pytest.approx(antes[TALLER_ESPARTO].puntuacion + 3.0)
+    assert f"has ido a 2 planes en {taller.municipio}".lower() in despues[TALLER_ESPARTO].motivo.lower()
+    lista = recomendar(db, nueva, VIERNES, limite=20)
+    assert lista[0].evento.municipio == taller.municipio  # sus planes, arriba
+
+
+def test_un_solo_plan_no_hace_pueblo_favorito_ni_se_repite_si_es_su_pueblo(db):
+    sembrar(db, ahora=VIERNES)
+    db.commit()
+    taller = db.get(Evento, TALLER_ESPARTO)
+    una = Usuario(nombre="Una vez")
+    db.add(una)
+    db.commit()
+    _fue_a(db, una.id, taller.municipio, 1)
+    assert "has ido" not in {r.evento.id: r for r in recomendar(db, una, VIERNES, limite=20)}[TALLER_ESPARTO].motivo.lower()
+    vecina = Usuario(nombre="Vive allí", municipio=taller.municipio)
+    db.add(vecina)
+    db.commit()
+    _fue_a(db, vecina.id, taller.municipio, 3)
+    motivo = {r.evento.id: r for r in recomendar(db, vecina, VIERNES, limite=20)}[TALLER_ESPARTO].motivo.lower()
+    assert "has ido" not in motivo and "es en tu pueblo" in motivo
