@@ -53,6 +53,11 @@ def agenda(api):
     ("Ruta solidaria el 30 de noviembre a las 9:00 desde la plaza de Velefique, 5 euros, 40 plazas. ¿Te apuntas?",
      "publicar"),
     ("Torneo de fútbol sala el 12 de diciembre a las 17:00", "publicar"),
+    # Mensajes cortos sin pregunta: antes acababan en el saludo genérico «¿Buscas planes?»
+    ("rutas este fin de semana", "buscar"),
+    ("Conciertos mañana", "buscar"),
+    ("algo para el finde", "buscar"),
+    ("rutas", "buscar"),
 ])
 def test_intencion(texto, tipo):
     assert intencion.detectar(texto).tipo == tipo
