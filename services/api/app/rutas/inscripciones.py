@@ -20,11 +20,12 @@ from app.inscripciones import (
     cambiar_estado,
     cancelar,
     inscripcion_a_dict,
+    plan_terminado,
     reactivar,
     siguiente_posicion,
     tomar_plazas,
 )
-from app.modelos import Evento, Inscripcion, Usuario, ahora
+from app.modelos import Evento, Inscripcion, Usuario
 from app.notificaciones import enviar_en_segundo_plano
 from app.rutas.eventos import VISIBLES_EN_FICHA
 from app.rutas.publico import es_uuid
@@ -109,12 +110,12 @@ def inscribirse(
     evento = _evento(db, id)
     if evento.estado not in VISIBLES_EN_FICHA:
         raise ErrorApi(404, "evento_no_encontrado", "No existe ese evento")
+    if plan_terminado(evento):
+        raise ErrorApi(409, "evento_finalizado", "Este plan ya ha terminado: no admite inscripciones",
+                       {"estado": evento.estado})
     if evento.estado != "publicado":
         raise ErrorApi(409, "evento_no_inscribible", f"El evento está {evento.estado}: ya no admite inscripciones",
                        {"estado": evento.estado})
-    final = evento.fecha_fin or evento.fecha_inicio
-    if final <= ahora():
-        raise ErrorApi(409, "evento_terminado", "El evento ya ha terminado: no admite inscripciones")
 
     inscripcion = db.scalar(
         select(Inscripcion).where(Inscripcion.evento_id == evento.id, Inscripcion.usuario_id == usuario.id)

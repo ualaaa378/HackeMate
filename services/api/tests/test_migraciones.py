@@ -137,3 +137,18 @@ def test_notificaciones_contacto_se_puede_deshacer_y_rehacer(url):
     columnas = {c["name"]: c for c in inspect(motor).get_columns("notificaciones")}
     assert {"contacto", "plantilla", "parametros"} <= set(columnas) and columnas["telefono"]["nullable"]
     motor.dispose()
+
+
+def test_imagen_de_mensajes_se_puede_deshacer_y_rehacer(url):
+    """0006: columna opcional imagen_url (Text) en mensajes_evento."""
+    cfg = _config(url)
+    command.upgrade(cfg, "head")
+    command.downgrade(cfg, "0005")
+    motor = crear_motor(url)
+    assert "imagen_url" not in {c["name"] for c in inspect(motor).get_columns("mensajes_evento")}
+    motor.dispose()
+    command.upgrade(cfg, "head")
+    motor = crear_motor(url)
+    columnas = {c["name"]: c for c in inspect(motor).get_columns("mensajes_evento")}
+    assert "imagen_url" in columnas and columnas["imagen_url"]["nullable"]
+    motor.dispose()

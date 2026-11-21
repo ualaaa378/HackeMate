@@ -54,6 +54,7 @@ def mensaje_a_dict(m: MensajeEvento) -> dict:
         "tipo": m.tipo,
         "texto": ocultar_telefonos(m.texto)[:MAX_TEXTO],
         "en_respuesta_a": m.en_respuesta_a,
+        "imagen_url": m.imagen_url,
         "fijado": bool(m.fijado),
         "oculto": bool(m.oculto),
         "respondido_por_ia": bool(m.respondido_por_ia),

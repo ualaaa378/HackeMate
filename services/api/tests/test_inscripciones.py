@@ -190,7 +190,13 @@ def test_solo_eventos_publicados_y_futuros(api, db):
     _error(api.post(_url(GRAFITI_EN_REVISION), headers=_bearer(CARMEN)), 404, "evento_no_encontrado")
     _error(api.post(_url(INEXISTENTE), headers=_bearer(CARMEN)), 404, "evento_no_encontrado")
     _error(api.post(_url(_evento(db, estado="cancelado")), headers=_bearer(CARMEN)), 409, "evento_no_inscribible")
-    _error(api.post(_url(_evento(db, dias=-3)), headers=_bearer(CARMEN)), 409, "evento_terminado")
+    # Plan terminado (publicado pero ya pasado, o finalizado): 409 evento_finalizado, también para el bot
+    _error(api.post(_url(_evento(db, dias=-3)), headers=_bearer(CARMEN)), 409, "evento_finalizado")
+    finalizado = _evento(db, estado="finalizado", dias=-3)
+    _error(api.post(_url(finalizado), headers=_bearer(CARMEN)), 409, "evento_finalizado")
+    _error(api.post(_url(finalizado), json={"usuario_id": JOSE}, headers=TOKEN), 409, "evento_finalizado")
+    # Los planes pasados del seed también
+    _error(api.post(_url("4a5a0000-0000-4000-8000-000000000001"), headers=_bearer(CARMEN)), 409, "evento_finalizado")
 
 
 # --- Lista de inscritos y asistencia --------------------------------------------------------------

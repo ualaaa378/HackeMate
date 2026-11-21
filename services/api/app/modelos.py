@@ -233,6 +233,8 @@ class MensajeEvento(Base):
     tipo: Mapped[str] = mapped_column(_enum("tipo_mensaje", TIPOS_MENSAJE), nullable=False)
     texto: Mapped[str] = mapped_column(String(1000), nullable=False)
     en_respuesta_a: Mapped[str | None] = mapped_column(ForeignKey("mensajes_evento.id", ondelete="SET NULL"))
+    # Foto de un comentario en un plan pasado: URL http(s) o data URL de imagen (hasta ~2 MB).
+    imagen_url: Mapped[str | None] = mapped_column(Text)
     fijado: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     oculto: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     respondido_por_ia: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

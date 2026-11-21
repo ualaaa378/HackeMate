@@ -20,11 +20,29 @@ from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.modelos import Evento, Inscripcion, Notificacion, Usuario
+from app.modelos import Evento, Inscripcion, Notificacion, Usuario, ahora
 from app.notificaciones import notificar
 from app.serializar import fecha_iso
 
 ACTIVAS = ("confirmada", "lista_espera")
+# Quien se inscribió a un plan (aunque luego faltara): puede subir fotos al chat cuando ya ha pasado.
+INSCRITOS_DEL_PLAN = ("confirmada", "asistio", "no_asistio")
+
+
+def plan_terminado(evento: Evento) -> bool:
+    """`finalizado`, o publicado y ya pasado (fecha_fin o, si no hay, fecha_inicio). Un cancelado no cuenta."""
+    if evento.estado == "finalizado":
+        return True
+    return evento.estado == "publicado" and (evento.fecha_fin or evento.fecha_inicio) <= ahora()
+
+
+def estuvo_inscrito(db: Session, evento: Evento, usuario: Usuario) -> bool:
+    return db.scalar(
+        select(Inscripcion.id).where(
+            Inscripcion.evento_id == evento.id, Inscripcion.usuario_id == usuario.id,
+            Inscripcion.estado.in_(INSCRITOS_DEL_PLAN),
+        )
+    ) is not None
 DIAS = ("lun", "mar", "mié", "jue", "vie", "sáb", "dom")
 
 

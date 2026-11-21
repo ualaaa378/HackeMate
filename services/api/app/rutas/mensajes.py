@@ -5,6 +5,12 @@ Permisos (diapositiva 17):
   moderadores y el bot.
 - Escribir: usuario con sesión, o el bot con X-Internal-Token y `usuario_id`. Un vecino solo escribe en eventos
   publicados; el organizador y los moderadores, en cualquiera visible.
+- Plan terminado (`finalizado`, o publicado con la fecha ya pasada): cualquiera con sesión puede comentar, pero solo
+  `tipo: comentario` (si no, 409 `evento_finalizado`).
+- Fotos (`imagen_url`): solo en comentarios de planes terminados y solo de quien se inscribió (`confirmada`,
+  `asistio` o `no_asistio`), del organizador o de un moderador; si no, 403 `sin_permiso`. Se admite una URL
+  `http(s)://` (hasta 2048 caracteres) o una data URL `data:image/(png|jpeg|webp|gif);base64,…`; otra cosa da
+  422 `imagen_invalida` y una data URL de más de 2 MB (de imagen ya decodificada) da 413 `imagen_demasiado_grande`.
 - Anuncios (salen fijados): solo el organizador del evento o un moderador.
 - PATCH: fijar/desfijar y ocultar/mostrar, organizador o moderador (o el bot). El autor solo puede ocultar el
   suyo (`oculto: true`); no puede volver a mostrar un mensaje ocultado por moderación.
@@ -17,6 +23,7 @@ umbral (MODERACION_UMBRAL_SPAM) se rechaza con 422 `mensaje_spam` y el motivo: a
 y no queda basura oculta en la base. Los teléfonos del texto se sustituyen por «[teléfono oculto]».
 """
 
+import re
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header
@@ -35,6 +42,7 @@ from app.chat import (
 from app.config import get_settings
 from app.db import get_db
 from app.errores import ErrorApi
+from app.inscripciones import estuvo_inscrito, plan_terminado
 from app.modelos import Evento, MensajeEvento, Silenciado, Usuario
 from app.moderacion import clasificar_spam
 from app.notificaciones import enviar_en_segundo_plano, notificar
@@ -55,6 +63,7 @@ class MensajeCrear(BaseModel):
     texto: Annotated[str, Field(min_length=1, max_length=1000)]
     tipo: Literal["pregunta", "comentario", "anuncio"] = "comentario"
     en_respuesta_a: str | None = None
+    imagen_url: str | None = None
     usuario_id: str | None = None
 
 
@@ -68,6 +77,30 @@ class MensajeEditar(BaseModel):
 
 def _prohibido(mensaje: str) -> ErrorApi:
     return ErrorApi(403, "prohibido", mensaje)
+
+
+MAX_URL_IMAGEN = 2048
+MAX_BYTES_IMAGEN = 2 * 1024 * 1024
+_URL_HTTP = re.compile(r"https?://[^\s/?#]+[^\s]*", re.IGNORECASE)
+_DATA_URL = re.compile(r"data:image/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/]*={0,2})")
+
+
+def validar_imagen(imagen_url: str) -> str:
+    """URL http(s) o data URL de imagen en base64. 422 `imagen_invalida` o 413 `imagen_demasiado_grande`."""
+    if imagen_url.startswith("data:"):
+        coincide = _DATA_URL.fullmatch(imagen_url)
+        if coincide is None or not coincide.group(2):
+            raise ErrorApi(422, "imagen_invalida", "La foto debe ser una data URL PNG, JPEG, WebP o GIF en base64",
+                           {"campo": "imagen_url"})
+        datos = coincide.group(2).rstrip("=")
+        if len(datos) * 3 // 4 > MAX_BYTES_IMAGEN:
+            raise ErrorApi(413, "imagen_demasiado_grande", "La foto ocupa más de 2 MB",
+                           {"campo": "imagen_url", "max_bytes": MAX_BYTES_IMAGEN})
+        return imagen_url
+    if len(imagen_url) > MAX_URL_IMAGEN or _URL_HTTP.fullmatch(imagen_url) is None:
+        raise ErrorApi(422, "imagen_invalida", "La foto debe ser una URL http(s) o una data URL de imagen",
+                       {"campo": "imagen_url"})
+    return imagen_url
 
 
 def _evento(db: Session, id: str, gestor_interno: bool = False) -> Evento:
@@ -128,13 +161,25 @@ def publicar_mensaje(
     evento = _evento(db, id)
     organizador = es_organizador(usuario, evento)
     gestor = organizador or usuario.rol == "moderador"
-    if evento.estado != "publicado" and not gestor:
+    terminado = plan_terminado(evento)
+    if terminado:
+        if datos.tipo != "comentario":
+            raise ErrorApi(409, "evento_finalizado", "Este plan ya ha terminado: solo se admiten comentarios",
+                           {"estado": evento.estado, "tipo": datos.tipo})
+    elif evento.estado != "publicado" and not gestor:
         raise ErrorApi(409, "chat_cerrado", f"El evento está {evento.estado}: el chat ya no admite mensajes",
                        {"estado": evento.estado})
     if not gestor and db.get(Silenciado, (evento.id, usuario.id)) is not None:
         raise ErrorApi(403, "usuario_silenciado", "El organizador o un moderador te ha silenciado en este chat")
     if datos.tipo == "anuncio" and not gestor:
         raise _prohibido("Solo el organizador del evento o un moderador pueden publicar anuncios")
+    imagen_url = (datos.imagen_url or "").strip() or None
+    if imagen_url is not None:
+        if not terminado:
+            raise ErrorApi(403, "sin_permiso", "Las fotos solo se pueden subir cuando el plan ya ha pasado")
+        if not gestor and not estuvo_inscrito(db, evento, usuario):
+            raise ErrorApi(403, "sin_permiso", "Solo quien se apuntó al plan o la organización pueden subir fotos")
+        validar_imagen(imagen_url)
     if datos.en_respuesta_a is not None:
         original = db.get(MensajeEvento, datos.en_respuesta_a) if es_uuid(datos.en_respuesta_a) else None
         if original is None or original.evento_id != evento.id:
@@ -162,7 +207,7 @@ def publicar_mensaje(
     nombre, rol = autor_en_evento(usuario, evento, organizador)
     mensaje = MensajeEvento(
         evento_id=evento.id, autor_id=usuario.id, autor_nombre=nombre, autor_rol=rol, tipo=datos.tipo,
-        texto=texto, en_respuesta_a=datos.en_respuesta_a, fijado=datos.tipo == "anuncio", oculto=False,
+        texto=texto, en_respuesta_a=datos.en_respuesta_a, imagen_url=imagen_url, fijado=datos.tipo == "anuncio", oculto=False,
         respondido_por_ia=False, score_spam=score,
     )
     db.add(mensaje)

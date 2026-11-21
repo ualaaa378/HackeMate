@@ -15,7 +15,7 @@ from sqlalchemy import select
 from app import chat, moderacion
 from app.config import get_settings
 from app.inscripciones import fecha_corta
-from app.modelos import Evento, MensajeEvento, Notificacion, Silenciado
+from app.modelos import Evento, Inscripcion, MensajeEvento, Notificacion, Silenciado
 from app.seed import sembrar
 from tests.test_importar import TOKEN, VIERNES, _error
 from tests.test_inscripciones import (
@@ -50,8 +50,8 @@ def _url(evento_id: str, msg_id: str | None = None) -> str:
     return f"{base}/{msg_id}" if msg_id else base
 
 
-def _evento(db, estado: str = "publicado", plazas: int | None = 20) -> Evento:
-    inicio = (datetime.now(timezone.utc) + timedelta(days=9)).replace(hour=9, minute=0, second=0, microsecond=0)
+def _evento(db, estado: str = "publicado", plazas: int | None = 20, dias: int = 9) -> Evento:
+    inicio = (datetime.now(timezone.utc) + timedelta(days=dias)).replace(hour=9, minute=0, second=0, microsecond=0)
     e = Evento(
         titulo="Ruta por la sierra", categoria="deportiva", municipio="Velefique", lat=37.19, lon=-2.43,
         lugar="Plaza de la Iglesia", fecha_inicio=inicio, fecha_fin=inicio + timedelta(hours=4), precio_eur=0,
@@ -495,3 +495,115 @@ def test_editar_sin_cambiar_hora_no_crea_anuncio(api, db):
     r = api.patch(f"/api/v1/eventos/{e.id}", json={"descripcion": "Nueva descripción"}, headers=_bearer(ANTONIO))
     assert r.status_code == 200, r.text
     assert _listar(api, e.id) == []
+
+
+# --- Planes terminados: solo comentarios y fotos de quien fue ----------------------------------------------
+
+FOTO = "data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA="
+CINE_PASADO = "4a5a0000-0000-4000-8000-000000000001"  # eventos_pasados.json (finalizado)
+
+
+def _inscribir(db, evento: Evento, usuario_id: str, estado: str = "asistio") -> None:
+    db.add(Inscripcion(evento_id=evento.id, usuario_id=usuario_id, estado=estado, plazas=1, canal="web"))
+    db.commit()
+
+
+@pytest.fixture(params=["finalizado", "publicado_pasado"])
+def pasado(request, db):
+    if request.param == "finalizado":
+        return _evento(db, estado="finalizado", dias=-10)
+    return _evento(db, dias=-10)
+
+
+def test_plan_pasado_comentario_con_foto_de_inscrito(api, db, pasado):
+    _inscribir(db, pasado, CARMEN, "asistio")
+    m = _publicar(api, pasado.id, CARMEN, texto="¡Qué buen día!", imagen_url=FOTO)["mensaje"]
+    assert m["tipo"] == "comentario" and m["imagen_url"] == FOTO
+    # GET (público, sin sesión) muestra la foto
+    items = _listar(api, pasado.id)
+    assert [i["imagen_url"] for i in items] == [FOTO]
+    for i in items:
+        _valida(MENSAJE, i)
+    # Inscrito que luego no fue, o confirmado sin marcar asistencia, también
+    _inscribir(db, pasado, JOSE, "no_asistio")
+    _publicar(api, pasado.id, JOSE, texto="No pude ir, qué pena", imagen_url="https://ejemplo.org/foto.jpg")
+
+
+def test_plan_pasado_foto_de_no_inscrito_403(api, db, pasado):
+    _error(api.post(_url(pasado.id), json={"texto": "Mira", "imagen_url": FOTO}, headers=_bearer(CARMEN)),
+           403, "sin_permiso")
+    # Una inscripción cancelada o en lista de espera no cuenta
+    _inscribir(db, pasado, JOSE, "cancelada")
+    _error(api.post(_url(pasado.id), json={"texto": "Mira", "imagen_url": FOTO}, headers=_bearer(JOSE)),
+           403, "sin_permiso")
+    # Sin foto, cualquiera con sesión puede comentar
+    m = _publicar(api, pasado.id, CARMEN, texto="Me hubiera gustado ir")["mensaje"]
+    assert m["imagen_url"] is None
+
+
+def test_plan_pasado_foto_de_organizador_y_moderador(api, db, pasado):
+    assert _publicar(api, pasado.id, ANTONIO, texto="Gracias a todos", imagen_url=FOTO)["mensaje"]["imagen_url"] == FOTO
+    assert _publicar(api, pasado.id, LUCIA, texto="Bonita jornada", imagen_url=FOTO)["mensaje"]["imagen_url"] == FOTO
+
+
+def test_plan_pasado_bot_en_nombre_de_inscrito(api, db, pasado):
+    _inscribir(db, pasado, CARMEN, "confirmada")
+    r = api.post(_url(pasado.id), json={"texto": "Foto", "imagen_url": FOTO, "usuario_id": CARMEN}, headers=TOKEN)
+    assert r.status_code == 201, r.text
+    _valida(MENSAJE, r.json()["mensaje"])
+    r = api.post(_url(pasado.id), json={"texto": "Foto", "imagen_url": FOTO, "usuario_id": JOSE}, headers=TOKEN)
+    _error(r, 403, "sin_permiso")
+
+
+@pytest.mark.parametrize("tipo", ["pregunta", "anuncio"])
+def test_plan_pasado_solo_comentarios_409(api, db, pasado, tipo):
+    _inscribir(db, pasado, CARMEN)
+    for quien in (CARMEN, ANTONIO):
+        r = api.post(_url(pasado.id), json={"texto": "¿Se repite?", "tipo": tipo}, headers=_bearer(quien))
+        _error(r, 409, "evento_finalizado")
+    assert _listar(api, pasado.id) == []
+
+
+@pytest.mark.parametrize(
+    ("imagen", "status", "code"),
+    [
+        ("data:image/svg+xml;base64,PHN2Zz4=", 422, "imagen_invalida"),
+        ("data:text/html;base64,PGI+", 422, "imagen_invalida"),
+        ("data:image/png;base64,no es base64!", 422, "imagen_invalida"),
+        ("data:image/png;base64,", 422, "imagen_invalida"),
+        ("javascript:alert(1)", 422, "imagen_invalida"),
+        ("ftp://ejemplo.org/a.png", 422, "imagen_invalida"),
+        ("https://" + "a" * 2100 + ".org/a.png", 422, "imagen_invalida"),
+        ("data:image/jpeg;base64," + "A" * (2 * 1024 * 1024 * 4 // 3 + 8), 413, "imagen_demasiado_grande"),
+    ],
+)
+def test_plan_pasado_foto_invalida(api, db, pasado, imagen, status, code):
+    _inscribir(db, pasado, CARMEN)
+    _error(api.post(_url(pasado.id), json={"texto": "Foto", "imagen_url": imagen}, headers=_bearer(CARMEN)),
+           status, code)
+    assert _listar(api, pasado.id) == []
+
+
+def test_foto_en_plan_futuro_403(api, db):
+    e = _evento(db)
+    _inscribir(db, e, CARMEN, "confirmada")
+    _error(api.post(_url(e.id), json={"texto": "Foto", "imagen_url": FOTO}, headers=_bearer(CARMEN)),
+           403, "sin_permiso")
+    _error(api.post(_url(e.id), json={"texto": "Foto", "imagen_url": FOTO}, headers=_bearer(ANTONIO)),
+           403, "sin_permiso")
+
+
+def test_plan_cancelado_sigue_con_chat_cerrado(api, db):
+    e = _evento(db, estado="cancelado", dias=-10)
+    _error(api.post(_url(e.id), json={"texto": "Hola"}, headers=_bearer(CARMEN)), 409, "chat_cerrado")
+
+
+def test_chat_publico_de_plan_pasado_del_seed(api, db):
+    # La ficha y el chat de los planes pasados del seed se pueden abrir sin sesión
+    r = api.get(f"/api/v1/eventos/{CINE_PASADO}")
+    assert r.status_code == 200, r.text
+    assert r.json()["estado"] == "finalizado"
+    ficha = db.get(Evento, CINE_PASADO)
+    _inscribir(db, ficha, CARMEN)
+    m = _publicar(api, CINE_PASADO, CARMEN, texto="Gran noche de cine", imagen_url=FOTO)["mensaje"]
+    assert [i["id"] for i in _listar(api, CINE_PASADO) if i["imagen_url"] == FOTO] == [m["id"]]
