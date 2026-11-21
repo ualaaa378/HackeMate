@@ -1,20 +1,15 @@
 {
   "short_name": "Tu pueblo",
   "name": "HackeMate · Reactiva tu pueblo",
+  "lang": "es",
   "icons": [
-    {
-      "src": "assets/icon/favicon.png",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "assets/icon/icon.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "maskable"
-    }
+    { "src": "/icons/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
   ],
-  "start_url": ".",
+  "id": "/",
+  "start_url": "/agenda",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#14451a",
   "background_color": "#f6f8f1"

@@ -1766,3 +1766,10 @@ ion-item.tarjeta-evento {
   font-size: 0.95rem;
   color: var(--hm-verde-oscuro);
 }
+
+/* Alta con código (C10): pasos para vincular el número con el bot. */
+.pasos-vincular {
+  margin: 8px 0 16px;
+  padding-left: 1.4em;
+  line-height: 1.6;
+}
