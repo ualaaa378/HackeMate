@@ -242,3 +242,11 @@ def test_terminado():
     assert vecino.terminado({"fecha_inicio": "2020-01-01T10:00:00+01:00"})
     assert not vecino.terminado({"fecha_inicio": "2099-01-01T10:00:00+01:00"})
     assert not vecino.terminado({"fecha_inicio": "2020-01-01T10:00:00+01:00", "fecha_fin": "2099-01-01T10:00:00+01:00"})
+
+
+def test_inscribir_por_nombre_entre_varios_planes():
+    from app.vecino import _por_nombre
+    titulos = {"a": "Menú del domingo: migas con tropezones", "b": "Taller de esparto", "c": "Ruta de la Tapa y el Postre"}
+    assert _por_nombre("apuntame al taller de esparto", titulos) == "b"
+    assert _por_nombre("me apunto a las migas", titulos) == "a"
+    assert _por_nombre("apuntame", titulos) is None  # no dice cuál: se pregunta

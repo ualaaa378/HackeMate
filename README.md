@@ -128,7 +128,7 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 |---|---|---|
 | H2 · CP2 | sáb 13:00 | - [ ] **B1.** Los tres hallazgos sin IA (apartado «hallazgos» de abajo), que afectan a los pasos 1, 3 y 5: título por reglas, pregunta por chat privado y post de spam sin fecha. |
 | H3 · CP3 | sáb 19:00 | - [ ] **B2.** **NVIDIA NIM como proveedor del `llm_router`**, en el orden Gemini → NIM → FreeLLM → Claude → reglas. NIM es compatible con OpenAI, así que basta con otra instancia como la de `FreeLLM` en `app/llm/proveedores.py`, con `NIM_URL`, `NIM_API_KEY` y `NIM_MODELO` en `.env.example` (vacías). Que `/ai/extraer` lo use para A2 y que sus tokens salgan en `/metrics` y en `/metrics/tokens` de la API. |
-| H3 · CP3 | sáb 19:00 | - [ ] **B3.** **Plan B de los audios** fuera de su portátil (por ejemplo, la transcripción de Gemini o la de NIM si la tiene) y ensayar el paso 7 con la máquina de Adán. |
+| H3 · CP3 | sáb 19:00 | - [ ] **B3.** **Audios fuera del portátil de Fran.** Decidido (sáb 21/11): **FreeLLMAPI con Docker en la máquina de Adán**, sin plan B dentro del bot. Fran le pasa por privado `freellmapi.config.json` y `.env` de `services/bot/freellmapi/`; Adán hace `docker compose up -d` allí y pone en el `.env` de la raíz `FREELLM_URL_DOCKER=http://host.docker.internal:3001/v1` y **su** clave unificada en `FREELLM_API_KEY` (ver `services/bot/freellmapi/README.md`). Falta ensayar el paso 7 juntos en su máquina. |
 | H3 · CP3 | sáb 19:00 | - [ ] **B4.** Decidir **D1** con Benas (ver A3). |
 | H4 · CP4 | dom 00:00 | - [ ] **B5.** Solo si sobra tiempo: `POST /ai/frase` (primero en el contrato) y pedir nombre, DNI y residencia en el alta de asociaciones. |
 | H5 | dom 07:00 | - [ ] **B6.** Escribir la sección del bot del README y tener las claves de IA de la demo en el `.env` de Adán (por privado). |
@@ -178,7 +178,7 @@ Lo que pide el bot:
 ### Flujo B · bot (Francisco), NVIDIA NIM y audios
 
 - **NIM en el `llm_router` (B2):** lo usa la ingesta de Facebook de Benas (A2) a través de `/ai/extraer`, y C enseña sus tokens en el panel (C6).
-- **Audios sin depender del portátil de Fran (B3):** hoy la transcripción solo va por FreeLLM. Lo necesita el paso 7 de la demo en la máquina de Adán.
+- **Audios sin depender del portátil de Fran (B3):** la transcripción va por FreeLLM, que ya corre en Docker (`services/bot/freellmapi/`). En la demo, Adán levanta su propio FreeLLMAPI en su máquina con la configuración que le pasa Fran por privado. Lo necesita el paso 7.
 
 ### Flujo B · bot (Francisco), alta de asociaciones
 
