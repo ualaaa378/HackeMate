@@ -20,6 +20,7 @@ import type {
   MensajeCrear,
   MensajeEvento,
   Pagina,
+  Recomendacion,
   Token,
   Usuario,
   UsuarioEditar,
@@ -379,6 +380,28 @@ export function enviarMensaje(
       chatsMock.set(eventoId, [...(chatsMock.get(eventoId) ?? []), nuevo, ia]);
       return esperar({ mensaje: nuevo, respuesta_ia: ia });
     },
+  );
+}
+
+/** «Para ti» (paso 4): planes elegidos por la API para esta persona, con el motivo en una frase.
+ *  Sin API, los próximos planes con plazas, con un motivo genérico para que la sección no quede vacía. */
+export function getRecomendaciones(usuarioId: string, limite = 5): Promise<Recomendacion[]> {
+  return conRespaldo(
+    () =>
+      peticion<{ items: Recomendacion[] }>(`/recomendaciones${query({ usuario_id: usuarioId, limite })}`).then(
+        (r) => r.items,
+      ),
+    () =>
+      esperar(
+        filtrarMock({})
+          .items.filter((e) => !yaPaso(e) && (e.plazas_libres == null || e.plazas_libres > 0))
+          .slice(0, limite)
+          .map((evento, i) => ({
+            evento,
+            puntuacion: 1 - i / 10,
+            motivo: `Es en ${evento.municipio} y aún quedan plazas`,
+          })),
+      ),
   );
 }
 

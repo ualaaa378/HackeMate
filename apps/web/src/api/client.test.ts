@@ -31,6 +31,18 @@ describe('client con la API real', () => {
     expect(enModoRespaldo()).toBe(false);
   });
 
+  it('pide «Para ti» a la API con el usuario y devuelve los items', async () => {
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() =>
+        respuesta(200, { items: [{ evento: { id: 'e1' }, puntuacion: 0.9, motivo: 'Te gusta' }] }),
+      );
+    const { getRecomendaciones } = await cargarCliente();
+    const recs = await getRecomendaciones('u1');
+    expect(recs[0].motivo).toBe('Te gusta');
+    expect(String(fetch.mock.calls[0][0])).toContain('/api/v1/recomendaciones?usuario_id=u1');
+  });
+
   it('vuelve a los mocks si la API no responde', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
     const { getEventos, enModoRespaldo } = await cargarCliente();
