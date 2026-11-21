@@ -10,11 +10,12 @@ import { fechaLarga } from '../utils/formato';
 
 import ComentariosRecuerdo from './ComentariosRecuerdo';
 
-const VISIBLES = 3;
 const MAXIMO = 9;
 
-/** N1: Recuerdos dentro de la agenda en pantalla grande. En el móvil siguen en su pestaña. */
-const RecuerdosAgenda: React.FC = () => {
+/** N1: Recuerdos dentro de la agenda en pantalla grande. En el móvil siguen en su pestaña.
+ * `compacto`: versión para la columna lateral (una columna, foto pequeña, dos visibles). */
+const RecuerdosAgenda: React.FC<{ compacto?: boolean }> = ({ compacto = false }) => {
+  const VISIBLES = compacto ? 2 : 3;
   const [planes, setPlanes] = useState<Evento[] | null>(null);
   const [todos, setTodos] = useState(false);
   const [abierto, setAbierto] = useState<Evento | null>(null);
@@ -46,12 +47,15 @@ const RecuerdosAgenda: React.FC = () => {
   if (!planes || planes.length === 0) return null;
   const mostrados = todos ? planes : planes.slice(0, VISIBLES);
   return (
-    <section className="recuerdos-agenda" aria-labelledby="t-recuerdos-agenda">
+    <section
+      className={compacto ? 'recuerdos-agenda recuerdos-agenda--compacto' : 'recuerdos-agenda'}
+      aria-labelledby="t-recuerdos-agenda"
+    >
       <div className="recuerdos-agenda__cabecera">
         <h2 id="t-recuerdos-agenda" className="titulo-seccion">
           📸 Recuerdos
         </h2>
-        <p>Planes que ya pasaron: mira las fotos y deja tu comentario.</p>
+        {!compacto && <p>Planes que ya pasaron: mira las fotos y deja tu comentario.</p>}
       </div>
       <ul className="recuerdos-agenda__lista">
         {mostrados.map((e) => {
@@ -82,7 +86,13 @@ const RecuerdosAgenda: React.FC = () => {
                   }
                 >
                   <IonIcon slot="start" icon={chatbubbleEllipses} aria-hidden="true" />
-                  {n > 0 ? `Fotos y comentarios (${n})` : 'Fotos y comentarios'}
+                  {compacto
+                    ? n > 0
+                      ? `Ver (${n})`
+                      : 'Ver fotos'
+                    : n > 0
+                      ? `Fotos y comentarios (${n})`
+                      : 'Fotos y comentarios'}
                 </IonButton>
               </div>
             </li>
