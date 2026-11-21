@@ -1040,8 +1040,9 @@ paths:
       summary: "N7: la IA propone planes nuevos a partir de los que tuvieron mucha participación"
       description: |
         La API elige los planes con más participación (ocupación, inscritos, lista de espera, asistencias y
-        preguntas en el chat; publicados o finalizados) y se los pasa a `bot POST /ai/sugerir-eventos`, que propone
-        de 1 a 3 planes nuevos («repetir la Ruta Solidaria en primavera: se llenó y hubo 6 en lista de espera»).
+        preguntas en el chat; publicados o finalizados) y se los pasa a `bot POST /ai/sugerir-eventos` (N8), que propone
+        de 1 a 3 planes nuevos («repetir la Ruta Solidaria en primavera: se llenó y hubo 6 en lista de espera»);
+        sus `propuestas` son los `items` de la respuesta.
         Si el bot no responde, la API propone por reglas (repetir el de más participación) y `proveedor_ia` vale
         `reglas`: nunca falla por la IA. No guarda nada: cada llamada calcula de nuevo. «Descartar» lo hace la web.
         La IA propone y una persona decide: nada se publica sin pasar por la bandeja.
@@ -1073,7 +1074,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/SugerenciaPlan" }
+            schema: { $ref: "#/components/schemas/BorradorSugerencia" }
       responses:
         "201":
           description: Evento creado en la bandeja
@@ -1267,6 +1268,13 @@ paths:
                   es_spam: { type: boolean }
                   motivo: { type: [string, "null"] }
                   proveedor_ia: { type: string }
+                  tipo:
+                    enum: [ninguno, spam, fraude]
+                    description: |
+                      (N9, opcional) Qué es: `spam` (publicidad ajena, apuestas, cadenas, enlaces sospechosos) o
+                      `fraude` (pide pago por adelantado, Bizum o datos bancarios, precios irreales, suplanta a un
+                      ayuntamiento o asociación…). `ninguno` si es legítimo. `es_spam` es true en los dos casos, así
+                      que quien no lea este campo sigue funcionando igual. El moderador ve el tipo en el motivo.
 
   /ai/responder-ficha:
     servers: [{ url: http://localhost:8001 }]
@@ -1297,6 +1305,67 @@ paths:
                   respuesta: { type: [string, "null"] }
                   proveedor_ia: { type: string }
 
+  /ai/sugerir-eventos:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: (N8) Propone planes nuevos a partir de los que más participación tuvieron
+      description: |
+        La llama la API (N7) con los planes con más participación (ocupación, inscritos, lista de espera, preguntas
+        en el chat). Devuelve de 1 a `maximo` propuestas para los administradores, que deciden si crean el borrador.
+        La IA solo propone y no inventa datos: cada propuesta dice en qué planes se basa (`basado_en`) y por qué.
+        IA con FreeLLM primero; sin IA, propuestas por reglas (repetir el plan que más se llenó).
+      security: [{ interno: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planes]
+              properties:
+                planes:
+                  type: array
+                  minItems: 1
+                  maxItems: 20
+                  items:
+                    type: object
+                    required: [titulo, categoria, municipio, fecha_inicio, inscritos]
+                    properties:
+                      evento_id: { type: string, format: uuid }
+                      titulo: { type: string }
+                      categoria: { $ref: "#/components/schemas/Categoria" }
+                      municipio: { type: string }
+                      fecha_inicio: { type: string, format: date-time }
+                      plazas_totales: { type: [integer, "null"], minimum: 0 }
+                      inscritos: { type: integer, minimum: 0 }
+                      lista_espera: { type: integer, minimum: 0, default: 0 }
+                      preguntas_chat: { type: integer, minimum: 0, default: 0 }
+                maximo: { type: integer, minimum: 1, maximum: 3, default: 3 }
+      responses:
+        "200":
+          description: Propuestas (puede venir vacía si nada destaca)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [propuestas]
+                properties:
+                  propuestas:
+                    type: array
+                    maxItems: 3
+                    items:
+                      type: object
+                      required: [titulo, categoria, municipio, motivo]
+                      properties:
+                        titulo: { type: string, maxLength: 120 }
+                        categoria: { $ref: "#/components/schemas/Categoria" }
+                        municipio: { type: string }
+                        fecha_aproximada: { type: [string, "null"], description: "Texto libre: «primavera», «mayo de 2027», «el próximo puente»" }
+                        motivo: { type: string, description: "Por qué, con datos de los planes recibidos (se llenó, 6 en lista de espera…)" }
+                        basado_en: { type: array, items: { type: string, format: uuid }, description: "evento_id de los planes en que se basa" }
+                  proveedor_ia: { type: string }
+
   /ai/preferencias:
     servers: [{ url: http://localhost:8001 }]
     post:
@@ -1324,40 +1393,6 @@ paths:
                   etiquetas_interes: { type: array, items: { type: string } }
                   municipio: { type: [string, "null"] }
                   formato_aviso: { enum: [texto, audio] }
-
-  /ai/sugerir-eventos:
-    servers: [{ url: http://localhost:8001 }]
-    post:
-      tags: [bot]
-      summary: "N8: propone de 1 a 3 planes nuevos a partir de los que tuvieron mucha participación"
-      description: |
-        Cadena propia `freellm,nim,gemini,reglas`. Solo usa los datos que recibe: cada propuesta dice en
-        `basado_en` qué planes la justifican (ids de `planes`) y en `motivo` las cifras reales («se llenó y hubo 6
-        en lista de espera»). Sin inventar lugares, precios ni organizadores. La fecha es aproximada.
-      security: [{ interno: [] }]
-      x-implementado: false
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [planes]
-              properties:
-                planes: { type: array, minItems: 1, maxItems: 20, items: { $ref: "#/components/schemas/ParticipacionPlan" } }
-                max_sugerencias: { type: integer, minimum: 1, maximum: 3, default: 3 }
-                hoy: { type: string, format: date-time, description: "Para proponer fechas futuras con sentido (temporada)" }
-      responses:
-        "200":
-          description: Propuestas
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [sugerencias, proveedor_ia]
-                properties:
-                  sugerencias: { type: array, maxItems: 3, items: { $ref: "#/components/schemas/SugerenciaPlan" } }
-                  proveedor_ia: { type: string }
 
 components:
   securitySchemes:
@@ -1720,18 +1755,26 @@ components:
         preguntas_chat: { type: integer, minimum: 0, description: "Mensajes de tipo pregunta en el chat del evento" }
 
     SugerenciaPlan:
-      description: "N7/N8: plan nuevo propuesto por la IA. Una persona decide si se crea (borrador → bandeja)"
+      description: "N7: plan nuevo propuesto por la IA (una de las `propuestas` de bot POST /ai/sugerir-eventos). Una persona decide si se crea"
       type: object
-      required: [titulo, categoria, municipio, fecha_sugerida, motivo, basado_en]
+      required: [titulo, categoria, municipio, motivo]
       properties:
-        titulo: { type: string, minLength: 1, maxLength: 200 }
+        titulo: { type: string, minLength: 1, maxLength: 120 }
         descripcion: { type: [string, "null"] }
         categoria: { $ref: "#/components/schemas/Categoria" }
         municipio: { type: string }
-        fecha_sugerida: { type: string, format: date-time, description: "Aproximada; el moderador la ajusta" }
-        fecha_texto: { type: [string, "null"], description: "Cómo la dice la IA: «en primavera», «el próximo puente»" }
+        fecha_aproximada: { type: [string, "null"], description: "Texto libre: «primavera», «mayo de 2027», «el próximo puente»" }
         motivo: { type: string, minLength: 1, description: "Por qué, con cifras reales de los planes de basado_en" }
-        basado_en: { type: array, minItems: 1, items: { type: string, format: uuid }, description: "evento_id de los planes que la justifican" }
+        basado_en: { type: array, items: { type: string, format: uuid }, description: "evento_id de los planes que la justifican" }
+
+    BorradorSugerencia:
+      description: "N7: [Crear borrador]. La propuesta tal cual más la fecha que elige el moderador"
+      allOf:
+        - { $ref: "#/components/schemas/SugerenciaPlan" }
+        - type: object
+          required: [fecha_inicio]
+          properties:
+            fecha_inicio: { type: string, format: date-time }
 
     Sugerencias:
       description: "N7: respuesta de GET /admin/sugerencias"

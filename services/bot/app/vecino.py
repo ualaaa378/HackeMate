@@ -344,6 +344,9 @@ def inscribir(msg: MensajeEntrante, evento_id: str | None, usuario: dict | None)
     except ErrorApi as e:
         if e.status == 409 and e.code == "evento_finalizado":
             return [PLAN_TERMINADO]
+        if e.status == 409 and e.code == "ya_inscrito":
+            return [_ya_apuntado(evento_id, v.titulos.get(evento_id) or (v.evento_activo or {}).get("titulo"),
+                                 e.details.get("inscripcion_id"))]
         if e.status == 409:
             return ["Ya estabas apuntado/a 😉"]
         if e.status == 404 and e.code == "no_encontrado":  # la api aún no tiene inscripciones
@@ -359,6 +362,50 @@ def inscribir(msg: MensajeEntrante, evento_id: str | None, usuario: dict | None)
         return [f"Ahora mismo está lleno{nombre}: estás en lista de espera" +
                 (f" (puesto {puesto})" if puesto else "") + ". Si queda sitio, te aviso 🙌"]
     return [f"✅ ¡Apuntado/a{nombre}! Te avisaré si hay cambios. ¡Nos vemos allí! 🎉"]
+
+
+# ---------- Desapuntarse (N6b) ----------
+
+def _ya_apuntado(evento_id: str, titulo: str | None, inscripcion_id: str | None) -> Respuesta:
+    nombre = f" a *{titulo}*" if titulo else " a este plan"
+    botones = [("insc_ok", "👍 Vale")]
+    if inscripcion_id:
+        botones.insert(0, (f"desinsc:{evento_id}:{inscripcion_id}", "❌ Desapuntarme"))
+    return Respuesta(f"Ya estás apuntado/a{nombre} 😉", botones)
+
+
+def desinscribir(msg: MensajeEntrante, evento_id: str | None, inscripcion_id: str | None,
+                 usuario: dict | None) -> list:
+    """Con el botón llegan los dos ids; con «desapúntame de la ruta», se busca el plan y su inscripción."""
+    v = _v(msg.de)
+    evento_id = evento_id or _por_nombre(msg.texto or "", v.titulos) or (v.evento_activo or {}).get("id") or \
+        (v.ultimos[0] if len(v.ultimos) == 1 else None)
+    if not evento_id and msg.texto and plan_nombrado(msg, msg.texto):
+        evento_id = v.evento_activo["id"]
+    if not evento_id:
+        return ["¿De qué plan te quieres desapuntar? Dime su nombre (por ejemplo, «desapúntame de la ruta»)."]
+    titulo = v.titulos.get(evento_id) or ((v.evento_activo or {}).get("titulo")
+                                          if (v.evento_activo or {}).get("id") == evento_id else None)
+    try:
+        if not inscripcion_id:
+            if not (usuario or {}).get("id"):
+                return ["No te encuentro apuntado/a a ese plan 🤔"]
+            insc = api_cliente.inscripcion_de(evento_id, usuario["id"])
+            if not insc:
+                return [f"No estás apuntado/a{f' a *{titulo}*' if titulo else ' a ese plan'} 🤔"]
+            inscripcion_id = insc["id"]
+        api_cliente.desinscribir(evento_id, inscripcion_id)
+    except ApiNoDisponible:
+        return ["Ahora mismo no puedo desapuntarte. Inténtalo en un minuto 🙏"]
+    except ErrorApi as e:
+        if e.code == "inscripcion_cerrada":
+            return ["Ese plan ya pasó y se marcó la asistencia: no se puede desapuntar."]
+        if e.code in ("inscripcion_no_encontrada", "evento_no_encontrado"):
+            return ["No te encuentro apuntado/a a ese plan 🤔"]
+        return [f"No he podido desapuntarte: {e.message}"]
+    nombre = f" de *{titulo}*" if titulo else ""
+    return [Respuesta(f"Hecho, te he desapuntado{nombre} ✅ Tu plaza queda libre para otra persona.",
+                      [(f"insc:{evento_id}", "✋ Volver a apuntarme")])]
 
 
 def tras_vincular(msg: MensajeEntrante, usuario: dict | None) -> list:

@@ -8,7 +8,7 @@ pueda explicarlos."""
 import json as jsonlib
 import logging
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import quote, urlencode
 
@@ -67,6 +67,7 @@ class ErrorApi(Exception):
     status: int
     code: str
     message: str = ""
+    details: dict = field(default_factory=dict)  # p. ej. 409 ya_inscrito → {"inscripcion_id": …}
 
 
 class ApiNoDisponible(Exception):
@@ -87,7 +88,8 @@ def _peticion(metodo: str, ruta: str, json: dict | None = None) -> dict | None:
             err = r.json().get("error", {})
         except ValueError:
             err = {}
-        raise ErrorApi(r.status_code, err.get("code", "error"), err.get("message", r.text[:200]))
+        raise ErrorApi(r.status_code, err.get("code", "error"), err.get("message", r.text[:200]),
+                       err.get("details") or {})
     return r.json() if r.content else None
 
 
@@ -190,6 +192,19 @@ def inscribir(evento_id: str, usuario_id: str, canal: str, plazas: int = 1) -> d
     canal = canal if canal in ("whatsapp", "web", "telegram") else "web"
     return _peticion("POST", f"/api/v1/eventos/{evento_id}/inscripciones",
                      {"usuario_id": usuario_id, "plazas": plazas, "canal": canal})
+
+
+def desinscribir(evento_id: str, inscripcion_id: str) -> dict | None:
+    """N6b: devuelve la plaza (y sube al primero de la lista de espera)."""
+    return _peticion("DELETE", f"/api/v1/eventos/{evento_id}/inscripciones/{inscripcion_id}")
+
+
+def inscripcion_de(evento_id: str, usuario_id: str) -> dict | None:
+    """La inscripción activa de esa persona en ese plan, o None (lista de inscritos con el token interno)."""
+    res = _peticion("GET", f"/api/v1/eventos/{evento_id}/inscripciones?size=200")
+    items = res.get("items", res) if isinstance(res, dict) else (res or [])
+    return next((i for i in items if i.get("usuario_id") == usuario_id
+                 and i.get("estado") in ("confirmada", "lista_espera")), None)
 
 
 def preguntar_en_chat(evento_id: str, usuario_id: str, texto: str) -> dict | None:

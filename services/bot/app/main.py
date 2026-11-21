@@ -11,7 +11,7 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 from app import __version__, api_cliente, canales, conversacion, meta, metrics, telegram
-from app.agentes import antispam, asistente, extractor, preferencias, voz
+from app.agentes import antispam, asistente, extractor, preferencias, sugerencias, voz
 from app.config import get_settings
 from app.llm import router
 from app.schemas import ExtraccionEvento, MensajeEntrante
@@ -248,6 +248,13 @@ class PeticionPreferencias(BaseModel):
 def ai_preferencias(p: PeticionPreferencias, x_internal_token: str | None = Header(None)):
     _comprobar_interno(x_internal_token)
     return preferencias.interpretar(p.texto)
+
+
+@app.post("/ai/sugerir-eventos", response_model=sugerencias.Sugerencias)
+def ai_sugerir_eventos(p: sugerencias.PeticionSugerencias, x_internal_token: str | None = Header(None)):
+    """N8: planes con mucha participación → 1-3 propuestas de planes nuevos para los administradores (N7)."""
+    _comprobar_interno(x_internal_token)
+    return sugerencias.sugerir(p)
 
 
 class Notificacion(BaseModel):

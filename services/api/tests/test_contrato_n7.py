@@ -1,11 +1,12 @@
-"""N7/N8 (contrato, antes de CP3): ejemplos de lo que devuelven GET /admin/sugerencias y bot POST /ai/sugerir-eventos."""
+"""N7 (contrato, antes de CP3): ejemplos de GET /admin/sugerencias y de cómo encaja con bot POST /ai/sugerir-eventos (N8)."""
 
 from tests.test_estadisticas import _validador
 
 SUGERENCIAS = _validador("/components/schemas/Sugerencias")
 SUGERENCIA = _validador("/components/schemas/SugerenciaPlan")
-RESPUESTA_BOT = _validador("/paths/~1ai~1sugerir-eventos/post/responses/200/content/application~1json/schema")
+BORRADOR = _validador("/components/schemas/BorradorSugerencia")
 PETICION_BOT = _validador("/paths/~1ai~1sugerir-eventos/post/requestBody/content/application~1json/schema")
+RESPUESTA_BOT = _validador("/paths/~1ai~1sugerir-eventos/post/responses/200/content/application~1json/schema")
 
 RUTA = "1e5d0000-0000-4000-8000-000000000001"
 PARTICIPACION = {
@@ -24,11 +25,9 @@ PARTICIPACION = {
 }
 PROPUESTA = {
     "titulo": "III Ruta Solidaria Sierra de Velefique",
-    "descripcion": None,
     "categoria": "deportiva",
     "municipio": "Velefique",
-    "fecha_sugerida": "2027-04-18T09:00:00+02:00",
-    "fecha_texto": "en primavera",
+    "fecha_aproximada": "en primavera",
     "motivo": "La II Ruta Solidaria se llenó (40 de 40) y hubo 6 personas en lista de espera",
     "basado_en": [RUTA],
 }
@@ -43,14 +42,19 @@ def test_ejemplo_de_respuesta_de_la_api_cumple_el_contrato():
     assert not _errores(SUGERENCIAS, {"items": [], "basado_en": [], "proveedor_ia": "reglas"})
 
 
-def test_ejemplo_del_bot_cumple_el_contrato():
-    assert not _errores(PETICION_BOT, {"planes": [PARTICIPACION], "max_sugerencias": 3, "hoy": "2026-11-21T18:00:00+01:00"})
-    assert not _errores(RESPUESTA_BOT, {"sugerencias": [PROPUESTA], "proveedor_ia": "nim:nemotron"})
+def test_lo_que_la_api_manda_al_bot_y_lo_que_devuelve_encajan():
+    """Los `ParticipacionPlan` de la API valen como `planes` del bot, y sus `propuestas` como `SugerenciaPlan`."""
+    assert not _errores(PETICION_BOT, {"planes": [PARTICIPACION], "maximo": 3})
+    respuesta = {"propuestas": [PROPUESTA], "proveedor_ia": "nim:nemotron"}
+    assert not _errores(RESPUESTA_BOT, respuesta)
+    assert all(not _errores(SUGERENCIA, p) for p in respuesta["propuestas"])
 
 
-def test_una_propuesta_sin_planes_que_la_justifiquen_no_vale():
-    """Sin inventar: cada propuesta dice en qué planes se basa."""
-    assert _errores(SUGERENCIA, PROPUESTA | {"basado_en": []})
+def test_crear_borrador_pide_la_fecha_que_elige_el_moderador():
+    assert not _errores(BORRADOR, PROPUESTA | {"fecha_inicio": "2027-04-18T09:00:00+02:00"})
+    assert _errores(BORRADOR, PROPUESTA)
+
+
+def test_una_propuesta_sin_motivo_no_vale():
     assert _errores(SUGERENCIA, {k: v for k, v in PROPUESTA.items() if k != "motivo"})
-    assert _errores(PETICION_BOT, {"planes": []})
-    assert _errores(RESPUESTA_BOT, {"sugerencias": [PROPUESTA] * 4, "proveedor_ia": "reglas"})
+    assert _errores(SUGERENCIAS, {"items": [PROPUESTA] * 4, "basado_en": [], "proveedor_ia": "reglas"})
