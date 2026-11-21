@@ -93,7 +93,7 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 
 | Orden | Quién | Tarea nueva (después de lo establecido, antes de las 00:00) |
 |---|---|---|
-| N1 | Adán (C) | **Agenda en tres zonas.** En el centro, la agenda con **Recuerdos** integrado (los planes pasados dejan de ser una pestaña aparte). A la izquierda, **tus planes** (solo si estás inscrito en alguno) y debajo **sugeridos para ti**: «Para ti» (C2), con tus gustos y los planes parecidos a los que ya fuiste. En el móvil, todo apilado: tus planes, sugeridos y agenda. |
+| N1 | Adán (C) | **Agenda en tres zonas, solo en pantalla grande (web de escritorio).** En el centro, la agenda con **Recuerdos** integrado (los planes pasados dejan de ser una pestaña aparte). A la izquierda, **tus planes** (solo si estás inscrito en alguno) y debajo **sugeridos para ti**: «Para ti» (C2), con tus gustos y los planes parecidos a los que ya fuiste. **En el móvil y en la APK no cambia nada:** la agenda se queda como está y **Recuerdos sigue siendo su pestaña aparte**, porque no hay sitio para tres zonas. El cambio se decide por ancho de pantalla, no por plataforma. |
 | N2 | Adán (C) | **Fondo con vida.** Un mosaico o dibujo suave en SVG en línea (azulejo, monte, olivo), que no baje el contraste del texto y que se vea bien en claro y oscuro. |
 | N3 | Adán (C) | **Mapa solo con próximos.** Los planes pasados desaparecen del mapa, con un filtro por meses (este mes, el que viene, etc.). |
 | N4 | Adán (C) | **Gustos al crear el perfil, opcionales:** 🥾 Deportiva · 🎭 Cultural · 🎉 Fiestas · 🍽 Gastronomía · 🎲 Lúdica · 🛍 Comercio. El contrato ya tiene `usuario.gustos` con estos seis valores: `PATCH /usuarios/me`. Se puede saltar. |
