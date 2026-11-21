@@ -116,8 +116,8 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 
 | Hito | Hasta | Tarea |
 |---|---|---|
-| H2 · CP2 | sáb 13:00 | - [ ] **A1.** Arreglar lo que salga de la prueba con Docker de Adán (apartado «Flujo A» de abajo). |
-| H3 · CP3 | sáb 19:00 | - [ ] **A2.** **`scripts/importar_facebook.py`** (solo Python, sin Docker): 1) lanza «Facebook Posts Scraper» sobre las páginas de `FUENTES.md` (token en `.env`, por ejemplo `FB_SCRAPER_TOKEN`, y la variable en `.env.example` vacía); 2) guarda los posts en `contracts/fixtures/facebook_posts.json`; 3) por cada post llama a `bot POST /ai/extraer` con `X-Internal-Token`; 4) manda el resultado a `POST /eventos/importar` con `origen.canal="facebook"`, `origen.url` del post e `importado_auto=true`. Opción `--desde-json` para repetirlo sin red. Si el bot no responde, el post se queda en el JSON y no se inventa nada. |
+| H2 · CP2 | sáb 13:00 | - [x] **A1.** Arreglar lo que salga de la prueba con Docker de Adán (apartado «Flujo A» de abajo). *(sáb: el único hallazgo de A, los duplicados en la bandeja, ya lo resolvía la #43; test añadido)* |
+| H3 · CP3 | sáb 19:00 | - [x] **A2.** *(sáb 21/11: hecho. Primera descarga real de las 4 páginas: 20 posts guardados en `facebook_posts.json`. Revisión diaria con `--cada 24` o el servicio `ingesta` del compose, apagado por defecto)* **`scripts/importar_facebook.py`** (solo Python, sin Docker): 1) lanza «Facebook Posts Scraper» sobre las páginas de `FUENTES.md` (token en `.env`, por ejemplo `FB_SCRAPER_TOKEN`, y la variable en `.env.example` vacía); 2) guarda los posts en `contracts/fixtures/facebook_posts.json`; 3) por cada post llama a `bot POST /ai/extraer` con `X-Internal-Token`; 4) manda el resultado a `POST /eventos/importar` con `origen.canal="facebook"`, `origen.url` del post e `importado_auto=true`. Opción `--desde-json` para repetirlo sin red. Si el bot no responde, el post se queda en el JSON y no se inventa nada. |
 | H3 · CP3 | sáb 19:00 | - [ ] **A3.** Decidir **D1** con Francisco antes de que se congelen los contratos a las 19:00 (quitar o no el `required` de `telefono` en `schemas/notificacion.json` para avisar a quien solo usa Telegram). |
 | H4 · CP4 | dom 00:00 | - [ ] **A4.** `GET /estadisticas`: que el % de importadas cuente las de Facebook (ya llegan con `importado_auto`). Revisar la PR de C3 (nginx y túnel). |
 | H5 | dom 07:00 | - [ ] **A5.** Arreglos `fix/*` de los ensayos y repasar la sección del backend del README. |
@@ -151,10 +151,9 @@ Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen 
 - **Frase de portada automática:** `frase_portada` ya se guarda y se devuelve (`POST`/`PATCH /eventos`, confirmar). Si llega vacía, la API se la pedirá al bot cuando exista `POST /ai/frase` (ver flujo B); mientras, la web pone una frase fija por tipo de plan.
 - **Una propuesta de un vecino sin asociación:** entra en revisión y el moderador ve sus `datos_ayuntamiento`, pero el vecino solo los ve en la respuesta del alta (la API no guarda quién propuso el plan si no es un publicador).
 
-- **Ingesta de Facebook (A2):** `scripts/importar_facebook.py` con «Facebook Posts Scraper», que usa `bot POST /ai/extraer` (con NIM, tarea B2 de Francisco) y `POST /eventos/importar`. Lo necesita C para el % de importadas del panel (C6) y la demo para el paso 1.
+- **Ingesta de Facebook (A2): falta decidir** si lo importado de los ayuntamientos (que están en «automática») se publica directamente o pasa siempre por la bandeja. Hoy la API lo trata igual que un post enviado por el bot, así que lo de los ayuntamientos se publicaría sin revisión. Pasarlo siempre por la bandeja son dos líneas en `decidir_estado`, sin tocar el contrato. Además, los Aytos. de Uleila del Campo y Senés no están dados de alta como publicadores: sus posts llegan como «Sin publicador identificado» (van a revisión).
 - **El compose no lee las variables `${…}` del `.env` de la raíz** (encontrado por Francisco en el ensayo del sáb 21/11 con Docker). Con `docker compose -f infra/docker-compose.yml up`, Docker busca el `.env` de sustitución en `infra/`, no en la raíz: `env_file: ../.env` solo llega al entorno de los contenedores. Resultado: `FREELLM_URL_DOCKER`, `VITE_API_URL`, `VITE_CANAL`, `WEB_URL` y `POSTGRES_*` se quedan con su valor por defecto y el bot no llega a la IA (cae a reglas). **Hoy funciona así:** `docker compose --env-file .env -f infra/docker-compose.yml up --build`. Arreglo propuesto (decide Benas): cambiar el comando en la cabecera del compose, en `CLAUDE.md` y en C1, o un `infra/.env` que apunte al de la raíz.
 - **Revisar la PR de la URL pública (C3):** Adán cambia el `nginx.conf` de la web y añade un segundo túnel en `infra/docker-compose.yml` porque Benas no puede ejecutar Docker. Como el compose es de A, la mira Benas antes de fusionarla.
-- **Duplicados en la bandeja (prueba en Docker, sáb 11:15):** el mismo post del taller de esparto, mandado dos veces por el mismo publicador (`simular_chat.py` dos veces), entra dos veces en revisión sin ningún aviso y el moderador puede aprobar los dos. La bandeja debería marcar el segundo como posible duplicado (`services/api/app/duplicados.py`). Afecta al paso 3 de la demo si alguien repite el envío.
 
 ### Flujos A y B · a acordar (Benas + Francisco)
 
@@ -199,6 +198,8 @@ Lo que pide el bot:
 Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
 
 ### Ya resuelto
+
+- **Duplicados en la bandeja (prueba en Docker de Adán, sáb 11:15):** ya lo resuelve la #43. Antes, un plan que iba a revisión por otro motivo no se marcaba como duplicado; ahora el segundo envío del mismo post llega a la bandeja con el motivo «Posible duplicado de «Taller de esparto»». Comprobado a mano con `simular_chat.py` dos veces (bot y API de `develop`) y con un test nuevo (`test_mismo_post_dos_veces_del_mismo_publicador_avisa_duplicado`). Si en Docker sigue saliendo, es una imagen anterior: `docker compose -f infra/docker-compose.yml up --build`.
 
 - **Solo dos modos de publicación (a mano y automática), sin semiautomático** (decisión del equipo, 21/11): la API ya no usa el nivel 1 (si llega, lo guarda como 0) ni sube de nivel sola; la migración 0008 pasa a «a mano» los que estaban en 1, y en el seed las asociaciones son «a mano» y los ayuntamientos y el bar, «automática». Un posible duplicado de una asociación «a mano» llega a la bandeja con el motivo «Posible duplicado de…». La web ya manda `nivel_confianza: 0` para «a mano» (`cambiarRevision` en `apps/web/src/api/admin.ts`).
 
@@ -305,6 +306,33 @@ Modos de publicación: solo dos, **a mano** (`nivel_confianza` 0, todo pasa por 
   - Docker: `scripts/demo_reset.sh`
   - Sin Docker (Linux/Git Bash): `scripts/demo_reset.sh --local`
   - Windows: `.\scripts\demo_reset.ps1`
+
+### Ingesta de Facebook (A2)
+
+`scripts/importar_facebook.py` (solo Python, sin dependencias): páginas de Facebook → «Facebook Posts Scraper» (Apify) → `bot POST /ai/extraer` → `POST /eventos/importar` (origen `facebook`, URL del post, `importado_auto`) → `POST /eventos/{id}/confirmar` (la API decide el estado: asociación «a mano» → bandeja).
+
+```bash
+python scripts/importar_facebook.py --desde-json       # SIN token: importa los posts ya guardados (sin red ni créditos)
+python scripts/importar_facebook.py                    # descarga (FB_SCRAPER_TOKEN) e importa
+python scripts/importar_facebook.py --cada 24          # revisión diaria: se queda en marcha y solo pide los posts nuevos
+python scripts/importar_facebook.py --solo-descargar   # solo guarda los posts, no importa
+python scripts/importar_facebook.py --pagina https://www.facebook.com/<pagina>   # página suelta
+```
+
+- **Qué páginas:** las fuentes de Facebook activas de los publicadores aprobados (así el post queda asociado) más `--pagina` y `FB_PAGINAS`. En `.env.example` ya están las 4 con actividad en 2026: Aytos. de Uleila del Campo, Lucainena de las Torres y Senés, y Monte-Sión.
+- **Qué se guarda:** `contracts/fixtures/facebook_posts.json` (en git) con solo la URL, la página, la fecha, el texto y el texto de las fotos. Tras importar se **quitan los posts que la IA dice que no son planes** (pésames, avisos de obras…), para no guardar datos personales; `--guardar-todo` los deja.
+- **Solo lo nuevo:** el JSON apunta `ultima_descarga` y la revisión periódica pide a Apify solo lo publicado desde entonces (Apify cobra por post devuelto). A mano, la ventana es `FB_DESDE` (30 días).
+- **Sin inventar nada:** si el bot no responde, el post queda guardado y no se crea nada; si falta la fecha, el evento queda en `pendiente_confirmacion`. Repetirlo no duplica: la API reconoce la URL del post. La fecha de publicación va al final del texto para que la IA entienda «este sábado».
+- **Calidad:** sin IA (solo reglas) se cuelan avisos que no son planes y faltan categorías; con Gemini o NIM (tarea B2) sale mucho mejor. En la primera descarga (21/11, solo reglas) salieron 30 posts, 26 con texto, 20 guardados.
+
+**Revisión diaria (una vez al día)**, solo en la máquina de la demo, que es la que tiene el token:
+- Con Docker: el servicio `ingesta` del compose, **apagado por defecto** para no gastar crédito sin querer. Encenderlo:
+  `docker compose -f infra/docker-compose.yml --profile ingesta up -d ingesta` (y `logs -f ingesta` para ver cada revisión).
+- Sin Docker (Windows): una tarea diaria en el Programador de tareas, por ejemplo a las 8:00, con la API y el bot en marcha:
+  `schtasks /Create /SC DAILY /ST 08:00 /TN HackeMateFacebook /TR "python C:\ruta\HackeMate\scripts\importar_facebook.py"`
+  (cada ejecución a mano pide los últimos `FB_DESDE`; los repetidos no se duplican en la base).
+
+**¿Quién necesita el token de Apify (`FB_SCRAPER_TOKEN`)?** Solo la máquina que descarga (la de la demo). El resto del equipo importa los posts del JSON que hay en git con `--desde-json`, sin token. Se pasa por privado, nunca en `*.example` ni en el grupo; el plan gratuito da unos 5 $ al mes y la revisión diaria de 4 páginas gasta céntimos.
 
 ### Tests y smoke test
 

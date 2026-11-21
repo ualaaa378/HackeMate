@@ -36,6 +36,8 @@ FIXTURE_SCHEMA = {
     "mensajes_evento.json": "mensaje_evento",
     "notificaciones.json": "notificacion",
     "municipios.json": None,
+    # Posts descargados por scripts/importar_facebook.py (A2): no es un schema del contrato.
+    "facebook_posts.json": None,
 }
 
 # Tabla de PLAN.md §5.2
