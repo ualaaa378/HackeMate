@@ -194,6 +194,10 @@ class Evento(Base):
         _enum("estado_evento", ESTADOS_EVENTO), default="borrador", nullable=False, index=True
     )
     publicador_id: Mapped[str | None] = mapped_column(ForeignKey("publicadores.id"), index=True)
+    # P5a: quien propuso el plan (vecino o miembro de una asociación), para «Mis planes propuestos». Un vecino sin
+    # asociación no tiene publicador: sin esto su plan no tendría dueño. Sin clave foránea, como `revisado_por`:
+    # añadirla en SQLite obligaría a recrear `eventos` (migración 0010).
+    propuesto_por_id: Mapped[str | None] = mapped_column(String(36), index=True)
     # URL http(s) o data URL de imagen (hasta ~1,5 MB): Text. En SQLite sigue siendo VARCHAR(500), que no limita
     # la longitud; así la migración 0007 no tiene que recrear la tabla (ver su docstring).
     imagen_url: Mapped[str | None] = mapped_column(Text().with_variant(String(500), "sqlite"))

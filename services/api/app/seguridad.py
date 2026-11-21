@@ -216,8 +216,13 @@ def quien_llama(
 
 
 def es_organizador(usuario: Usuario | None, evento: Evento) -> bool:
-    """El usuario es el del publicador del evento (por `usuario.publicador_id` o `publicador.usuario_id`)."""
-    if usuario is None or evento.publicador_id is None:
+    """El usuario es el del publicador del evento (por `usuario.publicador_id` o `publicador.usuario_id`) o quien
+    lo propuso (`evento.propuesto_por_id`, P5a: también el vecino sin asociación)."""
+    if usuario is None:
+        return False
+    if evento.propuesto_por_id is not None and evento.propuesto_por_id == usuario.id:
+        return True
+    if evento.publicador_id is None:
         return False
     if usuario.publicador_id == evento.publicador_id:
         return True

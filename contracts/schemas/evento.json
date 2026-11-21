@@ -23,6 +23,7 @@
     "inscritos": { "type": "integer", "minimum": 0, "default": 0, "description": "Personas apuntadas (inscripciones confirmadas). Lo calcula la API; en los fixtures empieza en 0." },
     "estado": { "enum": ["borrador", "pendiente_confirmacion", "en_revision", "publicado", "rechazado", "cancelado", "finalizado", "archivado"] },
     "publicador_id": { "type": ["string", "null"], "format": "uuid" },
+    "propuesto_por_id": { "type": ["string", "null"], "format": "uuid", "description": "P5a: usuario que propuso el plan (vecino o miembro de una asociación); es su dueño aunque no tenga publicador. Null en lo importado sin remitente y en lo que crea el moderador." },
     "publicador_nombre": { "type": ["string", "null"] },
     "imagen_url": { "type": ["string", "null"], "description": "Foto o cartel del plan: URL http(s) o data URL de imagen (p. ej. data:image/webp;base64,…) de hasta ~1,5 MB. Si se pasa o no es una imagen, 422 imagen_invalida." },
     "frase_portada": { "type": ["string", "null"], "maxLength": 90, "description": "Frase corta y pública bajo la foto del carrusel de Inicio. La escribe quien publica; si llega vacía, la API puede pedírsela al bot." },

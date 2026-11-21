@@ -10,7 +10,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, Query
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import func, or_, select
+from sqlalchemy import false, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
@@ -222,8 +222,9 @@ def listar_eventos(
     lon: float | None = None,
     radio_km: float | None = Query(None, ge=0),
     q: str | None = None,
-    estado: EstadoEvento = "publicado",
+    estado: EstadoEvento | None = None,
     publicador_id: str | None = None,
+    organizador_id: str | None = None,
     p: Pagina = Depends(pagina),
     quien: Quien = Depends(_quien_tolerante),
     db: Session = Depends(get_db),
@@ -234,6 +235,9 @@ def listar_eventos(
     #   el contrato solo prevé 200/422 en esta ruta, así que no se responde 403);
     # - vecino o sin sesión: se cambia por `publicado`, como antes.
     # `datos_ayuntamiento` nunca sale en esta lista (el contrato lo dice así): se ve en la ficha o en /moderacion.
+    if organizador_id:
+        return _planes_del_organizador(db, quien, organizador_id, estado, p)
+    estado = estado or "publicado"
     solo_de: list[str] | None = None
     if estado not in VISIBLES_EN_LISTA and not quien.interno:
         u = quien.usuario
@@ -276,6 +280,28 @@ def listar_eventos(
     pagina_eventos = paginar_lista(filas, p)
     pagina_eventos["items"] = eventos_a_dict(db, pagina_eventos["items"])
     return pagina_eventos
+
+
+def _planes_del_organizador(db: Session, quien: Quien, usuario_id: str, estado: str | None, p: Pagina) -> dict:
+    """P5a, «Mis planes propuestos»: los planes que propuso el usuario o los de sus entidades, en todos los estados
+    salvo `borrador` (o solo en `estado`), los que vienen primero. Solo para él mismo, un moderador o el servicio
+    interno (el bot, que antes busca el usuario por su contacto); para otro cualquiera, la lista sale vacía."""
+    u = quien.usuario
+    permitido = quien.interno or (u is not None and (u.rol == "moderador" or u.id == usuario_id))
+    usuario = db.get(Usuario, usuario_id) if permitido and es_uuid(usuario_id) else None
+    consulta = select(Evento).options(selectinload(Evento.publicador))
+    if usuario is None:
+        consulta = consulta.where(false())
+    else:
+        dueno = Evento.propuesto_por_id == usuario.id
+        if ids := _publicadores_del_usuario(db, usuario):
+            dueno = or_(dueno, Evento.publicador_id.in_(ids))
+        consulta = consulta.where(dueno)
+        consulta = consulta.where(Evento.estado == estado) if estado else consulta.where(Evento.estado != "borrador")
+    consulta = consulta.order_by(Evento.fecha_inicio.desc(), Evento.id)
+    resultado = paginar(db, consulta, p, lambda e: e)
+    resultado["items"] = eventos_a_dict(db, resultado["items"])
+    return resultado
 
 
 @router.get("/eventos/{id}")
@@ -339,6 +365,7 @@ def crear_evento(
     evento = Evento(
         **campos,
         publicador_id=publicador.id if publicador is not None else None,
+        propuesto_por_id=usuario.id if usuario is not None and usuario.rol != "moderador" else None,
         lat=datos.lat if datos.lat is not None else municipio.lat,
         lon=datos.lon if datos.lon is not None else municipio.lon,
         es_gratuito=datos.es_gratuito if datos.es_gratuito is not None else datos.precio_eur == 0,
