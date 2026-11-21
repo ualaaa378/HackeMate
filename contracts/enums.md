@@ -46,7 +46,7 @@ El bot habla con la gente por WhatsApp y por Telegram. Cada persona se identific
 - `1`: pasa si es «lo habitual» (misma categoría que publicaciones ya aprobadas y `score_spam` bajo).
 - `2`: pasa todo salvo spam alto.
 - Sube de nivel automáticamente tras `MODERACION_APROBACIONES_SUBIR_NIVEL` aprobaciones.
-- En la web solo hay dos modos: **a mano** (niveles 0 y 1) y **automática** (nivel 2). El moderador cambia el nivel de un publicador ya aprobado con `POST /publicadores/{id}/aprobar`.
+- En la web solo hay dos modos: **a mano** (niveles 0 y 1) y **automática** (nivel 2). Ojo: el nivel 1 no es «a mano» del todo: publica directamente las categorías habituales del publicador y solo manda a revisión el resto; «a mano» total (todo a revisión) es el nivel 0. El moderador cambia el nivel de un publicador ya aprobado con `POST /publicadores/{id}/aprobar`.
 - Pasar a nivel 2 a mano exige las reglas de `apps/web/src/admin/confianza.ts`: responsable con DNI y residencia comprobados (`responsable.identidad_verificada`), al menos 3 planes aprobados en 60 días, ningún rechazo en 60 días y algún plan en los últimos 90 días (`actividad`). Si no, 409 `reglas_confianza_no_cumplidas` con `details.faltan` ⊂ {`identidad_verificada`, `planes_60_dias`, `rechazados_60_dias`, `ultimo_plan`}.
 
 ## Datos privados

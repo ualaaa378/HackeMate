@@ -101,6 +101,8 @@
 - [x] `POST /metrics/tokens` y coste acumulado *(precios por proveedor/modelo en `PRECIOS_TOKENS_EUR_MTOK`; gratuitos a 0)*
 - [ ] Despliegue alternativo en Render/Railway (opcional)
 
+**Traspaso:** Peticiones de B y C atendidas (sáb 21): PATCH /usuarios/{id}, POST/PATCH /eventos con JWT, /moderacion/*, panel del bot, verificar-identidad, planes terminados con fotos, frase_portada, datos_ayuntamiento (sin subir: pendiente de confirmar por Benas).
+
 ---
 
 ## Flujo B · Bot (Telegram / WhatsApp), IA y automatizaciones

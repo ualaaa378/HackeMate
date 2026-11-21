@@ -83,8 +83,6 @@ Regla en `CLAUDE.md` § «Canales de mensajería». Cómo se elige el canal hoy,
 - **API (A):** guarda los dos contactos (`telefono` E.164 y `telegram_id`) y los distingue en `services/api/app/canales.py`. Nada de la API puede dar por hecho un canal concreto.
 - **Web (C):** `VITE_CANAL=telegram|whatsapp` (en `.env.example`, el compose y el `Dockerfile`) elige qué canal nombra la web en el alta y en los avisos (`apps/web/src/canal.ts`).
 
-Pendiente: Benas y Francisco, que el aviso al vecino use el contacto que tenga (`telegram_id` si existe, si no `telefono`) en vez de suponer WhatsApp.
-
 ### Flujo C · web (Adán), lo que pide el bot
 
 - Botón «Simular caída de la IA» y coste en tokens en `/admin/panel`: la API ya los expone en `GET /admin/bot/metricas` y `POST /admin/bot/simular-caida` (con la sesión del moderador; el `INTERNAL_TOKEN` no va al navegador).
@@ -107,6 +105,12 @@ Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PAR
 ### Ya resuelto
 
 - Docker compose arranca el bot real de `services/bot` (PR #23, probado en Docker).
+- El aviso al vecino usa el contacto que tenga: la API manda `contacto` en `POST /notify` (`tg:<telegram_id>` si existe, si no `telefono`) en vez de suponer WhatsApp.
+- `POST /eventos` y `PATCH /eventos/{id}` con sesión (JWT): la web «Proponer» y el organizador o el moderador editan sin token interno.
+- `PATCH /usuarios/{id}` (preferencias que guarda el bot).
+- Panel del bot por la API: `GET /admin/bot/metricas` y `POST /admin/bot/simular-caida` con la sesión del moderador.
+- `POST /publicadores/{id}/verificar-identidad` (DNI/NIE y residencia del responsable comprobados).
+- Filtro por estado en `GET /eventos`: `publicado` y `finalizado` («Recuerdos») para todos; los demás estados, el moderador (todos) y el publicador (solo los suyos), con sesión.
 
 ---
 
