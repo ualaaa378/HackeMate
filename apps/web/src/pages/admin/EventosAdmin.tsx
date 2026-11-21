@@ -10,13 +10,13 @@ import {
   IonSpinner,
   IonToast,
 } from '@ionic/react';
-import { add } from 'ionicons/icons';
+import { add, arrowUndo } from 'ionicons/icons';
 import { useCallback, useEffect, useState } from 'react';
 
 import FormEvento from '../../admin/FormEvento';
 import PaginaAdmin from '../../admin/PaginaAdmin';
 import { useAcceso } from '../../admin/acceso';
-import { crearEvento, editarEvento, getEventosAdmin, getPublicadores } from '../../api/admin';
+import { crearEvento, decidir, editarEvento, getEventosAdmin, getPublicadores } from '../../api/admin';
 import { CATEGORIAS, type EstadoEvento, type Evento, type EventoCrear, type Publicador } from '../../api/types';
 import { fechaLarga, horaEvento, textoApuntados } from '../../utils/formato';
 
@@ -74,6 +74,16 @@ const EventosAdmin: React.FC = () => {
     cargar();
   };
 
+  const restaurar = async (e: Evento) => {
+    try {
+      await decidir(e.id, { decision: 'restaurar' });
+      setAviso(`«${e.titulo}» vuelve a la bandeja para revisarlo de nuevo.`);
+    } catch {
+      setAviso('No se ha podido restaurar. Prueba otra vez.');
+    }
+    cargar();
+  };
+
   const cancelarPlan = async () => {
     if (!editando) return;
     await editarEvento(editando.id, { estado: 'cancelado' });
@@ -127,9 +137,23 @@ const EventosAdmin: React.FC = () => {
                 {e.moderacion?.motivo && ` · Motivo: ${e.moderacion.motivo}`}
               </p>
             </IonLabel>
-            <IonBadge slot="end" color="light">
-              👥 {e.inscritos ?? 0}
-            </IonBadge>
+            {rol === 'moderador' && e.estado === 'rechazado' ? (
+              <IonButton
+                slot="end"
+                fill="outline"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  void restaurar(e);
+                }}
+              >
+                <IonIcon slot="start" icon={arrowUndo} aria-hidden="true" />
+                Restaurar
+              </IonButton>
+            ) : (
+              <IonBadge slot="end" color="light">
+                👥 {e.inscritos ?? 0}
+              </IonBadge>
+            )}
           </IonItem>
         ))}
       </IonList>
