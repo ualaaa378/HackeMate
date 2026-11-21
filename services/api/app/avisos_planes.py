@@ -94,8 +94,9 @@ def _ya_avisada(db: Session, usuario: Usuario, evento: Evento) -> bool:
     ) is not None
 
 
-def interesa(db: Session, usuario: Usuario, evento: Evento, ahora: datetime) -> str | None:
-    """El motivo del aviso si a `usuario` hay que avisarle de `evento`; None si no."""
+def interesa(db: Session, usuario: Usuario, evento: Evento, ahora: datetime, repetir: bool = False) -> str | None:
+    """El motivo del aviso si a `usuario` hay que avisarle de `evento`; None si no. `repetir`: aunque ya le llegara el
+    aviso del plan nuevo (para «quedan pocas plazas», que es otro aviso)."""
     if not usuario.acepta_avisos or not (usuario.telefono or usuario.telegram_id):
         return None
     if evento.publicador_id and usuario.publicador_id == evento.publicador_id:
@@ -114,7 +115,7 @@ def interesa(db: Session, usuario: Usuario, evento: Evento, ahora: datetime) -> 
     # Su pueblo favorito cuenta aunque esté más allá de su radio: ya ha demostrado que va
     if km is not None and not en_su_pueblo and pueblo is None and km > (usuario.radio_km or RADIO_POR_DEFECTO_KM):
         return None
-    if _ya_avisada(db, usuario, evento):
+    if not repetir and _ya_avisada(db, usuario, evento):
         return None
     razones = [r for r in (gustos, pueblo, _razon_distancia(usuario, evento, km), _razon_fecha(evento, ahora),
                            _razon_plazas(evento), historial) if r is not None]

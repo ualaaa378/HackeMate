@@ -135,6 +135,15 @@ Los profesores nos piden cinco cosas para la nota. **Pasan por delante de todo l
 | 23:35–00:00 | En la máquina de la demo: reconstruir las imágenes, **T1** con todo esto dentro y P4c, **T2** cronometrado y `v0.9`. |
 | 00:00–07:00 | Solo arreglos: A5 y C7, los dos ensayos del guion y `v1.0` en `main` (ver «🗂️ Lo que queda», bloque 2). |
 
+### 🤖 Más IA y automatizaciones (dom 22/11, Francisco)
+
+Los profesores valoran mucho la IA y las automatizaciones. Hechas (ideas 5 y 7 de la lista de propuestas):
+
+| # | Tarea |
+|---|---|
+| I5 | - [x] **Asistente del moderador (bot, `app/agentes/moderador.py`).** La bandeja empieza con un resumen («Tienes 3 pendiente(s): 1 posible fraude, 1 apelación y 1 importado de Facebook. Empieza por el posible fraude ⚠️») y cada plan lleva una **sugerencia** según su motivo (reglas, sin tokens). Al pulsar [❌ Rechazar], **la IA redacta un motivo amable y concreto** para quien lo propuso (FreeLLM primero; sin IA, una plantilla por tipo), y el moderador elige [✅ Enviar y rechazar], [✏️ Escribir otro] o [↩️ No rechazar]. Antes, el publicador recibía «Motivo: Decidido por chat (telegram)». 11 tests. **Adán:** si quieres lo mismo en la web, el texto puede salir de la misma lógica (habría que exponerla en el bot como `/ai/motivo-rechazo`). |
+| I7 | - [x] **«Quedan pocas plazas» (API, `app/tareas_programadas.py`).** Tarea automática: un plan publicado de los próximos 14 días con 3 plazas o menos (o el 20 % o menos del aforo) avisa **una vez** a quien le interesa (mismos criterios que el aviso de plan nuevo: gustos, historial, pueblo favorito y radio; solo quien acepta avisos) y aún no está apuntado: «⏳ Quedan 2 plazas para «Taller de esparto» en Senés, el sábado 05/12 a las 17:00. Te gustan los planes culturales.» con [✋ Apuntarme]. 2 tests. Sin cambio de contrato. |
+
 ### 🗂️ Lo que queda (Adán y Francisco, sáb 21/11 19:30)
 
 **Hecho hasta ahora:** todo lo establecido de Adán (C2, C4, C6, C9, C10) y de Francisco (A4, A8, A9, A10, B3, B6, B7, B8), y de las tareas nuevas N1, N2, N3, N4 (#98–#101), N6, N7, N8 y N9. Quedan dos bloques. **Primero la prueba de lo que ya hay** y después lo que falta. Lo que a las 00:00 no esté, se queda fuera.
