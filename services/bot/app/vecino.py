@@ -3,6 +3,8 @@ y preguntar por un evento (responde la IA solo con la ficha; si no lo sabe, al o
 El estado vive en memoria por contacto; los datos de verdad están en la api."""
 
 import logging
+import re
+import unicodedata
 from dataclasses import dataclass, field
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -30,6 +32,7 @@ class Vecino:
     consulta_pendiente: busqueda.Consulta | None = None  # esperando su ubicación
     inscripcion_pendiente: str | None = None  # esperando que comparta su número
     ultimos: list[str] = field(default_factory=list)
+    titulos: dict[str, str] = field(default_factory=dict)  # id → título de los últimos que vio
 
 
 vecinos: dict[str, Vecino] = {}
@@ -158,6 +161,7 @@ def _presentar(msg: MensajeEntrante, eventos: list[dict], cabecera: str, motivos
     motivos = motivos or {}
     v = _v(msg.de)
     v.ultimos = [e["id"] for e in eventos[:MAX_TARJETAS]]
+    v.titulos = {e["id"]: e.get("titulo") or "" for e in eventos[:MAX_TARJETAS]}
     salida: list = [cabecera]
     for ev in eventos[:MAX_TARJETAS]:
         salida.append(Respuesta(tarjeta(ev, motivos.get(ev["id"])), _botones(ev)))
@@ -256,10 +260,32 @@ def pregunta(msg: MensajeEntrante, texto: str, usuario: dict | None) -> list:
     return [f"Eso no lo pone en la ficha 🤔 Puedes preguntarlo al organizador en el chat del evento:\n🔗 {_enlace(ev['id'])}"]
 
 
+_VACIAS = set("de del la las el los al a en con por para y un una mi me que".split())
+
+
+def _sin_tildes(texto: str) -> str:
+    return unicodedata.normalize("NFKD", texto.lower()).encode("ascii", "ignore").decode()
+
+
+def _por_nombre(texto: str, titulos: dict[str, str]) -> str | None:
+    """«apúntame al taller de esparto» → el id del plan mostrado cuyo título encaja mejor (sin empates)."""
+    dichas = set(re.findall(r"[a-z0-9]+", _sin_tildes(texto))) - _VACIAS
+    puntos = {i: len(dichas & (set(re.findall(r"[a-z0-9]+", _sin_tildes(t))) - _VACIAS)) for i, t in titulos.items()}
+    if not puntos:
+        return None
+    mejor = max(puntos, key=puntos.get)
+    if puntos[mejor] == 0 or list(puntos.values()).count(puntos[mejor]) > 1:
+        return None
+    return mejor
+
+
 def inscribir(msg: MensajeEntrante, evento_id: str | None, usuario: dict | None) -> list:
     v = _v(msg.de)
-    evento_id = evento_id or (v.evento_activo or {}).get("id") or (v.ultimos[0] if len(v.ultimos) == 1 else None)
+    evento_id = (evento_id or (_por_nombre(msg.texto or "", v.titulos) if not msg.boton_id else None)
+                 or (v.evento_activo or {}).get("id") or (v.ultimos[0] if len(v.ultimos) == 1 else None))
     if not evento_id:
+        if len(v.ultimos) > 1:
+            return ["¿A cuál te apunto? Dime su nombre (por ejemplo, «apúntame a la ruta») o pulsa ✋ Apuntarme en su ficha."]
         return ["¿A qué plan te quieres apuntar? Búscalo primero, por ejemplo: «¿qué hay este finde?»"]
     if (v.evento_activo or {}).get("id") == evento_id and terminado(v.evento_activo):
         return [PLAN_TERMINADO]  # ya sabemos que pasó: ni lo intentamos
@@ -285,7 +311,8 @@ def inscribir(msg: MensajeEntrante, evento_id: str | None, usuario: dict | None)
         if e.status == 404:
             return ["Ese plan ya no está en la agenda 😕"]
         return [f"No he podido apuntarte: {e.message}"]
-    titulo = (v.evento_activo or {}).get("titulo") if (v.evento_activo or {}).get("id") == evento_id else None
+    titulo = ((v.evento_activo or {}).get("titulo") if (v.evento_activo or {}).get("id") == evento_id
+              else v.titulos.get(evento_id))
     nombre = f" a *{titulo}*" if titulo else ""
     if (insc or {}).get("estado") == "lista_espera":
         puesto = insc.get("posicion_espera")

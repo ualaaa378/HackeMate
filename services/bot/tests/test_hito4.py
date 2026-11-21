@@ -102,6 +102,9 @@ def test_telegram_envia_nota_de_voz(monkeypatch):
     ("What events are there this weekend near me?", "en"),
     ("Bonjour, qu'est-ce qu'il y a ce week-end?", "fr"),
     ("¿Qué hay este finde en Senés?", "es"),
+    ("apuntame a la ruta solidaria", "es"),  # «a la» también es francés: antes contestaba en francés
+    ("que planes hay en Velefique", "es"),
+    ("Je veux des événements près de moi", "fr"),
     ("hola", None),
 ])
 def test_detectar_idioma(texto, idioma):
