@@ -3,7 +3,7 @@
     python scripts/seed.py            # crea/actualiza tablas y carga (se puede repetir)
     python scripts/seed.py --reset    # vacía la base antes de cargar (estado inicial de la demo)
 
-Usa DATABASE_URL del .env de la raíz. En Docker: docker compose -f infra/docker-compose.yml exec api python -m app.seed
+Usa DATABASE_URL del .env de la raíz. En Docker: docker compose --env-file .env -f infra/docker-compose.yml exec api python -m app.seed
 La lógica vive en services/api/app/seed.py.
 """
 

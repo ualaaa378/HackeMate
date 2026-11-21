@@ -16,7 +16,7 @@ Valores permitidos en toda la plataforma. Minúsculas con guion bajo. Después d
 | `formato_aviso` | `texto`, `audio` | `usuario.formato_aviso`, `notificacion.formato` |
 | `tipo_mensaje` | `pregunta`, `respuesta`, `anuncio`, `comentario` | `mensaje_evento.tipo` |
 | `confianza_campo` | `alta`, `media`, `baja`, `falta` | `extraccion_evento.campos.*.confianza` |
-| `decision_moderacion` | `aprobar`, `rechazar`, `retirar` | `POST /moderacion/{id}/decision` |
+| `decision_moderacion` | `aprobar`, `rechazar`, `retirar`, `restaurar` | `POST /moderacion/{id}/decision` |
 | `tipo_lugar` | `ruta`, `sitio_interes`, `comercio`, `alojamiento`, `servicio` | `lugar.tipo` |
 | `modalidad_ruta` | `senderismo`, `btt`, `ciclismo`, `paseo` | `lugar.ruta.modalidad` |
 | `estado_envio` | `pendiente`, `enviada`, `fallida` | `notificacion.estado_envio` (cola de avisos) |
