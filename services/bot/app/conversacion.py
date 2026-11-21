@@ -170,6 +170,10 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
     # Alta de una entidad (B5): mientras dura, cada mensaje es la respuesta a su pregunta
     if alta.en_curso(msg.de):
         return alta.responder(msg, texto)
+    if msg.de in esperando_edad and (texto or msg.boton_id == "edad_saltar"):  # P4b
+        respuesta = _responder_edad(msg, texto)
+        if respuesta is not None:
+            return respuesta
     if texto and not msg.boton_id and alta.quiere_alta(texto):
         return alta.empezar(msg, _usuario(msg.de))
 
@@ -449,7 +453,50 @@ def _vincular(msg: MensajeEntrante) -> list[str | Respuesta]:
         extra = "\nPublicas en nombre de tu entidad: lo que me mandes irá con su nombre."
     return [Respuesta(f"¡Gracias, {nombre}! Ya te tengo identificado ✅{extra}", quitar_teclado=True)] + \
         vecino.tras_vincular(msg, usuario) + alta.tras_vincular(msg, usuario) + avisos.tras_vincular(msg, usuario) + \
-        _codigo_tras_vincular(msg)
+        _codigo_tras_vincular(msg) + _preguntar_edad(msg, usuario)
+
+
+# ---------- P4b: la edad, opcional, la primera vez que se identifica ----------
+
+esperando_edad: set[str] = set()
+PREGUNTA_EDAD = "Una última cosa (opcional): ¿cuántos años tienes? Así te recomiendo mejor los planes."
+BOTON_SIN_EDAD = [("edad_saltar", "⏭️ Prefiero no decirlo")]
+
+
+def _preguntar_edad(msg: MensajeEntrante, usuario: dict | None) -> list:
+    if not (usuario or {}).get("id") or usuario.get("edad") is not None or usuario.get("rol") == "moderador":
+        return []
+    if alta.en_curso(msg.de):  # el alta de la asociación ya pregunta la del responsable
+        return []
+    esperando_edad.add(msg.de)
+    return [Respuesta(PREGUNTA_EDAD, BOTON_SIN_EDAD)]
+
+
+def _responder_edad(msg: MensajeEntrante, texto: str) -> list | None:
+    """La respuesta a «¿cuántos años tienes?». None si no es una edad: se olvida la pregunta y sigue normal."""
+    if msg.boton_id == "edad_saltar":
+        esperando_edad.discard(msg.de)
+        return ["Sin problema 👍"]
+    if not re.fullmatch(r"\D{0,20}\d{1,3}\D{0,20}", texto or ""):
+        esperando_edad.discard(msg.de)
+        return None
+    error = alta.error_edad(texto)
+    if error:
+        return [Respuesta(error.replace("*Saltar*", "«Prefiero no decirlo»"), BOTON_SIN_EDAD)]
+    esperando_edad.discard(msg.de)
+    usuario = _usuario(msg.de)
+    if not (usuario or {}).get("id"):
+        return ["Ahora mismo no puedo guardarlo, pero no pasa nada 🙂"]
+    try:
+        api_cliente.guardar_preferencias(usuario["id"], {"edad": alta.leer_edad(texto)})
+    except ApiNoDisponible:
+        return ["Ahora mismo no puedo guardarlo, pero no pasa nada 🙂"]
+    except ErrorApi as e:
+        if e.code == "edad_minima":
+            return ["Para registrarse hace falta tener al menos 14 años 🙏"]
+        return [f"No he podido guardarlo: {e.message}"]
+    _usuarios.pop(msg.de, None)
+    return ["¡Apuntado, gracias! ✅"]
 
 
 def _codigo_tras_vincular(msg: MensajeEntrante) -> list[str]:
