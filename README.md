@@ -116,7 +116,7 @@ Facebook Posts Scraper ──> scripts/importar_facebook.py ──> bot POST /ai
 
 | Hito | Hasta | Tarea |
 |---|---|---|
-| H2 · CP2 | sáb 13:00 | - [ ] **A1.** Arreglar lo que salga de la prueba con Docker de Adán (apartado «Flujo A» de abajo). |
+| H2 · CP2 | sáb 13:00 | - [x] **A1.** Arreglar lo que salga de la prueba con Docker de Adán (apartado «Flujo A» de abajo). *(sáb: el único hallazgo de A, los duplicados en la bandeja, ya lo resolvía la #43; test añadido)* |
 | H3 · CP3 | sáb 19:00 | - [x] **A2.** *(sáb 21/11: hecho. Primera descarga real de las 4 páginas: 20 posts guardados en `facebook_posts.json`. Revisión diaria con `--cada 24` o el servicio `ingesta` del compose, apagado por defecto)* **`scripts/importar_facebook.py`** (solo Python, sin Docker): 1) lanza «Facebook Posts Scraper» sobre las páginas de `FUENTES.md` (token en `.env`, por ejemplo `FB_SCRAPER_TOKEN`, y la variable en `.env.example` vacía); 2) guarda los posts en `contracts/fixtures/facebook_posts.json`; 3) por cada post llama a `bot POST /ai/extraer` con `X-Internal-Token`; 4) manda el resultado a `POST /eventos/importar` con `origen.canal="facebook"`, `origen.url` del post e `importado_auto=true`. Opción `--desde-json` para repetirlo sin red. Si el bot no responde, el post se queda en el JSON y no se inventa nada. |
 | H3 · CP3 | sáb 19:00 | - [ ] **A3.** Decidir **D1** con Francisco antes de que se congelen los contratos a las 19:00 (quitar o no el `required` de `telefono` en `schemas/notificacion.json` para avisar a quien solo usa Telegram). |
 | H4 · CP4 | dom 00:00 | - [ ] **A4.** `GET /estadisticas`: que el % de importadas cuente las de Facebook (ya llegan con `importado_auto`). Revisar la PR de C3 (nginx y túnel). |
@@ -153,7 +153,6 @@ Todas las rutas de `contracts/openapi.yaml` que usan la web y el bot ya existen 
 
 - **Ingesta de Facebook (A2): falta decidir** si lo importado de los ayuntamientos (que están en «automática») se publica directamente o pasa siempre por la bandeja. Hoy la API lo trata igual que un post enviado por el bot, así que lo de los ayuntamientos se publicaría sin revisión. Pasarlo siempre por la bandeja son dos líneas en `decidir_estado`, sin tocar el contrato. Además, los Aytos. de Uleila del Campo y Senés no están dados de alta como publicadores: sus posts llegan como «Sin publicador identificado» (van a revisión).
 - **Revisar la PR de la URL pública (C3):** Adán cambia el `nginx.conf` de la web y añade un segundo túnel en `infra/docker-compose.yml` porque Benas no puede ejecutar Docker. Como el compose es de A, la mira Benas antes de fusionarla.
-- **Duplicados en la bandeja (prueba en Docker, sáb 11:15):** el mismo post del taller de esparto, mandado dos veces por el mismo publicador (`simular_chat.py` dos veces), entra dos veces en revisión sin ningún aviso y el moderador puede aprobar los dos. La bandeja debería marcar el segundo como posible duplicado (`services/api/app/duplicados.py`). Afecta al paso 3 de la demo si alguien repite el envío.
 
 ### Flujos A y B · a acordar (Benas + Francisco)
 
@@ -197,6 +196,8 @@ Lo que pide el bot:
 Detalle del flujo B, con los cuerpos exactos de cada llamada: [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) y [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) §5.
 
 ### Ya resuelto
+
+- **Duplicados en la bandeja (prueba en Docker de Adán, sáb 11:15):** ya lo resuelve la #43. Antes, un plan que iba a revisión por otro motivo no se marcaba como duplicado; ahora el segundo envío del mismo post llega a la bandeja con el motivo «Posible duplicado de «Taller de esparto»». Comprobado a mano con `simular_chat.py` dos veces (bot y API de `develop`) y con un test nuevo (`test_mismo_post_dos_veces_del_mismo_publicador_avisa_duplicado`). Si en Docker sigue saliendo, es una imagen anterior: `docker compose -f infra/docker-compose.yml up --build`.
 
 - **Solo dos modos de publicación (a mano y automática), sin semiautomático** (decisión del equipo, 21/11): la API ya no usa el nivel 1 (si llega, lo guarda como 0) ni sube de nivel sola; la migración 0008 pasa a «a mano» los que estaban en 1, y en el seed las asociaciones son «a mano» y los ayuntamientos y el bar, «automática». Un posible duplicado de una asociación «a mano» llega a la bandeja con el motivo «Posible duplicado de…». La web ya manda `nivel_confianza: 0` para «a mano» (`cambiarRevision` en `apps/web/src/api/admin.ts`).
 
