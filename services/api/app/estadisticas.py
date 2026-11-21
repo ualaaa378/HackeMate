@@ -13,6 +13,8 @@ Criterios (docs/PLAN_FLUJO_A.md H4):
 - Solapamiento: dos actividades de pueblos distintos cuyas franjas se cruzan, si son de la misma categoría o
   alguna es un evento grande (fiestas). Sin `fecha_fin` se supone que dura DURACION_POR_DEFECTO, o el día entero
   si empieza a las 00:00 (los eventos «sin hora»). Con `municipio`, solo los pares en los que está ese pueblo.
+  Sin `desde`, solo los planes que aún no han terminado (N5a): un choque que ya pasó no le sirve al moderador.
+  Con `desde`, todos los del periodo (para mirar el histórico).
 - Tokens: llamadas, tokens y coste por proveedor de las métricas con `ts` en el periodo (sin filtro de pueblo).
 """
 
@@ -128,6 +130,11 @@ def solapamientos(franjas: list[Franja], municipio: str | None = None) -> list[d
 # --- Panel --------------------------------------------------------------------------------------
 
 
+def _utc(fecha: datetime) -> datetime:
+    """SQLite devuelve las fechas sin zona (guardadas en UTC)."""
+    return fecha if fecha.tzinfo else fecha.replace(tzinfo=timezone.utc)
+
+
 def _pct(parte: float, total: float) -> float:
     return round(100 * parte / total, 1) if total else 0.0
 
@@ -144,7 +151,11 @@ def _condiciones_evento(desde: datetime | None, hasta: datetime | None, municipi
 
 
 def calcular(
-    db: Session, desde: datetime | None = None, hasta: datetime | None = None, municipio: str | None = None
+    db: Session,
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
+    municipio: str | None = None,
+    ahora: datetime | None = None,
 ) -> dict:
     del_periodo = and_(*_condiciones_evento(desde, hasta, None))
     filtro = and_(*_condiciones_evento(desde, hasta, municipio))
@@ -191,6 +202,9 @@ def calcular(
             ).where(del_periodo)
         )
     ]
+    if desde is None:
+        limite = ahora or datetime.now(timezone.utc)
+        franjas = [f for f in franjas if _utc(f.fin) >= limite]
 
     return {
         "periodo": {

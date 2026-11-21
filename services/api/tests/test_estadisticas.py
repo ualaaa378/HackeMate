@@ -132,8 +132,22 @@ def test_historico_cuadra_con_el_seed(api):
     assert datos["tokens"] == {"por_proveedor": {}, "coste_total_eur": 0.0}
 
 
-def test_solapamiento_de_demo_cine_de_uleila_con_fiestas(api):
+def test_sin_desde_solo_los_choques_que_no_han_pasado(api):
+    # N5a: sin periodo, el panel enseña los choques que aún pueden arreglarse (las dos cabalgatas de Reyes),
+    # no los del verano o el otoño que ya pasaron. Las cifras sí siguen contando todo.
     datos = api.get(URL, headers=TOKEN).json()
+    _valida(RESPUESTA, datos)
+    ids = {i for s in datos["solapamientos"] for i in (s["evento_a"], s["evento_b"])}
+    assert not ids & {CINE, VERBENA, PETANCA, JUEGOS}
+    assert any(
+        {s["evento_a"][:8], s["evento_b"][:8]} == {CABALGATA_LUCAINENA, CABALGATA_ULEILA}
+        for s in datos["solapamientos"]
+    )
+    assert datos["actividades"] == 18 + 8
+
+
+def test_solapamiento_de_demo_cine_de_uleila_con_fiestas(api):
+    datos = api.get(URL, params={"desde": "2026-01-01T00:00:00+01:00"}, headers=TOKEN).json()
     _valida(RESPUESTA, datos)
     cine = [s for s in datos["solapamientos"] if CINE in (s["evento_a"], s["evento_b"])]
     assert len(cine) == 1
@@ -148,9 +162,8 @@ def test_solapamiento_de_demo_cine_de_uleila_con_fiestas(api):
         {s["evento_a"][:8], s["evento_b"][:8]} == {CABALGATA_LUCAINENA, CABALGATA_ULEILA}
         for s in datos["solapamientos"]
     )
-    # Sin filtros entran también los publicados que vienen y los finalizados; nada en revisión
+    # Desde enero entran también los publicados que vienen y los finalizados; nada en revisión
     assert datos["actividades"] == 18 + 8
-    assert datos["periodo"] == {"desde": None, "hasta": None}
 
 
 def test_filtro_por_municipio(api):

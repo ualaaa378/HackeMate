@@ -76,7 +76,11 @@ def participacion(db: Session, municipio: str | None = None, maximo: int = MAX_P
             continue
         ocupacion = None
         if evento.plazas_totales:
-            ocupacion = round(min(1.0, inscritos / evento.plazas_totales), 3)
+            # N5a: las plazas ocupadas del plan (como «Ocupación por tipo de plan» del panel), que en los planes ya
+            # hechos incluyen a quien se apuntó fuera de la plataforma; nunca menos que los inscritos aquí.
+            libres = evento.plazas_libres if evento.plazas_libres is not None else evento.plazas_totales
+            ocupadas = max(inscritos, evento.plazas_totales - libres)
+            ocupacion = round(min(1.0, ocupadas / evento.plazas_totales), 3)
         planes.append({
             "evento_id": evento.id,
             "titulo": evento.titulo,
@@ -97,10 +101,12 @@ def participacion(db: Session, municipio: str | None = None, maximo: int = MAX_P
 
 def _cifras(p: dict) -> str:
     partes = []
-    if p["ocupacion"] is not None and p["ocupacion"] >= 1:
-        partes.append(f"se llenó ({p['inscritos']} de {p['plazas_totales']})")
-    elif p["plazas_totales"]:
-        partes.append(f"se apuntaron {p['inscritos']} de {p['plazas_totales']}")
+    if p["ocupacion"] is not None and p["plazas_totales"]:
+        ocupadas = round(p["ocupacion"] * p["plazas_totales"])
+        if p["ocupacion"] >= 1:
+            partes.append(f"se llenó ({p['plazas_totales']} de {p['plazas_totales']})")
+        else:
+            partes.append(f"se ocupó el {round(100 * p['ocupacion'])} % ({ocupadas} de {p['plazas_totales']} plazas)")
     elif p["inscritos"]:
         partes.append(f"se apuntaron {p['inscritos']} personas")
     if p["lista_espera"]:

@@ -1782,7 +1782,7 @@ components:
         inscritos: { type: integer, minimum: 0, description: "Personas (suma de plazas) confirmadas o que asistieron" }
         lista_espera: { type: integer, minimum: 0 }
         asistencias: { type: integer, minimum: 0 }
-        ocupacion: { type: [number, "null"], minimum: 0, maximum: 1, description: "inscritos / plazas_totales; null sin aforo" }
+        ocupacion: { type: [number, "null"], minimum: 0, maximum: 1, description: "plazas ocupadas / plazas_totales (en los planes ya hechos incluye a quien se apuntó fuera de la plataforma; nunca menos que inscritos / plazas_totales); null sin aforo" }
         preguntas_chat: { type: integer, minimum: 0, description: "Mensajes de tipo pregunta en el chat del evento" }
 
     SugerenciaPlan:
