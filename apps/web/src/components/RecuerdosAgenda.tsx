@@ -75,10 +75,14 @@ const RecuerdosAgenda: React.FC = () => {
                   fill="outline"
                   size="small"
                   onClick={() => setAbierto(e)}
-                  aria-label={`Fotos y comentarios de «${e.titulo}»: ${n} comentarios`}
+                  aria-label={
+                    n > 0
+                      ? `Fotos y comentarios de «${e.titulo}»: ${n} comentarios`
+                      : `Fotos y comentarios de «${e.titulo}»`
+                  }
                 >
                   <IonIcon slot="start" icon={chatbubbleEllipses} aria-hidden="true" />
-                  Fotos y comentarios ({n})
+                  {n > 0 ? `Fotos y comentarios (${n})` : 'Fotos y comentarios'}
                 </IonButton>
               </div>
             </li>
