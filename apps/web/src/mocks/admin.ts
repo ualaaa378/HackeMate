@@ -154,6 +154,25 @@ export const pendientesMock: PendienteBandeja[] = [
   {
     tipo: 'evento',
     motivo:
+      'Posible fraude (0.55): IA (freellm): pide pagar la plaza por adelantado por Bizum a un número particular y no al ayuntamiento.',
+    score_spam: 0.55,
+    evento: nuevoEventoMock({
+      titulo: 'Excursión a la Alhambra con comida incluida: solo 15 €',
+      descripcion:
+        'Plazas limitadas. Reserva YA mandando 15 € por Bizum al 6XX XXX XXX y te confirmo por privado. Organiza el ayuntamiento.',
+      categoria: 'cultural',
+      municipio: 'Tahal',
+      fecha_inicio: '2026-11-29T08:00:00+01:00',
+      es_gratuito: false,
+      precio_eur: 15,
+      publicador_nombre: 'Perfil sin verificar',
+      origen: { canal: 'telegram', url: null, importado_auto: false },
+      moderacion: { motivo: null, score_spam: 0.55, revisado_por: null },
+    }),
+  },
+  {
+    tipo: 'evento',
+    motivo:
       'Revisión a mano: la Peña Cultural aún no ha aportado el DNI y la residencia de su responsable. La IA ha sacado todos los datos del audio y no ve nada raro.',
     score_spam: 0.04,
     evento: nuevoEventoMock({

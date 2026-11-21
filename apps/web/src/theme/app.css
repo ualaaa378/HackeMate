@@ -1988,3 +1988,97 @@ ion-content.contenido-agenda--zonas::part(scroll) {
     display: none;
   }
 }
+
+/* ---------- N5b: ideas de la IA en el panel (solo variables del tema) ---------- */
+.ideas-ia__proveedor {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: var(--hm-texto-suave);
+}
+
+.ideas-ia__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.idea {
+  padding: 12px;
+  border: 1px solid var(--hm-borde);
+  border-left: 6px solid var(--hm-verde);
+  border-radius: var(--hm-radio);
+  background: var(--hm-fondo);
+}
+
+.idea__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.idea__cabecera ion-chip {
+  margin: 0;
+}
+
+.idea__titulo {
+  font-size: 1.1rem;
+  color: var(--hm-verde-oscuro);
+}
+
+.idea p {
+  margin: 6px 0 0;
+}
+
+.idea__datos,
+.idea__base {
+  font-size: 0.9rem;
+  color: var(--hm-texto-suave);
+}
+
+.idea__descripcion {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.idea__motivo {
+  font-weight: 600;
+  color: var(--hm-verde-oscuro);
+}
+
+.idea__form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.idea__form .idea__botones,
+.idea__form [role='alert'] {
+  grid-column: 1 / -1;
+}
+
+.idea__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.idea__hecha {
+  font-weight: 600;
+  color: var(--hm-verde-oscuro);
+}
+
+/* ---------- N9c: aviso de posible fraude en la bandeja ---------- */
+.chip-fraude {
+  --background: var(--hm-naranja-claro);
+  --color: var(--hm-naranja-oscuro);
+  border: 1px solid var(--hm-naranja-oscuro);
+  font-weight: 700;
+}
