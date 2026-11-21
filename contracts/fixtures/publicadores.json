@@ -71,6 +71,7 @@
     "categorias_habituales": ["cultural"],
     "fuentes": [],
     "usuario_id": null,
+    "responsable": { "nombre": "Carmen Ruiz Sánchez", "dni": "12345678Z", "residencia": "Senés", "identidad_verificada": true },
     "creado_en": "2026-11-02T10:00:00+01:00"
   },
   {
@@ -122,6 +123,7 @@
     "categorias_habituales": ["ludica", "cultural"],
     "fuentes": [],
     "usuario_id": null,
+    "responsable": { "nombre": "Lucía Martínez Gil", "dni": "X1234567L", "residencia": "Tahal", "identidad_verificada": false },
     "creado_en": "2026-11-18T10:00:00+01:00"
   }
 ]

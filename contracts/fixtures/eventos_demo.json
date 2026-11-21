@@ -23,6 +23,7 @@
     "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a01",
     "publicador_nombre": "Amigos de Velefique",
     "imagen_url": null,
+    "frase_portada": "Cada paso suma: sube la sierra con nosotros por una buena causa",
     "origen": {
       "canal": "facebook",
       "url": "https://www.facebook.com/amigosdevelefique/posts/ejemplo-ruta",
@@ -173,6 +174,7 @@
     "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a02",
     "publicador_nombre": "Ayto. Lucainena de las Torres",
     "imagen_url": null,
+    "frase_portada": "Regalos hechos a mano en el pueblo, con olor a Navidad",
     "origen": {
       "canal": "panel",
       "url": null,
@@ -322,6 +324,16 @@
     "publicador_id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a07",
     "publicador_nombre": "Asociación Juvenil de Tahal",
     "imagen_url": null,
+    "datos_ayuntamiento": {
+      "responsable": "Lucía Martínez",
+      "telefono": "+34600000107",
+      "entidad": "asociacion",
+      "entidad_nombre": "Asociación Juvenil de Tahal",
+      "publico": "todos",
+      "necesidades": ["espacio", "material", "limpieza"],
+      "seguro_rc": "nose",
+      "observaciones": "Pintaríamos la pared exterior del lavadero con permiso del ayuntamiento."
+    },
     "origen": {
       "canal": "whatsapp",
       "url": null,
