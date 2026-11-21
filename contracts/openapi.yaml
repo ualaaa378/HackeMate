@@ -1034,6 +1034,56 @@ paths:
         "502": { $ref: "#/components/responses/Error", description: "502 `bot_no_disponible` (el bot respondió con error; details.status)" }
         "503": { $ref: "#/components/responses/Error", description: "503 `bot_no_disponible` (el bot no responde)" }
 
+  /api/v1/admin/sugerencias:
+    get:
+      tags: [admin]
+      summary: "N7: la IA propone planes nuevos a partir de los que tuvieron mucha participación"
+      description: |
+        La API elige los planes con más participación (ocupación, inscritos, lista de espera, asistencias y
+        preguntas en el chat; publicados o finalizados) y se los pasa a `bot POST /ai/sugerir-eventos`, que propone
+        de 1 a 3 planes nuevos («repetir la Ruta Solidaria en primavera: se llenó y hubo 6 en lista de espera»).
+        Si el bot no responde, la API propone por reglas (repetir el de más participación) y `proveedor_ia` vale
+        `reglas`: nunca falla por la IA. No guarda nada: cada llamada calcula de nuevo. «Descartar» lo hace la web.
+        La IA propone y una persona decide: nada se publica sin pasar por la bandeja.
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: false
+      parameters:
+        - { name: municipio, in: query, schema: { type: string }, description: "Solo planes de ese pueblo" }
+        - { name: limite, in: query, schema: { type: integer, minimum: 1, maximum: 3, default: 3 } }
+      responses:
+        "200":
+          description: Propuestas y los planes en que se basan
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Sugerencias" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+
+  /api/v1/admin/sugerencias/borrador:
+    post:
+      tags: [admin]
+      summary: "N7: [Crear borrador] convierte una propuesta en un plan que espera en la bandeja"
+      description: |
+        Crea el evento en `en_revision` con motivo «Propuesto por la IA a partir de …»: el moderador lo revisa,
+        ajusta la fecha y lo que haga falta (`PATCH /eventos/{id}`) y lo aprueba (`POST /moderacion/{id}/decision`).
+        Al aprobarlo se avisa a los interesados como a cualquier plan nuevo (A10).
+      security: [{ bearer: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SugerenciaPlan" }
+      responses:
+        "201":
+          description: Evento creado en la bandeja
+          content:
+            application/json:
+              schema: { $ref: "./schemas/evento.json" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `rol_insuficiente` (la sesión no es de un moderador)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` o `municipio_no_encontrado`" }
+
   # ---------------- bot (Flujo B) ----------------
   /webhook/twilio:
     servers: [{ url: http://localhost:8001 }]
@@ -1274,6 +1324,40 @@ paths:
                   etiquetas_interes: { type: array, items: { type: string } }
                   municipio: { type: [string, "null"] }
                   formato_aviso: { enum: [texto, audio] }
+
+  /ai/sugerir-eventos:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: "N8: propone de 1 a 3 planes nuevos a partir de los que tuvieron mucha participación"
+      description: |
+        Cadena propia `freellm,nim,gemini,reglas`. Solo usa los datos que recibe: cada propuesta dice en
+        `basado_en` qué planes la justifican (ids de `planes`) y en `motivo` las cifras reales («se llenó y hubo 6
+        en lista de espera»). Sin inventar lugares, precios ni organizadores. La fecha es aproximada.
+      security: [{ interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planes]
+              properties:
+                planes: { type: array, minItems: 1, maxItems: 20, items: { $ref: "#/components/schemas/ParticipacionPlan" } }
+                max_sugerencias: { type: integer, minimum: 1, maximum: 3, default: 3 }
+                hoy: { type: string, format: date-time, description: "Para proponer fechas futuras con sentido (temporada)" }
+      responses:
+        "200":
+          description: Propuestas
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sugerencias, proveedor_ia]
+                properties:
+                  sugerencias: { type: array, maxItems: 3, items: { $ref: "#/components/schemas/SugerenciaPlan" } }
+                  proveedor_ia: { type: string }
 
 components:
   securitySchemes:
@@ -1617,6 +1701,46 @@ components:
       properties:
         activa: { type: boolean, description: true = todas las IAs «fallan» y el bot sigue solo con reglas }
 
+    ParticipacionPlan:
+      description: "N7/N8: cifras de participación de un plan (publicado o finalizado) para proponer otros"
+      type: object
+      required: [evento_id, titulo, categoria, municipio, fecha_inicio, inscritos, lista_espera, preguntas_chat]
+      properties:
+        evento_id: { type: string, format: uuid }
+        titulo: { type: string }
+        categoria: { $ref: "#/components/schemas/Categoria" }
+        municipio: { type: string }
+        fecha_inicio: { type: string, format: date-time }
+        estado: { $ref: "#/components/schemas/EstadoEvento" }
+        plazas_totales: { type: [integer, "null"], minimum: 0 }
+        inscritos: { type: integer, minimum: 0, description: "Personas (suma de plazas) confirmadas o que asistieron" }
+        lista_espera: { type: integer, minimum: 0 }
+        asistencias: { type: integer, minimum: 0 }
+        ocupacion: { type: [number, "null"], minimum: 0, maximum: 1, description: "inscritos / plazas_totales; null sin aforo" }
+        preguntas_chat: { type: integer, minimum: 0, description: "Mensajes de tipo pregunta en el chat del evento" }
+
+    SugerenciaPlan:
+      description: "N7/N8: plan nuevo propuesto por la IA. Una persona decide si se crea (borrador → bandeja)"
+      type: object
+      required: [titulo, categoria, municipio, fecha_sugerida, motivo, basado_en]
+      properties:
+        titulo: { type: string, minLength: 1, maxLength: 200 }
+        descripcion: { type: [string, "null"] }
+        categoria: { $ref: "#/components/schemas/Categoria" }
+        municipio: { type: string }
+        fecha_sugerida: { type: string, format: date-time, description: "Aproximada; el moderador la ajusta" }
+        fecha_texto: { type: [string, "null"], description: "Cómo la dice la IA: «en primavera», «el próximo puente»" }
+        motivo: { type: string, minLength: 1, description: "Por qué, con cifras reales de los planes de basado_en" }
+        basado_en: { type: array, minItems: 1, items: { type: string, format: uuid }, description: "evento_id de los planes que la justifican" }
+
+    Sugerencias:
+      description: "N7: respuesta de GET /admin/sugerencias"
+      type: object
+      required: [items, basado_en, proveedor_ia]
+      properties:
+        items: { type: array, maxItems: 3, items: { $ref: "#/components/schemas/SugerenciaPlan" } }
+        basado_en: { type: array, items: { $ref: "#/components/schemas/ParticipacionPlan" }, description: "Los planes con más participación que se pasaron a la IA" }
+        proveedor_ia: { type: string, description: "Quién propuso (p. ej. freellm:…, nim:…, reglas)" }
     MetricasBot:
       type: object
       description: Lo que devuelve `bot GET /metrics` (services/bot/app/main.py). Schema abierto.
