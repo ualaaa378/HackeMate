@@ -61,6 +61,16 @@
         "revisado_por": { "type": ["string", "null"] }
       }
     },
+    "apelacion": {
+      "type": ["object", "null"],
+      "readOnly": true,
+      "description": "P3a. La apelación del organizador tras un rechazo (POST /eventos/{id}/apelacion). Solo hay una por plan; null si no ha apelado",
+      "required": ["motivo", "creada_en"],
+      "properties": {
+        "motivo": { "type": "string", "minLength": 10, "maxLength": 500 },
+        "creada_en": { "type": "string", "format": "date-time" }
+      }
+    },
     "creado_en": { "type": "string", "format": "date-time" },
     "actualizado_en": { "type": "string", "format": "date-time" }
   }
