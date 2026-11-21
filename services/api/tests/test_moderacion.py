@@ -208,6 +208,25 @@ def test_automatizaciones_pausadas_e_importado_auto(base):
     assert moderacion.decidir_estado(base, manual, p, 0.0)[0] == "publicado"
 
 
+def test_d4_lo_importado_va_a_la_bandeja_aunque_sea_automatica(base, monkeypatch):
+    p = _publicador(base, nivel=2)
+    importado = _evento(base, p, importado_auto=True)
+    assert moderacion.decidir_estado(base, importado, p, 0.0) == ("en_revision", moderacion.MOTIVO_IMPORTADO)
+    # Lo que publica la propia asociación (bot, web) sigue saliendo solo
+    assert moderacion.decidir_estado(base, _evento(base, p, importado_auto=False), p, 0.0)[0] == "publicado"
+    # El spam manda sobre el motivo de importado
+    estado, motivo = moderacion.decidir_estado(base, importado, p, 0.95, "apuestas")
+    assert estado == "en_revision" and motivo.startswith("Posible spam")
+    # Con MODERACION_IMPORTADOS_A_BANDEJA=false se publica como el resto
+    monkeypatch.setattr(get_settings(), "moderacion_importados_a_bandeja", False)
+    assert moderacion.decidir_estado(base, importado, p, 0.0) == ("publicado", "Publicación automática")
+
+
+def test_d4_un_duplicado_importado_avisa_del_duplicado():
+    estado, motivo = moderacion.motivo_con_duplicado("en_revision", moderacion.MOTIVO_IMPORTADO, "Ruta Solidaria")
+    assert (estado, motivo) == ("en_revision", "Posible duplicado de «Ruta Solidaria»")
+
+
 def test_publicador_pausado_a_revision(base):
     p = _publicador(base, nivel=2)
     p.estado = "pausado"

@@ -201,12 +201,16 @@ def _importar_y_confirmar(api, titulo: str, canal: str, publicador_id: str, url:
 
 
 def test_lo_importado_de_facebook_cuenta_en_el_porcentaje(api):
-    """A4: lo que entra por la ingesta de Facebook sube `pct_importadas_auto`; lo de Telegram, no."""
+    """A4: lo que entra por la ingesta de Facebook sube `pct_importadas_auto` (tras aprobarlo, D4); lo de Telegram, no."""
     antes = api.get(URL, headers=TOKEN).json()
 
     ayto = "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a02"  # Ayto. Lucainena, automática
     fb = _importar_y_confirmar(api, "Mercadillo navideño", "facebook", ayto, "https://www.facebook.com/p/1")
-    assert fb["estado"] == "publicado" and fb["origen"]["importado_auto"] is True
+    assert fb["estado"] == "en_revision" and fb["origen"]["importado_auto"] is True  # D4: siempre a la bandeja
+    assert api.get(URL, headers=TOKEN).json()["actividades"] == antes["actividades"]
+    r = api.post(f"/api/v1/moderacion/{fb['id']}/decision", json={"decision": "aprobar", "motivo": None},
+                 headers=_bearer(LUCIA_MODERADORA, "moderador"))
+    assert r.status_code == 200, r.text
     tg = _importar_y_confirmar(api, "Taller de belenes", "telegram", ayto, None)
     assert tg["estado"] == "publicado" and tg["origen"]["importado_auto"] is False
 

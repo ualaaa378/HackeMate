@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     # Moderación (app/moderacion.py)
     moderacion_aprobaciones_subir_nivel: int = 3  # sin uso desde la 0008 (solo dos modos): se conserva por compatibilidad
     moderacion_umbral_spam: float = 0.7
+    # D4: lo que llega solo (ingesta de Facebook, importado_auto) va siempre a la bandeja, aunque la asociación
+    # esté en automática. false = se publica como cualquier otro plan de esa asociación.
+    moderacion_importados_a_bandeja: bool = True
     # Cola de avisos (app/notificaciones.py)
     notificaciones_timeout_s: float = 3.0
     notificaciones_max_intentos: int = 5
