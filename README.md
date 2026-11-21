@@ -125,8 +125,6 @@ Los profesores nos piden cinco cosas para la nota. **Pasan por delante de todo l
 | P5b | Francisco (B) | - [ ] **Organizador · bot: «modificar plan».** El bot lista tus planes propuestos (con su estado), eliges uno y luego qué cambiar (fecha y hora, lugar, descripción, plazas) y llama a `PATCH /eventos/{id}`. Si cambia la hora, la API ya avisa a los inscritos. También vale «quiero cambiar la hora de la ruta». |
 | P5c | Adán (C) | - [ ] **Organizador · web: pestaña «Mis planes propuestos».** Para vecinos y asociaciones con sesión: tus planes con su estado (en revisión, publicado, rechazado con su motivo, ya hecho), cuántos apuntados tiene cada uno y el botón **«Modificar»** (formulario con `PATCH /eventos/{id}`). Desde aquí se apela (P3c). |
 
-**Si Benas no está a las 22:15**, P3a, P4a y P4c pasan a Francisco, que ya lleva su flujo.
-
 **Planning (sáb 21/11 → dom 22/11)**
 
 | Hora | Qué |
