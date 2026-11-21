@@ -103,3 +103,31 @@ describe('planes que ya han pasado (mocks)', () => {
     expect(items.at(-1)).toMatchObject({ tipo: 'comentario', imagen_url: 'data:image/webp;base64,AA' });
   });
 });
+
+describe('client con la API en el mismo dominio (VITE_API_URL=/)', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_API_URL', '/');
+    vi.stubEnv('VITE_USE_MOCKS', 'false');
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it('no usa los mocks y llama a rutas relativas', async () => {
+    const fetchEspia = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => respuesta(200, { items: [], total: 0, page: 1, size: 100 }));
+    const { getEventos, USAR_MOCKS, urlIcs } = await cargarCliente();
+    expect(USAR_MOCKS).toBe(false);
+    await getEventos();
+    expect(String(fetchEspia.mock.calls[0][0])).toMatch(/^\/api\/v1\/eventos/);
+    expect(urlIcs('abc')).toBe('/api/v1/eventos/abc/ics');
+  });
+
+  it('sin VITE_API_URL sigue usando los mocks', async () => {
+    vi.stubEnv('VITE_API_URL', '');
+    const { USAR_MOCKS } = await cargarCliente();
+    expect(USAR_MOCKS).toBe(true);
+  });
+});

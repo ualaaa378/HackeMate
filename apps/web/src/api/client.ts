@@ -1,6 +1,8 @@
 // Única puerta de la app hacia el backend. Las pantallas solo importan de aquí.
 // Con VITE_USE_MOCKS=true (o sin VITE_API_URL) responde con src/mocks/eventos.json,
 // copia de contracts/fixtures/eventos.json.
+// VITE_API_URL=/ llama a la API en el mismo dominio que la web (/api/v1/…), detrás del
+// nginx de la web: así funciona igual en localhost:8080 que en la URL pública del túnel.
 // Con la API configurada, si no responde o el endpoint aún no existe, se vuelve a los mocks
 // para que la demo no se caiga. Los errores de negocio de la API sí llegan a la pantalla.
 
@@ -23,8 +25,10 @@ import type {
   UsuarioEditar,
 } from './types';
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
-export const USAR_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true' || !API_URL;
+const API_URL_CONFIGURADA = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim();
+// «/» se queda en '' y las rutas salen relativas (/api/v1/…); vacío del todo significa mocks.
+const API_URL = API_URL_CONFIGURADA.replace(/\/+$/, '');
+export const USAR_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true' || !API_URL_CONFIGURADA;
 
 let token: string | null = null;
 export function setToken(nuevo: string | null) {
