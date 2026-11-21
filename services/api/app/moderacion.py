@@ -163,13 +163,14 @@ def clasificar_spam(
 # Modos de publicación. El nivel 1 (semiautomático) ya no se asigna: se guarda como 0.
 NIVEL_A_MANO = 0
 NIVEL_AUTOMATICA = 2
+MOTIVO_IMPORTADO = "Importado automáticamente (p. ej. de Facebook): lo revisa el moderador"
 MOTIVO_A_MANO = "Publicación a mano: la revisa el moderador"
 
 
 def motivo_con_duplicado(estado: str, motivo: str, titulo_parecido: str | None) -> tuple[str, str]:
     """Un posible duplicado manda a revisión lo que iba a publicarse y, en lo que ya iba a revisión solo por ser
     «a mano», sustituye el motivo genérico por uno más útil para el moderador. El spam y las pausas mandan."""
-    if titulo_parecido is not None and (estado == "publicado" or motivo == MOTIVO_A_MANO):
+    if titulo_parecido is not None and (estado == "publicado" or motivo in (MOTIVO_A_MANO, MOTIVO_IMPORTADO)):
         return "en_revision", f"Posible duplicado de «{titulo_parecido}»"
     return estado, motivo
 
@@ -203,6 +204,8 @@ def decidir_estado(
 
     # Solo hay dos modos (enums.md): automática (nivel 2) o a mano (cualquier otro, incluido el 1 obsoleto).
     if publicador.nivel_confianza == NIVEL_AUTOMATICA:
+        if evento.importado_auto and get_settings().moderacion_importados_a_bandeja:
+            return "en_revision", MOTIVO_IMPORTADO
         return "publicado", "Publicación automática"
     return "en_revision", MOTIVO_A_MANO
 
