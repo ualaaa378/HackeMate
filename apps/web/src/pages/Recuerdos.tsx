@@ -1,4 +1,4 @@
-import { IonContent, IonHeader, IonIcon, IonPage, IonSpinner, IonTitle, IonToolbar } from '@ionic/react';
+import { IonButtons, IonContent, IonHeader, IonIcon, IonPage, IonSpinner, IonTitle, IonToolbar } from '@ionic/react';
 import { chatbubbleEllipses, informationCircle } from 'ionicons/icons';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { getEventosPasados, getMensajes } from '../api/client';
 import { CATEGORIAS, type Evento } from '../api/types';
 import ComentariosRecuerdo from '../components/ComentariosRecuerdo';
+import { LogoInicio } from '../components/Marca';
 import { imagenPlan } from '../eventos/imagenes';
 import { fechaLarga } from '../utils/formato';
 
@@ -44,6 +45,9 @@ const Recuerdos: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar color="secondary">
+          <IonButtons slot="start">
+            <LogoInicio />
+          </IonButtons>
           <IonTitle>📸 Recuerdos</IonTitle>
         </IonToolbar>
       </IonHeader>

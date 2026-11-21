@@ -12,6 +12,8 @@ import { CATEGORIAS, type Categoria, type Estadisticas, type MetricasBot } from 
 /** Fracción 0-1 (ocupación). */
 const pct = (x: number | undefined) => `${Math.round((x ?? 0) * 100)} %`;
 /** Porcentaje que la API ya da en escala 0-100 (pct_importadas_auto, pct_otro_pueblo). */
+/** Ancho CSS de una barra: `57 %` (con espacio) no es CSS válido y la barra salía llena. */
+const anchoBarra = (x: number | undefined) => `${Math.min(100, Math.max(0, Math.round((x ?? 0) * 100)))}%`;
 const pct100 = (x: number | undefined) => `${Math.round(x ?? 0)} %`;
 const euros = (x: number | undefined) =>
   (x ?? 0).toLocaleString('es-ES', {
@@ -71,13 +73,7 @@ const Panel: React.FC = () => {
                   {c?.emoji} {c?.etiqueta ?? cat}
                 </span>
                 <span className="barra__pista" aria-hidden="true">
-                  <span
-                    className="barra__relleno"
-                    style={{
-                      width: `${Math.min(100, Math.max(0, Math.round((valor ?? 0) * 100)))}%`,
-                      background: c?.color,
-                    }}
-                  />
+                  <span className="barra__relleno" style={{ width: anchoBarra(valor), background: c?.color }} />
                 </span>
                 <span className="barra__valor">{pct(valor)}</span>
               </div>
