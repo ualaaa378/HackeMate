@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 
-import { entrarDemo, setAdminDemo } from '../api/admin';
+import { entrarAdmin, entrarDemo, setAdminDemo } from '../api/admin';
+import { ErrorApi, USAR_MOCKS } from '../api/client';
 import { useSesion } from '../cuenta/sesion';
 
-import { type AccesoAdmin, ContextoAcceso, type RolAdmin } from './acceso';
+import { type AccesoAdmin, ContextoAcceso, type ResultadoAcceso, type RolAdmin } from './acceso';
 
 // Publicador de los mocks: Amigos de Velefique (revisión a mano: sus planes pasan por la bandeja).
 const PUBLICADOR_DEMO = { id: '7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a01', nombre: 'Amigos de Velefique' };
@@ -12,7 +13,10 @@ const CLAVE = 'hm-admin-demo';
 function leerDemo(): RolAdmin | null {
   try {
     const v = localStorage.getItem(CLAVE);
-    return v === 'moderador' || v === 'publicador' ? v : null;
+    // La moderación sin contraseña solo vale sin API (todo con mocks): con API hay que entrar con usuario y
+    // contraseña, aunque en este navegador se entrara antes con el botón de la demo.
+    if (v === 'moderador') return USAR_MOCKS ? v : null;
+    return v === 'publicador' ? v : null;
   } catch {
     return null;
   }
@@ -43,6 +47,21 @@ const ProveedorAcceso: React.FC<{ children: React.ReactNode }> = ({ children }) 
           guardar(null);
           sesion.entrar(token);
         } else guardar(r);
+      },
+      entrarAdmin: async (usuario: string, contrasena: string): Promise<ResultadoAcceso> => {
+        if (USAR_MOCKS) {
+          // Sin API no hay nada que proteger: la zona del ayuntamiento enseña datos de ejemplo.
+          guardar('moderador');
+          return 'ok';
+        }
+        try {
+          const token = await entrarAdmin(usuario, contrasena);
+          guardar(null);
+          sesion.entrar(token);
+          return 'ok';
+        } catch (e) {
+          return e instanceof ErrorApi && e.code === 'credenciales_invalidas' ? 'credenciales' : 'sin_api';
+        }
       },
       salir: () => {
         guardar(null);

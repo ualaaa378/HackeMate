@@ -23,7 +23,7 @@ import {
   verificarCodigo,
 } from '../api/client';
 import type { Token } from '../api/types';
-import { NOMBRE_CANAL } from '../canal';
+import { ENLACE_CANAL, NOMBRE_CANAL } from '../canal';
 
 interface Props {
   abierto: boolean;
@@ -34,7 +34,7 @@ interface Props {
 
 // Alta en dos pasos pensada para personas mayores: nombre y móvil, y luego el código que llega por el canal de mensajería.
 const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) => {
-  const [paso, setPaso] = useState<'datos' | 'codigo'>('datos');
+  const [paso, setPaso] = useState<'datos' | 'vincular' | 'codigo'>('datos');
   const [nombre, setNombre] = useState('');
   const [movil, setMovil] = useState('');
   const [acepto, setAcepto] = useState(false);
@@ -56,10 +56,18 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
     if (!tel) return setError('Escribe un móvil de 9 cifras, por ejemplo 600 123 456.');
     if (!acepto) return setError(`Marca la casilla para que podamos avisarte por ${NOMBRE_CANAL}.`);
     setError(null);
+    await solicitarCodigo(tel);
+  };
+
+  // El bot solo puede escribir a quien ya le ha hablado: si la API responde `enviado: false`, primero hay que
+  // abrir el bot y compartir el número (B8, «/start codigo»), y después volver a pedir el código.
+  const solicitarCodigo = async (tel: string) => {
     setOcupado(true);
     try {
-      await pedirCodigo(tel);
-      setPaso('codigo');
+      const r = await pedirCodigo(tel);
+      setPaso(r.enviado ? 'codigo' : 'vincular');
+      if (!r.enviado && paso === 'vincular')
+        setError(`Todavía no nos has escrito por ${NOMBRE_CANAL}. Abre el bot, pulsa «Compartir mi número» y vuelve.`);
     } catch (e) {
       setError(e instanceof ErrorApi ? e.message : 'No hemos podido enviar el código. Inténtalo de nuevo.');
     } finally {
@@ -96,7 +104,13 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
     <IonModal isOpen={abierto} onDidDismiss={() => (onCerrar(), reiniciar())} className="modal-cuenta">
       <IonHeader>
         <IonToolbar color="secondary">
-          <IonTitle>{paso === 'datos' ? 'Crea tu cuenta' : 'Escribe el código'}</IonTitle>
+          <IonTitle>
+            {paso === 'datos'
+              ? 'Crea tu cuenta'
+              : paso === 'vincular'
+                ? `Un paso en ${NOMBRE_CANAL}`
+                : 'Escribe el código'}
+          </IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
@@ -145,6 +159,47 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
               Ahora no, solo quiero mirar
             </IonButton>
           </form>
+        ) : paso === 'vincular' ? (
+          <div className="form-cuenta">
+            <p className="motivo">
+              Para mandarte el código por {NOMBRE_CANAL}, antes tienes que escribir a nuestro bot una vez. Es solo esta
+              vez:
+            </p>
+            <ol className="pasos-vincular">
+              <li>Pulsa «Abrir el bot».</li>
+              <li>
+                En {NOMBRE_CANAL}, pulsa <strong>Compartir mi número</strong>.
+              </li>
+              <li>Vuelve aquí y pulsa «Ya lo he hecho».</li>
+            </ol>
+            {ENLACE_CANAL && (
+              <IonButton
+                expand="block"
+                size="large"
+                href={`${ENLACE_CANAL}?start=codigo`}
+                target="_blank"
+                rel="noopener"
+              >
+                Abrir el bot
+              </IonButton>
+            )}
+            {error && (
+              <IonText color="danger" role="alert">
+                <p className="error-form">{error}</p>
+              </IonText>
+            )}
+            <IonButton
+              expand="block"
+              fill="outline"
+              disabled={ocupado}
+              onClick={() => void solicitarCodigo(aE164(movil)!)}
+            >
+              {ocupado ? <IonSpinner name="dots" /> : 'Ya lo he hecho, pedir el código'}
+            </IonButton>
+            <IonButton expand="block" fill="clear" onClick={reiniciar}>
+              Cambiar el móvil
+            </IonButton>
+          </div>
         ) : (
           <form className="form-cuenta" onSubmit={enviarCodigo} noValidate>
             <p className="motivo">

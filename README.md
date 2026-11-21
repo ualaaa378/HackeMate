@@ -107,13 +107,14 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 
 | Hasta | Tarea |
 |---|---|
+| dom 00:00 | - [ ] **Probar el acceso con contraseña de `/admin`** (Benas, sáb 21/11, en la misma PR). Cambia `src/admin/PaginaAdmin.tsx` (formulario usuario/contraseña), `ProveedorAcceso.tsx`, `acceso.ts`, `api/admin.ts` (`entrarAdmin`), un test en `api/admin.test.ts` y estilos en `theme/app.css`. **No se ha podido compilar** (no hay Node en el portátil de Benas): pasar `npm run lint` y `npm run test:unit` y probarlo con `admin` / `1234`. Con API, el botón viejo de moderador de la demo ya no deja entrar. |
 | sáb 19:00 | - [x] **C2.** *(sáb 16:30: hecho. Sección «Para ti» en la agenda con sesión iniciada, `GET /recomendaciones` y el motivo debajo de cada tarjeta; se recarga al volver a la agenda o al deslizar. Sin API, planes con plazas de los mocks.)* Paso 4. |
 | sáb 19:00 | - [x] **Refresco sin recargar** *(sáb 16:30: hecho. Ficha al entrar, al deslizar y cada 20 s; chat cada 12 s; bandeja cada 10 s salvo mientras se decide un plan. Solo con la pestaña visible.)* |
 | sáb 19:00 | - [x] **B3 con Fran.** *(sáb 21/11: hecho, ver B3 en el apartado de Francisco.)* FreeLLMAPI en Docker en la máquina de Adán y ensayo del paso 7 (audios). |
 | dom 00:00 | - [ ] **C9.** APK de debug con Capacitor (`@capacitor/android`, `appId: 'es.hackemate.app'`), con pantalla de ajustes «Dirección del servidor» para pegar la URL nueva del túnel sin reinstalar. Android Studio + JDK 21. El `.apk` va a `C:\Users\aalva\Desktop\Hackaton`. Si a las 23:00 no sale, plan B = C4. |
-| dom 00:00 | - [ ] **C4.** PWA instalable: service worker e icono (el `manifest.json` ya existe). **Sin caché de `/api/`**, solo estáticos. |
-| dom 00:00 | - [ ] **C6.** Panel: % de importados de Facebook y coste en tokens con NIM. Accesibilidad: teclado y letra grande en agenda y ficha. |
-| dom 00:00 | - [ ] **C10 (D2).** Entrar con el código: la web pide el número y llama a `POST /auth/whatsapp/codigo`. Si responde `enviado: false` (aún no ha hablado con el bot), enseña el botón «Abrir el bot» → `https://t.me/HackeMate_bot?start=codigo` y, al volver, «Pedir el código otra vez». Luego `POST /auth/whatsapp/verificar`. |
+| dom 00:00 | - [x] **C4.** *(sáb 18:05: hecho (rama `feat/web-pwa`). `public/sw.js` solo guarda estáticos; `/api/` y `/webhook/` siempre a la red; páginas primero a la red. Iconos HM 192/512/maskable y manifest a `/agenda`. Solo en producción. Falta probar a instalarla en un móvil real (T1).)* PWA instalable: service worker e icono (el `manifest.json` ya existe). **Sin caché de `/api/`**, solo estáticos. |
+| dom 00:00 | - [x] **C6.** *(sáb 18:05: hecho. El panel ya pintaba `pct_importadas_auto` y los tokens por proveedor (NIM sale en cuanto el bot lo usa; añadido a los datos de prueba). Letra grande con el selector A A A y teclado con los botones nativos de Ionic.)* Panel: % de importados de Facebook y coste en tokens con NIM. Accesibilidad: teclado y letra grande en agenda y ficha. |
+| dom 00:00 | - [x] **C10 (D2).** *(sáb 18:05: hecho. Si `POST /auth/whatsapp/codigo` responde `enviado: false`, el alta enseña 3 pasos, «Abrir el bot» (`t.me/HackeMate_bot?start=codigo`) y «Ya lo he hecho, pedir el código»; con `enviado: true` pasa al código como antes.)* Entrar con el código: la web pide el número y llama a `POST /auth/whatsapp/codigo`. Si responde `enviado: false` (aún no ha hablado con el bot), enseña el botón «Abrir el bot» → `https://t.me/HackeMate_bot?start=codigo` y, al volver, «Pedir el código otra vez». Luego `POST /auth/whatsapp/verificar`. |
 | dom 00:00 | - [x] **Revisar tu `.env` (de B6, Francisco).** *(sáb 21/11 17:00: hecho. `NIM_*` y `LLM_CADENA=gemini,nim,freellm,claude,reglas` en el `.env` de Adán, y los audios del paso 7 funcionan en su máquina.)* Para que la IA de la demo funcione igual en tu máquina: `NIM_API_KEY` con tu clave de NVIDIA (la de `freellmapi.config.json` vale), `LLM_CADENA=gemini,nim,freellm,claude,reglas` y las cuatro `NIM_*` de `.env.example`. Compruébalo con `docker compose --env-file .env -f infra/docker-compose.yml exec bot printenv LLM_CADENA` y que `/ai/extraer` responda con `nim:…` en `GET /metrics`. Márcalo aquí cuando esté. |
 | dom 07:00 | - [ ] **C7.** Vídeo de respaldo, sección web del README con capturas, dos ensayos seguidos del guion y `v1.0` en `main`. |
 
@@ -123,6 +124,7 @@ Opcional (lo pide el bot, plan C de la demo): un chat simulado en la web que lla
 
 | Hasta | Tarea |
 |---|---|
+| sáb 21/11 | - [x] **Acceso de la moderación con usuario y contraseña** (pedido por Benas). `POST /auth/admin` {usuario, contrasena} → sesión del moderador; compara con `ADMIN_USUARIO` / `ADMIN_CONTRASENA` del `.env` (por ahora `admin` / `1234`; si se queda en 1234 sin DEMO_MODE, la API lo avisa en el log). En la web, la puerta de `/admin` pide usuario y contraseña en vez del botón «🏛️ Moderación del ayuntamiento» de la demo; las asociaciones siguen entrando con su móvil o con el botón de la demo. |
 | dom 00:00 | - [x] **A4.** `GET /estadisticas`: que el % de importadas cuente las de Facebook (llegan con `importado_auto`). *(sáb 21/11: ya lo hacía, ahora con test de punta a punta. `pct_importadas_auto` = planes `publicado`/`finalizado` que llegaron solos (Facebook, Instagram, web externa) sobre el total del periodo. Lo de Telegram, la web y el panel no cuenta como importado. Un post de Facebook que va a la bandeja cuenta cuando el moderador lo aprueba. **Adán (C6):** basta con pintar `pct_importadas_auto`; no hace falta cambiar el contrato.)* |
 | sáb 19:00 | - [x] **A9 (D1, contrato).** *(sáb 21/11: hecho.)* `schemas/notificacion.json` pide `telefono` **o** `contacto` (`anyOf`); sin ninguno, el contrato lo rechaza. La API ya no deja «fallida» un aviso a quien solo tiene Telegram: sale por su `contacto` (`tg:…`) y el cuerpo no lleva `telefono`. Sin destino → `fallida` con «sin destino». |
 | dom 00:00 | - [x] **A8 (D1).** *(sáb 21/11: hecho.)* `acepta_avisos` vale `false` por defecto para los usuarios nuevos (el valor por defecto está en el modelo, no en la base: no hace falta migración y los usuarios que ya existen no cambian). Los del seed siguen en `true`. Un aviso `recomendacion` a quien no lo acepta no sale (`fallida`, «no acepta avisos»); los avisos de planes a los que ya está apuntado (cambio de hora, respuestas) salen siempre. |
@@ -246,6 +248,7 @@ La lista completa y comentada está en `.env.example` (manda sobre esta tabla).
 | `JWT_SECRET` / `JWT_EXPIRA_MIN` | `cambia-esto-tambien` / `1440` | Firma y duración de las sesiones. Con el valor de ejemplo y `DEMO_MODE=false`, la api arranca igual pero escribe un `WARNING` en el log: pon un secreto aleatorio. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_TOKENINFO_URL` / `GOOGLE_TIMEOUT_S` | vacío / URL de Google / `5` | Login con Google (vacío → `/auth/google` responde 503). |
 | `DEMO_MODE` | `false` | `true` habilita `POST /api/v1/auth/demo`. Solo en la presentación. |
+| `ADMIN_USUARIO` / `ADMIN_CONTRASENA` | `admin` / `1234` | Acceso de la moderación del ayuntamiento en la web (`POST /auth/admin`). Provisional: cambiar la contraseña en la máquina de la demo. |
 | `BOT_URL` | `http://bot:8001` | Dónde están `/notify` y `/ai/*`. |
 | `API_URL` | `http://api:8000` | La usa el bot para llamar a la api. |
 | `APP_VERSION` | vacío | Versión de `/health` (vacío = la del código). |
@@ -449,7 +452,22 @@ Más detalle: [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) (decisiones y canal
 
 ## 📱 App web y Android (flujo C)
 
-*Pendiente: sección a cargo del flujo C (`apps/web/`).*
+### APK de Android (C9)
+
+El proyecto Android está en `apps/web/android` (Capacitor 8, `appId` `es.hackemate.app`). Hace falta Android Studio (trae el JDK 21 en `jbr`) con el SDK 36 instalado, y **datos del móvil** (la red de la uni bloquea npm y Gradle).
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+cd apps\web
+npm ci
+npm run build:apk                 # build con .env.apk y copia a android/
+cd android
+.\gradlew.bat assembleDebug       # → app\build\outputs\apk\debug\app-debug.apk
+copy app\build\outputs\apk\debug\app-debug.apk C:\Users\aalva\Desktop\Hackaton\HackeMate.apk
+```
+
+En el móvil: instalar el `.apk` (permitir orígenes desconocidos), ir a **Perfil → Ajustes → Dirección del servidor** y pegar la URL que da `python scripts/url_publica.py`. La app la comprueba, la guarda y se recarga. Cuando el túnel cambie de URL, se cambia ahí sin reinstalar. Sin dirección, la app enseña los datos de ejemplo.
 
 ---
 

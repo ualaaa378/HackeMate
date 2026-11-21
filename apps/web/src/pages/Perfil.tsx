@@ -100,6 +100,8 @@ const Perfil: React.FC = () => {
         </IonCard>
         <p className="enlace-creditos">
           <IonRouterLink routerLink="/creditos">Créditos de las fotos de los pueblos</IonRouterLink>
+          {' · '}
+          <IonRouterLink routerLink="/ajustes">Ajustes</IonRouterLink>
         </p>
       </IonContent>
     </IonPage>
