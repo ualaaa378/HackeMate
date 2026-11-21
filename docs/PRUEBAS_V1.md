@@ -81,6 +81,20 @@ docker compose -f infra/docker-compose.yml logs tunnel     # URL pública → re
 
 Con un túnel rápido, la URL cambia en cada arranque. Se registra sin reiniciar con `POST localhost:8001/admin/webhook-telegram` (ver `services/bot/PARA_FLUJO_A.md` §4). Así se prueba con `@HackeMate_bot` desde un móvil de verdad.
 
+### Los `.env` del equipo (comparados el 21/11)
+
+Las claves se pasan por privado y **nunca se suben**. Hay que alinear esto:
+
+| Qué | Por qué |
+|---|---|
+| **Un solo `.env` en la raíz para Docker.** El compose pasa el `.env` de la raíz a la api y al bot; `services/bot/.env` solo se usa al lanzar el bot a mano desde `services/bot`. | Las claves del bot (`TELEGRAM_*`, `FREELLM_*`, `META_*`…) tienen que estar en el `.env` de la raíz de quien levante Docker |
+| **`INTERNAL_TOKEN` igual en api y bot.** El `.env` de Fran usa `local-dev` y la plantilla, `cambia-esto`. | Si no coinciden, el bot recibe 401 de la API y parece que el bot no funciona. Que todo el equipo use el mismo valor |
+| **`PUBLIC_URL` y `TELEGRAM_TOKEN`: solo una máquina a la vez.** El token del bot es uno para todo el equipo y, con `PUBLIC_URL`, el bot registra el webhook al arrancar. | El último que arranca se queda con los mensajes de Telegram. En el resto de máquinas, `PUBLIC_URL` vacío |
+| **`API_URL` y `BOT_URL` según dónde se ejecute.** En Docker: `http://api:8000` y `http://bot:8001` (el compose ya los fija). Fuera de Docker: `http://localhost:…` | Con el valor de Docker fuera de Docker, los avisos se quedan en cola |
+| **IA: `GEMINI_API_KEY` está vacía en el `.env` de Fran** y `FREELLM_URL` apunta a su propio portátil (`127.0.0.1:31415`). | En otra máquina no hay IA y el bot usa solo reglas (§4). Que cada uno saque su clave gratis de Gemini en aistudio.google.com, o que Docker apunte al FreeLLM de Fran con `FREELLM_URL_DOCKER` |
+| El `.env` de Fran no tiene `COLA_PATH`, `COLA_REINTENTO_S`, `WEB_URL`, `MEDIOS_TIMEOUT_S` ni `FREELLM_MODELO(S)_VISION/AUDIO/VOZ`. | Funciona con los valores por defecto. Para las fotos y los audios del paso 7, copiar esas líneas de `services/bot/.env.example` |
+| `META_*`: WhatsApp sigue aparcado. | Probablemente el token de Meta ya ha caducado; no hace falta para la demo con Telegram |
+
 ### Personas de la demo (fixtures)
 
 | Quién | Contacto | Para qué |
