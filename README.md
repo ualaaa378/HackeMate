@@ -59,7 +59,7 @@ Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **vis
 
 > **📋 Traspaso del flujo A (Benas, sáb 21/11 por la tarde):** todo lo que se ha hecho hoy en la API, qué tiene que revisar cada uno (Adán: **probar el acceso con contraseña de `/admin`**, que se mergeó sin compilar; Fran: los avisos de planes nuevos) y cómo actualizar las máquinas → [`docs/RESUMEN_FLUJO_A.md`](docs/RESUMEN_FLUJO_A.md).
 
-**Sáb 21/11, 16:00 (tras la #67).** `develop` tiene los tres flujos y la demo funciona de punta a punta por la URL pública del túnel, con Telegram e IA, en dos máquinas (Francisco y Adán; **solo una a la vez con Telegram**). Tests: api 602, bot 149. Cómo probar la v1: [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md). Etiquetas: `v0.2` en `3496f65` (CP2 cerrado).
+**Sáb 21/11, 16:00 (tras la #67).** `develop` tiene los tres flujos y la demo funciona de punta a punta por la URL pública del túnel, con Telegram e IA, en dos máquinas (Francisco y Adán; **solo una a la vez con Telegram**). Tests: api 602, bot 149. Cómo probar la v1: [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md). Etiquetas: `v0.2` en `3496f65` (CP2 cerrado) y `v0.3` en `e698407` (CP3, con N1–N4 de la web).
 
 **Próximos puntos fijos:** **CP3 sáb 19:00** (pasos 4–7, contratos congelados, `v0.3`) · **CP4 dom 00:00** (feature freeze, `v0.9`) · **REL dom 07:00** (`v1.0` en `main`) · entrega dom 11:00.
 
@@ -113,7 +113,7 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 
 | # | Quién | Tarea |
 |---|---|---|
-| 1 | Adán | - [ ] **Etiqueta `v0.3`** (CP3) en `develop` desde su PC (`git tag v0.3 && git push origin v0.3`): desde la nube el proxy no deja subir etiquetas. |
+| 1 | Adán | - [x] *(sáb 21/11 19:40: hecho, `v0.3` en `e698407`.)* **Etiqueta `v0.3`** (CP3) en `develop` desde su PC (`git tag v0.3 && git push origin v0.3`): desde la nube el proxy no deja subir etiquetas. |
 | 2 | Adán | - [ ] **Reconstruir la imagen `web` con datos del móvil** (la red de la uni bloquea npm) para que la demo lleve N1–N4. El APK solo hace falta rehacerlo si se quiere enseñar el mapa por meses y los gustos en el móvil. |
 | 3 | Los dos | - [ ] **T1** (ver «Los tres»): los 7 pasos por Telegram, la web nueva (agenda de escritorio, mapa por meses, gustos en el alta) y el APK, con los móviles con datos. **Telegram solo en una máquina a la vez:** se decide aquí cuál es la de la demo. Lo que falle va a la tabla de quien lo arregla. |
 | 4 | Francisco | - [ ] **N5a · revisar el panel.** Lista de cada botón y cifra de `/admin/panel`: si funciona, si no hace nada o si sobra. Arreglar en la API lo que haga falta. La lista se apunta aquí debajo para que Adán haga N5b. |
