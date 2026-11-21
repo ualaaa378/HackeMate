@@ -23,6 +23,7 @@ import {
   verificarCodigo,
 } from '../api/client';
 import type { Token } from '../api/types';
+import { NOMBRE_CANAL } from '../canal';
 
 interface Props {
   abierto: boolean;
@@ -31,7 +32,7 @@ interface Props {
   onCerrar: () => void;
 }
 
-// Alta en dos pasos pensada para personas mayores: nombre y móvil, y luego el código que llega por WhatsApp.
+// Alta en dos pasos pensada para personas mayores: nombre y móvil, y luego el código que llega por el canal de mensajería.
 const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) => {
   const [paso, setPaso] = useState<'datos' | 'codigo'>('datos');
   const [nombre, setNombre] = useState('');
@@ -53,7 +54,7 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
     const tel = aE164(movil);
     if (!nombre.trim()) return setError('Escribe tu nombre.');
     if (!tel) return setError('Escribe un móvil de 9 cifras, por ejemplo 600 123 456.');
-    if (!acepto) return setError('Marca la casilla para que podamos avisarte por WhatsApp.');
+    if (!acepto) return setError(`Marca la casilla para que podamos avisarte por ${NOMBRE_CANAL}.`);
     setError(null);
     setOcupado(true);
     try {
@@ -84,7 +85,7 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
     } catch (e) {
       setError(
         e instanceof ErrorApi
-          ? 'El código no es correcto. Revisa el WhatsApp e inténtalo otra vez.'
+          ? `El código no es correcto. Revisa ${NOMBRE_CANAL} e inténtalo otra vez.`
           : 'No hemos podido comprobar el código.',
       );
       setOcupado(false);
@@ -111,7 +112,7 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
               onIonInput={(e) => setNombre(e.detail.value ?? '')}
             />
             <IonInput
-              label="Móvil (te mandamos un código por WhatsApp)"
+              label={`Móvil (te mandamos un código por ${NOMBRE_CANAL})`}
               labelPlacement="stacked"
               fill="outline"
               type="tel"
@@ -128,7 +129,8 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
               justify="start"
             >
               <span className="ion-text-wrap">
-                Acepto que me avisen por WhatsApp de los planes a los que me apunte. Puedo darme de baja cuando quiera.
+                Acepto que me avisen por {NOMBRE_CANAL} de los planes a los que me apunte. Puedo darme de baja cuando
+                quiera.
               </span>
             </IonCheckbox>
             {error && (
@@ -146,7 +148,7 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
         ) : (
           <form className="form-cuenta" onSubmit={enviarCodigo} noValidate>
             <p className="motivo">
-              Te hemos mandado un WhatsApp al <strong>{movil}</strong> con un código de 6 cifras.
+              Te hemos mandado un mensaje por {NOMBRE_CANAL} al <strong>{movil}</strong> con un código de 6 cifras.
             </p>
             {(USAR_MOCKS || enModoRespaldo()) && (
               <IonNote>Modo demo: vale cualquier código de 6 cifras, por ejemplo 123456.</IonNote>

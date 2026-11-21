@@ -43,12 +43,46 @@ def a_html(texto: str) -> str:
 
 # ---------- Salida ----------
 
-def enviar(destino: str, texto: str, botones: list[tuple[str, str]] | None = None) -> None:
+BOTON_COMPARTIR = "📱 Compartir mi número"
+
+
+def enviar(destino: str, texto: str, botones: list[tuple[str, str]] | None = None,
+           pedir_contacto: bool = False, quitar_teclado: bool = False, pedir_ubicacion: bool = False) -> None:
     cuerpo = {"chat_id": destino.removeprefix(PREFIJO), "text": a_html(texto)[:4096], "parse_mode": "HTML"}
     if botones:
         # Un botón por fila: más grandes y fáciles de pulsar para personas mayores
         cuerpo["reply_markup"] = {"inline_keyboard": [[{"text": t, "callback_data": i[:64]}] for i, t in botones]}
+    elif pedir_contacto:
+        # Telegram solo da el teléfono si el usuario pulsa este botón: así lo casamos con la API
+        # is_persistent: que no se esconda detrás del icono del teclado
+        cuerpo["reply_markup"] = {"keyboard": [[{"text": BOTON_COMPARTIR, "request_contact": True}]],
+                                  "resize_keyboard": True, "one_time_keyboard": True, "is_persistent": True}
+    elif pedir_ubicacion:
+        cuerpo["reply_markup"] = {"keyboard": [[{"text": "📍 Enviar mi ubicación", "request_location": True}]],
+                                  "resize_keyboard": True, "one_time_keyboard": True, "is_persistent": True}
+    elif quitar_teclado:
+        cuerpo["reply_markup"] = {"remove_keyboard": True}
     _llamar("sendMessage", cuerpo)
+
+
+def enviar_voz(destino: str, ogg: bytes) -> bool:
+    """Nota de voz (OGG/Opus). Telegram la muestra como un audio que se escucha con un toque."""
+    try:
+        r = httpx.post(_api("sendVoice"), data={"chat_id": destino.removeprefix(PREFIJO)},
+                       files={"voice": ("respuesta.ogg", ogg, "audio/ogg")}, timeout=30)
+        datos = r.json()
+    except (httpx.HTTPError, ValueError) as e:
+        log.error("No se pudo enviar la nota de voz: %s", e)
+        return False
+    if not datos.get("ok"):
+        log.error("Telegram sendVoice falló: %s", datos.get("description"))
+    return bool(datos.get("ok"))
+
+
+def normalizar_telefono(numero: str) -> str:
+    """Telegram manda el número sin «+» (34600…). La API lo quiere en E.164."""
+    digitos = "".join(c for c in numero if c.isdigit())
+    return f"+{digitos}"
 
 
 def responder_boton(callback_id: str) -> None:
@@ -77,7 +111,8 @@ def configurar_webhook(url: str) -> dict | None:
         "url": url,
         "secret_token": s.telegram_secret,
         "allowed_updates": ["message", "callback_query"],
-        "drop_pending_updates": True,
+        # False: lo que escriban mientras el bot se reinicia llega igual al volver
+        "drop_pending_updates": False,
     })
 
 
@@ -115,4 +150,9 @@ def parsear(update: dict) -> tuple[MensajeEntrante | None, str | None]:
                                media_tipo="image/jpeg"), None
     if loc := m.get("location"):
         return MensajeEntrante(**base, lat=loc["latitude"], lon=loc["longitude"]), None
+    if contacto := m.get("contact"):
+        # Solo vale su propio número, no el de otra persona reenviado
+        if contacto.get("user_id") == m.get("from", {}).get("id") and contacto.get("phone_number"):
+            return MensajeEntrante(**base, telefono_compartido=normalizar_telefono(contacto["phone_number"])), None
+        return MensajeEntrante(**base, texto=""), None
     return None, None

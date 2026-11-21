@@ -444,7 +444,7 @@ export interface paths {
       };
     };
     put?: never;
-    /** Apuntarse. Si no hay plazas, queda en `lista_espera`. */
+    /** Apuntarse. Si no hay plazas, queda en `lista_espera`. Si el plan ya ha terminado, 409 `evento_finalizado`. */
     post: {
       parameters: {
         query?: never;
@@ -590,7 +590,7 @@ export interface paths {
       };
     };
     put?: never;
-    /** Publicar mensaje. Pasa por `bot /ai/spam`; si es pregunta, `bot /ai/responder-ficha`. */
+    /** Publicar mensaje. Pasa por `bot /ai/spam`; si es pregunta, `bot /ai/responder-ficha`. Con el plan terminado solo se admiten comentarios (si no, 409 `evento_finalizado`). */
     post: {
       parameters: {
         query?: never;
@@ -620,6 +620,7 @@ export interface paths {
         };
         401: components['responses']['Error'];
         403: components['responses']['Error'];
+        409: components['responses']['Error'];
       };
     };
     delete?: never;
@@ -2058,6 +2059,8 @@ export interface components {
          * @example evento_no_encontrado
          * @example publicador_pausado
          * @example sin_plazas
+         * @example evento_finalizado
+         * @example sin_permiso
          * @example token_interno_invalido
          */
         code: string;
@@ -2223,6 +2226,8 @@ export interface components {
       tipo: 'pregunta' | 'comentario' | 'anuncio';
       /** Format: uuid */
       en_respuesta_a?: string | null;
+      /** @description Foto del plan, solo en comentarios de planes ya pasados y solo de inscritos o de la organización (si no, 403 sin_permiso). URL o data URL de imagen */
+      imagen_url?: string | null;
       /**
        * Format: uuid
        * @description Solo con X-Internal-Token
@@ -2482,6 +2487,8 @@ export interface components {
       texto: string;
       /** Format: uuid */
       en_respuesta_a?: string | null;
+      /** @description Foto adjunta a un comentario de un plan ya pasado. Solo pueden subirla quienes se inscribieron o la organización. URL o data URL de imagen */
+      imagen_url?: string | null;
       fijado?: boolean;
       oculto?: boolean;
       respondido_por_ia?: boolean;

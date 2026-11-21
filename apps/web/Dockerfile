@@ -7,8 +7,10 @@ RUN npm ci
 COPY . .
 ARG VITE_API_URL=http://localhost:8000
 ARG VITE_USE_MOCKS=false
+ARG VITE_CANAL=telegram
 ENV VITE_API_URL=$VITE_API_URL \
-    VITE_USE_MOCKS=$VITE_USE_MOCKS
+    VITE_USE_MOCKS=$VITE_USE_MOCKS \
+    VITE_CANAL=$VITE_CANAL
 RUN npm run build
 
 # Etapa 2: nginx sirve los estáticos

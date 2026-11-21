@@ -15,7 +15,9 @@ Rellena la ficha SOLO con lo que diga el texto. Si un dato no aparece, déjalo a
 Si deduces un dato que no está explícito (p. ej. el año, o la categoría), añádelo a campos_dudosos.
 Fechas en ISO 8601 con zona {zona} (hoy es {hoy}); si no se dice el año, usa la próxima fecha futura.
 Categorías: deportiva, cultural, fiestas, gastronomia, ludica, comercio (ofertas y promociones de negocios).
-Si el texto no anuncia nada concreto (un saludo, spam, una pregunta), pon es_evento=false."""
+Si el texto no anuncia nada concreto (un saludo, spam, una pregunta), pon es_evento=false.
+El texto puede venir de una nota de voz transcrita o de un cartel leído por OCR: corrige nombres de pueblos
+mal escritos (p. ej. «Belefique» es Velefique, «Senes» es Senés) y usa siempre el nombre oficial."""
 
 
 def extraer(texto: str, hoy: date | None = None) -> ExtraccionEvento:
@@ -61,9 +63,10 @@ def _normalizar(t: str) -> str:
 
 
 def buscar_municipio(texto: str) -> str | None:
-    """Basta con la primera palabra del nombre: «uleila», «lucainena», «senes»…"""
-    t = _normalizar(texto)
-    return next((m for m in MUNICIPIOS if re.search(rf"\b{_normalizar(m).split()[0]}\b", t)), None)
+    """Basta con la primera palabra del nombre: «uleila», «lucainena», «senes»…
+    La b y la v se tratan igual: la transcripción de voz escribe «Belefique»."""
+    t = _normalizar(texto).replace("v", "b")
+    return next((m for m in MUNICIPIOS if re.search(rf"\b{_normalizar(m).split()[0].replace('v', 'b')}\b", t)), None)
 
 
 def _fecha(t: str, hoy: date) -> date | None:

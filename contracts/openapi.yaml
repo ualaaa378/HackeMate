@@ -255,7 +255,7 @@ paths:
         "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
     post:
       tags: [inscripciones]
-      summary: Apuntarse. Si no hay plazas, queda en `lista_espera`.
+      summary: Apuntarse. Si no hay plazas, queda en `lista_espera`. Si el plan ya ha terminado, 409 `evento_finalizado`.
       security: [{ bearer: [] }, { interno: [] }]
       x-implementado: true
       requestBody:
@@ -340,7 +340,7 @@ paths:
         "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
     post:
       tags: [chat]
-      summary: Publicar mensaje. Pasa por `bot /ai/spam`; si es pregunta, `bot /ai/responder-ficha`.
+      summary: Publicar mensaje. Pasa por `bot /ai/spam`; si es pregunta, `bot /ai/responder-ficha`. Con el plan terminado solo se admiten comentarios (si no, 409 `evento_finalizado`).
       security: [{ bearer: [] }, { interno: [] }]
       x-implementado: true
       requestBody:
@@ -1194,7 +1194,7 @@ components:
           type: object
           required: [code, message]
           properties:
-            code: { type: string, examples: [evento_no_encontrado, publicador_pausado, sin_plazas, token_interno_invalido] }
+            code: { type: string, examples: [evento_no_encontrado, publicador_pausado, sin_plazas, evento_finalizado, sin_permiso, token_interno_invalido] }
             message: { type: string }
             details: { type: object }
 
@@ -1371,6 +1371,7 @@ components:
         texto: { type: string, minLength: 1, maxLength: 1000 }
         tipo: { enum: [pregunta, comentario, anuncio], default: comentario }
         en_respuesta_a: { type: [string, "null"], format: uuid }
+        imagen_url: { type: [string, "null"], description: "Foto del plan, solo en comentarios de planes ya pasados y solo de inscritos o de la organización (si no, 403 sin_permiso). URL o data URL de imagen" }
         usuario_id: { type: string, format: uuid, description: Solo con X-Internal-Token }
 
     Recomendacion:

@@ -1,15 +1,20 @@
 import { IonBadge, IonItem, IonLabel, IonNote } from '@ionic/react';
 
 import { CATEGORIAS, type Evento } from '../api/types';
+import { imagenPlan } from '../eventos/imagenes';
 import { apuntados, fechaEstimada, horaEvento, plazas, precio, textoApuntados } from '../utils/formato';
 
 const TarjetaEvento: React.FC<{ evento: Evento; distanciaKm?: number }> = ({ evento: e, distanciaKm }) => {
   const cat = CATEGORIAS[e.categoria];
   const textoPlazas = plazas(e);
+  const img = imagenPlan(e);
   return (
     <IonItem routerLink={`/evento/${e.id}`} detail lines="full" className="tarjeta-evento">
-      <div slot="start" className="emoji-categoria" style={{ background: cat.color }} aria-hidden="true">
-        {cat.emoji}
+      <div slot="start" className="miniatura-plan" aria-hidden="true">
+        <img src={img.miniatura} alt="" loading="lazy" decoding="async" />
+        <span className="miniatura-plan__emoji" style={{ background: cat.color }}>
+          {cat.emoji}
+        </span>
       </div>
       <IonLabel>
         <h2>{e.titulo}</h2>

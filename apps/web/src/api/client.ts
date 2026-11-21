@@ -4,10 +4,15 @@
 // Con la API configurada, si no responde o el endpoint aún no existe, se vuelve a los mocks
 // para que la demo no se caiga. Los errores de negocio de la API sí llegan a la pantalla.
 
+import { NOMBRE_CANAL } from '../canal';
 import eventosMock from '../mocks/eventos.json';
+import { yaPaso } from '../utils/formato';
+
 import type {
   ApiError,
+  DatosAyuntamiento,
   Evento,
+  EventoCrear,
   FiltrosEventos,
   Inscripcion,
   MensajeCrear,
@@ -45,7 +50,7 @@ export function enModoRespaldo(): boolean {
   return USAR_MOCKS || usandoRespaldo;
 }
 
-async function peticion<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
+export async function peticion<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
   const cabeceras: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) cabeceras.Authorization = `Bearer ${token}`;
   let resp: Response;
@@ -66,7 +71,7 @@ async function peticion<T>(ruta: string, opciones: RequestInit = {}): Promise<T>
   return resp.status === 204 ? (undefined as T) : ((await resp.json()) as T);
 }
 
-async function conRespaldo<T>(real: () => Promise<T>, mock: () => Promise<T>): Promise<T> {
+export async function conRespaldo<T>(real: () => Promise<T>, mock: () => Promise<T>): Promise<T> {
   if (USAR_MOCKS) return mock();
   try {
     const r = await real();
@@ -80,7 +85,7 @@ async function conRespaldo<T>(real: () => Promise<T>, mock: () => Promise<T>): P
   }
 }
 
-function query(filtros: object): string {
+export function query(filtros: object): string {
   const p = new URLSearchParams();
   Object.entries(filtros).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') p.set(k, String(v));
@@ -99,8 +104,9 @@ export function distanciaKm(lat1: number, lon1: number, lat2: number, lon2: numb
 
 // ---------- mocks ----------
 const USUARIO_MOCK_ID = '00000000-0000-4000-8000-000000000001';
-const mockEventos = eventosMock as Evento[];
-const esperar = <T>(valor: T, ms = 250) => new Promise<T>((r) => setTimeout(() => r(valor), ms));
+// Exportados solo para src/api/admin.ts: aprobar en la bandeja publica el evento en la agenda de mocks.
+export const mockEventos = eventosMock as Evento[];
+export const esperar = <T>(valor: T, ms = 250) => new Promise<T>((r) => setTimeout(() => r(valor), ms));
 
 function filtrarMock(f: FiltrosEventos): Pagina<Evento> {
   let items = mockEventos.filter((e) => e.estado === 'publicado');
@@ -124,6 +130,21 @@ export function getEventos(filtros: FiltrosEventos = {}): Promise<Pagina<Evento>
   );
 }
 
+/** Planes que ya han pasado, del más reciente al más antiguo (tablón de recuerdos).
+ *  La API aún no expone los finalizados al público: si no devuelve ninguno, se usan los de los datos de la demo. */
+export async function getEventosPasados(ahora = new Date()): Promise<Evento[]> {
+  const fin = (e: Evento) => e.fecha_fin ?? e.fecha_inicio;
+  const pasados = (lista: Evento[]) =>
+    lista.filter((e) => yaPaso(e, ahora)).sort((a, b) => fin(b).localeCompare(fin(a)));
+  const deMocks = () => pasados(mockEventos.filter((e) => e.estado === 'publicado' || e.estado === 'finalizado'));
+  try {
+    const reales = pasados((await getEventos({ hasta: ahora.toISOString() })).items);
+    return reales.length ? reales : deMocks();
+  } catch {
+    return deMocks();
+  }
+}
+
 export function getEvento(id: string): Promise<Evento> {
   return conRespaldo(
     () => peticion(`/eventos/${id}`),
@@ -134,11 +155,40 @@ export function getEvento(id: string): Promise<Evento> {
   );
 }
 
-export function inscribirse(eventoId: string): Promise<Inscripcion> {
+// Planes a los que se ha apuntado este usuario en este dispositivo. Sirve para saber si puede subir fotos
+// cuando el plan termine; la API lo comprueba igualmente.
+const CLAVE_MIS_PLANES = 'hm-mis-planes';
+export function misPlanes(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(CLAVE_MIS_PLANES) ?? '[]') as string[]);
+  } catch {
+    return new Set();
+  }
+}
+export const meApunte = (eventoId: string): boolean => misPlanes().has(eventoId);
+function apuntarEnDispositivo(eventoId: string): void {
+  try {
+    localStorage.setItem(CLAVE_MIS_PLANES, JSON.stringify([...misPlanes().add(eventoId)]));
+  } catch {
+    /* sin almacenamiento: solo se pierde el recordatorio local */
+  }
+}
+
+const errorFinalizado = () =>
+  new ErrorApi('evento_finalizado', 'Este plan ya ha terminado. Solo se pueden ver las fotos y comentar.', 409);
+
+export async function inscribirse(eventoId: string): Promise<Inscripcion> {
+  const insc = await inscribirseEnApi(eventoId);
+  apuntarEnDispositivo(eventoId);
+  return insc;
+}
+
+function inscribirseEnApi(eventoId: string): Promise<Inscripcion> {
   return conRespaldo(
     () => peticion(`/eventos/${eventoId}/inscripciones`, { method: 'POST' }),
     () => {
       const e = mockEventos.find((x) => x.id === eventoId);
+      if (e && yaPaso(e)) return Promise.reject(errorFinalizado());
       const hayPlaza = e?.plazas_libres == null || e.plazas_libres > 0;
       if (e && e.plazas_libres != null && e.plazas_libres > 0) e.plazas_libres -= 1;
       if (e && hayPlaza) e.inscritos = (e.inscritos ?? 0) + 1;
@@ -160,7 +210,8 @@ export function urlIcs(eventoId: string): string {
 }
 
 // ---------- cuenta ----------
-// La cuenta se crea verificando el móvil con un código que llega por WhatsApp.
+// La cuenta se crea verificando el móvil con un código que llega por el canal de mensajería (VITE_CANAL).
+// La ruta del contrato se llama /auth/whatsapp/* por historia; la web la usa con los dos canales.
 // Sin API (o con /auth aún sin implementar) cualquier código de 6 cifras vale: modo demo.
 
 /** Pasa «600 12 34 56» o «+34600123456» a E.164. Devuelve null si no es un móvil válido. */
@@ -202,6 +253,44 @@ export function actualizarPerfil(cambios: UsuarioEditar): Promise<Usuario> {
   );
 }
 
+// ---------- propuestas de planes ----------
+// Una propuesta es un evento que entra «en_revision» y le llega al moderador del ayuntamiento.
+// POST /eventos hoy solo acepta el token interno: hasta que acepte el JWT del vecino
+// (y el contrato tenga los datos para el ayuntamiento) se guarda en modo demo.
+export interface PropuestaEnviada {
+  evento: Evento;
+  ayuntamiento: DatosAyuntamiento;
+  demo: boolean;
+}
+
+export const propuestasMock: PropuestaEnviada[] = [];
+
+export async function proponerEvento(datos: EventoCrear, ayuntamiento: DatosAyuntamiento): Promise<PropuestaEnviada> {
+  const conSesionReal = !USAR_MOCKS && token && token !== 'demo';
+  if (conSesionReal) {
+    try {
+      const evento = await peticion<Evento>('/eventos', { method: 'POST', body: JSON.stringify(datos) });
+      return { evento, ayuntamiento, demo: false };
+    } catch (e) {
+      if (e instanceof ErrorApi && e.status !== 401 && e.status !== 403) throw e;
+    }
+  }
+  const evento: Evento = {
+    ...datos,
+    id: crypto.randomUUID(),
+    lat: datos.lat ?? 0,
+    lon: datos.lon ?? 0,
+    es_gratuito: datos.es_gratuito ?? !datos.precio_eur,
+    estado: 'en_revision',
+    origen: { canal: 'web', importado_auto: false },
+    inscritos: 0,
+    ...(ayuntamiento.frase_portada ? { frase_portada: ayuntamiento.frase_portada } : {}),
+  };
+  const p = { evento, ayuntamiento, demo: true };
+  propuestasMock.push(p);
+  return esperar(p);
+}
+
 // ---------- chat del evento ----------
 const chatsMock = new Map<string, MensajeEvento[]>();
 
@@ -235,15 +324,22 @@ export function enviarMensaje(
   return conRespaldo(
     () => peticion(`/eventos/${eventoId}/mensajes`, { method: 'POST', body: JSON.stringify(mensaje) }),
     () => {
+      const e = mockEventos.find((x) => x.id === eventoId);
+      if (e && yaPaso(e) && mensaje.tipo !== 'comentario') return Promise.reject(errorFinalizado());
       const nuevo = mensajeMock(eventoId, {
         texto: mensaje.texto,
+        imagen_url: mensaje.imagen_url ?? null,
         tipo: mensaje.tipo ?? 'pregunta',
         autor_id: autor.id,
         autor_nombre: autor.nombre,
         autor_rol: 'vecino',
       });
+      if (nuevo.tipo === 'comentario') {
+        chatsMock.set(eventoId, [...(chatsMock.get(eventoId) ?? []), nuevo]);
+        return esperar({ mensaje: nuevo, respuesta_ia: null });
+      }
       const ia = mensajeMock(eventoId, {
-        texto: 'Gracias por preguntar. Se lo pasamos a la organización y te contestamos aquí y por WhatsApp.',
+        texto: `Gracias por preguntar. Se lo pasamos a la organización y te contestamos aquí y por ${NOMBRE_CANAL}.`,
         tipo: 'respuesta',
         autor_nombre: 'Asistente',
         autor_rol: 'ia',

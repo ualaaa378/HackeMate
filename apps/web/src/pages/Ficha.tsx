@@ -27,8 +27,23 @@ import { useParams } from 'react-router-dom';
 import { enModoRespaldo, getEvento, inscribirse, urlIcs } from '../api/client';
 import { CATEGORIAS, type Evento } from '../api/types';
 import ChatEvento from '../components/ChatEvento';
+import FotoPlan from '../components/FotoPlan';
+import RecuerdoPlan from '../components/RecuerdoPlan';
 import { useSesion } from '../cuenta/sesion';
-import { claveDia, fechaEstimada, fechaLarga, hora, plazas, precio, sinHora, textoApuntados } from '../utils/formato';
+import {
+  claveDia,
+  fechaEstimada,
+  fechaLarga,
+  hora,
+  plazas,
+  precio,
+  sinHora,
+  textoApuntados,
+  yaPaso,
+} from '../utils/formato';
+
+const textoFueron = (n: number): string =>
+  n === 0 ? 'Nadie se apuntó por la app' : n === 1 ? 'Se apuntó 1 persona' : `Se apuntaron ${n} personas`;
 
 const Ficha: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -68,6 +83,7 @@ const Ficha: React.FC = () => {
     }
   };
 
+  const pasado = !!evento && yaPaso(evento);
   const enlaceMapa = evento
     ? `https://www.openstreetmap.org/?mlat=${evento.lat}&mlon=${evento.lon}#map=16/${evento.lat}/${evento.lon}`
     : '#';
@@ -91,6 +107,12 @@ const Ficha: React.FC = () => {
         {error && <p>{error}</p>}
         {evento && (
           <>
+            <FotoPlan evento={evento} className="foto-plan--ficha" />
+            {pasado && (
+              <p className="aviso-pasado" role="status">
+                📸 Este plan ya pasó. Ya no se puede apuntar nadie, pero puedes ver las fotos y dejar un comentario.
+              </p>
+            )}
             <IonCard>
               <IonCardHeader>
                 <IonChip style={{ background: CATEGORIAS[evento.categoria].color, color: '#fff' }}>
@@ -124,13 +146,17 @@ const Ficha: React.FC = () => {
                       {evento.municipio}
                     </IonLabel>
                   </IonItem>
+                  {!pasado && (
+                    <IonItem>
+                      <IonLabel>💶 {precio(evento)}</IonLabel>
+                    </IonItem>
+                  )}
                   <IonItem>
-                    <IonLabel>💶 {precio(evento)}</IonLabel>
+                    <IonLabel className="contador-ficha">
+                      👥 {pasado ? textoFueron(evento.inscritos ?? 0) : textoApuntados(evento)}
+                    </IonLabel>
                   </IonItem>
-                  <IonItem>
-                    <IonLabel className="contador-ficha">👥 {textoApuntados(evento)}</IonLabel>
-                  </IonItem>
-                  {plazas(evento) && (
+                  {!pasado && plazas(evento) && (
                     <IonItem>
                       <IonLabel>🎟️ {plazas(evento)}</IonLabel>
                     </IonItem>
@@ -140,41 +166,45 @@ const Ficha: React.FC = () => {
               </IonCardContent>
             </IonCard>
 
-            <IonButton
-              expand="block"
-              size="large"
-              onClick={apuntarme}
-              disabled={apuntando || !!inscrito}
-              color={inscrito ? 'success' : 'primary'}
-            >
-              {apuntando ? (
-                <IonSpinner name="dots" />
-              ) : inscrito ? (
-                <>
-                  <IonIcon slot="start" icon={checkmarkCircle} aria-hidden="true" />
-                  {inscrito === 'confirmada' ? 'Apuntado' : 'En lista de espera'}
-                </>
-              ) : (
-                '🙋 Apuntarme'
-              )}
-            </IonButton>
-            {!usuario && !inscrito && (
-              <p className="candado">🔒 Para apuntarte te pediremos crear una cuenta. Solo se tarda un momento.</p>
+            {!pasado && (
+              <>
+                <IonButton
+                  expand="block"
+                  size="large"
+                  onClick={apuntarme}
+                  disabled={apuntando || !!inscrito}
+                  color={inscrito ? 'success' : 'primary'}
+                >
+                  {apuntando ? (
+                    <IonSpinner name="dots" />
+                  ) : inscrito ? (
+                    <>
+                      <IonIcon slot="start" icon={checkmarkCircle} aria-hidden="true" />
+                      {inscrito === 'confirmada' ? 'Apuntado' : 'En lista de espera'}
+                    </>
+                  ) : (
+                    '🙋 Apuntarme'
+                  )}
+                </IonButton>
+                {!usuario && !inscrito && (
+                  <p className="candado">🔒 Para apuntarte te pediremos crear una cuenta. Solo se tarda un momento.</p>
+                )}
+                <IonButton
+                  expand="block"
+                  fill="outline"
+                  href={urlIcs(evento.id)}
+                  disabled={enModoRespaldo()}
+                  download={`${evento.titulo}.ics`}
+                >
+                  <IonIcon slot="start" icon={calendarOutline} aria-hidden="true" />
+                  Añadir a mi calendario
+                </IonButton>
+                <IonButton expand="block" fill="clear" href={enlaceMapa} target="_blank" rel="noopener">
+                  <IonIcon slot="start" icon={mapOutline} aria-hidden="true" />
+                  Cómo llegar
+                </IonButton>
+              </>
             )}
-            <IonButton
-              expand="block"
-              fill="outline"
-              href={urlIcs(evento.id)}
-              disabled={enModoRespaldo()}
-              download={`${evento.titulo}.ics`}
-            >
-              <IonIcon slot="start" icon={calendarOutline} aria-hidden="true" />
-              Añadir a mi calendario
-            </IonButton>
-            <IonButton expand="block" fill="clear" href={enlaceMapa} target="_blank" rel="noopener">
-              <IonIcon slot="start" icon={mapOutline} aria-hidden="true" />
-              Cómo llegar
-            </IonButton>
             {evento.origen.url && (
               <IonButton expand="block" fill="clear" href={evento.origen.url} target="_blank" rel="noopener">
                 <IonIcon
@@ -185,7 +215,7 @@ const Ficha: React.FC = () => {
                 Ver fuente original
               </IonButton>
             )}
-            <ChatEvento eventoId={evento.id} />
+            {pasado ? <RecuerdoPlan evento={evento} /> : <ChatEvento eventoId={evento.id} />}
           </>
         )}
         <IonToast isOpen={!!aviso} message={aviso ?? ''} duration={2500} onDidDismiss={() => setAviso(null)} />

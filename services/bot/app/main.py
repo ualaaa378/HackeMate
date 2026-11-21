@@ -1,23 +1,60 @@
-import logging
-from typing import Optional
-
+import asyncio
 import json
+import logging
 from collections import OrderedDict
+from contextlib import asynccontextmanager
+from typing import Literal, Optional
+from xml.sax.saxutils import escape
 
 from fastapi import BackgroundTasks, FastAPI, Form, Header, HTTPException, Query, Request, Response
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
-from xml.sax.saxutils import escape
 
 from app import __version__, api_cliente, canales, conversacion, meta, metrics, telegram
-from app.agentes import extractor
+from app.agentes import antispam, asistente, extractor, preferencias, voz
 from app.config import get_settings
+from app.llm import router
 from app.schemas import ExtraccionEvento, MensajeEntrante
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("bot")
 
-app = FastAPI(title="HackeMate bot", version=__version__)
+
+def registrar_webhook_telegram() -> dict | None:
+    """Con PUBLIC_URL (la del túnel), el bot se da de alta él solo en Telegram al arrancar."""
+    s = get_settings()
+    if not (s.public_url and s.telegram_token):
+        return None
+    url = f"{s.public_url.rstrip('/')}/webhook/telegram"
+    ok = telegram.configurar_webhook(url)
+    if ok:
+        log.info("Webhook de Telegram registrado en %s", url)
+    else:
+        log.error("No se pudo registrar el webhook de Telegram en %s", url)
+    return {"url": url, "ok": bool(ok)}
+
+
+async def _reintentar_cola_siempre() -> None:
+    while True:
+        await asyncio.sleep(get_settings().cola_reintento_s)
+        if api_cliente.pendientes:
+            try:
+                await asyncio.to_thread(api_cliente.reintentar_pendientes)
+            except Exception:
+                log.exception("Fallo al reintentar la cola")
+
+
+@asynccontextmanager
+async def ciclo_de_vida(_app: FastAPI):
+    if n := api_cliente.cargar_cola():
+        log.warning("Cola recuperada del disco: %s petición(es) pendiente(s) para la api", n)
+    await asyncio.to_thread(registrar_webhook_telegram)
+    tarea = asyncio.create_task(_reintentar_cola_siempre())
+    yield
+    tarea.cancel()
+
+
+app = FastAPI(title="HackeMate bot", version=__version__, lifespan=ciclo_de_vida)
 
 ACUSE = "Recibido 👍 Dame un momento que lo leo…"
 
@@ -164,7 +201,7 @@ class MensajeDev(BaseModel):
 @app.post("/dev/mensaje")
 def dev_mensaje(m: MensajeDev):
     """Simulador de WhatsApp (plan C de la demo y pruebas sin Twilio)."""
-    respuestas = conversacion.procesar(MensajeEntrante(canal="console", de=m.de, texto=m.texto))
+    respuestas = conversacion.procesar(MensajeEntrante(canal="console", de=m.de, texto=m.texto), solo_consola=True)
     return {"respuestas": respuestas}
 
 
@@ -178,10 +215,49 @@ def ai_extraer(p: PeticionExtraer, x_internal_token: str | None = Header(None)):
     return extractor.extraer(p.texto)
 
 
+class PeticionSpam(BaseModel):
+    texto: str
+    contexto: Literal["evento", "mensaje"] = "evento"
+    publicador_id: Optional[str] = None
+
+
+@app.post("/ai/spam", response_model=antispam.ResultadoSpam)
+def ai_spam(p: PeticionSpam, x_internal_token: str | None = Header(None)):
+    _comprobar_interno(x_internal_token)
+    return antispam.puntuar(p.texto, p.contexto)
+
+
+class PeticionFicha(BaseModel):
+    evento: dict
+    pregunta: str
+
+
+@app.post("/ai/responder-ficha", response_model=asistente.RespuestaFicha)
+def ai_responder_ficha(p: PeticionFicha, x_internal_token: str | None = Header(None)):
+    _comprobar_interno(x_internal_token)
+    return asistente.responder(p.evento, p.pregunta)
+
+
+class PeticionPreferencias(BaseModel):
+    texto: str
+
+
+@app.post("/ai/preferencias", response_model=preferencias.Preferencias)
+def ai_preferencias(p: PeticionPreferencias, x_internal_token: str | None = Header(None)):
+    _comprobar_interno(x_internal_token)
+    return preferencias.interpretar(p.texto)
+
+
 class Notificacion(BaseModel):
+    """contracts/schemas/notificacion.json"""
+
     telefono: str
+    contacto: Optional[str] = None  # +34… (WhatsApp) o tg:<chat_id> (Telegram); si viene, manda sobre telefono
     tipo: str = "anuncio"
     texto: str
+    evento_id: Optional[str] = None
+    formato: Literal["texto", "audio"] = "texto"
+    botones: list[str] = []
     # Los avisos que inicia el bot (cambio de hora, recomendación) fuera de la ventana
     # de 24 h solo los acepta WhatsApp con una plantilla aprobada por Meta
     plantilla: Optional[str] = None
@@ -191,13 +267,68 @@ class Notificacion(BaseModel):
 @app.post("/notify")
 def notify(n: Notificacion, x_internal_token: str | None = Header(None)):
     _comprobar_interno(x_internal_token)
+    destino = n.contacto or n.telefono
+    botones = None
+    if n.evento_id and n.tipo in ("recomendacion", "anuncio"):
+        # Recomendación → la vecina se apunta con un botón (paso 4 de la demo)
+        botones = [(f"insc:{n.evento_id}", "✋ Apuntarme"), (f"info:{n.evento_id}", "ℹ️ Más info")]
+    elif n.botones:
+        botones = [(b, b) for b in n.botones[:3]]
     if n.plantilla:
-        canales.enviar_plantilla(n.telefono, n.plantilla, n.parametros, texto_alternativo=n.texto)
+        canales.enviar_plantilla(destino, n.plantilla, n.parametros, texto_alternativo=n.texto)
     else:
-        canales.enviar(n.telefono, n.texto)
+        canales.enviar(destino, n.texto, botones)
+    if n.formato == "audio":  # personas mayores: el aviso también en nota de voz
+        ogg = voz.sintetizar(voz.texto_para_voz([n.texto]))
+        if ogg:
+            canales.enviar_voz(destino, ogg)
     return {"enviado": True}
+
+
+class CaidaSimulada(BaseModel):
+    activa: bool
+
+
+@app.get("/admin/simular-caida")
+def ver_caida(x_internal_token: str | None = Header(None)):
+    _comprobar_interno(x_internal_token)
+    return {"activa": router.caida_simulada()}
+
+
+@app.post("/admin/simular-caida")
+def simular_caida(c: CaidaSimulada, x_internal_token: str | None = Header(None)):
+    """Demo de robustez: con la caída activa, todas las IAs «fallan» y el bot sigue con reglas."""
+    _comprobar_interno(x_internal_token)
+    router.forzar_caida(c.activa)
+    log.warning("Caída simulada de la IA: %s", "ACTIVADA" if c.activa else "desactivada")
+    return {"activa": router.caida_simulada()}
 
 
 @app.get("/metrics")
 def ver_metricas():
-    return {**metrics.resumen(), "eventos_en_cola": len(api_cliente.pendientes)}
+    return {**metrics.resumen(), "eventos_en_cola": len(api_cliente.pendientes),
+            "caida_simulada": router.caida_simulada()}
+
+
+class UrlPublica(BaseModel):
+    public_url: Optional[str] = None
+
+
+@app.post("/admin/webhook-telegram")
+def webhook_telegram_admin(u: UrlPublica, x_internal_token: str | None = Header(None)):
+    """Si cambia la URL del túnel: se vuelve a registrar sin reiniciar el bot."""
+    _comprobar_interno(x_internal_token)
+    s = get_settings()
+    if u.public_url:
+        s.public_url = u.public_url
+    if not (s.public_url and s.telegram_token):
+        raise HTTPException(422, detail={"code": "falta_configuracion",
+                                         "message": "Hace falta TELEGRAM_TOKEN y una public_url"})
+    return registrar_webhook_telegram()
+
+
+@app.post("/admin/reintentar-cola")
+def reintentar_cola(x_internal_token: str | None = Header(None)):
+    _comprobar_interno(x_internal_token)
+    enviados = api_cliente.reintentar_pendientes()
+    return {"enviados": enviados, "quedan": len(api_cliente.pendientes)}

@@ -8,28 +8,42 @@ from functools import lru_cache
 import httpx
 
 from app.config import get_settings
+from app.respuestas import Boton
 
 log = logging.getLogger(__name__)
 
 # Últimos mensajes enviados por la consola: los usan los tests y /dev/mensaje
 bandeja_consola: list[dict] = []
 
-Boton = tuple[str, str]  # (id que nos devuelve WhatsApp al pulsarlo, texto visible)
 
-
-def enviar(telefono: str, texto: str, botones: list[Boton] | None = None) -> None:
-    """Mensaje de sesión: respuesta a alguien que nos ha escrito en las últimas 24 h."""
+def enviar(telefono: str, texto: str, botones: list[Boton] | None = None,
+           pedir_contacto: bool = False, quitar_teclado: bool = False, pedir_ubicacion: bool = False) -> None:
+    """Mensaje de sesión: respuesta a alguien que nos ha escrito en las últimas 24 h.
+    pedir_contacto / quitar_teclado solo tienen efecto en Telegram."""
     from app import telegram
 
     canal = get_settings().canal
     if telegram.es_telegram(telefono) and get_settings().telegram_token:
-        telegram.enviar(telefono, texto, botones)
+        telegram.enviar(telefono, texto, botones, pedir_contacto=pedir_contacto, quitar_teclado=quitar_teclado,
+                        pedir_ubicacion=pedir_ubicacion)
     elif canal == "meta":
         _enviar_meta(telefono, texto, botones)
     elif canal == "twilio":
         _enviar_twilio(telefono, texto)
     else:
-        _enviar_consola(telefono, texto, botones)
+        enviar_consola(telefono, texto, botones, pedir_contacto)
+
+
+def enviar_voz(telefono: str, ogg: bytes) -> bool:
+    """Nota de voz. De momento solo en Telegram; en WhatsApp habría que subir antes el audio a Meta."""
+    from app import telegram
+
+    if telegram.es_telegram(telefono) and get_settings().telegram_token:
+        return telegram.enviar_voz(telefono, ogg)
+    if get_settings().canal == "console":
+        bandeja_consola.append({"para": telefono, "texto": "[nota de voz]", "botones": [], "voz": len(ogg)})
+        return True
+    return False
 
 
 def enviar_plantilla(telefono: str, plantilla: str, parametros: list[str], texto_alternativo: str) -> None:
@@ -46,8 +60,8 @@ def enviar_plantilla(telefono: str, plantilla: str, parametros: list[str], texto
 
 # ---------- Consola ----------
 
-def _enviar_consola(telefono: str, texto: str, botones: list[Boton] | None) -> None:
-    bandeja_consola.append({"para": telefono, "texto": texto, "botones": botones or []})
+def enviar_consola(telefono: str, texto: str, botones: list[Boton] | None, pedir_contacto: bool = False) -> None:
+    bandeja_consola.append({"para": telefono, "texto": texto, "botones": botones or [], "pedir_contacto": pedir_contacto})
     del bandeja_consola[:-200]
     # La consola de Windows usa cp1252 y no sabe pintar emojis: mejor UTF-8 que romper
     if hasattr(sys.stdout, "reconfigure") and sys.stdout.encoding.lower() != "utf-8":

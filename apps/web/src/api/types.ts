@@ -17,6 +17,78 @@ export type Usuario = Esquemas['usuario'];
 export type Token = Esquemas['Token'];
 export type UsuarioEditar = Esquemas['UsuarioEditar'];
 export type MensajeCrear = Esquemas['MensajeCrear'];
+export type EventoCrear = Esquemas['EventoCrear'];
+
+export const PUBLICOS = {
+  todos: 'Todos los públicos',
+  infantil: 'Infantil y familias',
+  adultos: 'Solo mayores de 18',
+  mayores: 'Personas mayores',
+} as const;
+export type Publico = keyof typeof PUBLICOS;
+
+export const NECESIDADES = {
+  espacio: 'Usar un espacio municipal (plaza, salón, pabellón…)',
+  calle: 'Cortar una calle o el tráfico',
+  material: 'Mesas, sillas o escenario',
+  luz: 'Toma de luz o equipo de sonido',
+  musica: 'Música amplificada o fuegos',
+  comida: 'Vender o servir comida y bebida',
+  seguridad: 'Protección Civil, Policía o ambulancia',
+  limpieza: 'Limpieza y contenedores después',
+  difusion: 'Ayuda para anunciarlo (bando, redes, cartel)',
+} as const;
+export type Necesidad = keyof typeof NECESIDADES;
+
+/**
+ * Datos de la propuesta que solo ve el ayuntamiento. Aún NO están en el contrato:
+ * hasta que se añadan (contract-change), la API solo recibe la parte pública (EventoCrear).
+ */
+export interface DatosAyuntamiento {
+  responsable: string;
+  telefono: string;
+  entidad: 'particular' | 'asociacion' | 'comercio' | 'otra';
+  entidad_nombre?: string;
+  publico: Publico;
+  necesidades: Necesidad[];
+  seguro_rc: 'si' | 'no' | 'nose';
+  observaciones?: string;
+  /** Frase corta y pública para la portada del plan. Pendiente de contract-change (flujo A) como `frase_portada` de EventoCrear. */
+  frase_portada?: string;
+}
+export type Publicador = Esquemas['publicador'];
+export type Pendiente = Esquemas['Pendiente'];
+/** Elemento de la bandeja. `propuesta` son los datos privados de un plan vecinal (aún fuera del contrato). */
+export type PendienteBandeja = Omit<Pendiente, 'publicador'> & {
+  publicador?: PublicadorAdmin;
+  propuesta?: DatosAyuntamiento;
+};
+
+/**
+ * Datos del responsable de una asociación o comercio. Solo los ve el moderador.
+ * Aún NO están en el contrato (pendiente de contract-change con A).
+ */
+export interface DatosResponsable {
+  nombre: string;
+  dni: string;
+  /** Pueblo o dirección donde vive. */
+  residencia: string;
+  /** El moderador ha comprobado el DNI y la residencia. */
+  identidad_verificada: boolean;
+}
+
+/** Actividad reciente del publicador. Aún NO está en el contrato: la calcularía la API. */
+export interface ActividadPublicador {
+  planes_60_dias: number;
+  rechazados_60_dias: number;
+  ultimo_plan: string | null;
+}
+
+export type PublicadorAdmin = Publicador & { responsable?: DatosResponsable | null; actividad?: ActividadPublicador };
+export type Decision = Esquemas['Decision'];
+export type Estadisticas = Esquemas['Estadisticas'];
+export type EventoEditar = Esquemas['EventoEditar'];
+export type Rol = Usuario['rol'];
 
 export interface Pagina<T> {
   items: T[];

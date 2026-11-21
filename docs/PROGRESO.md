@@ -115,26 +115,28 @@
 - [x] Simulador `POST /dev/mensaje` y consola para probar sin mensajería
 - [x] `llm_router` Gemini → FreeLLMAPI → Claude (opcional) → reglas, con timeout y registro de tokens (probado con FreeLLMAPI real)
 - [x] Extractor de eventos desde texto → `ExtraccionEvento` validada
-- [~] Integrar `services/bot` en `infra/docker-compose.yml` en lugar del stub (con Flujo A) *(compose cambiado por A; falta probarlo con Docker)*
-- [ ] Ajustar al contrato el flujo importar → confirmar (`POST /eventos/importar` y luego `/eventos/{id}/confirmar`)
+- [x] Integrar `services/bot` en `infra/docker-compose.yml` en lugar del stub (con Flujo A) *(PR #23, probado con `docker compose up --build`)*
+- [x] Flujo importar → confirmar según contrato: importa al recibir el post (`contacto_publicador`), pregunta lo que la API dice que falta y confirma (si `/confirmar` aún no existe, guarda con `PATCH`)
 
 **Bloque 2 (sáb 08:00–13:00)**
-- [ ] Extractor desde imagen (cartel) y desde audio (transcripción)
-- [~] Conversación del publicador: pregunta lo que falta y confirma (botones hechos; falta usar `/confirmar` de la API)
-- [ ] Antispam: reglas baratas primero, IA solo si es dudoso (`POST /ai/spam`)
+- [x] Extractor desde imagen (cartel, visión de FreeLLMAPI/Gemini) y desde audio (Whisper vía FreeLLMAPI). Probado con la API real
+- [x] Conversación del publicador: pregunta lo que falta y confirma con botones; identidad con «Compartir mi número» → `POST /usuarios/vincular`
+- [x] Antispam `POST /ai/spam`: reglas baratas primero, IA solo si es dudoso (0,3–0,7). Falta que la API lo llame al confirmar (A, H2.4)
 - [ ] Ingesta: «pega el enlace/texto del post» + scraper de una web pública
-- [ ] Conversación del moderador: «enséñame lo pendiente», aprobar/rechazar
+- [~] Conversación del moderador: «pendientes» → bandeja con motivo y botones Aprobar/Rechazar. Hecho en el bot; espera `GET /moderacion/pendientes` y `POST /moderacion/{id}/decision` (A)
 
 **Bloque 3 (sáb 14:00–19:00)**
-- [ ] Conversación del vecino: gustos, pueblo/ubicación, «¿qué hay este finde cerca?» (`POST /ai/preferencias`)
-- [ ] Inscripción desde el chat con un botón
-- [~] `POST /notify`: hecho el envío (texto, botones, plantillas de WhatsApp); faltan preferencias y destinos de Telegram en el contrato
-- [ ] Asistente del evento: responde solo con la ficha, si no, deriva al organizador (`POST /ai/responder-ficha`)
+- [x] Conversación del vecino: «¿qué hay este finde (cerca / en Senés)?» → tarjetas con [Apuntarme] [Más info]; ubicación con «Enviar mi ubicación»; gustos («me gustan las rutas») y `POST /ai/preferencias`. Probado con la API real
+- [x] Detección de intención sin tokens: publicar / buscar / gustos / apuntarse / preguntar. Las notas de voz de la vecina también buscan planes
+- [~] Inscripción desde el chat con un botón (hecho en el bot; espera `POST /eventos/{id}/inscripciones` de A; mientras, enlace a la web)
+- [x] `POST /notify` con `contacto` (`tg:`/`+34`) y botón [Apuntarme] en las recomendaciones
+- [x] Asistente del evento: responde solo con la ficha (reglas o IA) y si no lo sabe lo pasa al organizador (`POST /ai/responder-ficha`; el chat del evento espera `/eventos/{id}/mensajes` de A)
+- [!] Guardar los gustos en la API: `PATCH /usuarios/me` solo admite login de usuario. Propuesta a A: `PATCH /usuarios/{id}` con `X-Internal-Token`. Mientras, el bot los guarda en memoria
 
 **Bloque 4 (sáb 20:00–00:00)**
-- [~] «Simular caída del LLM»: la variable `LLM_SIMULAR_CAIDA` existe; falta el botón en el panel (Flujo C)
-- [ ] Respuesta en audio (TTS) para quien escribe con audios
-- [ ] Respuestas en otros idiomas para visitantes
+- [x] «Simular caída del LLM» en caliente: `POST /admin/simular-caida {"activa": true}` (con `X-Internal-Token`) y estado en `GET /metrics`. Falta el botón en el panel (Flujo C, vía la API)
+- [x] Respuesta en audio: quien escribe con notas de voz (o pide avisos por voz) recibe también una nota de voz. TTS gratis por FreeLLMAPI + ffmpeg (imageio-ffmpeg). `/notify` con `formato: audio` también
+- [x] Otros idiomas: detecta inglés, francés, alemán, italiano y portugués sin tokens; traduce la pregunta al español y la respuesta (con botones) de vuelta
 
 ---
 
@@ -154,9 +156,9 @@
 - [x] **H1 cerrado** (vie 22:20): compose completo con PostgreSQL y la API de #10, la agenda y el mapa leen los 18 eventos de la base; las rutas aún sin implementar caen a mocks (ver `PLAN_FLUJO_C.md` H1)
 
 **Bloque 2 (sáb 08:00–13:00)**
-- [ ] Panel del moderador: bandeja con motivo de la IA, aprobar/rechazar
-- [ ] Gestión de publicadores y niveles de confianza, pausar automatizaciones
-- [ ] Vista del publicador: alta, fuentes, crear/editar/cancelar evento, ver inscritos
+- [~] Panel del moderador: bandeja con motivo de la IA, aprobar/rechazar *(vie 23:15: `/admin/bandeja` con mocks, incluye las propuestas vecinales con sus datos para el ayuntamiento; falta que A implemente `/moderacion/*` con JWT)*
+- [~] Gestión de publicadores y niveles de confianza, pausar automatizaciones *(`/admin/publicadores` con mocks; falta `/publicadores/{id}/aprobar` y `/pausar` en A)*
+- [~] Vista del publicador: alta, fuentes, crear/editar/cancelar evento, ver inscritos *(`/admin/eventos`: crear, editar, cancelar y aviso de cambio de hora, con mocks; `POST/PATCH /eventos` solo aceptan `X-Internal-Token`, necesitan el JWT del publicador o moderador)*
 
 **Bloque 3 (sáb 14:00–19:00)**
 - [ ] Login con Google y perfil (gustos, pueblo, tipo de aviso, vincular WhatsApp)
@@ -165,7 +167,7 @@
 - [ ] PWA: `manifest.json`, service worker e icono
 
 **Bloque 4 (sáb 20:00–00:00)**
-- [ ] Panel de estadísticas y coste en tokens
+- [~] Panel de estadísticas y coste en tokens *(`/admin/panel` adelantado con mocks; falta `GET /estadisticas` en A)*
 - [ ] Accesibilidad WCAG 2.1 AA: contraste, teclado, `aria-label`, modo letra grande
 - [ ] Capacitor: `npx cap add android`, APK de debug generado
 - [ ] APK apunta a la URL pública del túnel y funciona en un móvil real
