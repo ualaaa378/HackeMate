@@ -10,6 +10,13 @@ URL = "/api/v1/auth/admin"
 LUCIA_MODERADORA = "5a5e0000-0000-4000-8000-000000000002"
 
 
+@pytest.fixture(autouse=True)
+def credenciales_de_ejemplo(monkeypatch):
+    """Los tests no dependen del .env local (la máquina de la demo usa otra contraseña): admin / 1234."""
+    monkeypatch.setattr(get_settings(), "admin_usuario", "admin")
+    monkeypatch.setattr(get_settings(), "admin_contrasena", "1234")
+
+
 @pytest.fixture
 def api(cliente, db):
     sembrar(db, ahora=VIERNES)
@@ -51,10 +58,10 @@ def test_sin_moderador_503(cliente):
 
 
 def test_avisa_si_la_contrasena_es_la_de_ejemplo_fuera_de_la_demo():
-    avisos = avisar_configuracion_insegura(Settings(demo_mode=False, jwt_secret="x" * 32))
+    avisos = avisar_configuracion_insegura(Settings(_env_file=None, demo_mode=False, jwt_secret="x" * 32))
     assert any("ADMIN_CONTRASENA" in a for a in avisos)
     assert not any("ADMIN_CONTRASENA" in a for a in
-                   avisar_configuracion_insegura(Settings(demo_mode=False, jwt_secret="x" * 32, admin_contrasena="buena")))
+                   avisar_configuracion_insegura(Settings(_env_file=None, demo_mode=False, jwt_secret="x" * 32, admin_contrasena="buena")))
 
 
 @pytest.fixture(autouse=True)
@@ -95,7 +102,7 @@ def test_tope_total_frena_a_quien_cambia_de_ip(api, monkeypatch):
 
 
 def test_avisa_tambien_en_modo_demo():
-    avisos = avisar_configuracion_insegura(Settings(demo_mode=True))
+    avisos = avisar_configuracion_insegura(Settings(_env_file=None, demo_mode=True))
     assert any("ADMIN_CONTRASENA" in a for a in avisos)
     assert any("JWT_SECRET" in a for a in avisos)
     assert any("INTERNAL_TOKEN" in a for a in avisos)

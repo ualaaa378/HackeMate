@@ -17,15 +17,15 @@ def test_aviso_si_jwt_secret_es_el_de_ejemplo(caplog):
     from app.config import JWT_SECRET_POR_DEFECTO, Settings, avisar_configuracion_insegura
 
     with caplog.at_level(logging.WARNING, logger="app.config"):
-        avisos = avisar_configuracion_insegura(Settings(jwt_secret=JWT_SECRET_POR_DEFECTO, demo_mode=False,
+        avisos = avisar_configuracion_insegura(Settings(_env_file=None, jwt_secret=JWT_SECRET_POR_DEFECTO, demo_mode=False,
                                                         admin_contrasena="otra", internal_token="otro"))
     assert len(avisos) == 1 and "JWT_SECRET" in avisos[0]
     assert any("JWT_SECRET" in r.getMessage() and r.levelno == logging.WARNING for r in caplog.records)
 
     # Con DEMO_MODE también avisa: la demo va por una URL pública
-    assert avisar_configuracion_insegura(Settings(jwt_secret=JWT_SECRET_POR_DEFECTO, demo_mode=True,
+    assert avisar_configuracion_insegura(Settings(_env_file=None, jwt_secret=JWT_SECRET_POR_DEFECTO, demo_mode=True,
                                                   admin_contrasena="otra", internal_token="otro")) != []
-    assert avisar_configuracion_insegura(Settings(jwt_secret="un-secreto-de-verdad", demo_mode=False,
+    assert avisar_configuracion_insegura(Settings(_env_file=None, jwt_secret="un-secreto-de-verdad", demo_mode=False,
                                                   admin_contrasena="otra", internal_token="otro")) == []
 
 
