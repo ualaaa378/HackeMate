@@ -117,7 +117,7 @@ Notas: `frase_portada` ya se guarda; si llega vacía la pedirá a `bot POST /ai/
 | dom 00:00 | - [ ] **B5b.** Solo si sobra tiempo: `POST /ai/frase` (primero en el contrato, antes de CP3): frase breve y alegre (≤ 90 letras, sin inventar datos) a partir de título, categoría y pueblo. Mientras, la web pone una frase fija por tipo de plan. |
 | sáb 19:00 | - [x] **B7 (D1).** *(sáb 21/11: hecho. `/notify` acepta solo `contacto` (422 `sin_destino` si no hay ninguno); `app/avisos.py`: tras los gustos pregunta con botones [🔔 Sí, avísame] [No, gracias] una vez, y «no quiero avisos», «deja de avisarme», «avísame» cambian `acepta_avisos` con `PATCH /usuarios/{id}`; en Telegram sin vincular pide antes el número. Probado contra la API real: el campo cambia en la base.)* Bot: aceptar `/notify` sin `telefono` si viene `contacto`; tras decir sus gustos, preguntar «¿Quieres que te avise de planes nuevos que te puedan gustar?» [Sí] [No] y guardar `acepta_avisos`; entender «no quiero avisos» y «avísame». |
 | sáb 19:00 | - [x] **B8 (D2).** *(sáb 21/11: hecho. `t.me/HackeMate_bot?start=codigo` pide «Compartir mi número» y luego dice «Vuelve a la web y pulsa *Pedir el código*»; si ya lo había compartido, lo dice directamente. De paso, `?start=alta` abre el alta de asociaciones.)* Bot: `/start codigo` (el enlace de la web) pide «Compartir mi número» y, al compartirlo, dice que ya puede pedir el código en la web. |
-| dom 07:00 | - [ ] **B6.** Sección del bot en el README y claves de IA de la demo en el `.env` de Adán (por privado). |
+| dom 07:00 | - [~] **B6.** Sección del bot en el README y claves de IA de la demo en el `.env` de Adán (por privado). *(sáb 21/11: **sección del bot escrita** («🤖 Bot (flujo B)»: qué se puede hacer desde el chat, IA, canales, arranque, variables, rutas, robustez y privacidad). Claves: FreeLLMAPI ya pasado (B3); falta confirmar en el `.env` de Adán `NIM_API_KEY` y `LLM_CADENA=gemini,nim,freellm,claude,reglas`.)* |
 
 **Idea apuntada, no se hace por ahora (decisión de Francisco, sáb 21/11): automatizar `url_publica.py`.** Comprobado que se puede: `cloudflared` con `--metrics 0.0.0.0:2000` responde en `GET /quicktunnel` `{"hostname": "<algo>.trycloudflare.com"}`, la misma URL de sus logs. Bastaría con una línea en el servicio `tunnel` de `infra/docker-compose.yml` (sin abrir puertos fuera) y una tarea en el bot que lo consulte cada ~15 s y, si cambia, registre el webhook y los enlaces en caliente, activada solo con `TUNEL_AUTO=true` en el `.env` de la máquina de la demo (para que nadie más le quite Telegram). Mientras, tras cada `up` o reinicio del túnel: `python scripts/url_publica.py` (vale desde cualquier carpeta).
 
@@ -327,7 +327,99 @@ Con `DEMO_MODE=true`, `POST /api/v1/auth/demo` con `{"rol": "moderador"}` o `{"u
 
 ## 🤖 Bot (flujo B)
 
-*Pendiente: sección a cargo del flujo B (`services/bot/`).*
+El asistente de mensajería: **@HackeMate_bot** en Telegram (canal activo). Vecinos, publicadores y moderadores pueden hacerlo todo desde el chat, con texto, fotos o notas de voz, sin instalar nada. Código en `services/bot/` (FastAPI, puerto 8001).
+
+### Qué se puede hacer desde el chat
+
+| Quién | Ejemplo de mensaje | Qué hace el bot |
+|---|---|---|
+| Vecina | «¿Qué hay este finde?», «rutas en Velefique», «conciertos mañana» | Busca en la agenda (o usa las recomendaciones de la API) y enseña tarjetas con **✋ Apuntarme** y **ℹ️ Más info** |
+| Vecina | «Apúntame a la ruta solidaria» o el botón | Inscripción en la API (`confirmada` o `lista_espera`); en Telegram pide antes «Compartir mi número» |
+| Vecina | «¿A qué hora empieza la ruta solidaria?» | Responde con la ficha; si la respuesta no está, la deja en el chat del evento para el organizador |
+| Vecina | «Me gustan las rutas y la música» | Guarda sus gustos y pregunta si quiere **avisos de planes nuevos** (D1); «no quiero avisos» / «avísame» lo cambian |
+| Persona mayor | Solo **notas de voz** | Las transcribe, entiende lo que pide y le contesta **también con una nota de voz** |
+| Publicador | Un texto, **la foto del cartel** o una nota de voz con el plan | Saca la ficha con IA, pregunta lo que falte (fecha, pueblo…) y, con «sí», la envía a la API para publicar o para el moderador |
+| Asociación nueva | «Quiero dar de alta mi asociación» | Pide nombre, tipo, pueblo y responsable (nombre, DNI o NIE comprobado y residencia) y la da de alta en `POST /publicadores` (B5). El DNI solo vive en memoria durante el alta |
+| Moderador | «pendientes» | La bandeja con el motivo de la IA y el `score_spam`, con botones **Aprobar** / **Rechazar** |
+| Visitante | «What's on this weekend?» | Detecta el idioma y responde en el suyo (inglés, francés, alemán, italiano, portugués) |
+| Cualquiera | «cancelar» | Borra lo que estaba a medias |
+
+Además: el **antispam** para los posts de apuestas o enlaces sospechosos; los **avisos** que pide la API (cambio de hora, respuestas, moderación, recomendaciones con botones, el código de acceso) y, si la persona lo pidió, también en nota de voz; y los enlaces `t.me/HackeMate_bot?start=codigo` (entrar en la web con código, D2) y `?start=alta`.
+
+### IA: gratis primero y nunca se queda sin responder
+
+```
+Gemini → NVIDIA NIM → FreeLLMAPI → Claude (solo con clave, de pago) → reglas (sin IA)
+```
+
+Orden en `LLM_CADENA`. Cada proveedor sin clave se salta, y si uno falla o tarda, se pasa al siguiente. **Sin ninguna IA el bot sigue funcionando** con reglas: título, fecha, pueblo, categoría y antispam por patrones. Se prueba en directo con «Simular caída de la IA» en el panel (`/admin/simular-caida`).
+
+- **NVIDIA NIM** (B2): directo, `nvidia/nemotron-3.5-bolt-e4b`, 1–3 s por ficha con el plan gratuito.
+- **FreeLLMAPI**: proxy local que junta los planes gratuitos de 7 proveedores. Además del texto, hace la **visión** (carteles), la **transcripción** (`whisper-large-v3`) y la **voz** (TTS). Va en su propio Docker, replicable en cualquier máquina: [`services/bot/freellmapi/`](services/bot/freellmapi/README.md).
+- Cada llamada registra sus tokens por proveedor (`GET /metrics` y `POST /metrics/tokens` de la API) para el coste del panel.
+
+### Canales: Telegram ahora, WhatsApp cambiando la configuración
+
+| Canal | Cómo se activa | Estado |
+|---|---|---|
+| Telegram | `TELEGRAM_TOKEN` (y `PUBLIC_URL` para el webhook) | ✅ Activo, gratis y sin límites |
+| WhatsApp Cloud API (Meta) | `CANAL=meta` + `META_*` | Programado y probado; Meta bloquea el envío hasta que una entidad verifique su negocio |
+| WhatsApp por Twilio | `CANAL=twilio` + `TWILIO_*` | Alternativa programada |
+| Consola | `CANAL=console` | Para pruebas: `POST /dev/mensaje` simula un chat |
+
+Telegram y WhatsApp pueden ir a la vez: el contacto decide el canal (`tg:<chat_id>` o `+34…`). Nada del código supone un canal concreto.
+
+### Arrancarlo
+
+Con todo el proyecto: `docker compose --env-file .env -f infra/docker-compose.yml up -d` y, en la máquina de la demo, `python scripts/url_publica.py`, que registra el webhook de Telegram y los enlaces en caliente, sin reiniciar el bot. **Solo una máquina a la vez** puede tener Telegram (`PUBLIC_URL`).
+
+Variables principales (todas en `.env.example` y `services/bot/.env.example`):
+
+| Variable | Para qué |
+|---|---|
+| `TELEGRAM_TOKEN`, `TELEGRAM_SECRET` | Bot de Telegram (token de @BotFather; el secreto protege el webhook) |
+| `PUBLIC_URL` | URL pública del túnel; vacío en todas las máquinas menos la de la demo |
+| `WEB_URL` | Enlaces a las fichas que manda el bot (`{WEB_URL}/evento/{id}`) |
+| `API_URL`, `INTERNAL_TOKEN` | Dónde está la API y el token entre servicios |
+| `LLM_CADENA` | Orden de los proveedores de IA (`gemini,nim,freellm,claude,reglas`) |
+| `GEMINI_API_KEY`, `NIM_API_KEY`, `FREELLM_URL` / `FREELLM_URL_DOCKER`, `FREELLM_API_KEY` | Claves de la IA (gratis). Cada persona, las suyas |
+| `CANAL`, `META_*`, `TWILIO_*` | WhatsApp, cuando se active |
+| `COLA_PATH` | Cola en disco: si la API está caída, lo que manda el bot se guarda y se reintenta cada 30 s |
+
+Solo el bot, sin Docker (en Windows, mejor con Python 3.12: con 3.13 puede romperse con peticiones en paralelo):
+
+```powershell
+cd services\bot
+python -m venv .venv; .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --port 8001
+python -m pytest -q
+```
+
+### Rutas que expone
+
+| Ruta | Quién la usa | Para qué |
+|---|---|---|
+| `POST /webhook/telegram`, `/webhook/meta`, `/webhook/twilio` | Telegram, Meta, Twilio | Mensajes entrantes |
+| `POST /notify` | API | Avisos salientes (texto, botones y, si toca, nota de voz). `telefono` o `contacto` |
+| `POST /ai/extraer` | API e ingesta de Facebook | Post o cartel → ficha del plan |
+| `POST /ai/spam` | API (moderación) | `score_spam` y motivo |
+| `POST /ai/responder-ficha` | API (chat del evento) | Respuesta solo con lo que dice la ficha |
+| `POST /ai/preferencias` | API | Gustos a partir de un texto |
+| `GET /metrics` · `GET`/`POST /admin/simular-caida` | Panel (a través de la API) | Tokens por proveedor y cola (sin datos personales) · caída simulada |
+| `POST /admin/webhook-telegram` · `/admin/reintentar-cola` | `url_publica.py`, mantenimiento | Cambiar la URL pública en caliente; reintentar la cola |
+| `POST /dev/mensaje` | Pruebas | Chat simulado, sin canal real |
+| `GET /health` | Docker | `{"status":"ok","version":"0.1.0"}` |
+
+`/notify`, `/ai/*` y `/admin/*` piden la cabecera `X-Internal-Token`; el de Telegram comprueba `TELEGRAM_SECRET` (Meta y Twilio, su firma si se configura `META_APP_SECRET` o `TWILIO_VALIDAR_FIRMA`); `/health`, `/metrics` y `/dev/mensaje` no piden nada.
+
+### Robustez y privacidad
+
+- **Si la API se cae**, el bot sigue contestando lo que puede y guarda en cola (en disco, volumen `bot_data`) lo que tenía que mandarle. **Si la IA se cae**, pasa a reglas. **Si cambia la URL del túnel**, `url_publica.py` se la pasa al bot sin reiniciarlo y no se pierden las conversaciones a medias.
+- **Datos personales:** el bot no guarda nada en base de datos (solo la API toca la base). El DNI del alta no se escribe en los logs ni en la cola (en pantalla, solo enmascarado), y el token de Telegram tampoco sale en los logs. Con `CANAL=console` el bot imprime sus respuestas: es solo para pruebas.
+- **162 tests** (`python -m pytest -q` en `services/bot`), sin red ni claves: la API y la IA están simuladas.
+
+Más detalle: [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) (decisiones y canales) y [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) (los cuerpos exactos de cada llamada entre la API y el bot).
 
 ## 📱 App web y Android (flujo C)
 
