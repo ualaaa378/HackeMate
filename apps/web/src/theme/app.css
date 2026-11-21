@@ -1873,8 +1873,9 @@ ion-content.contenido-agenda--zonas::part(scroll) {
 
 .agenda-zonas {
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
-  gap: 24px;
+  /* Recuerdos a la izquierda, agenda en el centro, tus planes y sugeridos a la derecha. */
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr) minmax(260px, 320px);
+  gap: 20px;
   align-items: start;
   padding-top: 12px;
 }
@@ -2284,4 +2285,26 @@ ion-back-button {
   height: auto;
   min-height: 36px;
   white-space: normal;
+}
+
+/* Si no hay recuerdos, la columna no deja una caja vacía. */
+.agenda-zonas__lateral:empty {
+  visibility: hidden;
+}
+
+/* Entre 1100 y 1300 px las columnas laterales se estrechan para que la agenda respire. */
+@media (max-width: 1299px) {
+  .agenda-zonas {
+    grid-template-columns: 220px minmax(0, 1fr) 250px;
+    gap: 16px;
+  }
+
+  .agenda-zonas .recuerdos-agenda--compacto .recuerdo-mini {
+    flex-direction: column;
+  }
+
+  .agenda-zonas .recuerdos-agenda--compacto .recuerdo-mini img {
+    width: 100%;
+    height: 72px;
+  }
 }
