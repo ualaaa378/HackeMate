@@ -32,7 +32,8 @@
     "automatizaciones_pausadas": false,
     "categorias_habituales": ["cultural", "comercio", "fiestas"],
     "fuentes": [
-      { "id": "6f0e0000-0000-4000-8000-000000000002", "canal": "web_externa", "url": "https://www.lucainenadelastorres.es/agenda", "activa": true }
+      { "id": "6f0e0000-0000-4000-8000-000000000002", "canal": "web_externa", "url": "https://www.lucainenadelastorres.es/agenda", "activa": true },
+      { "id": "6f0e0000-0000-4000-8000-000000000004", "canal": "facebook", "url": "https://www.facebook.com/profile.php?id=100064636603636", "activa": true }
     ],
     "usuario_id": null,
     "creado_en": "2026-10-15T10:00:00+02:00"
@@ -125,5 +126,62 @@
     "usuario_id": null,
     "responsable": { "nombre": "Lucía Martínez Gil", "dni": "X1234567L", "residencia": "Tahal", "identidad_verificada": false },
     "creado_en": "2026-11-18T10:00:00+01:00"
+  },
+  {
+    "id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a08",
+    "nombre": "Ayto. de Senés",
+    "tipo": "ayuntamiento",
+    "municipio": "Senés",
+    "descripcion": null,
+    "telefono": "+34600000108",
+    "email": null,
+    "estado": "aprobado",
+    "nivel_confianza": 2,
+    "aprobaciones": 0,
+    "automatizaciones_pausadas": false,
+    "categorias_habituales": ["cultural", "fiestas"],
+    "fuentes": [
+      { "id": "6f0e0000-0000-4000-8000-000000000005", "canal": "facebook", "url": "https://www.facebook.com/profile.php?id=61551352857893", "activa": true }
+    ],
+    "usuario_id": null,
+    "creado_en": "2026-11-21T16:00:00+01:00"
+  },
+  {
+    "id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a09",
+    "nombre": "Ayto. de Uleila del Campo",
+    "tipo": "ayuntamiento",
+    "municipio": "Uleila del Campo",
+    "descripcion": null,
+    "telefono": "+34600000109",
+    "email": null,
+    "estado": "aprobado",
+    "nivel_confianza": 2,
+    "aprobaciones": 0,
+    "automatizaciones_pausadas": false,
+    "categorias_habituales": ["cultural", "fiestas", "gastronomia"],
+    "fuentes": [
+      { "id": "6f0e0000-0000-4000-8000-000000000006", "canal": "facebook", "url": "https://www.facebook.com/profile.php?id=100064568389094", "activa": true }
+    ],
+    "usuario_id": null,
+    "creado_en": "2026-11-21T16:00:00+01:00"
+  },
+  {
+    "id": "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a10",
+    "nombre": "Ayto. de Velefique",
+    "tipo": "ayuntamiento",
+    "municipio": "Velefique",
+    "descripcion": null,
+    "telefono": "+34600000110",
+    "email": null,
+    "estado": "aprobado",
+    "nivel_confianza": 2,
+    "aprobaciones": 0,
+    "automatizaciones_pausadas": false,
+    "categorias_habituales": ["cultural", "fiestas", "deportiva"],
+    "fuentes": [
+      { "id": "6f0e0000-0000-4000-8000-000000000007", "canal": "facebook", "url": "https://www.facebook.com/ayuntamientodevelefique.velefique", "activa": true }
+    ],
+    "usuario_id": null,
+    "creado_en": "2026-11-21T16:00:00+01:00"
   }
 ]
