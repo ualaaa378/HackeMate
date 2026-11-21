@@ -138,7 +138,7 @@ const Agenda: React.FC = () => {
 
   const saludo = (
     <>
-      <SelectorLetra />
+      {!grande && <SelectorLetra />}
       <h1 className="saludo">
         {usuario ? `¡Hola, ${usuario.nombre.split(' ')[0]}! ` : ''}¿Qué hacemos hoy en el pueblo?
       </h1>
@@ -217,6 +217,7 @@ const Agenda: React.FC = () => {
             <Marca onInicio={irAlInicio} />
           </IonTitle>
           <IonButtons slot="end">
+            {grande && <SelectorLetra compacto />}
             <IonButton routerLink="/proponer" fill="outline" className="boton-proponer" aria-label="Proponer un plan">
               <IonIcon slot="start" icon={addCircleOutline} aria-hidden="true" />
               <span className="texto-boton">Proponer</span>

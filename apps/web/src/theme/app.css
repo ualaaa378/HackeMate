@@ -2317,3 +2317,62 @@ ion-back-button {
     gap: 16px;
   }
 }
+
+/* Selector de letra compacto: en la franja del panel y en la cabecera de la agenda en escritorio. */
+.selector-letra--compacto {
+  gap: 6px;
+}
+
+.selector-letra--compacto .selector-letra__btn {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.selector-letra--compacto .selector-letra__btn--0 {
+  font-size: 15px;
+}
+
+.selector-letra--compacto .selector-letra__btn--1 {
+  font-size: 18px;
+}
+
+.selector-letra--compacto .selector-letra__btn--2 {
+  font-size: 21px;
+}
+
+.franja-admin .selector-letra--compacto {
+  margin-left: auto;
+}
+
+/* Sobre la cabecera oscura, los botones van en blanco. */
+ion-toolbar .selector-letra--compacto {
+  margin-right: 12px;
+}
+
+ion-toolbar .selector-letra--compacto .selector-letra__btn {
+  border-color: #fff;
+  background: transparent;
+  color: #fff;
+}
+
+ion-toolbar .selector-letra--compacto .selector-letra__btn[aria-pressed='true'] {
+  background: #fff;
+  color: var(--hm-petroleo-oscuro);
+}
+
+/* Número de planes pendientes en la pestaña Bandeja: grande y legible, no un punto. */
+.barra-admin ion-badge {
+  min-width: 22px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  top: 4px;
+}
+
+@media (max-width: 520px) {
+  .franja-admin {
+    font-size: 0.85rem;
+    line-height: 1.25;
+  }
+}

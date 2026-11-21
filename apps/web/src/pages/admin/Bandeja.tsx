@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import BloqueConfianza from '../../admin/BloqueConfianza';
 import PaginaAdmin from '../../admin/PaginaAdmin';
 import { useAcceso } from '../../admin/acceso';
+import { EVENTO_BANDEJA } from '../../admin/pendientes';
 import { aprobarPublicador, decidir, getPendientes } from '../../api/admin';
 import { CATEGORIAS, NECESIDADES, PUBLICOS, type PendienteBandeja } from '../../api/types';
 import { fechaLarga, horaEvento, precio } from '../../utils/formato';
@@ -98,6 +99,7 @@ const Bandeja: React.FC = () => {
         setAviso(aprobar ? `${p.publicador.nombre} ya puede publicar.` : `${p.publicador.nombre} rechazado.`);
       }
       quitar(p);
+      window.dispatchEvent(new Event(EVENTO_BANDEJA));
     } catch (e) {
       setAviso(e instanceof Error ? e.message : 'No se ha podido guardar.');
     } finally {

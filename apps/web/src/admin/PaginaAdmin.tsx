@@ -46,6 +46,7 @@ const PaginaAdmin: React.FC<{
               {acceso.rol === 'moderador' ? '🏛️' : '🤝'} {acceso.nombre}
               {acceso.demo && ' · modo demo'}
             </span>
+            <SelectorLetra compacto />
             <IonButton size="small" fill="clear" routerLink="/agenda" onClick={acceso.salir}>
               Salir
             </IonButton>
@@ -53,7 +54,7 @@ const PaginaAdmin: React.FC<{
         )}
       </IonHeader>
       <IonContent className="ion-padding contenido-admin">
-        <SelectorLetra />
+        {!acceso.rol && <SelectorLetra />}
         {permitido ? children : <Puerta rolActual={acceso.rol} />}
       </IonContent>
     </IonPage>

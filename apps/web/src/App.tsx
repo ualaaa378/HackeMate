@@ -1,5 +1,6 @@
 import {
   IonApp,
+  IonBadge,
   IonIcon,
   IonLabel,
   IonRouterOutlet,
@@ -14,6 +15,7 @@ import { Navigate, Route, useLocation } from 'react-router-dom';
 
 import ProveedorAcceso from './admin/ProveedorAcceso';
 import { useAcceso } from './admin/acceso';
+import { usePendientesBandeja } from './admin/pendientes';
 import ProveedorSesion from './cuenta/ProveedorSesion';
 import Agenda from './pages/Agenda';
 import Ajustes from './pages/Ajustes';
@@ -59,6 +61,7 @@ const Navegacion: React.FC = () => {
   const { pathname } = useLocation();
   const { rol } = useAcceso();
   const enAdmin = pathname.startsWith('/admin');
+  const pendientes = usePendientesBandeja(enAdmin && rol === 'moderador', pathname);
   return (
     <IonTabs>
       <IonRouterOutlet>
@@ -86,7 +89,15 @@ const Navegacion: React.FC = () => {
           {rol !== 'publicador' && (
             <IonTabButton tab="bandeja" href="/admin/bandeja">
               <IonIcon aria-hidden="true" icon={fileTrayFull} />
-              <IonLabel>Bandeja</IonLabel>
+              <IonLabel>
+                Bandeja
+                {pendientes ? <span className="oculto-visual">, {pendientes} pendientes</span> : null}
+              </IonLabel>
+              {pendientes ? (
+                <IonBadge color="danger" aria-hidden="true">
+                  {pendientes}
+                </IonBadge>
+              ) : null}
             </IonTabButton>
           )}
           <IonTabButton tab="eventos" href="/admin/eventos">
