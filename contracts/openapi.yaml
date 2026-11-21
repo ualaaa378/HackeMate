@@ -264,7 +264,7 @@ paths:
         evento. El moderador decide con los botones de siempre; un segundo rechazo es definitivo (no se puede
         volver a apelar). El aviso de rechazo al publicador lleva `evento_id`, para que el bot ponga [Apelar].
       security: [{ bearer: [] }, { interno: [] }]
-      x-implementado: false
+      x-implementado: true
       parameters: [{ $ref: "#/components/parameters/Id" }]
       requestBody:
         required: true

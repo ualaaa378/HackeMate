@@ -257,10 +257,9 @@ def test_0009_plazas_libres_salen_de_las_inscripciones(url):
         for i, (ev, estado, plazas) in enumerate((("abierto", "confirmada", 2), ("abierto", "confirmada", 1),
                                                    ("abierto", "lista_espera", 1), ("abierto", "cancelada", 1),
                                                    ("lleno", "confirmada", 1), ("pasado", "asistio", 1))):
-            u = Usuario(nombre=f"u{i}")
-            db.add(u)
-            db.flush()
-            db.add(Inscripcion(evento_id=ev, usuario_id=u.id, estado=estado, plazas=plazas, canal="web"))
+            # Igual que los eventos: sin las columnas que llegan después de 0008 (edad, 0011).
+            db.execute(insert(Usuario), [dict(id=f"u{i}", nombre=f"u{i}")])
+            db.add(Inscripcion(evento_id=ev, usuario_id=f"u{i}", estado=estado, plazas=plazas, canal="web"))
         db.commit()
     motor.dispose()
 

@@ -83,6 +83,8 @@ def evento_a_dict(e: Evento, inscritos: int = 0, privados: bool = False) -> dict
         "estado": e.estado,
         "publicador_id": e.publicador_id,
         "propuesto_por_id": e.propuesto_por_id,
+        "apelacion": {"motivo": e.apelacion_motivo, "creada_en": fecha_iso(e.apelacion_en)}
+        if e.apelacion_en is not None else None,
         "publicador_nombre": e.publicador.nombre if e.publicador else None,
         "imagen_url": e.imagen_url,
         "frase_portada": e.frase_portada,
@@ -140,6 +142,8 @@ def publicador_a_dict(p: Publicador, con_contacto: bool = True, actividad: dict 
             if p.responsable
             else None
         )
+        if datos["responsable"] is not None and p.responsable.get("edad") is not None:
+            datos["responsable"]["edad"] = p.responsable["edad"]  # P4a: solo si la dio
         datos["actividad"] = {**actividad, "ultimo_plan": fecha_iso(actividad.get("ultimo_plan"))}
     return datos
 
@@ -175,6 +179,7 @@ def usuario_a_dict(u: Usuario) -> dict:
         "formato_aviso": u.formato_aviso,
         "acepta_avisos": u.acepta_avisos,
         "radio_km": u.radio_km,
+        "edad": u.edad,
         "publicador_id": u.publicador_id,
         "creado_en": fecha_iso(u.creado_en),
     }

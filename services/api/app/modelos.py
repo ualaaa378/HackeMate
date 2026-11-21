@@ -122,6 +122,7 @@ class Usuario(Base):
     # D1 (A8): solo recibe avisos de planes nuevos y recomendaciones quien lo acepta en el bot («Sí, avísame»).
     acepta_avisos: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     radio_km: Mapped[float | None] = mapped_column(Float)
+    edad: Mapped[int | None] = mapped_column(Integer)  # P4a: 14-120, opcional
     publicador_id: Mapped[str | None] = mapped_column(ForeignKey("publicadores.id", use_alter=True))
     creado_en: Mapped[datetime] = _creado()
 
@@ -198,6 +199,9 @@ class Evento(Base):
     # asociación no tiene publicador: sin esto su plan no tendría dueño. Sin clave foránea, como `revisado_por`:
     # añadirla en SQLite obligaría a recrear `eventos` (migración 0010).
     propuesto_por_id: Mapped[str | None] = mapped_column(String(36), index=True)
+    # P3a: la apelación del organizador tras un rechazo (una sola vez por plan)
+    apelacion_motivo: Mapped[str | None] = mapped_column(Text)
+    apelacion_en: Mapped[datetime | None] = mapped_column(FechaUTC())
     # URL http(s) o data URL de imagen (hasta ~1,5 MB): Text. En SQLite sigue siendo VARCHAR(500), que no limita
     # la longitud; así la migración 0007 no tiene que recrear la tabla (ver su docstring).
     imagen_url: Mapped[str | None] = mapped_column(Text().with_variant(String(500), "sqlite"))
