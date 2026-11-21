@@ -48,6 +48,27 @@ describe('client con la API real', () => {
     expect(['confirmada', 'lista_espera']).toContain(insc.estado);
   });
 
+  it('cierra la sesión que ya no vale y repite la petición sin token', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+      const cabeceras = (init?.headers ?? {}) as Record<string, string>;
+      return cabeceras.Authorization
+        ? respuesta(401, {
+            error: { code: 'token_invalido', message: 'El usuario de la sesión ya no existe', details: {} },
+          })
+        : respuesta(200, { id: 'ruta', titulo: 'Ruta' });
+    });
+    const { getEvento, setToken, alCaducarSesion } = await cargarCliente();
+    const caducada = vi.fn();
+    alCaducarSesion(caducada);
+    setToken('token-viejo');
+    const evento = await getEvento('ruta');
+    expect(evento.id).toBe('ruta');
+    expect(caducada).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await getEvento('ruta');
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
   it('pasa a la pantalla los errores de negocio', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
       respuesta(404, { error: { code: 'evento_no_encontrado', message: 'No existe', details: {} } }),
