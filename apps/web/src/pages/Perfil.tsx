@@ -117,6 +117,11 @@ const Perfil: React.FC = () => {
             <IonButton expand="block" fill="outline" routerLink="/proponer">
               Proponer un plan
             </IonButton>
+            {usuario && (
+              <IonButton expand="block" fill="clear" routerLink="/mis-planes">
+                📝 Mis planes propuestos
+              </IonButton>
+            )}
           </IonCardContent>
         </IonCard>
         <IonCard>

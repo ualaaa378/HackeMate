@@ -2083,3 +2083,100 @@ ion-content.contenido-agenda--zonas::part(scroll) {
   border: 1px solid var(--hm-terracota-oscuro);
   font-weight: 700;
 }
+
+/* P5c · «Mis planes propuestos» */
+.mis-planes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--hm-hueco);
+}
+
+.mi-plan {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--hm-borde);
+  border-left: 6px solid var(--hm-petroleo);
+  border-radius: var(--hm-radio);
+  background: #fff;
+  color: var(--hm-texto);
+}
+
+.mi-plan--publicado {
+  border-left-color: var(--hm-verde);
+}
+
+.mi-plan--rechazado {
+  border-left-color: var(--hm-terracota);
+}
+
+.mi-plan--hecho,
+.mi-plan--cancelado {
+  border-left-color: var(--hm-borde);
+}
+
+.mi-plan img {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.mi-plan__texto {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.mi-plan__texto strong {
+  font-size: 1.05rem;
+  color: var(--hm-petroleo-oscuro);
+}
+
+.mi-plan__texto > span {
+  font-size: 0.9rem;
+  color: var(--hm-texto-suave);
+}
+
+.mi-plan__texto > .mi-plan__estado {
+  justify-self: start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--hm-petroleo-claro);
+  color: var(--hm-petroleo-oscuro);
+}
+
+.mi-plan__texto > .mi-plan__estado--publicado {
+  background: var(--hm-verde-claro);
+  color: var(--hm-verde);
+}
+
+.mi-plan__texto > .mi-plan__estado--rechazado {
+  background: var(--hm-terracota-claro);
+  color: var(--hm-terracota-oscuro);
+}
+
+.mi-plan__texto > .mi-plan__estado--hecho,
+.mi-plan__texto > .mi-plan__estado--cancelado {
+  background: var(--hm-oliva-claro);
+  color: var(--hm-texto-suave);
+}
+
+.mi-plan__texto > .mi-plan__motivo {
+  color: var(--hm-terracota-oscuro);
+  font-weight: 600;
+}
+
+.mi-plan__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}

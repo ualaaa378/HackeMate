@@ -189,6 +189,12 @@ export interface paths {
           /** @description Por defecto `publicado`. Sin sesión también se admite `finalizado` (planes pasados, «Recuerdos»). Los demás estados, solo moderador y publicador (sus eventos). */
           estado?: components['schemas']['EstadoEvento'];
           publicador_id?: string;
+          /**
+           * @description P5a, «Mis planes propuestos» (opcional). Id del usuario: los planes que propuso (`propuesto_por_id`) o los de sus
+           *     entidades, en todos los estados salvo `borrador` (o solo en `estado`, si se manda), los más recientes primero.
+           *     Solo para el propio usuario, un moderador o el servicio interno (el bot); para otro, la lista sale vacía.
+           */
+          organizador_id?: string;
           page?: components['parameters']['Page'];
           size?: components['parameters']['Size'];
         };
@@ -3211,6 +3217,11 @@ export interface components {
         | 'archivado';
       /** Format: uuid */
       publicador_id?: string | null;
+      /**
+       * Format: uuid
+       * @description P5a: usuario que propuso el plan (vecino o miembro de una asociación); es su dueño aunque no tenga publicador. Null en lo importado sin remitente y en lo que crea el moderador.
+       */
+      propuesto_por_id?: string | null;
       publicador_nombre?: string | null;
       /** @description Foto o cartel del plan: URL http(s) o data URL de imagen (p. ej. data:image/webp;base64,…) de hasta ~1,5 MB. Si se pasa o no es una imagen, 422 imagen_invalida. */
       imagen_url?: string | null;

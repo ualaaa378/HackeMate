@@ -4,10 +4,7 @@
     "titulo": "Teatro cómico con la Asociación de Mujeres de Benizalón",
     "descripcion": "Obra de teatro de humor interpretada por la Asociación de Mujeres de Benizalón. Anunciada por el Ayuntamiento como «una tarde de risas abundantes».",
     "categoria": "cultural",
-    "etiquetas": [
-      "teatro",
-      "humor"
-    ],
+    "etiquetas": ["teatro", "humor"],
     "municipio": "Uleila del Campo",
     "lugar": "Teatro Municipal",
     "lat": 37.1856,
@@ -36,13 +33,7 @@
     "titulo": "Ruta de la Tapa y el Postre",
     "descripcion": "Desde las 12:00 h, recorrido por los establecimientos para probar sus tapas y postres, con minibús gratuito entre ellos. Con el Tapaporte (al menos 4 sellos de establecimientos distintos) se vota la mejor tapa y el mejor postre y se entra en un sorteo de regalos. 16:00 h música en directo en La Placeta y después DJ. 18:00 h cierre de la urna; 19:00 h entrega de premios.",
     "categoria": "gastronomia",
-    "etiquetas": [
-      "tapas",
-      "postres",
-      "concurso",
-      "musica",
-      "minibus_gratis"
-    ],
+    "etiquetas": ["tapas", "postres", "concurso", "musica", "minibus_gratis"],
     "municipio": "Uleila del Campo",
     "lugar": "Establecimientos del pueblo y La Placeta",
     "lat": 37.1856,
@@ -71,12 +62,7 @@
     "titulo": "Lata navideña de la Virgen de Monte-Sión (edición limitada 2026)",
     "descripcion": "Lata redonda «Costurero, la de toda la vida» (19x5 cm) con diseño inspirado en la cerámica pintada a mano, dedicada a la patrona. Vacía desde 15 € o rellena de mantecados de Estepa por 20 €. Edición limitada para la Navidad de 2026.",
     "categoria": "comercio",
-    "etiquetas": [
-      "navidad",
-      "recuerdo",
-      "mantecados",
-      "sin_hora"
-    ],
+    "etiquetas": ["navidad", "recuerdo", "mantecados", "sin_hora"],
     "municipio": "Lucainena de las Torres",
     "lugar": "Parroquia de Santa María de Monte-Sión, Calle El Viento 1D",
     "lat": 37.0406,
@@ -105,12 +91,7 @@
     "titulo": "Menú completo por 14 € en el Restaurante-Hotel El Museo",
     "descripcion": "Menú completo por 14 € recomendado en el vídeo «Parada Obligatoria» que compartió el Ayuntamiento. El establecimiento también es hotel de 2 estrellas.",
     "categoria": "gastronomia",
-    "etiquetas": [
-      "restaurante",
-      "menu",
-      "hotel",
-      "sin_hora"
-    ],
+    "etiquetas": ["restaurante", "menu", "hotel", "sin_hora"],
     "municipio": "Lucainena de las Torres",
     "lugar": "Restaurante-Hotel El Museo",
     "lat": 37.0406,
@@ -139,12 +120,7 @@
     "titulo": "Cabalgata de Reyes Magos",
     "descripcion": "Cabalgata de Reyes en la noche del 5 de enero. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.",
     "categoria": "fiestas",
-    "etiquetas": [
-      "navidad",
-      "infantil",
-      "fecha_estimada",
-      "sin_hora"
-    ],
+    "etiquetas": ["navidad", "infantil", "fecha_estimada", "sin_hora"],
     "municipio": "Lucainena de las Torres",
     "lugar": null,
     "lat": 37.0406,
@@ -173,12 +149,7 @@
     "titulo": "Cabalgata de Reyes Magos",
     "descripcion": "Cabalgata de Reyes en la noche del 5 de enero. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.",
     "categoria": "fiestas",
-    "etiquetas": [
-      "navidad",
-      "infantil",
-      "fecha_estimada",
-      "sin_hora"
-    ],
+    "etiquetas": ["navidad", "infantil", "fecha_estimada", "sin_hora"],
     "municipio": "Uleila del Campo",
     "lugar": null,
     "lat": 37.1856,
@@ -207,11 +178,7 @@
     "titulo": "Fiestas de San Sebastián",
     "descripcion": "Fiestas de San Sebastián, el tercer fin de semana de enero. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.",
     "categoria": "fiestas",
-    "etiquetas": [
-      "fiesta_patronal",
-      "fecha_estimada",
-      "sin_hora"
-    ],
+    "etiquetas": ["fiesta_patronal", "fecha_estimada", "sin_hora"],
     "municipio": "Lucainena de las Torres",
     "lugar": null,
     "lat": 37.0406,
@@ -240,12 +207,7 @@
     "titulo": "Noche de los Burros",
     "descripcion": "Tradición del Sábado de Gloria (Sábado Santo) en la que los animales se cambian de un corral a otro. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.",
     "categoria": "fiestas",
-    "etiquetas": [
-      "semana_santa",
-      "tradicion",
-      "fecha_estimada",
-      "sin_hora"
-    ],
+    "etiquetas": ["semana_santa", "tradicion", "fecha_estimada", "sin_hora"],
     "municipio": "Senés",
     "lugar": null,
     "lat": 37.1983,
@@ -274,11 +236,7 @@
     "titulo": "Romería Chica a Monteagud",
     "descripcion": "Romería al santuario de Monteagud el último domingo de abril. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.",
     "categoria": "fiestas",
-    "etiquetas": [
-      "romeria",
-      "fecha_estimada",
-      "sin_hora"
-    ],
+    "etiquetas": ["romeria", "fecha_estimada", "sin_hora"],
     "municipio": "Uleila del Campo",
     "lugar": null,
     "lat": 37.1856,
@@ -307,10 +265,7 @@
     "titulo": "Fiesta del Emigrante",
     "descripcion": "Fiesta del Emigrante, el primer fin de semana de agosto. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.",
     "categoria": "fiestas",
-    "etiquetas": [
-      "fecha_estimada",
-      "sin_hora"
-    ],
+    "etiquetas": ["fecha_estimada", "sin_hora"],
     "municipio": "Uleila del Campo",
     "lugar": null,
     "lat": 37.1856,
@@ -339,13 +294,7 @@
     "titulo": "Fiestas patronales del Santo Cristo de las Penas",
     "descripcion": "Fiestas patronales en honor al Santo Cristo de las Penas, en torno al segundo sábado de septiembre: feria de mediodía, verbenas, actividades infantiles, misa, procesión y fuegos artificiales. Las actividades son gratuitas según la guía de fiestas. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.",
     "categoria": "fiestas",
-    "etiquetas": [
-      "fiesta_patronal",
-      "verbena",
-      "procesion",
-      "fecha_estimada",
-      "sin_hora"
-    ],
+    "etiquetas": ["fiesta_patronal", "verbena", "procesion", "fecha_estimada", "sin_hora"],
     "municipio": "Uleila del Campo",
     "lugar": null,
     "lat": 37.1856,
@@ -374,10 +323,7 @@
     "titulo": "Fiesta de la Virgen del Pilar",
     "descripcion": "Fiesta de la Virgen del Pilar, el 12 de octubre. Fecha estimada a partir del calendario festivo habitual publicado en la fuente; pendiente de confirmar por el ayuntamiento.",
     "categoria": "fiestas",
-    "etiquetas": [
-      "fecha_estimada",
-      "sin_hora"
-    ],
+    "etiquetas": ["fecha_estimada", "sin_hora"],
     "municipio": "Uleila del Campo",
     "lugar": null,
     "lat": 37.1856,
@@ -406,12 +352,7 @@
     "titulo": "21.º Día de las Flores",
     "descripcion": "Fin de semana con ecomercado de productos locales y artesanía, talleres infantiles, descubrimiento de la cruz municipal, concurso de cruces de mayo, música y bailes tradicionales. La Asociación de Mujeres Lucanius ofreció migas y arroz con fines solidarios.",
     "categoria": "fiestas",
-    "etiquetas": [
-      "flores",
-      "cruces_de_mayo",
-      "ecomercado",
-      "sin_hora"
-    ],
+    "etiquetas": ["flores", "cruces_de_mayo", "ecomercado", "sin_hora"],
     "municipio": "Lucainena de las Torres",
     "lugar": "Pueblo; ecomercado junto a la iglesia",
     "lat": 37.0406,
@@ -440,10 +381,7 @@
     "titulo": "Exaltación y besamanos de la Virgen de Monte-Sión",
     "descripcion": "Inicio de los Solemnes Cultos: Exaltación a la Virgen de Monte-Sión, bendición e imposición de medallas, acto «Bajo el Manto de la Madre» y besamanos.",
     "categoria": "fiestas",
-    "etiquetas": [
-      "fiesta_patronal",
-      "religioso"
-    ],
+    "etiquetas": ["fiesta_patronal", "religioso"],
     "municipio": "Lucainena de las Torres",
     "lugar": "Parroquia de Santa María de Monte-Sión",
     "lat": 37.0406,
@@ -472,11 +410,7 @@
     "titulo": "Día de la Virgen de Monte-Sión: veneración y procesión",
     "descripcion": "La Virgen, entronizada en el altar mayor de 10:30 a 14:00, y procesión por la calle Posadas, la Plaza del Ayuntamiento y la calle Real con la Banda de Música Santa Cecilia de Sorbas.",
     "categoria": "fiestas",
-    "etiquetas": [
-      "fiesta_patronal",
-      "procesion",
-      "banda_de_musica"
-    ],
+    "etiquetas": ["fiesta_patronal", "procesion", "banda_de_musica"],
     "municipio": "Lucainena de las Torres",
     "lugar": "Parroquia de Santa María de Monte-Sión y calles del pueblo",
     "lat": 37.0406,
@@ -505,9 +439,7 @@
     "titulo": "Día de los Pueblos más Bonitos de España",
     "descripcion": "Lectura del manifiesto de la asociación Los Pueblos más Bonitos de España con vecinos, alumnado y profesorado del colegio.",
     "categoria": "cultural",
-    "etiquetas": [
-      "pueblos_mas_bonitos"
-    ],
+    "etiquetas": ["pueblos_mas_bonitos"],
     "municipio": "Lucainena de las Torres",
     "lugar": "Plaza del Ayuntamiento",
     "lat": 37.0406,
@@ -536,10 +468,7 @@
     "titulo": "Taller de sevillanas",
     "descripcion": "Taller de sevillanas con María Durán, para todos los niveles. Sesiones el lunes 3 y el miércoles 5 de agosto a las 12:00.",
     "categoria": "cultural",
-    "etiquetas": [
-      "baile",
-      "fiestas_de_agosto"
-    ],
+    "etiquetas": ["baile", "fiestas_de_agosto"],
     "municipio": "Senés",
     "lugar": "Salón Cultural",
     "lat": 37.1983,
@@ -568,10 +497,7 @@
     "titulo": "Taller de bachata",
     "descripcion": "Taller de bachata con Salva Linares: nivel inicial de 18:00 a 19:00 y avanzado de 19:00 a 20:00.",
     "categoria": "cultural",
-    "etiquetas": [
-      "baile",
-      "fiestas_de_agosto"
-    ],
+    "etiquetas": ["baile", "fiestas_de_agosto"],
     "municipio": "Senés",
     "lugar": "Salón Cultural",
     "lat": 37.1983,
@@ -600,11 +526,7 @@
     "titulo": "Fiestas patronales del Santo Cristo de las Penas 2026",
     "descripcion": "Pregón de Nerea Molina Sánchez y coronación de Reinas y Majos; feria de mediodía; exposición de aves, alfarería, tiro con arco y concurso de mascotas; fiesta flamenca con el coro de Uleila, charanga, pasacalles K-Pop; verbenas con Orquesta El Origen, Dúo Reencuentro, Acontraluz y tributos a Camela y La Oreja de Van Gogh.",
     "categoria": "fiestas",
-    "etiquetas": [
-      "fiesta_patronal",
-      "verbena",
-      "feria"
-    ],
+    "etiquetas": ["fiesta_patronal", "verbena", "feria"],
     "municipio": "Uleila del Campo",
     "lugar": "Calles del pueblo, La Placeta y pistas de petanca",
     "lat": 37.1856,
@@ -633,10 +555,7 @@
     "titulo": "Carrera vertical de Uleila del Campo",
     "descripcion": "Carrera de montaña de 4 km con 700 m de desnivel positivo, con recorridos para menores. Organizan el Ayuntamiento y la Federación Andaluza de Deportes de Montaña, Escalada y Senderismo.",
     "categoria": "deportiva",
-    "etiquetas": [
-      "carrera_de_montana",
-      "trail"
-    ],
+    "etiquetas": ["carrera_de_montana", "trail"],
     "municipio": "Uleila del Campo",
     "lugar": "Salida en la Plaza",
     "lat": 37.1856,
@@ -665,10 +584,7 @@
     "titulo": "Espectáculo de baile flamenco",
     "descripcion": "Espectáculo organizado por la escuela de baile flamenco 11 Rosas 2 Claveles.",
     "categoria": "cultural",
-    "etiquetas": [
-      "baile",
-      "flamenco"
-    ],
+    "etiquetas": ["baile", "flamenco"],
     "municipio": "Uleila del Campo",
     "lugar": "La Placeta",
     "lat": 37.1856,
@@ -697,11 +613,7 @@
     "titulo": "Halloween: pasacalles y concurso de disfraces",
     "descripcion": "Pasacalles y concurso de disfraces con premios infantiles, de adultos y de grupo. Se aplazó del 31 de octubre al 2 de noviembre por el luto nacional.",
     "categoria": "ludica",
-    "etiquetas": [
-      "halloween",
-      "disfraces",
-      "infantil"
-    ],
+    "etiquetas": ["halloween", "disfraces", "infantil"],
     "municipio": "Uleila del Campo",
     "lugar": "Salida desde el Ayuntamiento hasta La Placeta",
     "lat": 37.1856,

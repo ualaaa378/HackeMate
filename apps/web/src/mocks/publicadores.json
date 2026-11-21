@@ -13,7 +13,12 @@
     "automatizaciones_pausadas": false,
     "categorias_habituales": ["deportiva", "cultural"],
     "fuentes": [
-      { "id": "6f0e0000-0000-4000-8000-000000000001", "canal": "facebook", "url": "https://www.facebook.com/amigosdevelefique", "activa": true }
+      {
+        "id": "6f0e0000-0000-4000-8000-000000000001",
+        "canal": "facebook",
+        "url": "https://www.facebook.com/amigosdevelefique",
+        "activa": true
+      }
     ],
     "usuario_id": "5a5e0000-0000-4000-8000-000000000003",
     "creado_en": "2026-11-01T10:00:00+01:00"
@@ -32,7 +37,12 @@
     "automatizaciones_pausadas": false,
     "categorias_habituales": ["cultural", "comercio", "fiestas"],
     "fuentes": [
-      { "id": "6f0e0000-0000-4000-8000-000000000002", "canal": "web_externa", "url": "https://www.lucainenadelastorres.es/agenda", "activa": true }
+      {
+        "id": "6f0e0000-0000-4000-8000-000000000002",
+        "canal": "web_externa",
+        "url": "https://www.lucainenadelastorres.es/agenda",
+        "activa": true
+      }
     ],
     "usuario_id": null,
     "creado_en": "2026-10-15T10:00:00+02:00"
@@ -51,7 +61,12 @@
     "automatizaciones_pausadas": false,
     "categorias_habituales": ["gastronomia"],
     "fuentes": [
-      { "id": "6f0e0000-0000-4000-8000-000000000003", "canal": "instagram", "url": "https://www.instagram.com/barlaplazasenes", "activa": true }
+      {
+        "id": "6f0e0000-0000-4000-8000-000000000003",
+        "canal": "instagram",
+        "url": "https://www.instagram.com/barlaplazasenes",
+        "activa": true
+      }
     ],
     "usuario_id": "5a5e0000-0000-4000-8000-000000000004",
     "creado_en": "2026-10-20T10:00:00+02:00"
