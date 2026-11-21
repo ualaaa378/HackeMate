@@ -8,6 +8,7 @@
 
 import { NOMBRE_CANAL } from '../canal';
 import eventosMock from '../mocks/eventos.json';
+import { direccionGuardada } from '../servidor';
 import { yaPaso } from '../utils/formato';
 
 import type {
@@ -26,10 +27,14 @@ import type {
   UsuarioEditar,
 } from './types';
 
-const API_URL_CONFIGURADA = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim();
+// La dirección guardada en Ajustes (APK) manda sobre la de la build; al cambiarla se recarga la app.
+const API_URL_CONFIGURADA = (
+  direccionGuardada() ||
+  ((import.meta.env.VITE_API_URL as string | undefined) ?? '')
+).trim();
 // «/» se queda en '' y las rutas salen relativas (/api/v1/…); vacío del todo significa mocks.
 const API_URL = API_URL_CONFIGURADA.replace(/\/+$/, '');
-export const USAR_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true' || !API_URL_CONFIGURADA;
+export const USAR_MOCKS = (import.meta.env.VITE_USE_MOCKS === 'true' && !direccionGuardada()) || !API_URL_CONFIGURADA;
 
 let token: string | null = null;
 export function setToken(nuevo: string | null) {

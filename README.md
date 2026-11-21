@@ -448,7 +448,22 @@ Más detalle: [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) (decisiones y canal
 
 ## 📱 App web y Android (flujo C)
 
-*Pendiente: sección a cargo del flujo C (`apps/web/`).*
+### APK de Android (C9)
+
+El proyecto Android está en `apps/web/android` (Capacitor 8, `appId` `es.hackemate.app`). Hace falta Android Studio (trae el JDK 21 en `jbr`) con el SDK 36 instalado, y **datos del móvil** (la red de la uni bloquea npm y Gradle).
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+cd apps\web
+npm ci
+npm run build:apk                 # build con .env.apk y copia a android/
+cd android
+.\gradlew.bat assembleDebug       # → app\build\outputs\apk\debug\app-debug.apk
+copy app\build\outputs\apk\debug\app-debug.apk C:\Users\aalva\Desktop\Hackaton\HackeMate.apk
+```
+
+En el móvil: instalar el `.apk` (permitir orígenes desconocidos), ir a **Perfil → Ajustes → Dirección del servidor** y pegar la URL que da `python scripts/url_publica.py`. La app la comprueba, la guarda y se recarga. Cuando el túnel cambie de URL, se cambia ahí sin reinstalar. Sin dirección, la app enseña los datos de ejemplo.
 
 ---
 

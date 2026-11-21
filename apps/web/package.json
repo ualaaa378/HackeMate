@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:apk": "tsc && vite build --mode apk && cap sync android",
     "preview": "vite preview",
     "lint": "npm run eslint && npm run typecheck:e2e && npm run prettier -- --check",
     "lint:fix": "npm run eslint -- --fix && npm run prettier -- --write",
@@ -19,6 +20,7 @@
     "api:tipos": "openapi-typescript ../../contracts/openapi.yaml -o src/api/openapi.d.ts && prettier --write src/api/openapi.d.ts"
   },
   "dependencies": {
+    "@capacitor/android": "8.6.2",
     "@capacitor/app": "8.1.2",
     "@capacitor/core": "8.6.2",
     "@capacitor/haptics": "8.0.2",

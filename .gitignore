@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 !**/.env.example
+!apps/web/.env.apk
 
 # Python
 .venv/
