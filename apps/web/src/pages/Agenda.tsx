@@ -68,8 +68,8 @@ const Agenda: React.FC = () => {
     }
   }, []);
 
-  // También al volver de la ficha tras apuntarse, para que «Tus planes» esté al día.
-  useIonViewWillEnter(() => void cargarTodos(), [cargarTodos]);
+  // También al volver de la ficha tras apuntarse («Tus planes») o de la bandeja tras aprobar un plan (la agenda).
+  useIonViewWillEnter(() => void Promise.all([cargar(), cargarTodos()]), [cargar, cargarTodos]);
 
   const mios = misPlanes();
   const tusPlanes = todos.filter((e) => mios.has(e.id));

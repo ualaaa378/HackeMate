@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-import type { Usuario } from '../api/types';
+import type { Token, Usuario } from '../api/types';
 
 export interface Sesion {
   usuario: Usuario | null;
@@ -10,6 +10,8 @@ export interface Sesion {
    */
   conCuenta: (motivo: string, accion: (usuario: Usuario) => void) => void;
   abrirCuenta: () => void;
+  /** Guarda una sesión ya conseguida por otra vía (p. ej. la entrada de la demo en /admin). */
+  entrar: (token: Token) => void;
   salir: () => void;
 }
 

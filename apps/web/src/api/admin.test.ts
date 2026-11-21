@@ -161,3 +161,100 @@ describe('isoMadrid', () => {
     expect(isoMadrid('2026-07-15', '21:00')).toBe('2026-07-15T21:00:00+02:00');
   });
 });
+
+describe('interfaz del ayuntamiento con la API real', () => {
+  const respuestas = new Map<string, unknown>();
+  const llamadas: { ruta: string; cuerpo: unknown; auth: string | undefined }[] = [];
+
+  beforeEach(() => {
+    vi.stubEnv('VITE_API_URL', 'http://api.test');
+    respuestas.clear();
+    llamadas.length = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init: RequestInit = {}) => {
+        const ruta = url.replace('http://api.test/api/v1', '');
+        const cabeceras = init.headers as Record<string, string>;
+        llamadas.push({
+          ruta,
+          cuerpo: init.body ? JSON.parse(init.body as string) : null,
+          auth: cabeceras.Authorization,
+        });
+        const r = respuestas.get(ruta.split('?')[0]);
+        const err = r === undefined;
+        return Promise.resolve(
+          new Response(JSON.stringify(err ? { error: { code: 'no_encontrado', message: 'x' } } : r), {
+            status: err ? 404 : 200,
+          }),
+        );
+      }),
+    );
+  });
+
+  async function cargarReal() {
+    vi.resetModules();
+    const admin = await import('./admin');
+    const client = await import('./client');
+    admin.setAdminDemo(false);
+    client.setToken('jwt-moderador');
+    return { ...admin, ...client };
+  }
+
+  it('entrar en la demo pide sesión al usuario de la demo de ese rol', async () => {
+    const api = await cargarReal();
+    const token = { access_token: 't', token_type: 'bearer', usuario: { id: 'u', nombre: 'Lucía', rol: 'moderador' } };
+    respuestas.set('/auth/demo', token);
+    expect(await api.entrarDemo('moderador')).toEqual(token);
+    expect(llamadas[0].cuerpo).toEqual({ usuario_id: '5a5e0000-0000-4000-8000-000000000002' });
+  });
+
+  it('sin DEMO_MODE en la API, la entrada de la demo vuelve a los mocks', async () => {
+    const api = await cargarReal();
+    expect(await api.entrarDemo('publicador')).toBeNull();
+  });
+
+  it('la bandeja enseña los datos privados de la propuesta vecinal que manda la API dentro del evento', async () => {
+    const api = await cargarReal();
+    const privados = { responsable: 'Carmen', telefono: '600000000', entidad: 'particular' };
+    respuestas.set('/moderacion/pendientes', {
+      items: [{ tipo: 'evento', motivo: 'Propuesta vecinal', evento: { id: 'e1', datos_ayuntamiento: privados } }],
+      total: 1,
+      page: 1,
+      size: 100,
+    });
+    const { items } = await api.getPendientes();
+    expect(items[0].propuesta).toEqual(privados);
+    expect(llamadas[0].auth).toBe('Bearer jwt-moderador');
+  });
+
+  it('la propuesta vecinal va a POST /eventos con sus datos privados y la frase aparte', async () => {
+    const api = await cargarReal();
+    api.setToken('jwt-vecina');
+    respuestas.set('/eventos', { id: 'e2', titulo: 'Taller', estado: 'en_revision' });
+    const r = await api.proponerEvento(
+      { titulo: 'Taller', categoria: 'cultural', municipio: 'Senés', fecha_inicio: '2026-11-28T11:00:00+01:00' },
+      {
+        responsable: 'Carmen',
+        telefono: '600000000',
+        entidad: 'particular',
+        publico: 'todos',
+        necesidades: [],
+        seguro_rc: 'nose',
+        frase_portada: '¡Ven a aprender!',
+      },
+    );
+    expect(r.demo).toBe(false);
+    const cuerpo = llamadas[0].cuerpo as Record<string, unknown>;
+    expect(cuerpo.frase_portada).toBe('¡Ven a aprender!');
+    expect(cuerpo.datos_ayuntamiento).not.toHaveProperty('frase_portada');
+    expect(cuerpo.datos_ayuntamiento).toMatchObject({ responsable: 'Carmen' });
+  });
+
+  it('simular la caída de la IA pasa por la API y no se finge si el bot no responde', async () => {
+    const api = await cargarReal();
+    respuestas.set('/admin/bot/simular-caida', { activa: true });
+    expect(await api.simularCaida(true)).toEqual({ activa: true });
+    expect(llamadas[0].cuerpo).toEqual({ activa: true });
+    await expect(api.getMetricasBot()).rejects.toThrow();
+  });
+});

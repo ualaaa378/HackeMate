@@ -49,6 +49,7 @@ const ProveedorSesion: React.FC<{ children: React.ReactNode }> = ({ children }) 
         pendiente.current = null;
         setMotivo(MOTIVO_GENERAL);
       },
+      entrar: (t) => guardar(t),
       salir: () => guardar(null),
     }),
     [sesion, guardar],
