@@ -40,6 +40,7 @@ class ApiFalsa:
         self.lleno = False
         self.recomendaciones: list[dict] | None = None
         self.chat_implementado = False
+        self.finalizados: set[str] = set()  # eventos que la api da por terminados (409)
 
     def __call__(self, metodo, ruta, json=None):
         from app.api_cliente import ApiNoDisponible, ErrorApi
@@ -95,6 +96,9 @@ class ApiFalsa:
             if self.recomendaciones is None:
                 raise ErrorApi(404, "no_encontrado", "Not Found")
             return {"items": self.recomendaciones}
+        if ruta.endswith("/inscripciones") or ruta.endswith("/mensajes"):
+            if ruta.split("/")[4] in self.finalizados:
+                raise ErrorApi(409, "evento_finalizado", "El plan ya ha terminado")
         if ruta.endswith("/inscripciones"):
             if not self.inscripciones_implementadas:
                 raise ErrorApi(404, "no_encontrado", "Not Found")

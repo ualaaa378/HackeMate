@@ -20,6 +20,8 @@ MAX_TARJETAS = 3
 NOMBRE_CATEGORIA = {"deportiva": "deporte y rutas", "cultural": "cultura", "fiestas": "fiestas",
                     "gastronomia": "gastronomía", "ludica": "ocio y juegos", "comercio": "ofertas"}
 PEDIR_TELEFONO = "Para apuntarte necesito saber quién eres: pulsa *Compartir mi número* aquí abajo."
+PLAN_TERMINADO = "Ese plan ya ha terminado 😕 Pregúntame «¿qué hay este finde?» y te enseño los próximos."
+ESTADOS_TERMINADOS = ("finalizado", "cancelado", "archivado")
 
 
 @dataclass
@@ -49,6 +51,17 @@ def _canal(msg: MensajeEntrante) -> str:
 
 def _enlace(evento_id: str) -> str:
     return f"{get_settings().web_url.rstrip('/')}/evento/{evento_id}"
+
+
+def terminado(ev: dict) -> bool:
+    """Plan pasado (o cancelado): no admite inscripciones ni preguntas (contrato: 409 evento_finalizado)."""
+    if ev.get("estado") in ESTADOS_TERMINADOS:
+        return True
+    try:
+        fin = datetime.fromisoformat(ev.get("fecha_fin") or ev["fecha_inicio"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    return fin < _ahora()
 
 
 def mirando_evento(contacto: str) -> bool:
@@ -213,20 +226,32 @@ def info(msg: MensajeEntrante, evento_id: str) -> list:
     texto = tarjeta(ev)
     if ev.get("descripcion"):
         texto += f"\n\n{ev['descripcion']}"
+    if terminado(ev):
+        # Plan pasado: no se puede apuntar ni preguntar, solo ver fotos y comentar en la web
+        texto += f"\n\nEste plan ya terminó 📸 Mira las fotos y los comentarios en la web:\n🔗 {_enlace(ev['id'])}"
+        return [Respuesta(texto)]
     texto += f"\n\n🔗 {_enlace(ev['id'])}\n\nPregúntame lo que quieras de este plan (hora, precio, qué llevar…)."
     return [Respuesta(texto, [(f"insc:{ev['id']}", "✋ Apuntarme")])]
 
 
 def pregunta(msg: MensajeEntrante, texto: str, usuario: dict | None) -> list:
     ev = _v(msg.de).evento_activo
+    botones = None if terminado(ev) else [(f"insc:{ev['id']}", "✋ Apuntarme")]
     r = asistente.responder(ev, texto)
     if r.puede_responder:
-        return [Respuesta(r.respuesta, [(f"insc:{ev['id']}", "✋ Apuntarme")])]
+        return [Respuesta(r.respuesta, botones)]
+    if terminado(ev):
+        return [f"Eso no lo pone en la ficha, y el plan ya terminó 📸 En la web puedes ver las fotos y comentar:\n"
+                f"🔗 {_enlace(ev['id'])}"]
     if usuario and usuario.get("id"):
         try:
             api_cliente.preguntar_en_chat(ev["id"], usuario["id"], texto)
             return ["Eso no lo pone en la ficha 🤔 Se lo he pasado al organizador y te contestará."]
-        except (ApiNoDisponible, ErrorApi) as e:
+        except ErrorApi as e:
+            if e.code == "evento_finalizado":
+                return [PLAN_TERMINADO]
+            log.info("No se pudo dejar la pregunta en el chat del evento: %s", e)
+        except ApiNoDisponible as e:
             log.info("No se pudo dejar la pregunta en el chat del evento: %s", e)
     return [f"Eso no lo pone en la ficha 🤔 Puedes preguntarlo al organizador en el chat del evento:\n🔗 {_enlace(ev['id'])}"]
 
@@ -236,6 +261,8 @@ def inscribir(msg: MensajeEntrante, evento_id: str | None, usuario: dict | None)
     evento_id = evento_id or (v.evento_activo or {}).get("id") or (v.ultimos[0] if len(v.ultimos) == 1 else None)
     if not evento_id:
         return ["¿A qué plan te quieres apuntar? Búscalo primero, por ejemplo: «¿qué hay este finde?»"]
+    if (v.evento_activo or {}).get("id") == evento_id and terminado(v.evento_activo):
+        return [PLAN_TERMINADO]  # ya sabemos que pasó: ni lo intentamos
     if not usuario:
         if telegram.es_telegram(msg.de):
             v.inscripcion_pendiente = evento_id
@@ -249,6 +276,8 @@ def inscribir(msg: MensajeEntrante, evento_id: str | None, usuario: dict | None)
     except ApiNoDisponible:
         return ["Ahora mismo no puedo apuntarte. Inténtalo en un minuto 🙏"]
     except ErrorApi as e:
+        if e.status == 409 and e.code == "evento_finalizado":
+            return [PLAN_TERMINADO]
         if e.status == 409:
             return ["Ya estabas apuntado/a 😉"]
         if e.status == 404 and e.code == "no_encontrado":  # la api aún no tiene inscripciones
