@@ -2,9 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "notificacion.json",
   "title": "Notificacion",
-  "description": "Aviso que la API pide enviar al bot con POST /notify. Si el bot está caído, queda en cola (estado_envio = pendiente).",
+  "description": "Aviso que la API pide enviar al bot con POST /notify. Si el bot está caído, queda en cola (estado_envio = pendiente). Destino: `telefono` (E.164), `contacto` (E.164 o tg:<chat_id>) o los dos; si viene `contacto`, manda.",
   "type": "object",
-  "required": ["telefono", "tipo", "texto"],
+  "required": ["tipo", "texto"],
+  "anyOf": [{ "required": ["telefono"] }, { "required": ["contacto"] }],
+  "$comment": "D1 (sáb 21/11): basta con telefono o con contacto; quien solo usa Telegram no tiene teléfono.",
   "properties": {
     "id": { "type": "string", "format": "uuid" },
     "telefono": { "type": "string", "pattern": "^\\+[1-9][0-9]{6,14}$" },

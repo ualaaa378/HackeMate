@@ -122,12 +122,21 @@ def test_sin_bot_url_queda_pendiente(db, bot, monkeypatch):
     assert n.estado_envio == "pendiente" and "BOT_URL" in n.ultimo_error and not bot.recibidas
 
 
-def test_usuario_solo_telegram_se_guarda_como_fallida(db, bot):
+def test_usuario_solo_telegram_recibe_el_aviso(db, bot):
+    """A9 (D1): sin teléfono, el aviso sale por su Telegram (`contacto`) y el cuerpo no lleva `telefono`."""
     u = _usuario(db, telegram_id="99")
     n = notificar(db, tipo="anuncio", texto="Hola", usuario=u)
     db.commit()
-    assert n.estado_envio == "fallida" and n.ultimo_error == "sin telefono" and n.contacto == "tg:99"
-    assert not bot.recibidas
+    assert n.estado_envio == "enviada" and n.contacto == "tg:99" and n.telefono is None
+    cuerpo = bot.cuerpos()[-1]
+    assert cuerpo["contacto"] == "tg:99" and "telefono" not in cuerpo
+    assert not list(VALIDADOR.iter_errors(cuerpo))
+
+
+def test_sin_telefono_ni_contacto_se_guarda_como_fallida(db, bot):
+    n = notificar(db, tipo="anuncio", texto="Hola", usuario=_usuario(db))
+    db.commit()
+    assert n.estado_envio == "fallida" and n.ultimo_error == "sin destino" and not bot.recibidas
 
 
 def test_reintentar_con_bot_ok_envia(db, bot):
@@ -196,8 +205,10 @@ def test_enviar_false_no_llama_al_bot(db, bot):
     n = notificar(db, tipo="anuncio", texto="Hola", telefono="+34600000201", enviar=False)
     db.commit()
     assert n.estado_envio == "pendiente" and n.intentos == 0 and not bot.recibidas
-    sin_tel = notificar(db, tipo="anuncio", texto="Hola", usuario=_usuario(db, telegram_id="98"), enviar=False)
-    assert sin_tel.estado_envio == "fallida" and sin_tel.ultimo_error == "sin telefono"
+    solo_tg = notificar(db, tipo="anuncio", texto="Hola", usuario=_usuario(db, telegram_id="98"), enviar=False)
+    assert solo_tg.estado_envio == "pendiente"
+    sin_destino = notificar(db, tipo="anuncio", texto="Hola", usuario=_usuario(db), enviar=False)
+    assert sin_destino.estado_envio == "fallida" and sin_destino.ultimo_error == "sin destino"
 
 
 @pytest.mark.parametrize("modo, estado, intentos", [("ok", "enviada", 1), ("caido", "pendiente", 1)])
@@ -236,7 +247,7 @@ def test_enviar_en_segundo_plano_programa_solo_pendientes(db, motor, bot):
 
     tareas = BackgroundTasks()
     a = notificar(db, tipo="anuncio", texto="Uno", telefono="+34600000201", enviar=False)
-    b = notificar(db, tipo="anuncio", texto="Dos", usuario=_usuario(db, telegram_id="97"), enviar=False)
+    b = notificar(db, tipo="anuncio", texto="Dos", usuario=_usuario(db), enviar=False)  # sin destino: fallida
     db.commit()
     assert notificaciones.enviar_en_segundo_plano(tareas, db, [a, b, None]) == [a.id]
     assert not bot.recibidas  # aún no: corre después de la respuesta
@@ -381,3 +392,11 @@ def test_dos_envios_a_la_vez_del_mismo_aviso_salen_una_vez(db, motor, bot, monke
     db.expire_all()
     guardada = db.get(Notificacion, n.id)
     assert guardada.estado_envio == "enviada" and guardada.intentos == 1
+
+
+def test_contrato_exige_telefono_o_contacto():
+    """A9 (D1): basta con uno de los dos; sin ninguno, el contrato lo rechaza."""
+    base = {"tipo": "anuncio", "texto": "Hola"}
+    assert not list(VALIDADOR.iter_errors(base | {"telefono": "+34600000201"}))
+    assert not list(VALIDADOR.iter_errors(base | {"contacto": "tg:99"}))
+    assert list(VALIDADOR.iter_errors(base))

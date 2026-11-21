@@ -234,7 +234,9 @@ def test_publicador_de_confianza_publica_con_su_entidad(api, db):
     assert r.status_code == 201, r.text
     assert r.json()["publicador_id"] == BAR_LA_PLAZA and r.json()["estado"] == "publicado"
     assert r.json()["moderacion"]["score_spam"] is not None
-    assert not db.scalars(select(Notificacion).where(Notificacion.evento_id == r.json()["id"])).all()
+    # Sin aviso a los moderadores (solo los de A10 a quien le puede interesar)
+    assert not db.scalars(select(Notificacion).where(Notificacion.evento_id == r.json()["id"],
+                                                     Notificacion.tipo != "recomendacion")).all()
     # Puede indicar su propio publicador_id.
     r = api.post("/api/v1/eventos", json={**NUEVO, "titulo": "Tapas de invierno", "categoria": "gastronomia",
                                           "publicador_id": BAR_LA_PLAZA},
