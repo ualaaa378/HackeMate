@@ -8,7 +8,7 @@
 
 import { NOMBRE_CANAL } from '../canal';
 import eventosMock from '../mocks/eventos.json';
-import { direccionGuardada } from '../servidor';
+import { ES_APP_NATIVA, direccionGuardada } from '../servidor';
 import { yaPaso } from '../utils/formato';
 
 import type {
@@ -34,7 +34,11 @@ const API_URL_CONFIGURADA = (
 ).trim();
 // «/» se queda en '' y las rutas salen relativas (/api/v1/…); vacío del todo significa mocks.
 const API_URL = API_URL_CONFIGURADA.replace(/\/+$/, '');
-export const USAR_MOCKS = (import.meta.env.VITE_USE_MOCKS === 'true' && !direccionGuardada()) || !API_URL_CONFIGURADA;
+// En el APK, una URL relativa apunta a la propia app (https://localhost): sin dirección guardada, mocks.
+export const USAR_MOCKS =
+  (import.meta.env.VITE_USE_MOCKS === 'true' && !direccionGuardada()) ||
+  !API_URL_CONFIGURADA ||
+  (ES_APP_NATIVA && !direccionGuardada());
 
 let token: string | null = null;
 export function setToken(nuevo: string | null) {
@@ -98,7 +102,14 @@ export async function peticion<T>(ruta: string, opciones: RequestInit = {}): Pro
       (cuerpo.error.details as Record<string, unknown> | null) ?? null,
     );
   }
-  return resp.status === 204 ? (undefined as T) : ((await resp.json()) as T);
+  if (resp.status === 204) return undefined as T;
+  // Un 200 que no es JSON (la página de la web o del túnel) no es la API.
+  const texto = await resp.text();
+  try {
+    return JSON.parse(texto) as T;
+  } catch {
+    throw new ApiNoDisponible('la respuesta no es JSON');
+  }
 }
 
 export async function conRespaldo<T>(real: () => Promise<T>, mock: () => Promise<T>): Promise<T> {
