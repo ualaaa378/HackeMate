@@ -289,3 +289,24 @@ def test_spam_sin_fecha_no_se_queda_preguntando(agenda):
     texto = " ".join(x if isinstance(x, str) else x.texto for x in r)
     assert "spam" in texto and "¿Qué día" not in texto
     assert not conversacion.estados.get("+34600000201") or not conversacion.estados["+34600000201"].preguntando
+
+
+def test_recomendaciones_de_este_finde_solo_son_de_este_finde(agenda, monkeypatch):
+    # Sábado por la mañana: «este finde» es hoy y mañana
+    monkeypatch.setattr(vecino, "_ahora", lambda: datetime(2026, 11, 21, 10, 0, tzinfo=TZ))
+    finde = dict(agenda.agenda[0], id="f1", titulo="Fiesta del sábado", fecha_inicio="2026-11-21T20:00:00+01:00")
+    lejos = dict(agenda.agenda[1], id="l1", titulo="Ruta del 13", fecha_inicio="2026-12-13T09:00:00+01:00")
+    agenda.recomendaciones = [{"evento": lejos, "motivo": "Te gusta el senderismo"},
+                              {"evento": finde, "motivo": "Es en tu pueblo"}]
+    r = conversacion.procesar(_msg("¿Qué planes hay este finde?"))
+    texto = " ".join(x if isinstance(x, str) else x.texto for x in r)
+    assert "Fiesta del sábado" in texto and "Ruta del 13" not in texto
+
+
+def test_sin_recomendaciones_en_el_finde_dice_que_no_hay_y_ofrece_mas_adelante(agenda, monkeypatch):
+    monkeypatch.setattr(vecino, "_ahora", lambda: datetime(2026, 11, 21, 10, 0, tzinfo=TZ))
+    lejos = dict(agenda.agenda[1], id="l1", titulo="Ruta del 13", fecha_inicio="2026-12-13T09:00:00+01:00")
+    agenda.recomendaciones = [{"evento": lejos, "motivo": "Te gusta el senderismo"}]
+    agenda.agenda = [lejos]
+    r = conversacion.procesar(_msg("¿Qué planes hay este finde?"))
+    assert "Te recomiendo este fin de semana" not in r[0] and "más adelante" in r[0]
