@@ -49,12 +49,16 @@ export type Necesidad = keyof typeof NECESIDADES;
 export interface DatosAyuntamiento {
   responsable: string;
   telefono: string;
-  entidad: 'particular' | 'asociacion' | 'comercio' | 'otra';
+  entidad: 'particular' | 'asociacion' | 'comercio' | 'otra' | 'ayuntamiento';
   entidad_nombre?: string;
   publico: Publico;
   necesidades: Necesidad[];
   seguro_rc: 'si' | 'no' | 'nose';
   observaciones?: string;
+  /** Solo ayuntamientos (plan creado desde el panel): concejalía o área, espacio reservado y accesibilidad. */
+  area?: string | null;
+  espacio_reservado?: boolean | null;
+  accesible?: boolean | null;
   /** Frase corta y pública para la portada del plan. Se envía como `EventoCrear.frase_portada`. */
   frase_portada?: string;
 }

@@ -16,8 +16,17 @@ import {
 import { useState } from 'react';
 
 import { MUNICIPIOS } from '../api/client';
-import { CATEGORIAS, type Categoria, type Evento, type EventoCrear, type Publicador } from '../api/types';
+import {
+  CATEGORIAS,
+  PUBLICOS,
+  type Categoria,
+  type Evento,
+  type EventoCrear,
+  type Publicador,
+  type Publico,
+} from '../api/types';
 import SelectorImagen from '../components/SelectorImagen';
+import { useSesion } from '../cuenta/sesion';
 import { claveDia, hora, isoMadrid } from '../utils/formato';
 
 interface Props {
@@ -54,6 +63,17 @@ const Formulario: React.FC<Props> = ({ evento, publicadores, publicadorFijo, onG
   const [descripcion, setDescripcion] = useState(evento?.descripcion ?? '');
   const [imagen, setImagen] = useState<string | null>(evento?.imagen_url ?? null);
   const [publicadorId, setPublicadorId] = useState<string | null>(publicadorFijo ?? evento?.publicador_id ?? null);
+  // Plan nuevo: los mismos mínimos que «Proponer» de los vecinos (fin, público, responsable y teléfono) y los datos
+  // que solo tiene el ayuntamiento (concejalía, espacio reservado, accesibilidad). Al editar no se piden.
+  const nuevo = evento == null;
+  const { usuario } = useSesion();
+  const [horaFin, setHoraFin] = useState('');
+  const [publico, setPublico] = useState<Publico>('todos');
+  const [responsable, setResponsable] = useState(usuario?.nombre ?? '');
+  const [telefono, setTelefono] = useState(usuario?.telefono ?? '');
+  const [area, setArea] = useState('');
+  const [espacioReservado, setEspacioReservado] = useState(false);
+  const [accesible, setAccesible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
@@ -66,6 +86,19 @@ const Formulario: React.FC<Props> = ({ evento, publicadores, publicadorFijo, onG
   const guardar = async () => {
     if (titulo.trim().length < 3) return setError('Escribe un nombre para el plan (mínimo 3 letras).');
     if (!fecha) return setError('Elige el día del plan.');
+    if (nuevo) {
+      const faltan = [
+        [lugar.trim(), 'el lugar'],
+        [horaInicio, 'la hora de inicio'],
+        [responsable.trim(), 'la persona responsable'],
+        [telefono.trim(), 'un teléfono de contacto'],
+        [gratis || Number(precioEur) > 0, 'el precio'],
+      ]
+        .filter(([ok]) => !ok)
+        .map(([, t]) => t);
+      if (faltan.length) return setError(`Falta ${faltan.join(', ')}.`);
+      if (horaFin && horaFin <= horaInicio) return setError('La hora de fin tiene que ser después de la de inicio.');
+    }
     setError(null);
     setGuardando(true);
     try {
@@ -81,6 +114,21 @@ const Formulario: React.FC<Props> = ({ evento, publicadores, publicadorFijo, onG
         descripcion: descripcion.trim(),
         imagen_url: imagen,
         publicador_id: publicadorId,
+        ...(nuevo && {
+          fecha_fin: horaFin ? isoMadrid(fecha, horaFin) : null,
+          etiquetas: [`publico_${publico}`],
+          datos_ayuntamiento: {
+            responsable: responsable.trim(),
+            telefono: telefono.trim(),
+            entidad: 'ayuntamiento',
+            publico,
+            necesidades: [],
+            seguro_rc: 'si',
+            area: area.trim() || null,
+            espacio_reservado: espacioReservado,
+            accesible,
+          },
+        }),
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se ha podido guardar.');
@@ -166,6 +214,16 @@ const Formulario: React.FC<Props> = ({ evento, publicadores, publicadorFijo, onG
               value={horaInicio}
               onIonInput={(ev) => setHoraInicio(ev.detail.value || '18:00')}
             />
+            {nuevo && (
+              <IonInput
+                label="Hora de fin (opcional)"
+                labelPlacement="stacked"
+                fill="outline"
+                type="time"
+                value={horaFin}
+                onIonInput={(ev) => setHoraFin(ev.detail.value ?? '')}
+              />
+            )}
           </div>
           {cambiaHora && apuntados > 0 && (
             <IonText color="warning">
@@ -215,6 +273,58 @@ const Formulario: React.FC<Props> = ({ evento, publicadores, publicadorFijo, onG
                   </IonSelectOption>
                 ))}
             </IonSelect>
+          )}
+          {nuevo && (
+            <>
+              <IonSelect
+                label="Para quién es"
+                labelPlacement="stacked"
+                fill="outline"
+                value={publico}
+                onIonChange={(ev) => setPublico(ev.detail.value as Publico)}
+              >
+                {(Object.keys(PUBLICOS) as Publico[]).map((k) => (
+                  <IonSelectOption key={k} value={k}>
+                    {PUBLICOS[k]}
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
+              <div className="fila-form">
+                <IonInput
+                  label="Persona responsable"
+                  labelPlacement="stacked"
+                  fill="outline"
+                  value={responsable}
+                  maxlength={120}
+                  onIonInput={(ev) => setResponsable(ev.detail.value ?? '')}
+                />
+                <IonInput
+                  label="Teléfono de contacto"
+                  labelPlacement="stacked"
+                  fill="outline"
+                  type="tel"
+                  value={telefono}
+                  maxlength={20}
+                  onIonInput={(ev) => setTelefono(ev.detail.value ?? '')}
+                />
+              </div>
+              <h3 className="titulo-caja">Datos del ayuntamiento</h3>
+              <IonInput
+                label="Concejalía o área que lo organiza (opcional)"
+                labelPlacement="stacked"
+                fill="outline"
+                placeholder="Cultura, Deportes, Fiestas…"
+                value={area}
+                maxlength={120}
+                onIonInput={(ev) => setArea(ev.detail.value ?? '')}
+              />
+              <IonToggle checked={espacioReservado} onIonChange={(ev) => setEspacioReservado(ev.detail.checked)}>
+                El espacio municipal ya está reservado
+              </IonToggle>
+              <IonToggle checked={accesible} onIonChange={(ev) => setAccesible(ev.detail.checked)}>
+                Accesible para personas con movilidad reducida
+              </IonToggle>
+            </>
           )}
           <IonTextarea
             label="Descripción"

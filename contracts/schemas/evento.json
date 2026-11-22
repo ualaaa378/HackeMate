@@ -33,7 +33,7 @@
       "properties": {
         "responsable": { "type": "string", "maxLength": 120, "description": "Persona responsable del plan" },
         "telefono": { "type": "string", "maxLength": 20, "description": "Teléfono de contacto del responsable (texto libre)" },
-        "entidad": { "enum": ["particular", "asociacion", "comercio", "otra"], "description": "Quién organiza" },
+        "entidad": { "enum": ["particular", "asociacion", "comercio", "otra", "ayuntamiento"], "description": "Quién organiza (`ayuntamiento`: lo crea el propio ayuntamiento desde el panel)" },
         "entidad_nombre": { "type": ["string", "null"], "maxLength": 120 },
         "publico": { "enum": ["todos", "infantil", "adultos", "mayores"], "description": "Público al que va dirigido" },
         "necesidades": {
@@ -42,7 +42,10 @@
           "description": "Lo que se pide al ayuntamiento"
         },
         "seguro_rc": { "enum": ["si", "no", "nose"], "description": "¿Tiene seguro de responsabilidad civil?" },
-        "observaciones": { "type": ["string", "null"], "maxLength": 1000 }
+        "observaciones": { "type": ["string", "null"], "maxLength": 1000 },
+        "area": { "type": ["string", "null"], "maxLength": 120, "description": "Solo ayuntamientos: concejalía o área que lo organiza" },
+        "espacio_reservado": { "type": ["boolean", "null"], "description": "Solo ayuntamientos: el espacio municipal ya está reservado" },
+        "accesible": { "type": ["boolean", "null"], "description": "Solo ayuntamientos: accesible para personas con movilidad reducida" }
       }
     },
     "origen": {

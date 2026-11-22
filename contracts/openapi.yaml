@@ -1846,7 +1846,7 @@ components:
       properties:
         responsable: { type: string, maxLength: 120 }
         telefono: { type: string, maxLength: 20 }
-        entidad: { enum: [particular, asociacion, comercio, otra] }
+        entidad: { enum: [particular, asociacion, comercio, otra, ayuntamiento], description: "`ayuntamiento` cuando lo crea el propio ayuntamiento desde el panel (22/11)" }
         entidad_nombre: { type: [string, "null"], maxLength: 120 }
         publico: { enum: [todos, infantil, adultos, mayores] }
         necesidades:
@@ -1854,6 +1854,9 @@ components:
           items: { enum: [espacio, calle, material, luz, musica, comida, seguridad, limpieza, difusion] }
         seguro_rc: { enum: [si, no, nose] }
         observaciones: { type: [string, "null"], maxLength: 1000 }
+        area: { type: [string, "null"], maxLength: 120, description: "Solo ayuntamientos: concejalía o área que lo organiza (Cultura, Deportes, Fiestas…)" }
+        espacio_reservado: { type: [boolean, "null"], description: "Solo ayuntamientos: el espacio municipal ya está reservado para ese día" }
+        accesible: { type: [boolean, "null"], description: "Solo ayuntamientos: el lugar es accesible para personas con movilidad reducida" }
 
     CaidaSimulada:
       type: object

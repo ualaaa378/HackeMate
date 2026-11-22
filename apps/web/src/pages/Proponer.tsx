@@ -35,7 +35,7 @@ import SelectorImagen from '../components/SelectorImagen';
 import { useSesion } from '../cuenta/sesion';
 import { fechaLarga } from '../utils/formato';
 
-const ENTIDADES: Record<DatosAyuntamiento['entidad'], string> = {
+const ENTIDADES: Record<Exclude<DatosAyuntamiento['entidad'], 'ayuntamiento'>, string> = {
   particular: 'Vecino o vecina',
   asociacion: 'Asociación o peña',
   comercio: 'Comercio o empresa',

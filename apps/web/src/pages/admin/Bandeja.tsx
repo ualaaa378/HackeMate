@@ -38,6 +38,7 @@ const ENTIDADES = {
   asociacion: 'Asociación',
   comercio: 'Comercio',
   otra: 'Otra entidad',
+  ayuntamiento: 'El ayuntamiento',
 };
 const SEGURO = { si: 'Sí', no: 'No', nose: 'No lo sabe' };
 
@@ -191,12 +192,30 @@ const Bandeja: React.FC = () => {
                     <dd>{PUBLICOS[p.propuesta.publico]}</dd>
                     <dt>Necesita</dt>
                     <dd>
-                      {p.propuesta.necesidades.length
+                      {p.propuesta.necesidades?.length
                         ? p.propuesta.necesidades.map((n) => NECESIDADES[n]).join(' · ')
                         : 'Nada del ayuntamiento'}
                     </dd>
                     <dt>Seguro de responsabilidad civil</dt>
                     <dd>{SEGURO[p.propuesta.seguro_rc]}</dd>
+                    {p.propuesta.area && (
+                      <>
+                        <dt>Concejalía o área</dt>
+                        <dd>{p.propuesta.area}</dd>
+                      </>
+                    )}
+                    {p.propuesta.espacio_reservado != null && (
+                      <>
+                        <dt>Espacio municipal</dt>
+                        <dd>{p.propuesta.espacio_reservado ? 'Reservado' : 'Sin reservar todavía'}</dd>
+                      </>
+                    )}
+                    {p.propuesta.accesible != null && (
+                      <>
+                        <dt>Accesible (movilidad reducida)</dt>
+                        <dd>{p.propuesta.accesible ? 'Sí' : 'No'}</dd>
+                      </>
+                    )}
                     {p.propuesta.observaciones && (
                       <>
                         <dt>Observaciones</dt>
