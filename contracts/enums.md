@@ -24,6 +24,8 @@ Valores permitidos en toda la plataforma. Minúsculas con guion bajo. Después d
 | `publico_propuesta` | `todos`, `infantil`, `adultos`, `mayores` | `evento.datos_ayuntamiento.publico` (privado) |
 | `necesidad_propuesta` | `espacio`, `calle`, `material`, `luz`, `musica`, `comida`, `seguridad`, `limpieza`, `difusion` | `evento.datos_ayuntamiento.necesidades` (privado) |
 | `seguro_rc` | `si`, `no`, `nose` | `evento.datos_ayuntamiento.seguro_rc` (privado) |
+| `modo_busqueda` | `rag`, `palabras` | `RespuestaBusqueda.modo` (`POST /buscar`): `rag` = respuesta de la IA con citas validadas; `palabras` = sin IA, plantilla |
+| `tipo_embedding` | `documento`, `consulta` | `bot POST /ai/embeddings` → `tipo` (indexar planes / pregunta del buscador) |
 
 ## Canales de mensajería (contacto)
 

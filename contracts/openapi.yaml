@@ -584,6 +584,32 @@ paths:
         "404": { $ref: "#/components/responses/Error", description: "404 `usuario_no_encontrado`" }
         "422": { $ref: "#/components/responses/Error", description: "422 `validacion` (usuario_id no es UUID o limite fuera de 1-20)" }
 
+  /api/v1/buscar:
+    post:
+      tags: [eventos]
+      summary: "Buscador con IA (RAG): «¿qué hay este finde para niños cerca de Senés?» → respuesta breve con los planes"
+      description: |
+        La API recupera los planes `publicado` que no han terminado más parecidos a la pregunta: filtros por reglas
+        (fechas, pueblo, tipo, gratis, niños), más parecido por embeddings (que pide a `bot POST /ai/embeddings`) y
+        más palabras clave. Le pasa a `bot POST /ai/responder-agenda` solo esos planes (`PlanContexto`) y valida que
+        la respuesta cite solo planes recuperados: los `evento_ids` que no estén entre ellos se descartan.
+        Si el bot no responde, responde con una plantilla y los mismos planes (`modo: palabras`).
+        Nunca devuelve un plan que no exista. No guarda nada.
+      security: [{}]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BusquedaIA" }
+      responses:
+        "200":
+          description: Respuesta para la persona y los planes en que se basa
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RespuestaBusqueda" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` (pregunta de menos de 3 o más de 300 caracteres, o limite fuera de 1-8)" }
+
   /api/v1/moderacion/pendientes:
     get:
       tags: [moderacion]
@@ -1545,6 +1571,89 @@ paths:
                   municipio: { type: [string, "null"] }
                   formato_aviso: { enum: [texto, audio] }
 
+  /ai/embeddings:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: (RAG) Textos → vectores para buscar planes por parecido
+      description: |
+        La llama la API para indexar los planes (`tipo: documento`) y para la pregunta del buscador (`tipo: consulta`).
+        Cadena de proveedores: Gemini `gemini-embedding-001` (dimensión 768) y, si falla, NVIDIA `nemotron-3.5-embed-1b`.
+        Solo se comparan vectores del mismo `modelo`: si cambia, la API vuelve a indexar.
+        Sin proveedor disponible responde 503 y la API sigue buscando sin embeddings (reglas y palabras clave).
+      security: [{ interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [textos]
+              properties:
+                textos:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items: { type: string, minLength: 1 }
+                tipo: { enum: [documento, consulta], default: documento }
+      responses:
+        "200":
+          description: Un vector por texto, en el mismo orden
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [modelo, dimension, vectores]
+                properties:
+                  modelo: { type: string, description: "Modelo que generó los vectores (p. ej. gemini-embedding-001)" }
+                  dimension: { type: integer, minimum: 1 }
+                  vectores:
+                    type: array
+                    items: { type: array, items: { type: number } }
+        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido`" }
+        "503": { $ref: "#/components/responses/Error", description: "503: ningún proveedor de embeddings disponible (la API sigue sin embeddings)" }
+
+  /ai/responder-agenda:
+    servers: [{ url: http://localhost:8001 }]
+    post:
+      tags: [bot]
+      summary: (RAG) Responde una pregunta sobre la agenda usando solo los planes que recibe
+      description: |
+        La llama la API (`POST /api/v1/buscar`) con los planes recuperados. Respuesta breve (2–4 frases) en español
+        sencillo, solo con los planes recibidos: no inventa planes, fechas ni precios. `evento_ids` solo puede contener
+        ids de `planes` (la API lo comprueba igualmente). Con `planes` vacío dice que no hay nada que encaje.
+        Sin IA, respuesta por plantilla y `proveedor_ia: reglas`.
+      security: [{ interno: [] }]
+      x-implementado: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pregunta, planes]
+              properties:
+                pregunta: { type: string, minLength: 1, maxLength: 300 }
+                planes:
+                  type: array
+                  minItems: 0
+                  maxItems: 12
+                  items: { $ref: "#/components/schemas/PlanContexto" }
+                hoy: { type: string, format: date-time, description: "Fecha y hora de referencia para «este finde», «mañana»…" }
+      responses:
+        "200":
+          description: Respuesta
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [respuesta, evento_ids, proveedor_ia]
+                properties:
+                  respuesta: { type: string }
+                  evento_ids: { type: array, items: { type: string, format: uuid }, description: "Planes que nombra la respuesta (solo ids de `planes`)" }
+                  proveedor_ia: { type: string }
+
 components:
   securitySchemes:
     bearer:
@@ -1949,6 +2058,58 @@ components:
         items: { type: array, maxItems: 3, items: { $ref: "#/components/schemas/SugerenciaPlan" } }
         basado_en: { type: array, items: { $ref: "#/components/schemas/ParticipacionPlan" }, description: "Los planes con más participación que se pasaron a la IA" }
         proveedor_ia: { type: string, description: "Quién propuso (p. ej. freellm:…, nim:…, reglas)" }
+
+    BusquedaIA:
+      description: "RAG: cuerpo de POST /api/v1/buscar"
+      type: object
+      required: [pregunta]
+      properties:
+        pregunta: { type: string, minLength: 3, maxLength: 300 }
+        limite: { type: integer, minimum: 1, maximum: 8, default: 6, description: "Máximo de planes en `items`" }
+
+    PlanContexto:
+      description: "RAG: plan recuperado que la API pasa a bot POST /ai/responder-agenda (sin datos privados)"
+      type: object
+      required: [evento_id, titulo, categoria, municipio, fecha_inicio]
+      properties:
+        evento_id: { type: string, format: uuid }
+        titulo: { type: string }
+        categoria: { $ref: "#/components/schemas/Categoria" }
+        municipio: { type: string }
+        lugar: { type: [string, "null"] }
+        fecha_inicio: { type: string, format: date-time }
+        fecha_fin: { type: [string, "null"], format: date-time }
+        precio_eur: { type: [number, "null"] }
+        es_gratuito: { type: boolean }
+        plazas_libres: { type: [integer, "null"], description: "null sin aforo" }
+        descripcion: { type: [string, "null"], maxLength: 600 }
+
+    RespuestaBusqueda:
+      description: "RAG: respuesta de POST /api/v1/buscar"
+      type: object
+      required: [respuesta, items, citados, recuperados, proveedor_ia, modo]
+      properties:
+        respuesta: { type: string, description: "Texto para la persona" }
+        items:
+          type: array
+          items: { $ref: "./schemas/evento.json" }
+          description: "Los planes citados primero, luego el resto de recuperados hasta `limite`"
+        citados: { type: array, items: { type: string, format: uuid }, description: "evento_id de los planes que nombra la respuesta" }
+        recuperados: { type: integer, minimum: 0, description: "Cuántos planes se pasaron como contexto («Basado en N planes»)" }
+        proveedor_ia: { type: string, description: "Quién respondió (p. ej. nim:…, gemini:…, reglas)" }
+        modo:
+          enum: [rag, palabras]
+          description: "`rag` = respuesta generada por IA con citas validadas; `palabras` = sin IA, plantilla"
+        filtros:
+          type: object
+          description: "Lo que se entendió de la pregunta"
+          properties:
+            desde: { type: [string, "null"], format: date-time }
+            hasta: { type: [string, "null"], format: date-time }
+            municipio: { type: [string, "null"] }
+            categorias: { type: array, items: { $ref: "#/components/schemas/Categoria" } }
+            gratis: { type: boolean }
+            ninos: { type: boolean }
     MetricasBot:
       type: object
       description: Lo que devuelve `bot GET /metrics` (services/bot/app/main.py). Schema abierto.
