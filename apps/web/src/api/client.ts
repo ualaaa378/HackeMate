@@ -548,3 +548,31 @@ export function getRecomendaciones(usuarioId: string, limite = 5): Promise<Recom
 }
 
 export const MUNICIPIOS = ['Lucainena de las Torres', 'Senés', 'Velefique', 'Uleila del Campo', 'Tahal'];
+
+// --- Me gusta (solo con cuenta; sin API, se cuenta en memoria para que la demo no se rompa) ---
+
+export interface MeGusta {
+  total: number;
+  mio: boolean;
+}
+
+const meGustaLocal: Record<string, MeGusta> = {};
+
+export function getMeGusta(eventoId: string): Promise<MeGusta> {
+  return conRespaldo(
+    () => peticion<MeGusta>(`/eventos/${eventoId}/me-gusta`),
+    () => esperar(meGustaLocal[eventoId] ?? { total: 0, mio: false }),
+  );
+}
+
+export function cambiarMeGusta(eventoId: string, darlo: boolean): Promise<MeGusta> {
+  return conRespaldo(
+    () => peticion<MeGusta>(`/eventos/${eventoId}/me-gusta`, { method: darlo ? 'PUT' : 'DELETE' }),
+    () => {
+      const antes = meGustaLocal[eventoId] ?? { total: 0, mio: false };
+      const total = antes.mio === darlo ? antes.total : Math.max(0, antes.total + (darlo ? 1 : -1));
+      meGustaLocal[eventoId] = { total, mio: darlo };
+      return esperar(meGustaLocal[eventoId]);
+    },
+  );
+}

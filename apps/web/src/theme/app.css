@@ -2487,3 +2487,30 @@ ion-toolbar .selector-letra--compacto .selector-letra__btn[aria-pressed='true'] 
   --background-hover: var(--hm-petroleo-oscuro);
   --color: #fff;
 }
+
+/* Mi perfil: QR para descargar el APK */
+.descargar-apk {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0;
+}
+.codigo-qr {
+  width: 200px;
+  height: 200px;
+  border-radius: 8px;
+  border: 1px solid var(--ion-color-step-200, #ddd);
+}
+.descargar-apk__nota {
+  font-size: 0.9em;
+  color: var(--ion-color-medium-shade, #555);
+}
+
+/* Ficha: «me gusta» */
+.boton-me-gusta {
+  margin: 4px 0 12px;
+  --border-radius: 999px;
+}
+.boton-me-gusta__total {
+  margin-inline-start: 8px;
+  font-weight: 700;
+}

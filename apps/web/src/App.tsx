@@ -31,6 +31,8 @@ import Bandeja from './pages/admin/Bandeja';
 import EventosAdmin from './pages/admin/EventosAdmin';
 import Panel from './pages/admin/Panel';
 import Publicadores from './pages/admin/Publicadores';
+import { ES_APP_NATIVA } from './servidor';
+import { useDeslizarPestanas } from './utils/deslizarPestanas';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -56,6 +58,8 @@ import './theme/app.css';
 
 setupIonicReact();
 
+const PESTANAS_VECINO = ['/agenda', '/mapa', '/recuerdos', '/perfil'];
+
 // Una sola app con dos zonas: la del vecino (/agenda, /mapa…) y la del ayuntamiento (/admin/…).
 // La barra de abajo cambia según la zona; la de /admin depende del rol (moderador o ayuntamiento).
 const Navegacion: React.FC = () => {
@@ -63,6 +67,7 @@ const Navegacion: React.FC = () => {
   const { rol } = useAcceso();
   const enAdmin = pathname.startsWith('/admin');
   const pendientes = usePendientesBandeja(enAdmin && rol === 'moderador', pathname);
+  useDeslizarPestanas(PESTANAS_VECINO, pathname, ES_APP_NATIVA);
   return (
     <IonTabs>
       <IonRouterOutlet>

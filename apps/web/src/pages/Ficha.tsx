@@ -33,6 +33,7 @@ import { useParams } from 'react-router-dom';
 import { desapuntarse, enModoRespaldo, ErrorApi, getEvento, inscribirse, miInscripcion, urlIcs } from '../api/client';
 import { CATEGORIAS, type Evento } from '../api/types';
 import { NOMBRE_CANAL } from '../canal';
+import BotonMeGusta from '../components/BotonMeGusta';
 import ChatEvento from '../components/ChatEvento';
 import FotoPlan from '../components/FotoPlan';
 import RecuerdoPlan from '../components/RecuerdoPlan';
@@ -210,6 +211,7 @@ const Ficha: React.FC = () => {
                 {evento.titulo}
               </h1>
               {evento.publicador_nombre && <p className="ficha__organiza">Organiza {evento.publicador_nombre}</p>}
+              <BotonMeGusta eventoId={evento.id} />
 
               <dl className="ficha__datos">
                 <div>

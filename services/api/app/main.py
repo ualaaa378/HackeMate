@@ -19,6 +19,7 @@ from app.rutas import (
     eventos,
     importar,
     inscripciones,
+    me_gusta,
     mensajes,
     moderacion,
     publicadores,
@@ -119,6 +120,7 @@ app.include_router(recomendaciones.router)
 app.include_router(estadisticas.router)
 app.include_router(admin.router)
 app.include_router(sugerencias.router)
+app.include_router(me_gusta.router)
 
 
 @app.get("/health")
