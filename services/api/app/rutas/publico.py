@@ -59,6 +59,30 @@ def listar_municipios(db: Session = Depends(get_db)):
     return [municipio_a_dict(m) for m in db.scalars(select(Municipio).order_by(Municipio.nombre))]
 
 
+@router.get("/choques")
+def ver_choques(
+    fecha_inicio: str,
+    municipio: str,
+    excluir: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Choque de fechas (app/choques.py): planes publicados ese mismo día a 20 km o menos y hasta 3 días libres.
+    Público: solo usa datos que ya salen en la agenda."""
+    from datetime import datetime
+
+    from app.choques import choques
+
+    try:
+        fecha = datetime.fromisoformat(fecha_inicio)
+    except ValueError:
+        raise ErrorApi(422, "validacion", "fecha_inicio no es una fecha ISO 8601", {"campo": "fecha_inicio"}) from None
+    if fecha.tzinfo is None:
+        raise ErrorApi(422, "validacion", "fecha_inicio tiene que llevar zona horaria", {"campo": "fecha_inicio"})
+    if db.get(Municipio, municipio) is None:
+        raise ErrorApi(422, "municipio_no_encontrado", "Ese municipio no está en la plataforma", {"campo": "municipio"})
+    return choques(db, fecha, municipio, excluir if excluir and es_uuid(excluir) else None)
+
+
 @router.get("/lugares")
 def listar_lugares(
     municipio: str | None = None,
