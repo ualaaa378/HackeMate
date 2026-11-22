@@ -73,10 +73,11 @@ const Publicadores: React.FC = () => {
   const porAprobar = (p: Publicador) => p.estado === 'solicitado' || p.estado === 'whatsapp_verificado';
 
   return (
-    <PaginaAdmin titulo="🤝 Asociaciones" roles={['moderador']}>
+    <PaginaAdmin titulo="🏛️ Ayuntamientos" roles={['moderador']}>
       <p className="intro-admin">
-        Quién puede publicar planes. Toda asociación empieza con revisión a mano. Pasa a publicar sin revisión cuando su
-        responsable está identificado y publica a menudo sin rechazos.
+        Quién puede publicar planes: solo ayuntamientos. Las solicitudes nuevas (desde el bot o desde «Dar de alta mi
+        ayuntamiento» en la web) salen primero. Todo ayuntamiento empieza con revisión a mano y pasa a publicar sin
+        revisión cuando su responsable está identificado y publica a menudo sin rechazos.
       </p>
       {!lista && (
         <div className="centrado">

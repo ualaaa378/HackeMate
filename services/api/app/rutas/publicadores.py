@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, selectinload
 
+from app.config import get_settings
 from app.db import get_db
 from app.confianza import normalizar_dni, reglas_nivel_2_que_faltan, tiene_datos_responsable
 from app.errores import ErrorApi
@@ -20,7 +21,14 @@ from app.paginacion import Pagina, pagina, respuesta
 from app.rutas.eventos import quien_opcional
 from app.rutas.publico import es_uuid
 from app.rutas.usuarios import comprobar_edad
-from app.seguridad import REVISOR_INTERNO, Quien, es_moderador_con_sesion, exigir_moderador, exigir_token_interno
+from app.seguridad import (
+    REVISOR_INTERNO,
+    Quien,
+    es_moderador_con_sesion,
+    exigir_moderador,
+    exigir_token_interno,
+    quien_llama,
+)
 from app.serializar import publicador_a_dict, publicador_privado_a_dict, publicadores_a_dict
 from app.telefonos import validar_telefono
 
@@ -101,9 +109,20 @@ def ver_publicador(id: str, quien: Quien = Depends(quien_opcional), db: Session 
     return publicador_a_dict(publicador, con_contacto=quien.interno)
 
 
-@router.post("/publicadores", status_code=201, dependencies=[Depends(exigir_token_interno)])
-def crear_publicador(datos: PublicadorCrear, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    # H3: con el JWT también podrá solicitarlo el propio usuario desde la app.
+@router.post("/publicadores", status_code=201)
+def crear_publicador(datos: PublicadorCrear, background_tasks: BackgroundTasks, quien: Quien = Depends(quien_llama),
+                     db: Session = Depends(get_db)):
+    """Alta de una entidad: el bot (X-Internal-Token) o la propia persona desde la web o el APK (Bearer). Con sesión,
+    el teléfono de la entidad es el de su cuenta: nadie da de alta una entidad con el número de otro."""
+    if not quien.interno:
+        if not quien.usuario.telefono:
+            raise ErrorApi(422, "falta_telefono", "Para dar de alta una entidad, tu cuenta necesita un teléfono "
+                           "verificado", {"campo": "telefono"})
+        if datos.telefono != quien.usuario.telefono:
+            raise ErrorApi(403, "prohibido", "Solo puedes dar de alta una entidad con el teléfono de tu cuenta")
+    if get_settings().solo_ayuntamientos and datos.tipo != "ayuntamiento":
+        raise ErrorApi(422, "solo_ayuntamientos", "Por ahora solo se pueden dar de alta ayuntamientos",
+                       {"campo": "tipo"})
     if db.get(Municipio, datos.municipio) is None:
         raise ErrorApi(
             422, "municipio_no_encontrado", "Ese municipio no está en la plataforma", {"campo": "municipio"}

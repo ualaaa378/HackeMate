@@ -162,12 +162,9 @@ def test_alta_enlaza_al_usuario_con_ese_telefono(api):
 
 
 def test_alta_sin_token_401(api):
-    _error(api.post("/api/v1/publicadores", json=NUEVO), 401, "token_interno_invalido")
-    _error(
-        api.post("/api/v1/publicadores", json=NUEVO, headers={"X-Internal-Token": "malo"}),
-        401,
-        "token_interno_invalido",
-    )
+    # Desde el 22/11 también se puede con sesión (alta desde la web): sin ninguna de las dos, 401 no_autenticado
+    _error(api.post("/api/v1/publicadores", json=NUEVO), 401, "no_autenticado")
+    _error(api.post("/api/v1/publicadores", json=NUEVO, headers={"X-Internal-Token": "malo"}), 401, "no_autenticado")
 
 
 def test_alta_duplicada_409(api):

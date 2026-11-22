@@ -681,6 +681,65 @@ export interface paths {
     };
     trace?: never;
   };
+  '/api/v1/eventos/{id}/coche': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components['parameters']['Id'];
+      };
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Compartir coche. El vecino (apuntado con plaza a un plan de otro pueblo) dice si quiere ir con los de su pueblo. Con un sí, si otro vecino del mismo pueblo ya dijo que sí, se avisa a los dos con el contacto. Nunca se pasa el contacto de quien no ha dicho que sí. */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: components['parameters']['Id'];
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['CocheRespuesta'];
+        };
+      };
+      responses: {
+        /** @description Respuesta guardada */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              /** @enum {unknown} */
+              respuesta: 'si' | 'no';
+              /** @description Contacto de los vecinos del mismo pueblo que ya dijeron que sí («Nombre (+34…)») */
+              companeros: string[];
+            };
+          };
+        };
+        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` */
+        401: components['responses']['Error'];
+        /** @description 403 `prohibido` (con sesión solo respondes por ti) */
+        403: components['responses']['Error'];
+        /** @description 404 `evento_no_encontrado` o `usuario_no_encontrado` */
+        404: components['responses']['Error'];
+        /** @description 409 `coche_no_disponible` (no está apuntado con plaza, vive en el pueblo del plan o el plan ya no está publicado) */
+        409: components['responses']['Error'];
+        /** @description 422 `falta_usuario_id` o `validacion` */
+        422: components['responses']['Error'];
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/eventos/{id}/mensajes': {
     parameters: {
       query?: never;
@@ -1123,11 +1182,13 @@ export interface paths {
             'application/json': components['schemas']['publicador'];
           };
         };
-        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+        /** @description 401 `no_autenticado` (ni X-Internal-Token válido ni sesión) */
         401: components['responses']['Error'];
+        /** @description 403 `prohibido` (con sesión, el teléfono tiene que ser el de tu cuenta) */
+        403: components['responses']['Error'];
         /** @description 409 `publicador_ya_existe` (ya hay un publicador con ese teléfono; details.publicador_id) */
         409: components['responses']['Error'];
-        /** @description 422 `validacion` o `municipio_no_encontrado` */
+        /** @description 422 `validacion`, `municipio_no_encontrado`, `falta_telefono` (la cuenta no tiene teléfono) o `solo_ayuntamientos` (con SOLO_AYUNTAMIENTOS=true, por defecto, solo se admite `tipo: ayuntamiento`) */
         422: components['responses']['Error'];
       };
     };
@@ -2983,6 +3044,14 @@ export interface components {
       };
       /** @enum {unknown} */
       confirmado_por?: 'whatsapp' | 'web' | 'telegram';
+    };
+    CocheRespuesta: {
+      /**
+       * Format: uuid
+       * @description Obligatorio con X-Internal-Token (el bot responde por el vecino)
+       */
+      usuario_id?: string;
+      acepta: boolean;
     };
     InscripcionCrear: {
       /**

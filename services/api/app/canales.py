@@ -104,16 +104,19 @@ def buscar_usuario_por_contacto(db: Session, contacto: str | tuple[Canal, str]) 
 
 
 def buscar_publicador_por_contacto(db: Session, contacto: str | tuple[Canal, str]) -> Publicador | None:
-    """Por la columna del canal. Si el canal no es el telefono y no hay publicador con ese id, se busca por el
-    telefono del usuario vinculado a ese contacto (POST /usuarios/vincular)."""
+    """Por la columna del canal. Si no hay, por el telefono del usuario vinculado a ese contacto (POST
+    /usuarios/vincular) y, al final, por la entidad del usuario (`usuarios.publicador_id`)."""
     canal, valor = _como_par(contacto)
     publicador = db.scalar(
         select(Publicador).where(getattr(Publicador, canal.campo) == valor).order_by(Publicador.creado_en)
     )
-    if publicador is None and canal.campo != "telefono":
+    if publicador is None:
         usuario = buscar_usuario_por_contacto(db, (canal, valor))
-        if usuario is not None and usuario.telefono:
+        if usuario is not None and usuario.telefono and canal.campo != "telefono":
             publicador = db.scalar(
                 select(Publicador).where(Publicador.telefono == usuario.telefono).order_by(Publicador.creado_en)
             )
+        # La persona que publica en nombre de una entidad con otro teléfono (p. ej. la concejala del ayuntamiento)
+        if publicador is None and usuario is not None and usuario.publicador_id:
+            publicador = db.get(Publicador, usuario.publicador_id)
     return publicador

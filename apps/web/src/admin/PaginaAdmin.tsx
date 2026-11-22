@@ -138,23 +138,23 @@ const Puerta: React.FC<{ rolActual: RolAdmin | null }> = ({ rolActual }) => {
     <IonCard className="puerta-admin">
       <IonCardContent>
         {rolActual ? (
-          // La asociación solo tiene «Mis planes»: si cae en otra sección (p. ej. /admin/bandeja), se la lleva allí.
+          // El ayuntamiento solo tiene «Mis planes»: si cae en otra sección (p. ej. /admin/bandeja), se la lleva allí.
           <Navigate to="/admin/eventos" replace />
         ) : (
           <>
-            <h2 className="titulo-caja">Zona del ayuntamiento y las asociaciones</h2>
+            <h2 className="titulo-caja">Zona del ayuntamiento</h2>
             <p>
-              Aquí se revisan los planes que llegan por {NOMBRE_CANAL} o la web, se aprueban las asociaciones y se ven
+              Aquí se revisan los planes que llegan por {NOMBRE_CANAL} o la web, se aprueban los ayuntamientos que piden publicar y se ven
               las cifras de la agenda.
             </p>
             <AccesoModeracion />
-            <p className="nota-demo">Asociaciones: entra con tu móvil.</p>
+            <p className="nota-demo">Ayuntamientos: entra con tu móvil.</p>
             <IonButton expand="block" fill="outline" onClick={abrirCuenta}>
               Entrar con mi móvil
             </IonButton>
-            <p className="nota-demo">Para la demo, entra sin cuenta como asociación:</p>
+            <p className="nota-demo">Para la demo, entra sin cuenta como ayuntamiento:</p>
             <IonButton expand="block" fill="outline" disabled={entrando} onClick={() => entrar('publicador')}>
-              🤝 Asociación (Amigos de Velefique)
+              🏛️ Ayuntamiento (Ayto. de Velefique)
             </IonButton>
             <IonButton expand="block" fill="clear" routerLink="/agenda">
               Volver a la agenda

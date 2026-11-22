@@ -47,9 +47,8 @@ def test_dni_y_nie_con_la_letra_de_control(dni, valido):
 
 def test_alta_completa_por_whatsapp(api, enviados):
     r = conversacion.procesar(_msg("Hola, quiero dar de alta mi asociación"))
-    assert "¿Cómo se llama la entidad?" in _texto(r)
-    conversacion.procesar(_msg("Asociación Amigos de Velefique"))
-    r = conversacion.procesar(_msg("Es una asociación cultural"))  # el tipo también vale escrito
+    assert "¿Cómo se llama el ayuntamiento?" in _texto(r)
+    r = conversacion.procesar(_msg("Ayuntamiento de Velefique"))  # solo ayuntamientos: ya no se pregunta el tipo
     assert "¿En qué pueblo está?" in _texto(r)
     r = conversacion.procesar(_msg("Madrid"))
     assert "no está en la plataforma" in _texto(r)
@@ -67,25 +66,23 @@ def test_alta_completa_por_whatsapp(api, enviados):
     r = conversacion.procesar(_msg("58"))
     resumen = _texto(r)
     assert "58 años" in resumen
-    assert "Asociación Amigos de Velefique (Asociación)" in resumen and "•••••678Z" in resumen
+    assert "Ayuntamiento de Velefique (Ayuntamiento)" in resumen and "•••••678Z" in resumen
     assert "12345678Z" not in resumen  # el DNI nunca se enseña entero
 
     r = conversacion.procesar(_msg("", boton_id="alta_si"))
     assert "Solicitud enviada" in _texto(r)
     assert enviados == [{
-        "nombre": "Asociación Amigos de Velefique", "tipo": "asociacion", "municipio": "Velefique",
+        "nombre": "Ayuntamiento de Velefique", "tipo": "ayuntamiento", "municipio": "Velefique",
         "telefono": WA,
         "responsable": {"nombre": "Antonio García López", "dni": "12345678Z", "residencia": "Velefique", "edad": 58},
     }]
     assert not alta.en_curso(WA)  # los datos personales ya no están en memoria
 
 
-def test_tipo_con_boton_y_cancelar_borra_los_datos(api, enviados):
+def test_solo_ayuntamientos_y_cancelar_borra_los_datos(api, enviados):
     conversacion.procesar(_msg("quiero registrar mi bar"))
-    conversacion.procesar(_msg("Bar La Plaza"))
-    assert canales.bandeja_consola[-1]["botones"][0] == ("alta_tipo:asociacion", "Asociación")
-    conversacion.procesar(_msg("", boton_id="alta_tipo:bar_restaurante"))
-    assert alta.altas[WA].datos["tipo"] == "bar_restaurante"
+    r = conversacion.procesar(_msg("Ayuntamiento de Senés"))
+    assert "¿En qué pueblo está?" in _texto(r) and alta.altas[WA].datos["tipo"] == "ayuntamiento"
     r = conversacion.procesar(_msg("cancelar"))
     assert "borrado los datos" in _texto(r) and not alta.en_curso(WA) and enviados == []
 
@@ -97,7 +94,7 @@ def test_telegram_sin_numero_pide_compartirlo_y_sigue(api, enviados):
     r = conversacion.procesar(_msg("Peña El Olivo", de=TG, canal="telegram"))  # aún sin número
     assert "Compartir mi número" in _texto(r)
     r = conversacion.procesar(_msg("", de=TG, canal="telegram", telefono_compartido="+34600000555"))
-    assert "¿Cómo se llama la entidad?" in _texto(r)
+    assert "¿Cómo se llama el ayuntamiento?" in _texto(r)
     assert alta.altas[TG].telefono == "+34600000555"
 
 
@@ -109,7 +106,7 @@ def test_ya_publica_en_nombre_de_una_entidad(api):
 
 
 def _hasta_confirmar():
-    for t in ("quiero dar de alta mi asociación", "Club Senderista Tahal", "asociación", "Tahal",
+    for t in ("quiero dar de alta mi asociación", "Ayuntamiento de Tahal", "Tahal",
               "María Pérez Gil", "X1234567L", "Tahal", "saltar"):
         conversacion.procesar(_msg(t))
 

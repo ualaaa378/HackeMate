@@ -28,6 +28,7 @@ from alembic.config import Config
 from sqlalchemy import delete, inspect, select
 from sqlalchemy.orm import Session
 
+from app import entidades
 from app.config import get_settings
 from app.db import API_DIR, crear_motor
 from app.inscripciones import recalcular_plazas
@@ -159,6 +160,16 @@ def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None 
     db.flush()
 
     publicadores = _leer("publicadores.json", directorio)
+    remapeo: dict[str, str | None] = {}
+    if get_settings().solo_ayuntamientos:
+        publicadores, remapeo = entidades.remapeo_fixtures(publicadores)
+
+    def _remapear(fila: dict) -> dict:
+        if fila.get("publicador_id") in remapeo:
+            return dict(fila, publicador_id=remapeo[fila["publicador_id"]])
+        return fila
+
+    usuarios = [_remapear(u) for u in usuarios]
     fuentes = 0
     for p in publicadores:
         _guardar(db, Publicador(**_fila_publicador(p)), sobrescribir)
@@ -174,7 +185,7 @@ def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None 
 
     cargados, terminados = set(), set()
     for nombre in FICHEROS_EVENTOS:
-        for e in _leer(nombre, directorio):
+        for e in map(_remapear, _leer(nombre, directorio)):
             if ha_terminado(e, ahora):
                 terminados.add(e["id"])
             else:
@@ -191,7 +202,7 @@ def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None 
     resumen |= {"eventos": len(cargados), "eventos_terminados_omitidos": len(terminados), "eventos_terminados_borrados": borrados}
 
     historico = set()
-    for e in _leer(FICHERO_HISTORICO, directorio):
+    for e in map(_remapear, _leer(FICHERO_HISTORICO, directorio)):
         _guardar(db, Evento(**_fila_evento(e)), sobrescribir)
         historico.add(e["id"])
     db.flush()
@@ -217,6 +228,10 @@ def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None 
             db.flush()  # respuestas que apuntan a mensajes anteriores del mismo fichero
             n += 1
         resumen[clave] = n
+
+    if get_settings().solo_ayuntamientos:
+        db.flush()
+        resumen["entidades_no_ayuntamiento_borradas"] = entidades.depurar(db)
 
     # N6: plazas libres a partir de las inscripciones de la base, no de los números de los fixtures
     db.flush()

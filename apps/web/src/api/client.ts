@@ -22,6 +22,7 @@ import type {
   MensajeCrear,
   MensajeEvento,
   Pagina,
+  PublicadorCrear,
   Recomendacion,
   Token,
   Usuario,
@@ -387,6 +388,14 @@ export async function proponerEvento(datos: EventoCrear, ayuntamiento: DatosAyun
   const p = { evento, ayuntamiento, demo: true };
   propuestasMock.push(p);
   return esperar(p);
+}
+
+// ---------- Alta de un ayuntamiento (solo ayuntamientos, 22/11) ----------
+// La API exige sesión real y que el teléfono sea el de la cuenta. En modo demo no se envía nada.
+export async function altaAyuntamiento(datos: PublicadorCrear): Promise<{ id: string; demo: boolean }> {
+  if (USAR_MOCKS || !token || token === 'demo') return esperar({ id: crypto.randomUUID(), demo: true });
+  const p = await peticion<{ id: string }>('/publicadores', { method: 'POST', body: JSON.stringify(datos) });
+  return { id: p.id, demo: false };
 }
 
 // ---------- P5c: mis planes propuestos ----------
