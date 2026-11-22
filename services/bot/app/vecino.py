@@ -176,8 +176,6 @@ def buscar(msg: MensajeEntrante, texto: str, usuario: dict | None,
         return _buscar_detallada(msg, texto, c, eventos, ampliado)
     if not eventos:
         return ["No he encontrado planes con esa búsqueda 😕 Prueba con otro pueblo o con «¿qué hay este mes?»."]
-    # Primero lo que le gusta; dentro, por fecha
-    eventos.sort(key=lambda e: (e.get("categoria") not in gustos, e.get("fecha_inicio") or ""))
     motivos = {e["id"]: f"Te gusta: {NOMBRE_CATEGORIA.get(e['categoria'], e['categoria'])}"
                for e in eventos if e.get("categoria") in gustos}
     return _presentar(msg, eventos, cabecera, motivos)
@@ -203,8 +201,20 @@ def _buscar_detallada(msg: MensajeEntrante, texto: str, c: busqueda.Consulta, ev
     return [f"No he encontrado planes {pedido} 😕 Prueba con otro día o con «¿qué hay este mes?»."]
 
 
+def _por_fecha(eventos: list[dict]) -> list[dict]:
+    """Lo más cercano a hoy primero (pedido por Adán, 22/11): también las recomendaciones y lo que elige la IA.
+    Las fechas vienen en ISO con zona; se comparan como fechas, no como texto, por si llegan con zonas distintas."""
+    def clave(e: dict):
+        try:
+            return (0, datetime.fromisoformat(str(e.get("fecha_inicio"))).timestamp())
+        except ValueError:
+            return (1, 0.0)  # sin fecha, al final
+    return sorted(eventos, key=clave)
+
+
 def _presentar(msg: MensajeEntrante, eventos: list[dict], cabecera: str, motivos: dict | None = None) -> list:
     motivos = motivos or {}
+    eventos = _por_fecha(eventos)
     v = _v(msg.de)
     v.ultimos = [e["id"] for e in eventos[:MAX_TARJETAS]]
     v.titulos = {e["id"]: e.get("titulo") or "" for e in eventos[:MAX_TARJETAS]}
