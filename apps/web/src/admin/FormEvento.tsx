@@ -13,9 +13,9 @@ import {
   IonToggle,
   IonToolbar,
 } from '@ionic/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { MUNICIPIOS } from '../api/client';
+import { MUNICIPIOS, getChoques, type Choques } from '../api/client';
 import {
   CATEGORIAS,
   PUBLICOS,
@@ -27,7 +27,7 @@ import {
 } from '../api/types';
 import SelectorImagen from '../components/SelectorImagen';
 import { useSesion } from '../cuenta/sesion';
-import { claveDia, hora, isoMadrid } from '../utils/formato';
+import { claveDia, diaCorto, hora, isoMadrid } from '../utils/formato';
 
 interface Props {
   abierto: boolean;
@@ -74,6 +74,22 @@ const Formulario: React.FC<Props> = ({ evento, publicadores, publicadorFijo, onG
   const [area, setArea] = useState('');
   const [espacioReservado, setEspacioReservado] = useState(false);
   const [accesible, setAccesible] = useState(false);
+  // Choque de fechas: otro plan publicado ese día a 20 km o menos. Se avisa y se propone un día libre; decide quien
+  // crea el plan.
+  const claveChoque = nuevo && fecha && horaInicio ? `${isoMadrid(fecha, horaInicio)}|${municipio}` : null;
+  const [revisado, setRevisado] = useState<{ clave: string; datos: Choques } | null>(null);
+  useEffect(() => {
+    if (!claveChoque) return;
+    let vigente = true;
+    const [iso, pueblo] = claveChoque.split('|');
+    getChoques(iso, pueblo)
+      .then((datos) => vigente && setRevisado({ clave: claveChoque, datos }))
+      .catch(() => undefined);
+    return () => {
+      vigente = false;
+    };
+  }, [claveChoque]);
+  const choque = revisado && revisado.clave === claveChoque && revisado.datos.choques.length ? revisado.datos : null;
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
@@ -225,6 +241,21 @@ const Formulario: React.FC<Props> = ({ evento, publicadores, publicadorFijo, onG
               />
             )}
           </div>
+          {choque && (
+            <IonText color="warning">
+              <div className="aviso-cambio" role="status">
+                <p>
+                  ⚠️ Ese día ya hay «{choque.choques[0].titulo}» en {choque.choques[0].municipio}. Si coinciden, puede
+                  ir menos gente.
+                </p>
+                {choque.alternativas[0] && (
+                  <IonButton size="small" fill="outline" onClick={() => setFecha(claveDia(choque.alternativas[0]))}>
+                    📅 Cambiar al {diaCorto(choque.alternativas[0])}
+                  </IonButton>
+                )}
+              </div>
+            </IonText>
+          )}
           {cambiaHora && apuntados > 0 && (
             <IonText color="warning">
               <p className="aviso-cambio">

@@ -76,6 +76,60 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/choques': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Choque de fechas. Planes publicados el mismo día a 20 km o menos del pueblo (el mismo pueblo cuenta) y, si hay alguno, hasta 3 días libres del mismo tipo (laborable o fin de semana) a la misma hora. Lo usa el bot al confirmar un plan: la IA elige y redacta la propuesta y quien crea el plan decide. */
+    get: {
+      parameters: {
+        query: {
+          fecha_inicio: string;
+          municipio: string;
+          /** @description El propio plan (para no chocar consigo mismo) */
+          excluir?: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Choques y días libres */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              choques: {
+                /** Format: uuid */
+                evento_id: string;
+                titulo: string;
+                municipio: string;
+                /** Format: date-time */
+                fecha_inicio: string;
+                distancia_km: number;
+              }[];
+              alternativas: string[];
+            };
+          };
+        };
+        /** @description 422 `validacion` (fecha sin zona o mal escrita) o `municipio_no_encontrado` */
+        422: components['responses']['Error'];
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/lugares': {
     parameters: {
       query?: never;

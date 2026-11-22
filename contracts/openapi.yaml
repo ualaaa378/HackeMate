@@ -69,6 +69,43 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/Municipio" }
 
+  /api/v1/choques:
+    get:
+      tags: [eventos]
+      summary: >-
+        Choque de fechas. Planes publicados el mismo día a 20 km o menos del pueblo (el mismo pueblo cuenta) y, si
+        hay alguno, hasta 3 días libres del mismo tipo (laborable o fin de semana) a la misma hora. Lo usa el bot al
+        confirmar un plan: la IA elige y redacta la propuesta y quien crea el plan decide.
+      x-implementado: true
+      parameters:
+        - { name: fecha_inicio, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: municipio, in: query, required: true, schema: { type: string } }
+        - { name: excluir, in: query, required: false, schema: { type: string, format: uuid }, description: "El propio plan (para no chocar consigo mismo)" }
+      responses:
+        "200":
+          description: Choques y días libres
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [choques, alternativas]
+                properties:
+                  choques:
+                    type: array
+                    items:
+                      type: object
+                      required: [evento_id, titulo, municipio, fecha_inicio, distancia_km]
+                      properties:
+                        evento_id: { type: string, format: uuid }
+                        titulo: { type: string }
+                        municipio: { type: string }
+                        fecha_inicio: { type: string, format: date-time }
+                        distancia_km: { type: number }
+                  alternativas:
+                    type: array
+                    items: { type: string, format: date-time }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` (fecha sin zona o mal escrita) o `municipio_no_encontrado`" }
+
   /api/v1/lugares:
     get:
       tags: [eventos]

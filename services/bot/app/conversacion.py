@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from app import alta, api_cliente, apelacion, avisos, canales, coche, organizador, telegram, vecino
+from app import alta, api_cliente, apelacion, avisos, canales, choque_fechas, coche, organizador, telegram, vecino
 from app.agentes import antispam, moderador, extractor, idiomas, intencion, medios, voz
 from app.api_cliente import ApiNoDisponible, ErrorApi
 from app.config import get_settings
@@ -58,6 +58,8 @@ class Estado:
     preguntando: str | None = None
     esperando_confirmacion: bool = False
     primera_pregunta: bool = True
+    choque_mirado: bool = False  # el choque de fechas se mira una vez por plan
+    fecha_propuesta: str | None = None  # día libre que propone la IA si la fecha choca (choque_fechas.py)
 
 
 estados: dict[str, Estado] = {}
@@ -221,6 +223,17 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
     if msg.lat is not None and msg.lon is not None and not texto:
         return vecino.ubicacion_recibida(msg, _usuario(msg.de))
 
+    if est.fecha_propuesta and est.borrador:  # choque de fechas: decide quien crea el plan
+        if t == choque_fechas.CAMBIAR or re.match(r"^(cambia|s[ií]\b|vale|ok)", t):
+            nueva, est.fecha_propuesta = est.fecha_propuesta, None
+            est.borrador.campos["fecha_inicio"] = Campo(valor=nueva, confianza="alta")
+            est.campos_corregidos["fecha_inicio"] = nueva
+            return [f"📅 Hecho, lo paso al {choque_fechas.dia_bonito(nueva)}."] + _siguiente_paso(est)
+        if t == choque_fechas.MANTENER or re.match(r"^(mant[eé]n|no\b|deja)", t):
+            est.fecha_propuesta = None
+            return ["Vale, mantengo la fecha 👍"] + _siguiente_paso(est)
+        return ["Pulsa *Cambiar* para pasarlo al día que te propongo o *Mantener* para dejarlo como está."]
+
     if est.esperando_confirmacion and est.borrador:
         if re.match(r"^(s[ií]|vale|ok|confirmo|publica)", t):
             return [_entregar(msg, est)]
@@ -351,6 +364,14 @@ def _siguiente_paso(est: Estado) -> list[str | Respuesta]:
             return [ficha_texto(est.borrador) + "\n\n" + PREGUNTAS[faltan[0]]]
         return [PREGUNTAS[faltan[0]]]
     est.preguntando = None
+    if not est.choque_mirado:
+        est.choque_mirado = True
+        c = est.borrador.campos
+        if c["fecha_inicio"].valor and c["municipio"].valor:
+            propuesta = choque_fechas.proponer(c["fecha_inicio"].valor, c["municipio"].valor, est.evento_id)
+            if propuesta is not None:
+                aviso, est.fecha_propuesta = propuesta
+                return [ficha_texto(est.borrador), aviso]
     est.esperando_confirmacion = True
     return [Respuesta(ficha_texto(est.borrador) + "\n\n¿Lo publico así? Responde *SÍ* o *NO*.", BOTONES_CONFIRMAR)]
 

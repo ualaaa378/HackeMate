@@ -11,6 +11,7 @@ import eventosMock from '../mocks/eventos.json';
 import { ES_APP_NATIVA, direccionGuardada } from '../servidor';
 import { yaPaso } from '../utils/formato';
 
+import type { paths } from './openapi';
 import type {
   ApiError,
   DatosAyuntamiento,
@@ -195,6 +196,17 @@ export async function getEventosPasados(ahora = new Date()): Promise<Evento[]> {
     usandoRespaldo = true;
     return deMocks();
   }
+}
+
+// ---------- Choque de fechas (22/11) ----------
+export type Choques = paths['/api/v1/choques']['get']['responses']['200']['content']['application/json'];
+
+/** Planes publicados ese día a 20 km o menos y hasta 3 días libres. Sin API, sin choques. */
+export function getChoques(fechaInicio: string, municipio: string): Promise<Choques> {
+  return conRespaldo(
+    () => peticion<Choques>(`/choques${query({ fecha_inicio: fechaInicio, municipio })}`),
+    () => esperar<Choques>({ choques: [], alternativas: [] }),
+  );
 }
 
 export function getEvento(id: string): Promise<Evento> {

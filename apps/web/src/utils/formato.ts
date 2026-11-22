@@ -11,6 +11,11 @@ export function fechaLarga(iso: string): string {
   });
 }
 
+/** «sábado 19», en hora de Madrid. */
+export function diaCorto(iso: string): string {
+  return new Date(iso).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', timeZone: ZONA });
+}
+
 export function hora(iso: string): string {
   return new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: ZONA });
 }

@@ -215,6 +215,14 @@ def responder_coche(evento_id: str, usuario_id: str, acepta: bool) -> dict | Non
     return _peticion("POST", f"/api/v1/eventos/{evento_id}/coche", {"usuario_id": usuario_id, "acepta": acepta})
 
 
+def choques(fecha_inicio: str, municipio: str, excluir: str | None = None) -> dict | None:
+    """Choque de fechas: planes publicados ese día a 20 km o menos y días libres (GET /api/v1/choques)."""
+    from urllib.parse import urlencode
+
+    parametros = {"fecha_inicio": fecha_inicio, "municipio": municipio} | ({"excluir": excluir} if excluir else {})
+    return _peticion("GET", f"/api/v1/choques?{urlencode(parametros)}")
+
+
 def desinscribir(evento_id: str, inscripcion_id: str) -> dict | None:
     """N6b: devuelve la plaza (y sube al primero de la lista de espera)."""
     return _peticion("DELETE", f"/api/v1/eventos/{evento_id}/inscripciones/{inscripcion_id}")
