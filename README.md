@@ -1,6 +1,8 @@
 <div align="center">
 
-#  HackeMate
+#  Pueblos Unidos
+
+**Una web, muchos pueblos** · proyecto HackeMate
 
 ### Equipo de la Hackathon UAL para el Desarrollo del Interior
 
@@ -8,7 +10,7 @@
 
 ![Hackathon](https://img.shields.io/badge/Hackathon-UAL-0055A4?style=for-the-badge)
 ![Reto](https://img.shields.io/badge/Reto%201-Reactiva%20tu%20pueblo-2E7D32?style=for-the-badge)
-![Estado](https://img.shields.io/badge/Estado-En%20desarrollo-F57C00?style=for-the-badge)
+![Estado](https://img.shields.io/badge/Estado-Entregado-2E7D32?style=for-the-badge)
 
 </div>
 
@@ -26,42 +28,49 @@
 
 ## 🎯 El reto
 
-Impulsar el **comercio y el turismo** de los pueblos del interior de Almería con tecnología, empezando por cuatro municipios:
+Impulsar el **comercio y el turismo** de los pueblos del interior de Almería con tecnología. Empezamos con cinco municipios:
 
 <div align="center">
 
-| 📍 Lucainena de las Torres | 📍 Senes | 📍 Velefique | 📍 Uleila del Campo |
-|:-:|:-:|:-:|:-:|
+| 📍 Lucainena de las Torres | 📍 Senés | 📍 Velefique | 📍 Uleila del Campo | 📍 Tahal |
+|:-:|:-:|:-:|:-:|:-:|
 
 </div>
 
-## 💡 Nuestra idea
+## 💡 Qué hemos hecho
 
-Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **visitantes**:
+En los pueblos hay planes, pero nadie se entera: están en un cartel, en un post de Facebook o en el grupo del bar. **Pueblos Unidos** los junta en un solo sitio sin pedir a nadie que aprenda una app nueva. Tiene tres puertas, siempre sincronizadas:
 
-| | Qué queremos conseguir |
+| | Qué hace |
 |:-:|:--|
-| 🏪 **Negocios** | Publicar ofertas, promociones y eventos, con ayuda de IA para redactarlos. |
-| 🏛️ **Ayuntamientos** | Moderar las publicaciones, con una IA que las preclasifica antes. |
-| 🎒 **Visitantes** | Descubrir qué hacer según sus intereses, la fecha y la ubicación en un mapa. |
-| 📅 **Calendario** | Reunir las actividades turísticas, culturales y deportivas. |
-| 🤖 **Asistente** | Un chatbot que responda solo con la información de la plataforma. |
+| 💬 **Bot de Telegram con IA** (`@HackeMate_bot`) | Publicar un plan con un texto, la foto del cartel o una nota de voz; buscar planes hablando normal; apuntarse, preguntar y recibir avisos. Las personas mayores pueden usarlo solo con audios, y el bot les contesta también con voz. |
+| 📱 **Web/PWA y APK Android** | Agenda, mapa por meses, ficha con inscripción, chat del plan, «me gusta», Recuerdos y suscripción a Google Calendar. |
+| 🏛️ **Panel del ayuntamiento** | Bandeja de moderación con antispam y antifraude, estadísticas (ocupación, solapamientos entre pueblos, coste de la IA) e ideas de planes nuevos. |
 
-## 🛠️ Tecnologías previstas
+La IA propone, la API valida y una persona decide lo importante. Si se cae la IA, todo sigue funcionando con reglas.
+
+## 🛠️ Tecnologías
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
-![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
-![OpenStreetMap](https://img.shields.io/badge/OpenStreetMap-7EBC6F?style=flat-square&logo=openstreetmap&logoColor=white)
-![Claude](https://img.shields.io/badge/Claude-D97757?style=flat-square&logo=anthropic&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL%20%2B%20pgvector-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Ionic React](https://img.shields.io/badge/Ionic%20React-3880FF?style=flat-square&logo=ionic&logoColor=white)
+![Capacitor](https://img.shields.io/badge/Capacitor-119EFF?style=flat-square&logo=capacitor&logoColor=white)
+![Leaflet](https://img.shields.io/badge/Leaflet%20%2B%20OpenStreetMap-199900?style=flat-square&logo=leaflet&logoColor=white)
+![Telegram](https://img.shields.io/badge/Telegram-26A5E4?style=flat-square&logo=telegram&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker%20Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
+![Cloudflare](https://img.shields.io/badge/Cloudflare%20Tunnel-F38020?style=flat-square&logo=cloudflare&logoColor=white)
+
+- **API** (`services/api/`): FastAPI, SQLAlchemy y Alembic, con PostgreSQL (pgvector) en Docker o SQLite en local.
+- **Bot** (`services/bot/`): FastAPI, Telegram Bot API (WhatsApp Cloud API programado) y una cadena de IA gratuita: Gemini → NVIDIA NIM → FreeLLMAPI → Claude (opcional) → reglas.
+- **Web** (`apps/web/`): Ionic React, Vite y react-leaflet; APK Android con Capacitor.
+- **Infraestructura**: Docker Compose y un túnel con nombre de Cloudflare (`https://hackemate.rompelab.com`).
 
 ## 🚧 Estado
 
 > **📋 Traspaso del flujo A (Benas, sáb 21/11 por la tarde):** todo lo que se ha hecho hoy en la API, qué tiene que revisar cada uno (Adán: **probar el acceso con contraseña de `/admin`**, que se mergeó sin compilar; Fran: los avisos de planes nuevos) y cómo actualizar las máquinas → [`docs/RESUMEN_FLUJO_A.md`](docs/RESUMEN_FLUJO_A.md).
 
-**Sáb 21/11, 16:00 (tras la #67).** `develop` tiene los tres flujos y la demo funciona de punta a punta por la URL pública del túnel, con Telegram e IA, en dos máquinas (Francisco y Adán; **solo una a la vez con Telegram**). Tests: api 602, bot 149. Cómo probar la v1: [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md). Etiquetas: `v0.2` en `3496f65` (CP2 cerrado) y `v0.3` en `e698407` (CP3, con N1–N4 de la web).
-
-**Próximos puntos fijos:** **CP3 sáb 19:00** (pasos 4–7, contratos congelados, `v0.3`) · **CP4 dom 00:00** (feature freeze, `v0.9`) · **REL dom 07:00** (`v1.0` en `main`) · entrega dom 11:00.
+**Dom 22/11, entrega.** `develop` tiene los tres flujos y la demo funciona de punta a punta por la URL fija `https://hackemate.rompelab.com`, con Telegram e IA. Tests en verde: **API 716, bot 239 y web 69**. Lo último de cada uno está en «📣 Antes de la defensa». Cómo probar: [`docs/PRUEBAS_V1.md`](docs/PRUEBAS_V1.md). Guion de la defensa técnica: [`docs/GUION_DEFENSA.html`](docs/GUION_DEFENSA.html) ([PDF](docs/GUION_DEFENSA.pdf)).
 
 **Reglas de arranque para todos** (lo que más ha fallado):
 1. Siempre desde la raíz: `docker compose --env-file .env -f infra/docker-compose.yml …` (también `exec`, `logs`, `--profile ingesta`). Sin `--env-file`, el bot va sin IA (#53).
@@ -70,10 +79,10 @@ Una plataforma web que conecte a **negocios locales**, **ayuntamientos** y **vis
 4. En la demo, **ni `down -v` ni `demo_reset`** (borran la base). `up -d --build` conserva lo que hace la gente (#63). Qué conserva cada comando: «⚙️ Backend» → «Qué se guarda».
 5. La red de la universidad (Fortinet) bloquea `npm`: la imagen `web` y el APK se construyen con datos del móvil. Claves solo por privado y en `.env`, nunca en `*.example`.
 
-Arquitectura pública (decisión D3, túnel rápido de Cloudflare, gratis y sin cuenta; la URL cambia al reiniciar el túnel):
+Arquitectura pública (decisión D3: túnel con nombre de Cloudflare, gratis, con URL fija si hay `CLOUDFLARE_TUNNEL_TOKEN`; sin token, el túnel rápido, cuya URL cambia al reiniciarse):
 
 ```
-móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──> web:8080 (nginx)
+móvil / jurado / APK / Telegram ──> https://hackemate.rompelab.com ──> web:8080 (nginx)
                                      ├── /          → la web
                                      ├── /api/      → api:8000
                                      └── /webhook/  → bot:8001
@@ -113,7 +122,7 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
   - En `apps/web`, `npm run build:apk`.
   - En `apps/web/android`, `.\gradlew.bat assembleDebug` con `JAVA_HOME` en el JDK 21. En el PC de Adán es `Hackaton\jdk21\jdk-21.0.13.1+2`; con la carpeta `jdk21` a secas falla.
   - Copiad `app-debug.apk` a `descargas/pueblos-unidos.apk`. La web lo sirve al momento y los `.apk` no se suben a git.
-- [ ] **Francisco (bot):** revisa cuando puedas lo que se ha tocado del bot:
+- [x] **Francisco (bot):** *(dom 22/11: revisado. El alta de asociaciones y el saludo van bien, la API acepta `tipo: asociacion` con `SOLO_AYUNTAMIENTOS=true` y el bot pasa sus 239 tests.)* Revisa cuando puedas lo que se ha tocado del bot:
   - `services/bot/app/alta.py`: el alta es de asociaciones, con `TIPO_FIJO = "asociacion"` y textos nuevos.
   - El saludo de `conversacion.py`, que ahora dice «Pueblos Unidos».
   - No hay nada que configurar.
@@ -276,7 +285,7 @@ Notas: `frase_portada` ya se guarda; si llega vacía, la web pone su frase fija 
 
 | Hasta | Tarea |
 |---|---|
-| dom 07:00 | - [ ] **Revisar lo que se hizo de noche en el bot y la API (Adán, dom 22/11 03:21–06:00).** Todo fusionado en `develop` con tests en verde; el detalle está en «🤖 Más IA y automatizaciones» (filas I6, I8, I9, B9, E1 y E2): #134 compartir coche (API + bot), #135 planes por fecha en el bot, #136 solo ayuntamientos (seed, alta y `buscar_publicador_por_contacto`), #137 datos del plan del ayuntamiento (contrato: campos opcionales en `DatosAyuntamiento`), #138 choque de fechas (`GET /choques` + paso nuevo antes de «¿Lo publico así?») y #139 radio del pueblo. **Decisión tuya:** si el bot debe exigir también el `lugar` al publicador (ver E2). |
+| dom 07:00 | - [x] *(dom 22/11: revisado. Tests del bot en verde y todo documentado en «🤖 Bot (flujo B)». **E2 se queda como está:** el bot no exige el `lugar` al publicador (pregunta lo que falta y el moderador lo revisa); exigirlo es una mejora para después de la hackathon.)* **Revisar lo que se hizo de noche en el bot y la API (Adán, dom 22/11 03:21–06:00).** Todo fusionado en `develop` con tests en verde; el detalle está en «🤖 Más IA y automatizaciones» (filas I6, I8, I9, B9, E1 y E2): #134 compartir coche (API + bot), #135 planes por fecha en el bot, #136 solo ayuntamientos (seed, alta y `buscar_publicador_por_contacto`), #137 datos del plan del ayuntamiento (contrato: campos opcionales en `DatosAyuntamiento`), #138 choque de fechas (`GET /choques` + paso nuevo antes de «¿Lo publico así?») y #139 radio del pueblo. **Decisión tuya:** si el bot debe exigir también el `lugar` al publicador (ver E2). |
 | sáb 21/11 | - [x] **Seguridad del bot (Adán, auditoría dom 22/11 00:05).** Hecho, **Francisco: revísalo cuando puedas**: el webhook de Telegram ya no acepta mensajes sin secreto. Si `TELEGRAM_SECRET` está vacío, `telegram.secreto_webhook()` deriva uno del `TELEGRAM_TOKEN` y lo usa al registrar el webhook y al comprobarlo; antes, sin secreto, cualquiera con la URL del túnel podía mandar un update falso con el `telegram_id` del moderador. `X-Internal-Token` se compara en tiempo constante. 1 test nuevo, 213 en verde. |
 | sáb 19:00 | - [x] **B3.** *(sáb 21/11: hecho. Configuración de FreeLLMAPI pasada por privado a Adán; con FreeLLMAPI en Docker en su máquina, las notas de voz por Telegram funcionan (paso 7): el bot las transcribe y responde. Los audios ya no dependen del portátil de Francisco.)* Pasar por privado a Adán `freellmapi.config.json` y `.env` de `services/bot/freellmapi/` y ensayar juntos el paso 7 en su máquina. |
 | — | ~~**B5b.**~~ *(sáb 21/11 19:30: **fuera**, decidido por Francisco. Haría falta una ruta nueva en el contrato congelado y no aporta a la demo; la web se queda con su frase fija por tipo de plan. Idea para producción.)* Era: `POST /ai/frase` (primero en el contrato, antes de CP3): frase breve y alegre (≤ 90 letras, sin inventar datos) a partir de título, categoría y pueblo. Mientras, la web pone una frase fija por tipo de plan. |
@@ -496,24 +505,28 @@ Con `DEMO_MODE=true`, `POST /api/v1/auth/demo` con `{"rol": "publicador"}` o `{"
 
 ## 🤖 Bot (flujo B)
 
-El asistente de mensajería: **@HackeMate_bot** en Telegram (canal activo). Vecinos, publicadores y moderadores pueden hacerlo todo desde el chat, con texto, fotos o notas de voz, sin instalar nada. Código en `services/bot/` (FastAPI, puerto 8001).
+El asistente de mensajería de **Pueblos Unidos**: **@HackeMate_bot** en Telegram (canal activo). Vecinos, publicadores y moderadores pueden hacerlo todo desde el chat, con texto, fotos o notas de voz, sin instalar nada. Código en `services/bot/` (FastAPI, puerto 8001).
 
 ### Qué se puede hacer desde el chat
 
 | Quién | Ejemplo de mensaje | Qué hace el bot |
 |---|---|---|
-| Vecina | «¿Qué hay este finde?», «rutas en Velefique», «conciertos mañana» | Busca en la agenda (o usa las recomendaciones de la API) y enseña tarjetas con **✋ Apuntarme** y **ℹ️ Más info** |
-| Vecina | «Apúntame a la ruta solidaria» o el botón | Inscripción en la API (`confirmada` o `lista_espera`); en Telegram pide antes «Compartir mi número» |
+| Vecina | «¿Qué hay este finde?», «rutas en Velefique», «conciertos mañana» | Busca en la agenda (o usa las recomendaciones de la API) y enseña tarjetas por fecha, del plan más cercano al más lejano, con **✋ Apuntarme** y **ℹ️ Más info** |
+| Vecina | «Algo para ir con niños el domingo por la tarde cerca de Tahal» | **Búsqueda con lenguaje natural**: lo concreto (pueblo, día, franja, «cerca de», «gratis») por reglas, sin tokens; lo blando («con niños», «tranquilo») lo elige la IA entre los planes encontrados |
+| Vecina | «Apúntame a la ruta solidaria» o el botón | Inscripción en la API (`confirmada` o `lista_espera`); en Telegram pide antes «Compartir mi número». No deja apuntarse dos veces, y «desapúntame» la borra |
+| Vecina | Aviso 🚗 con **[Sí, vamos juntos] [No, gracias]** | **Compartir coche**: si dos vecinos del mismo pueblo van a un plan de otro pueblo, la API les propone ir juntos. El contacto solo se pasa entre quienes dicen que sí |
 | Vecina | «¿A qué hora empieza la ruta solidaria?» | Responde con la ficha; si la respuesta no está, la deja en el chat del evento para el organizador |
 | Vecina | «Me gustan las rutas y la música» | Guarda sus gustos y pregunta si quiere **avisos de planes nuevos** (D1); «no quiero avisos» / «avísame» lo cambian |
 | Persona mayor | Solo **notas de voz** | Las transcribe, entiende lo que pide y le contesta **también con una nota de voz** |
-| Publicador | Un texto, **la foto del cartel** o una nota de voz con el plan | Saca la ficha con IA, pregunta lo que falte (fecha, pueblo…) y, con «sí», la envía a la API para publicar o para el moderador |
-| Asociación nueva | «Quiero dar de alta mi asociación» | Pide nombre, tipo, pueblo y responsable (nombre, DNI o NIE comprobado y residencia) y la da de alta en `POST /publicadores` (B5). El DNI solo vive en memoria durante el alta |
-| Moderador | «pendientes» | La bandeja con el motivo de la IA y el `score_spam`, con botones **Aprobar** / **Rechazar** |
+| Publicador | Un texto, **la foto del cartel** o una nota de voz con el plan | Saca la ficha con IA, pregunta lo que falte (fecha, pueblo…) y, con «sí», la envía a la API para publicar o para el moderador. Antes, si ese día hay otro plan a 20 km o menos, avisa del **choque de fechas** y propone un día libre: [📅 Cambiar al …] o [Mantener la fecha] |
+| Quien propuso un plan | «Modificar plan», «quiero cambiar la hora de la ruta» | Cambia fecha y hora, lugar, descripción o plazas (`PATCH /eventos/{id}`). Si cambia la fecha o el lugar, la API avisa a los apuntados. La descripción nueva vuelve a pasar el antispam |
+| Quien propuso un plan | Botón **✍️ Apelar** del aviso de rechazo, o «quiero recurrir» | **Apelación**: pide el motivo y lo manda a la API para que el moderador lo revise otra vez. Solo una vez por plan |
+| Asociación nueva | «Quiero dar de alta mi asociación» | Pide nombre, pueblo y responsable (nombre, DNI o NIE comprobado, residencia y, si quiere, edad) y da de alta la **asociación** en `POST /publicadores` (B5). Los cinco ayuntamientos ya vienen dados de alta. El DNI solo vive en memoria durante el alta |
+| Moderador | «pendientes» | La bandeja con el motivo de la IA y el `score_spam`, con botones **Aprobar** / **Rechazar**. El **asistente del moderador** resume lo pendiente («1 posible fraude, 1 apelación…») y, al rechazar, la IA redacta un motivo amable que el moderador revisa antes de enviarlo |
 | Visitante | «What's on this weekend?» | Detecta el idioma y responde en el suyo (inglés, francés, alemán, italiano, portugués) |
 | Cualquiera | «cancelar» | Borra lo que estaba a medias |
 
-Además: el **antispam** para los posts de apuestas o enlaces sospechosos; los **avisos** que pide la API (cambio de hora, respuestas, moderación, recomendaciones con botones, el código de acceso) y, si la persona lo pidió, también en nota de voz; y los enlaces `t.me/HackeMate_bot?start=codigo` (entrar en la web con código, D2) y `?start=alta`.
+Además: el **antispam y antifraude** (N9: distingue `spam` de `fraude`, como «paga por Bizum por adelantado»; lo de fraude va siempre a la bandeja con «⚠️ Posible fraude»); los avisos automáticos de la API (recordatorio 24 h antes, «¿qué tal fue?», «quedan pocas plazas» y el resumen semanal por pueblo, que llega también como nota de voz: **la radio del pueblo**); las **ideas de planes nuevos** para el ayuntamiento (N8, `/ai/sugerir-eventos`); los **avisos** que pide la API (cambio de hora, respuestas, moderación, recomendaciones con botones, el código de acceso) y, si la persona lo pidió, también en nota de voz; y los enlaces `t.me/HackeMate_bot?start=codigo` (entrar en la web con código, D2) y `?start=alta`.
 
 ### IA: gratis primero y nunca se queda sin responder
 
@@ -540,7 +553,7 @@ Telegram y WhatsApp pueden ir a la vez: el contacto decide el canal (`tg:<chat_i
 
 ### Arrancarlo
 
-Con todo el proyecto: `docker compose --env-file .env -f infra/docker-compose.yml up -d` y, en la máquina de la demo, `python scripts/url_publica.py`, que registra el webhook de Telegram y los enlaces en caliente, sin reiniciar el bot. **Solo una máquina a la vez** puede tener Telegram (`PUBLIC_URL`).
+Con todo el proyecto: `docker compose --env-file .env -f infra/docker-compose.yml up -d`. Con la URL fija (`CLOUDFLARE_TUNNEL_TOKEN` y `PUBLIC_URL=https://hackemate.rompelab.com`), el bot registra el webhook de Telegram solo al arrancar. Solo con el túnel rápido (sin token) hace falta `python scripts/url_publica.py` tras cada `up`, que pasa la URL nueva al bot en caliente, sin reiniciarlo. **Solo una máquina a la vez** puede tener Telegram (`PUBLIC_URL`).
 
 Variables principales (todas en `.env.example` y `services/bot/.env.example`):
 
@@ -575,6 +588,7 @@ python -m pytest -q
 | `POST /ai/spam` | API (moderación) | `score_spam` y motivo |
 | `POST /ai/responder-ficha` | API (chat del evento) | Respuesta solo con lo que dice la ficha |
 | `POST /ai/preferencias` | API | Gustos a partir de un texto |
+| `POST /ai/sugerir-eventos` | API (panel, N7) | De 1 a 3 planes nuevos a partir de los que más participación tuvieron, citando sus cifras |
 | `GET /metrics` · `GET`/`POST /admin/simular-caida` | Panel (a través de la API) | Tokens por proveedor y cola (sin datos personales) · caída simulada |
 | `POST /admin/webhook-telegram` · `/admin/reintentar-cola` | `url_publica.py`, mantenimiento | Cambiar la URL pública en caliente; reintentar la cola |
 | `POST /dev/mensaje` | Pruebas | Chat simulado, sin canal real |
@@ -584,9 +598,9 @@ python -m pytest -q
 
 ### Robustez y privacidad
 
-- **Si la API se cae**, el bot sigue contestando lo que puede y guarda en cola (en disco, volumen `bot_data`) lo que tenía que mandarle. **Si la IA se cae**, pasa a reglas. **Si cambia la URL del túnel**, `url_publica.py` se la pasa al bot sin reiniciarlo y no se pierden las conversaciones a medias.
+- **Si la API se cae**, el bot sigue contestando lo que puede y guarda en cola (en disco, volumen `bot_data`) lo que tenía que mandarle. **Si la IA se cae**, pasa a reglas. **Con el túnel rápido**, si cambia la URL, `url_publica.py` se la pasa al bot sin reiniciarlo y no se pierden las conversaciones a medias.
 - **Datos personales:** el bot no guarda nada en base de datos (solo la API toca la base). El DNI del alta no se escribe en los logs ni en la cola (en pantalla, solo enmascarado), y el token de Telegram tampoco sale en los logs. Con `CANAL=console` el bot imprime sus respuestas: es solo para pruebas.
-- **162 tests** (`python -m pytest -q` en `services/bot`), sin red ni claves: la API y la IA están simuladas.
+- **239 tests** (`python -m pytest -q` en `services/bot`), sin red ni claves: la API y la IA están simuladas.
 
 Más detalle: [`docs/PLAN_FLUJO_B.md`](docs/PLAN_FLUJO_B.md) (decisiones y canales) y [`services/bot/PARA_FLUJO_A.md`](services/bot/PARA_FLUJO_A.md) (los cuerpos exactos de cada llamada entre la API y el bot).
 
