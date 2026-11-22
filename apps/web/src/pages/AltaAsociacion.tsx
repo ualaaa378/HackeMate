@@ -127,7 +127,7 @@ const AltaAsociacion: React.FC = () => {
           </IonCard>
         ) : (
           <IonCard>
-            <IonCardContent>
+            <IonCardContent className="form-alta">
               <p>
                 Las asociaciones del pueblo pueden publicar sus planes; el ayuntamiento los revisa antes de que salgan.
                 Pedimos los datos de la persona responsable para comprobar quién está detrás: solo los ve la moderación.
