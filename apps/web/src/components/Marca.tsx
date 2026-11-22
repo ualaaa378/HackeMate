@@ -15,7 +15,7 @@ const Marca: React.FC<{ onInicio?: () => void }> = ({ onInicio }) => {
       <img className="marca__logo" src="/icons/logo-cabecera.png" alt="" width={64} height={64} decoding="async" />
       <span className="marca__textos">
         <span className="marca__nombre">Pueblos Unidos</span>
-        <span className="marca__sub">5 pueblos de Almería</span>
+        <span className="marca__sub">Una web, muchos pueblos</span>
       </span>
     </Link>
   );
