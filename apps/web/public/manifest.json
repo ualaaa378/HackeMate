@@ -1,6 +1,6 @@
 {
-  "short_name": "Tu pueblo",
-  "name": "HackeMate · Reactiva tu pueblo",
+  "short_name": "Pueblos Unidos",
+  "name": "Pueblos Unidos · 5 pueblos de Almería",
   "lang": "es",
   "icons": [
     { "src": "/icons/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },

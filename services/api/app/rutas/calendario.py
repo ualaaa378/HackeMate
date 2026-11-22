@@ -1,8 +1,11 @@
-"""Exportación a calendario (.ics): un evento (público) y los eventos del usuario (con sesión)."""
+"""Exportación a calendario (.ics): un evento (público), la agenda entera para suscribirse (pública) y los eventos del
+usuario (con sesión)."""
 
-from fastapi import APIRouter, Depends, Header
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, Header, Query
 from fastapi.responses import Response
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
@@ -18,12 +21,30 @@ router = APIRouter(prefix="/api/v1", tags=["calendario"])
 TIPO_ICS = "text/calendar; charset=utf-8"
 
 
-def _respuesta_ics(contenido: str, fichero: str) -> Response:
+def _respuesta_ics(contenido: str, fichero: str, adjunto: bool = True) -> Response:
     return Response(
         content=contenido.encode("utf-8"),
         media_type=TIPO_ICS,
-        headers={"Content-Disposition": f'attachment; filename="{fichero}"'},
+        headers={"Content-Disposition": f'{"attachment" if adjunto else "inline"}; filename="{fichero}"'},
     )
+
+
+@router.get("/agenda.ics", response_class=Response)
+def ics_agenda(municipio: str | None = Query(None, max_length=80), db: Session = Depends(get_db)):
+    """Suscripción desde Google Calendar: planes publicados o cancelados que no acabaron hace más de 7 días."""
+    desde = datetime.now(timezone.utc) - timedelta(days=7)
+    consulta = (
+        select(Evento)
+        .options(selectinload(Evento.publicador))
+        .where(Evento.estado.in_(("publicado", "cancelado")),
+               or_(Evento.fecha_fin >= desde, and_(Evento.fecha_fin.is_(None), Evento.fecha_inicio >= desde)))
+        .order_by(Evento.fecha_inicio, Evento.id)
+    )
+    if municipio:
+        consulta = consulta.where(Evento.municipio == municipio)
+    nombre = f"Pueblos Unidos · {municipio}" if municipio else "Pueblos Unidos · 5 pueblos de Almería"
+    return _respuesta_ics(calendario(list(db.scalars(consulta).all()), nombre=nombre), "pueblos-unidos.ics",
+                          adjunto=False)
 
 
 @router.get("/eventos/{id}/ics", response_class=Response)
@@ -49,4 +70,4 @@ def ics_mis_eventos(usuario: Usuario = Depends(exigir_usuario), db: Session = De
         )
         .order_by(Evento.fecha_inicio, Evento.id)
     ).all()
-    return _respuesta_ics(calendario(list(eventos), nombre="Mis planes en HackeMate"), "mis-eventos.ics")
+    return _respuesta_ics(calendario(list(eventos), nombre="Mis planes en Pueblos Unidos"), "mis-eventos.ics")

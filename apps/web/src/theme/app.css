@@ -429,11 +429,48 @@ ion-card-content {
   gap: 12px;
 }
 
-.boton-proponer {
-  --color: #fff;
-  --border-color: rgba(255, 255, 255, 0.7);
-  min-height: 44px;
+/* !important: Ionic pinta los botones de una cabecera de color con los colores de la cabecera */
+ion-toolbar ion-buttons ion-button.boton-proponer {
+  --background: var(--hm-paleta-ocre) !important;
+  --background-hover: #d9b583 !important;
+  --background-activated: #b98f59 !important;
+  --color: var(--hm-petroleo-oscuro) !important; /* 5,4:1 sobre el ocre */
+  --box-shadow: 0 2px 6px rgb(0 0 0 / 30%);
+  --padding-start: 16px;
+  --padding-end: 18px;
+  min-height: 46px;
   margin-right: 8px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* Agenda: logo grande en el centro de la cabecera */
+.cabecera-marca {
+  --min-height: 84px;
+}
+
+.titulo-marca {
+  position: absolute;
+  inset: 0;
+  padding-inline: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.titulo-marca .marca {
+  pointer-events: auto;
+}
+
+.titulo-marca .marca__logo {
+  width: 64px;
+  height: 64px;
+}
+
+.titulo-marca .marca__textos {
+  text-align: start;
 }
 
 .nota {
@@ -448,6 +485,36 @@ ion-card-content {
   .boton-proponer ion-icon {
     margin: 0;
     font-size: 26px;
+  }
+
+  ion-toolbar ion-buttons ion-button.boton-proponer {
+    --padding-start: 0;
+    --padding-end: 0;
+    --border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    min-height: 48px;
+  }
+
+  .titulo-marca {
+    padding-inline: 72px;
+  }
+
+  .titulo-marca .marca {
+    gap: 8px;
+  }
+
+  .titulo-marca .marca__nombre {
+    font-size: 1.05rem;
+  }
+
+  .titulo-marca .marca__logo {
+    width: 54px;
+    height: 54px;
+  }
+
+  .titulo-marca .marca__sub {
+    display: none;
   }
 }
 
@@ -2375,4 +2442,48 @@ ion-toolbar .selector-letra--compacto .selector-letra__btn[aria-pressed='true'] 
     font-size: 0.85rem;
     line-height: 1.25;
   }
+}
+
+/* En escritorio la cabecera de la agenda también lleva el selector de letra a la derecha */
+@media (min-width: 1100px) {
+  .titulo-marca {
+    padding-inline: 300px;
+  }
+}
+
+/* Suscribir la agenda en Google Calendar (y otros calendarios) */
+.suscribir-calendario {
+  margin: 12px 16px 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--hm-borde);
+  border-radius: var(--hm-radio);
+  background: var(--hm-petroleo-claro);
+}
+
+.suscribir-calendario__titulo {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--hm-petroleo-oscuro);
+}
+
+.suscribir-calendario__texto {
+  margin: 0 0 10px;
+  color: var(--hm-texto-suave);
+}
+
+.suscribir-calendario__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suscribir-calendario__botones ion-button {
+  margin: 0;
+}
+
+.boton-google-calendar {
+  --background: var(--hm-petroleo);
+  --background-hover: var(--hm-petroleo-oscuro);
+  --color: #fff;
 }

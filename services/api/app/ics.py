@@ -20,7 +20,7 @@ from app.modelos import Evento
 CRLF = "\r\n"
 MAX_OCTETOS = 75
 DURACION_POR_DEFECTO = timedelta(hours=2)
-PRODID = "-//HackeMate//Reactiva tu pueblo//ES"
+PRODID = "-//Pueblos Unidos//Reactiva tu pueblo//ES"
 DOMINIO_UID = "hackemate"
 ESTADOS_ICS = {"cancelado": "CANCELLED"}
 

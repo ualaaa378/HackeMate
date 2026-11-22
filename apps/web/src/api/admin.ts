@@ -26,6 +26,23 @@ import type {
 
 // Usuarios de la demo en contracts/fixtures/usuarios.json: Lucía (moderadora) y Antonio (Ayto. de Velefique desde el 22/11,
 // con revisión a mano, así sus planes pasan por la bandeja).
+/** Perfil predeterminado de cada ayuntamiento (la API lo crea en el seed: app/entidades.py, perfiles_ayuntamientos). */
+export const PERFILES_AYUNTAMIENTO: { municipio: string; nombre: string; usuarioId: string }[] = [
+  {
+    municipio: 'Lucainena de las Torres',
+    nombre: 'Ayto. Lucainena de las Torres',
+    usuarioId: '5a5e0000-0000-4000-8000-000000000102',
+  },
+  { municipio: 'Senés', nombre: 'Ayto. de Senés', usuarioId: '5a5e0000-0000-4000-8000-000000000004' },
+  { municipio: 'Tahal', nombre: 'Ayto. Tahal', usuarioId: '5a5e0000-0000-4000-8000-000000000106' },
+  {
+    municipio: 'Uleila del Campo',
+    nombre: 'Ayto. de Uleila del Campo',
+    usuarioId: '5a5e0000-0000-4000-8000-000000000109',
+  },
+  { municipio: 'Velefique', nombre: 'Ayto. de Velefique', usuarioId: '5a5e0000-0000-4000-8000-000000000003' },
+];
+
 const USUARIOS_DEMO: Record<'moderador' | 'publicador', string> = {
   moderador: '5a5e0000-0000-4000-8000-000000000002',
   publicador: '5a5e0000-0000-4000-8000-000000000003',
@@ -35,12 +52,12 @@ const USUARIOS_DEMO: Record<'moderador' | 'publicador', string> = {
  * Entra sin cuenta como el moderador o el publicador de la demo (`POST /auth/demo`, solo con DEMO_MODE=true en la
  * API). Devuelve null si no hay API o no está en modo demo: entonces la zona del ayuntamiento va con mocks.
  */
-export async function entrarDemo(rol: 'moderador' | 'publicador'): Promise<Token | null> {
+export async function entrarDemo(rol: 'moderador' | 'publicador', usuarioId?: string): Promise<Token | null> {
   if (USAR_MOCKS) return null;
   const pedir = (cuerpo: { usuario_id?: string; rol?: Rol }) =>
     peticion<Token>('/auth/demo', { method: 'POST', body: JSON.stringify(cuerpo) });
   try {
-    return await pedir({ usuario_id: USUARIOS_DEMO[rol] });
+    return await pedir({ usuario_id: usuarioId ?? USUARIOS_DEMO[rol] });
   } catch (e) {
     // Si alguien ha cambiado los usuarios de la demo, vale el primero con ese rol.
     if (e instanceof ErrorApi && e.code === 'usuario_no_encontrado') return pedir({ rol }).catch(() => null);

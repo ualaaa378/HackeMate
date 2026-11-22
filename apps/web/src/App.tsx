@@ -19,7 +19,7 @@ import { usePendientesBandeja } from './admin/pendientes';
 import ProveedorSesion from './cuenta/ProveedorSesion';
 import Agenda from './pages/Agenda';
 import Ajustes from './pages/Ajustes';
-import AltaAyuntamiento from './pages/AltaAyuntamiento';
+import AltaAsociacion from './pages/AltaAsociacion';
 import Creditos from './pages/Creditos';
 import Ficha from './pages/Ficha';
 import Mapa from './pages/Mapa';
@@ -71,7 +71,8 @@ const Navegacion: React.FC = () => {
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/evento/:id" element={<Ficha />} />
         <Route path="/proponer" element={<Proponer />} />
-        <Route path="/alta-ayuntamiento" element={<AltaAyuntamiento />} />
+        <Route path="/alta-asociacion" element={<AltaAsociacion />} />
+        <Route path="/alta-ayuntamiento" element={<Navigate to="/alta-asociacion" replace />} />
         <Route path="/mis-planes" element={<MisPlanes />} />
         <Route path="/creditos" element={<Creditos />} />
         <Route path="/ajustes" element={<Ajustes />} />
@@ -109,7 +110,7 @@ const Navegacion: React.FC = () => {
           {rol !== 'publicador' && (
             <IonTabButton tab="publicadores" href="/admin/publicadores">
               <IonIcon aria-hidden="true" icon={people} />
-              <IonLabel>Ayuntamientos</IonLabel>
+              <IonLabel>Entidades</IonLabel>
             </IonTabButton>
           )}
           {rol !== 'publicador' && (

@@ -118,7 +118,7 @@ def pedir_codigo(datos: PedirCodigo, background_tasks: BackgroundTasks, db: Sess
     db.flush()
 
     texto = (
-        f"Tu código de HackeMate es {codigo}. Caduca en {CODIGO_VALIDEZ_MIN} minutos. "
+        f"Tu código de Pueblos Unidos es {codigo}. Caduca en {CODIGO_VALIDEZ_MIN} minutos. "
         "No se lo des a nadie: nunca te lo pediremos."
     )
     usuario = _por_telefono(db, datos.telefono)

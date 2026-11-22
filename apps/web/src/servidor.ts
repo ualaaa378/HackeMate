@@ -37,7 +37,7 @@ export function guardarDireccion(direccion: string): void {
   }
 }
 
-/** Comprueba que en esa dirección responde la API de HackeMate. */
+/** Comprueba que en esa dirección responde la API de Pueblos Unidos. */
 export async function probarDireccion(direccion: string): Promise<boolean> {
   const control = new AbortController();
   const espera = setTimeout(() => control.abort(), 8000);

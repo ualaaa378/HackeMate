@@ -1,5 +1,5 @@
-"""Alta de una entidad por chat (tarea B5). Desde el 22/11 solo ayuntamientos (decisión de Adán; la API lo exige con
-`SOLO_AYUNTAMIENTOS`): ya no se pregunta el tipo, se envía siempre `ayuntamiento`.
+"""Alta de una entidad por chat (tarea B5). Desde el 22/11 09:35 es el alta de una asociación (decisión de Adán: los
+ayuntamientos ya vienen dados de alta con su perfil): ya no se pregunta el tipo, se envía siempre `asociacion`.
 
 Pide el nombre y el pueblo de la entidad y los datos del responsable (nombre, DNI o NIE y dónde vive) y los
 manda a `POST /publicadores` (contrato: `PublicadorCrear.responsable`). Sin esos datos, la entidad nunca podrá
@@ -38,7 +38,7 @@ _EMPEZAR = re.compile(
     r"bar|ayuntamiento|negocio|comercio|club))\b")
 
 PREGUNTAS = {
-    "nombre": "¿Cómo se llama el ayuntamiento? (por ejemplo, «Ayuntamiento de Velefique»)",
+    "nombre": "¿Cómo se llama la asociación? (por ejemplo, «Asociación Amigos de Velefique»)",
     "tipo": "¿Qué es?",
     "municipio": "¿En qué pueblo está? (" + ", ".join(MUNICIPIOS) + ")",
     "responsable": ("Ahora, la persona que la representa. Solo lo verán los moderadores del ayuntamiento, para "
@@ -48,7 +48,7 @@ PREGUNTAS = {
     "residencia": "¿En qué pueblo vive el responsable?",
     "edad": "¿Cuántos años tiene el responsable? (opcional: pulsa *Saltar* si no quieres decirlo)",
 }
-TIPO_FIJO = "ayuntamiento"  # solo ayuntamientos: el paso «tipo» ya no se pregunta
+TIPO_FIJO = "asociacion"  # los ayuntamientos ya están dados de alta: el paso «tipo» ya no se pregunta
 PASOS = ["nombre", "municipio", "responsable", "dni", "residencia", "edad"]
 BOTON_SALTAR = [("alta_saltar", "⏭️ Saltar")]
 BOTONES_TIPO = [(f"alta_tipo:{k}", v) for k, v in TIPOS.items()]
@@ -124,7 +124,7 @@ def empezar(msg: MensajeEntrante, usuario: dict | None) -> list:
                 "preparo la ficha."]
     alta = Alta(datos={"tipo": TIPO_FIJO})
     altas[msg.de] = alta
-    salida: list = ["¡Genial! Doy de alta tu ayuntamiento en un momento. Te haré unas preguntas (escribe *cancelar* "
+    salida: list = ["¡Genial! Doy de alta tu asociación en un momento. Te haré unas preguntas (escribe *cancelar* "
                     "para dejarlo)."]
     if telegram.es_telegram(msg.de):
         alta.telefono = (usuario or {}).get("telefono")
@@ -240,7 +240,7 @@ def _enviar(msg: MensajeEntrante, alta: Alta) -> list:
     if not alta.telefono:
         cancelar(msg.de)
         return ["No tengo tu número de teléfono, y sin él no puedo darte de alta. Escríbeme «quiero dar de alta mi "
-                "ayuntamiento» y lo intentamos de nuevo."]
+                "asociación» y lo intentamos de nuevo."]
     cuerpo = {"nombre": d["nombre"], "tipo": d["tipo"], "municipio": d["municipio"], "telefono": alta.telefono,
               "responsable": {"nombre": d["responsable"], "dni": d["dni"], "residencia": d["residencia"]}}
     if d.get("edad"):
@@ -264,6 +264,6 @@ def _enviar(msg: MensajeEntrante, alta: Alta) -> list:
         log.warning("La api rechazó el alta de publicador: %s", e.code)  # sin datos personales en el log
         return [f"No he podido darte de alta: {e.message}"]
     cancelar(msg.de)  # fuera de memoria en cuanto se envía
-    return [f"✅ ¡Solicitud enviada! *{d['nombre']}* queda pendiente de que la moderación lo revise; te aviso aquí "
+    return [f"✅ ¡Solicitud enviada! *{d['nombre']}* queda pendiente de que el ayuntamiento la revise; te aviso aquí "
             "cuando esté aprobada. Mientras, ya puedes mandarme vuestros planes: los revisará el moderador antes "
             "de publicarlos."]

@@ -11,10 +11,10 @@ const Marca: React.FC<{ onInicio?: () => void }> = ({ onInicio }) => {
     void contenido?.scrollToTop(300);
   };
   return (
-    <Link to="/agenda" className="marca" aria-label="Reactiva tu pueblo: ir al inicio" onClick={alPulsar}>
-      <img className="marca__logo" src="/icons/logo-cabecera.png" alt="" width={44} height={44} decoding="async" />
-      <span>
-        <span className="marca__nombre">Reactiva tu pueblo</span>
+    <Link to="/agenda" className="marca" aria-label="Pueblos Unidos: ir al inicio" onClick={alPulsar}>
+      <img className="marca__logo" src="/icons/logo-cabecera.png" alt="" width={64} height={64} decoding="async" />
+      <span className="marca__textos">
+        <span className="marca__nombre">Pueblos Unidos</span>
         <span className="marca__sub">5 pueblos de Almería</span>
       </span>
     </Link>
