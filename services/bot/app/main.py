@@ -11,7 +11,9 @@ from fastapi import BackgroundTasks, FastAPI, Form, Header, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
-from app import __version__, api_cliente, apelacion, canales, coche, conversacion, meta, metrics, telegram, vecino
+from app import (
+    __version__, api_cliente, apelacion, canales, coche, conversacion, meta, metrics, radio, telegram, vecino,
+)
 from app.agentes import antispam, asistente, extractor, preferencias, sugerencias, voz
 from app.config import get_settings
 from app.llm import router
@@ -277,7 +279,7 @@ class Notificacion(BaseModel):
 
 
 @app.post("/notify")
-def notify(n: Notificacion, x_internal_token: str | None = Header(None)):
+def notify(n: Notificacion, tareas: BackgroundTasks, x_internal_token: str | None = Header(None)):
     _comprobar_interno(x_internal_token)
     destino = n.contacto or n.telefono
     if not destino:
@@ -303,7 +305,9 @@ def notify(n: Notificacion, x_internal_token: str | None = Header(None)):
         canales.enviar_plantilla(destino, n.plantilla, n.parametros, texto_alternativo=n.texto)
     else:
         canales.enviar(destino, n.texto, botones)
-    if n.formato == "audio":  # personas mayores: el aviso también en nota de voz
+    if radio.es_resumen(n.texto) and not n.plantilla:  # «La radio del pueblo»: el resumen del lunes, también en voz
+        tareas.add_task(radio.emitir, destino, n.texto)
+    elif n.formato == "audio":  # personas mayores: el aviso también en nota de voz
         ogg = voz.sintetizar(voz.texto_para_voz([n.texto]))
         if ogg:
             canales.enviar_voz(destino, ogg)
