@@ -83,6 +83,46 @@ móvil / jurado / APK / Telegram ──> https://<algo>.trycloudflare.com ──
 
 > **Regla del equipo (ver `CLAUDE.md`):** cada flujo apunta aquí, bajo el flujo responsable, lo que necesita de los demás, y lo borra al resolverlo. Cada uno marca `[x]` en el mismo commit en que termina. Mientras algo falte, la web cae a mocks y el bot guarda en cola: nada se rompe. Formato de los hallazgos: `docs/SINCRONIZACION_SABADO.md` §3.
 
+### 📣 Antes de la defensa: cambios de Adán del domingo y qué tiene que hacer cada uno (dom 22/11 10:20)
+
+**Qué ha cambiado esta mañana** (todo en `develop`, con tests en verde: API 716, bot 239, web 69 y `npm run lint` limpio; detalle en las filas E3 y E4):
+
+- **#142** El nombre visible es **Pueblos Unidos**: web, PWA, APK, saludo del bot, avisos y calendarios. No cambian el repo, el `appId` ni `@HackeMate_bot`. Además:
+  - Los cinco ayuntamientos ya vienen con su perfil y `/admin` tiene un botón por ayuntamiento.
+  - El alta de la web y del bot es ahora **de asociaciones**.
+  - Nueva ruta `GET /api/v1/agenda.ics` y botón «Añadir a Google Calendar» en la agenda.
+- **#143** Tres cambios:
+  - QR y enlace para descargar el APK en Mi perfil, servidos desde la carpeta `descargas/`.
+  - En el APK se cambia de pestaña deslizando.
+  - **«Me gusta»** en la ficha: `GET/PUT/DELETE /api/v1/eventos/{id}/me-gusta`, con la tabla `me_gusta` y la **migración 0013**. Para darlo hace falta cuenta.
+- **#144–#146** Retoques:
+  - El APK se descarga como «Pueblos Unidos.apk».
+  - Subtítulo «Una web, muchos pueblos».
+  - Los campos del alta de asociación ya no se pisan.
+
+**Qué tiene que hacer cada uno para que vaya como un tiro:**
+
+- [ ] **Todos:** `git pull origin develop` antes de tocar nada. Si `npm` os cambia `apps/web/package-lock.json`, descartadlo (`git checkout -- apps/web/package-lock.json`) y no lo subáis. No fusionéis las ramas viejas `claude/project-thread-p8kcdw` ni `feat/web-recuerdos-izquierda`.
+- [ ] **Quien levante Docker** (la máquina de la demo es la de Adán, que ya está al día en `21ce29b`):
+  - Usad `docker compose --env-file .env -f infra/docker-compose.yml up -d --build`, **nunca `down -v`**.
+  - La API aplica sola la migración 0013 al arrancar.
+  - La web necesita reconstruirse: cambian `nginx.conf` y el montaje de `../descargas`.
+  - Después comprobad que FreeLLM (`hackemate-freellmapi-freellmapi-1`) y los dos túneles siguen arriba; FreeLLM no arranca con el compose, así que `docker start` si hace falta.
+  - El `.env` no cambia, pero **`DEMO_MODE=true`** es necesario para los botones de los ayuntamientos en `/admin`.
+- [ ] **Si alguien recompila el APK:**
+  - En `apps/web`, `npm run build:apk`.
+  - En `apps/web/android`, `.\gradlew.bat assembleDebug` con `JAVA_HOME` en el JDK 21. En el PC de Adán es `Hackaton\jdk21\jdk-21.0.13.1+2`; con la carpeta `jdk21` a secas falla.
+  - Copiad `app-debug.apk` a `descargas/pueblos-unidos.apk`. La web lo sirve al momento y los `.apk` no se suben a git.
+- [ ] **Francisco (bot):** revisa cuando puedas lo que se ha tocado del bot:
+  - `services/bot/app/alta.py`: el alta es de asociaciones, con `TIPO_FIJO = "asociacion"` y textos nuevos.
+  - El saludo de `conversacion.py`, que ahora dice «Pueblos Unidos».
+  - No hay nada que configurar.
+- [ ] **Benas (API, ha vuelto):** revisa `app/rutas/me_gusta.py`, la migración 0013, `app/rutas/calendario.py` (`agenda.ics`) y `entidades.perfiles_ayuntamientos`. En la defensa respondes la parte de API: el bloque 4 con Francisco y tres preguntas del guion. Lo tienes en el documento del guion que tiene Adán.
+- [ ] **Adán:**
+  - Instala el APK nuevo en el móvil desde el QR de Mi perfil.
+  - Prueba una vez «Añadir a Google Calendar» desde la URL pública.
+  - Prepara los posts y planes de la demo y ensaya con el cronómetro.
+
 ### 🧭 Orden de trabajo de hoy (Adán, sáb 21/11 17:00)
 
 **Primero lo establecido y después lo nuevo.** Hasta las 19:00 (CP3) cada uno cierra lo que ya tiene en su tabla. Después, hasta el freeze de las 00:00, el orden es este: 1) lo que queda de la demo (C9 APK o C4 PWA, C6, C10, A8, A10, T1 y T2) y 2) las tareas **N** de abajo. Lo que a las 00:00 no esté, se queda fuera: entre una funcionalidad pulida y dos que funcionan, elegimos las dos.
@@ -209,7 +249,7 @@ Los profesores valoran mucho la IA y las automatizaciones. Hechas (ideas 5, 6 y 
 
 Opcional (lo pide el bot, plan C de la demo): un chat simulado en la web que llame a `bot POST /dev/mensaje`.
 
-### Flujo A · API (antes Benas; desde el sáb 21/11 por la tarde lo lleva Francisco)
+### Flujo A · API (Benas; el sáb 21/11 por la tarde lo llevó Francisco y el dom 22/11 Benas ha vuelto)
 
 > **Benas se ha ido de la hackathon** (traspaso en [`docs/RESUMEN_FLUJO_A.md`](docs/RESUMEN_FLUJO_A.md)). Desde ahora Francisco se encarga también del flujo A: API, `contracts/`, `infra/` y `scripts/`. El contrato sigue congelado (solo se añade); los tests de la API se pasan en Docker (Python 3.12).
 
