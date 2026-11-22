@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { alCaducarSesion, setToken } from '../api/client';
+import { alCaducarSesion, setToken, USAR_MOCKS } from '../api/client';
 import type { Token, Usuario } from '../api/types';
 
 import ModalCuenta from './ModalCuenta';
@@ -11,6 +11,12 @@ const CLAVE = 'hm-sesion';
 function leerGuardada(): Token | null {
   try {
     const t = JSON.parse(localStorage.getItem(CLAVE) ?? 'null') as Token | null;
+    // Una sesión de ejemplo (creada cuando no había API) no vale con la API real: con ella, las propuestas
+    // se quedaban en el navegador sin llegar al ayuntamiento. Se olvida y se pide entrar de nuevo.
+    if (t && t.access_token === 'demo' && !USAR_MOCKS) {
+      localStorage.removeItem(CLAVE);
+      return null;
+    }
     if (t) setToken(t.access_token);
     return t;
   } catch {
