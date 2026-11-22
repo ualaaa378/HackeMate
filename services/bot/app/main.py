@@ -11,7 +11,7 @@ from fastapi import BackgroundTasks, FastAPI, Form, Header, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
-from app import __version__, api_cliente, apelacion, canales, conversacion, meta, metrics, telegram, vecino
+from app import __version__, api_cliente, apelacion, canales, coche, conversacion, meta, metrics, telegram, vecino
 from app.agentes import antispam, asistente, extractor, preferencias, sugerencias, voz
 from app.config import get_settings
 from app.llm import router
@@ -287,6 +287,8 @@ def notify(n: Notificacion, x_internal_token: str | None = Header(None)):
         # Tarea programada «¿qué tal fue?»: valoración con botones; lo que conteste va al plan como comentario
         vecino.esperar_valoracion(destino, n.evento_id)
         botones = vecino.botones_valoracion(n.evento_id)
+    elif n.evento_id and coche.es_propuesta(n.texto):  # idea 6: ¿vais juntos en coche?
+        botones = coche.botones(n.evento_id)
     elif n.evento_id and n.tipo == "recomendacion":
         # Recomendación → la vecina se apunta con un botón (paso 4 de la demo)
         botones = [(f"insc:{n.evento_id}", "✋ Apuntarme"), (f"info:{n.evento_id}", "ℹ️ Más info")]

@@ -210,6 +210,11 @@ def inscribir(evento_id: str, usuario_id: str, canal: str, plazas: int = 1) -> d
                      {"usuario_id": usuario_id, "plazas": plazas, "canal": canal})
 
 
+def responder_coche(evento_id: str, usuario_id: str, acepta: bool) -> dict | None:
+    """Compartir coche: el sí o el no del vecino (la API solo pasa el contacto entre quienes dicen que sí)."""
+    return _peticion("POST", f"/api/v1/eventos/{evento_id}/coche", {"usuario_id": usuario_id, "acepta": acepta})
+
+
 def desinscribir(evento_id: str, inscripcion_id: str) -> dict | None:
     """N6b: devuelve la plaza (y sube al primero de la lista de espera)."""
     return _peticion("DELETE", f"/api/v1/eventos/{evento_id}/inscripciones/{inscripcion_id}")
