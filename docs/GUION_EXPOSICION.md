@@ -1,5 +1,6 @@
 # Guion de la exposición técnica · HackeMate (Reto 1 «Reactiva tu pueblo»)
 
+> Versión visual (para ensayar e imprimir a PDF): [`GUION_DEFENSA.html`](GUION_DEFENSA.html).
 > Guion para la exposición ante el jurado del domingo 22/11. Sigue el orden de la **rúbrica oficial** (Bloque I técnico, 70 %, y Bloque II visual, 30 %), para que cada criterio tenga su momento y no se nos quede nada sin decir.
 > **Se mantiene vivo:** cuando algo nuevo llegue a `develop`, se añade a su criterio y se mueve de «Líneas de mejora» a «Hecho».
 
@@ -150,9 +151,9 @@ Enseñar un diagrama de una diapositiva: **web/APK ↔ nginx ↔ API ↔ base de
 | Rotar todas las claves usadas durante la hackathon y cambiar la contraseña de moderación | 1.5 | Tras la hackathon |
 | Asistente del moderador (resumen, sugerencias y motivo de rechazo con IA) | 1.2 · 1.5 | **Hecho** (dom 22/11) |
 | Aviso automático «quedan pocas plazas» | 1.2 · 1.4 | **Hecho** (dom 22/11) |
-| Aviso de choque entre pueblos al publicar, con fecha alternativa propuesta por la IA | 1.2 · 1.6 | Propuesta |
-| «La radio del pueblo»: resumen semanal en audio | 1.2 · 2.1 | Propuesta |
-| Compartir coche entre vecinos que van al mismo plan (con doble consentimiento) | 1.2 · 1.6 | Propuesta |
+| Aviso de choque entre pueblos al publicar, con fecha alternativa propuesta por la IA | 1.2 · 1.6 | **Hecho** (dom 22/11, Adán) |
+| «La radio del pueblo»: resumen semanal en audio | 1.2 · 2.1 | **Hecho** (dom 22/11, Adán) |
+| Compartir coche entre vecinos que van al mismo plan (con doble consentimiento) | 1.2 · 1.6 | **Hecho** (dom 22/11, Adán) |
 | Informe mensual para el alcalde redactado por la IA | 1.2 · 1.6 | Propuesta |
 | _(añadir aquí lo que se suba al repositorio después de las 00:00)_ | | |
 
