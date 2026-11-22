@@ -24,7 +24,7 @@ import type {
   Token,
 } from './types';
 
-// Usuarios de la demo en contracts/fixtures/usuarios.json: Lucía (moderadora) y Antonio (Amigos de Velefique,
+// Usuarios de la demo en contracts/fixtures/usuarios.json: Lucía (moderadora) y Antonio (Ayto. de Velefique desde el 22/11,
 // con revisión a mano, así sus planes pasan por la bandeja).
 const USUARIOS_DEMO: Record<'moderador' | 'publicador', string> = {
   moderador: '5a5e0000-0000-4000-8000-000000000002',

@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     # D4: lo que llega solo (ingesta de Facebook, importado_auto) va siempre a la bandeja, aunque la asociación
     # esté en automática. false = se publica como cualquier otro plan de esa asociación.
     moderacion_importados_a_bandeja: bool = True
+    # Solo ayuntamientos como entidades publicadoras (app/entidades.py, decisión de Adán 22/11)
+    solo_ayuntamientos: bool = True
     # Cola de avisos (app/notificaciones.py)
     notificaciones_timeout_s: float = 3.0
     notificaciones_max_intentos: int = 5

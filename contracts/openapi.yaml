@@ -624,9 +624,10 @@ paths:
           content:
             application/json:
               schema: { $ref: "./schemas/publicador.json" }
-        "401": { $ref: "#/components/responses/Error", description: "401 `token_interno_invalido` (falta X-Internal-Token o no es correcto)" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado` (ni X-Internal-Token válido ni sesión)" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (con sesión, el teléfono tiene que ser el de tu cuenta)" }
         "409": { $ref: "#/components/responses/Error", description: "409 `publicador_ya_existe` (ya hay un publicador con ese teléfono; details.publicador_id)" }
-        "422": { $ref: "#/components/responses/Error", description: "422 `validacion` o `municipio_no_encontrado`" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `validacion`, `municipio_no_encontrado`, `falta_telefono` (la cuenta no tiene teléfono) o `solo_ayuntamientos` (con SOLO_AYUNTAMIENTOS=true, por defecto, solo se admite `tipo: ayuntamiento`)" }
 
   /api/v1/publicadores/{id}:
     parameters:

@@ -19,6 +19,7 @@ export type UsuarioEditar = Esquemas['UsuarioEditar'];
 export type MensajeCrear = Esquemas['MensajeCrear'];
 export type EventoCrear = Esquemas['EventoCrear'];
 export type Recomendacion = Esquemas['Recomendacion'];
+export type PublicadorCrear = Esquemas['PublicadorCrear'];
 
 export const PUBLICOS = {
   todos: 'Todos los públicos',

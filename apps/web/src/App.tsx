@@ -19,6 +19,7 @@ import { usePendientesBandeja } from './admin/pendientes';
 import ProveedorSesion from './cuenta/ProveedorSesion';
 import Agenda from './pages/Agenda';
 import Ajustes from './pages/Ajustes';
+import AltaAyuntamiento from './pages/AltaAyuntamiento';
 import Creditos from './pages/Creditos';
 import Ficha from './pages/Ficha';
 import Mapa from './pages/Mapa';
@@ -56,7 +57,7 @@ import './theme/app.css';
 setupIonicReact();
 
 // Una sola app con dos zonas: la del vecino (/agenda, /mapa…) y la del ayuntamiento (/admin/…).
-// La barra de abajo cambia según la zona; la de /admin depende del rol (moderador o asociación).
+// La barra de abajo cambia según la zona; la de /admin depende del rol (moderador o ayuntamiento).
 const Navegacion: React.FC = () => {
   const { pathname } = useLocation();
   const { rol } = useAcceso();
@@ -70,6 +71,7 @@ const Navegacion: React.FC = () => {
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/evento/:id" element={<Ficha />} />
         <Route path="/proponer" element={<Proponer />} />
+        <Route path="/alta-ayuntamiento" element={<AltaAyuntamiento />} />
         <Route path="/mis-planes" element={<MisPlanes />} />
         <Route path="/creditos" element={<Creditos />} />
         <Route path="/ajustes" element={<Ajustes />} />
@@ -107,7 +109,7 @@ const Navegacion: React.FC = () => {
           {rol !== 'publicador' && (
             <IonTabButton tab="publicadores" href="/admin/publicadores">
               <IonIcon aria-hidden="true" icon={people} />
-              <IonLabel>Asociaciones</IonLabel>
+              <IonLabel>Ayuntamientos</IonLabel>
             </IonTabButton>
           )}
           {rol !== 'publicador' && (
