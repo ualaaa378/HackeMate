@@ -62,7 +62,7 @@ const DescargarApk: React.FC = () => {
             <div className="descargar-apk">
               <CodigoQr texto={url} titulo="Código QR para descargar la app de Android" />
             </div>
-            <IonButton expand="block" fill="outline" href={RUTA_APK} download="pueblos-unidos.apk">
+            <IonButton expand="block" fill="outline" href={RUTA_APK} download="Pueblos Unidos.apk">
               Descargar la app (APK)
             </IonButton>
             <p className="descargar-apk__nota">
