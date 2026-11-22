@@ -372,6 +372,42 @@ paths:
         "409": { $ref: "#/components/responses/Error", description: "409 `inscripcion_sin_plaza` (solo se marca la asistencia de quien tenía plaza)" }
         "422": { $ref: "#/components/responses/Error", description: "422 `validacion`" }
 
+  /api/v1/eventos/{id}/coche:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [inscripciones]
+      summary: >-
+        Compartir coche. El vecino (apuntado con plaza a un plan de otro pueblo) dice si quiere ir con los de su
+        pueblo. Con un sí, si otro vecino del mismo pueblo ya dijo que sí, se avisa a los dos con el contacto.
+        Nunca se pasa el contacto de quien no ha dicho que sí.
+      security: [{ bearer: [] }, { interno: [] }]
+      x-implementado: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CocheRespuesta" }
+      responses:
+        "200":
+          description: Respuesta guardada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [respuesta, companeros]
+                properties:
+                  respuesta: { enum: [si, no] }
+                  companeros:
+                    type: array
+                    description: Contacto de los vecinos del mismo pueblo que ya dijeron que sí («Nombre (+34…)»)
+                    items: { type: string }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`, `token_invalido` o `token_caducado`" }
+        "403": { $ref: "#/components/responses/Error", description: "403 `prohibido` (con sesión solo respondes por ti)" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado` o `usuario_no_encontrado`" }
+        "409": { $ref: "#/components/responses/Error", description: "409 `coche_no_disponible` (no está apuntado con plaza, vive en el pueblo del plan o el plan ya no está publicado)" }
+        "422": { $ref: "#/components/responses/Error", description: "422 `falta_usuario_id` o `validacion`" }
+
   /api/v1/eventos/{id}/mensajes:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -1691,6 +1727,13 @@ components:
           additionalProperties: true
         confirmado_por: { enum: [whatsapp, web, telegram] }
 
+    CocheRespuesta:
+      type: object
+      additionalProperties: false
+      required: [acepta]
+      properties:
+        usuario_id: { type: string, format: uuid, description: "Obligatorio con X-Internal-Token (el bot responde por el vecino)" }
+        acepta: { type: boolean }
     InscripcionCrear:
       type: object
       properties:

@@ -135,13 +135,14 @@ Los profesores nos piden cinco cosas para la nota. **Pasan por delante de todo l
 | 23:35–00:00 | En la máquina de la demo: reconstruir las imágenes, **T1** con todo esto dentro y P4c, **T2** cronometrado y `v0.9`. |
 | 00:00–07:00 | Solo arreglos: A5 y C7, los dos ensayos del guion y `v1.0` en `main` (ver «🗂️ Lo que queda», bloque 2). |
 
-### 🤖 Más IA y automatizaciones (dom 22/11, Francisco)
+### 🤖 Más IA y automatizaciones (dom 22/11, Francisco y Adán)
 
-Los profesores valoran mucho la IA y las automatizaciones. Hechas (ideas 5 y 7 de la lista de propuestas):
+Los profesores valoran mucho la IA y las automatizaciones. Hechas (ideas 5, 6 y 7 de la lista de propuestas; Adán dejó el resto programado para la noche del 22/11 desde las 03:21):
 
 | # | Tarea |
 |---|---|
 | I5 | - [x] **Asistente del moderador (bot, `app/agentes/moderador.py`).** La bandeja empieza con un resumen («Tienes 3 pendiente(s): 1 posible fraude, 1 apelación y 1 importado de Facebook. Empieza por el posible fraude ⚠️») y cada plan lleva una **sugerencia** según su motivo (reglas, sin tokens). Al pulsar [❌ Rechazar], **la IA redacta un motivo amable y concreto** para quien lo propuso (FreeLLM primero; sin IA, una plantilla por tipo), y el moderador elige [✅ Enviar y rechazar], [✏️ Escribir otro] o [↩️ No rechazar]. Antes, el publicador recibía «Motivo: Decidido por chat (telegram)». 11 tests. **Adán:** si quieres lo mismo en la web, el texto puede salir de la misma lógica (habría que exponerla en el bot como `/ai/motivo-rechazo`). |
+| I6 | - [x] **Compartir coche (Adán, dom 22/11 03:40; API + bot, Francisco: revísalo cuando puedas).** Tarea programada nueva en `app/coche.py` (entra en el mismo ciclo de `tareas_programadas.py`): si **2 o más vecinos del mismo pueblo** están apuntados con plaza a un plan publicado de **otro pueblo** en los próximos 7 días (y faltan más de 3 h), a cada uno le llega una vez «🚗 Hay otro vecino de Senés apuntados a «Feria» en Tahal… ¿Os apetece ir juntos en coche? Solo os paso el contacto si los dos decís que sí.» con [🚗 Sí, vamos juntos] [No, gracias]. **Doble consentimiento:** el contacto (nombre y teléfono) solo se pasa entre quienes han dicho que sí; quien dice que no o no contesta no aparece nunca. Contrato (solo se añade): `POST /api/v1/eventos/{id}/coche` {usuario_id?, acepta} → {respuesta, companeros}, 409 `coche_no_disponible`. Tabla nueva `coche_compartido` (migración 0012). Bot: `app/coche.py`, botones en `/notify` y `api_cliente.responder_coche`. 7 tests en la API (700 en verde) y 6 en el bot (231). |
 | I7 | - [x] **«Quedan pocas plazas» (API, `app/tareas_programadas.py`).** Tarea automática: un plan publicado de los próximos 14 días con 3 plazas o menos (o el 20 % o menos del aforo) avisa **una vez** a quien le interesa (mismos criterios que el aviso de plan nuevo: gustos, historial, pueblo favorito y radio; solo quien acepta avisos) y aún no está apuntado: «⏳ Quedan 2 plazas para «Taller de esparto» en Senés, el sábado 05/12 a las 17:00. Te gustan los planes culturales.» con [✋ Apuntarme]. 2 tests. Sin cambio de contrato. |
 
 ### 🗂️ Lo que queda (Adán y Francisco, sáb 21/11 19:30)

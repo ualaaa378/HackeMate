@@ -12,6 +12,9 @@ se mira si ya existe uno igual (mismo usuario, plan y marca al principio del tex
    un plan publicado de los próximos 14 días al que le quedan pocas plazas (`POCAS_PLAZAS`: 3 o menos, o el 20 % o
    menos del aforo) avisa una vez a quien le interesa (mismos criterios que el aviso de plan nuevo, A10) y aún no está
    apuntado. «⏳ Quedan 2 plazas para «Ruta…» en Velefique, el sábado 28 a las 9:00. Te gustan las rutas.»
+5. **Compartir coche** (`anuncio`, con `evento_id`, empieza por 🚗; app/coche.py): 2+ vecinos del mismo pueblo
+   apuntados a un plan de otro pueblo en los próximos 7 días. El bot pone [Sí, vamos juntos] [No, gracias] y el
+   contacto solo se pasa entre quienes dicen que sí.
 3. **Resumen semanal por pueblo** (`recomendacion`, sin `evento_id`; solo a quien acepta avisos, D1): el día y hora
    de `RESUMEN_DIA_SEMANA`/`RESUMEN_HORA`, los planes de los próximos 7 días en su pueblo (o en su pueblo
    favorito, o cerca de donde vive), como mucho 5.
@@ -24,6 +27,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from app import coche
 from app.config import get_settings
 from app.modelos import Evento, Inscripcion, Notificacion, Usuario
 from app.notificaciones import enviar_avisos, notificar
@@ -196,7 +200,7 @@ def ciclo_tareas(fabrica=None, ahora: datetime | None = None) -> int:
         momento = ahora or ahora_utc()
         with fabrica() as db:
             avisos = (recordatorios(db, momento) + que_tal_fue(db, momento) + resumen_semanal(db, momento)
-                      + pocas_plazas(db, momento))
+                      + pocas_plazas(db, momento) + coche.proponer(db, momento))
             db.commit()
             ids = [n.id for n in avisos if n is not None and n.estado_envio == "pendiente"]
             if avisos:

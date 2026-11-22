@@ -240,6 +240,19 @@ class Inscripcion(Base):
     actualizado_en: Mapped[datetime] = mapped_column(FechaUTC(), default=ahora, onupdate=ahora, nullable=False)
 
 
+class CocheCompartido(Base):
+    """Compartir coche (idea 6): la respuesta de cada vecino a «¿vais juntos?» en un plan de otro pueblo.
+    `respuesta`: pendiente (se le ha propuesto), si o no. El contacto solo se pasa entre quienes dicen que sí."""
+
+    __tablename__ = "coche_compartido"
+
+    evento_id: Mapped[str] = mapped_column(ForeignKey("eventos.id", ondelete="CASCADE"), primary_key=True)
+    usuario_id: Mapped[str] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True)
+    respuesta: Mapped[str] = mapped_column(String(10), default="pendiente", nullable=False)
+    creado_en: Mapped[datetime] = _creado()
+    actualizado_en: Mapped[datetime] = mapped_column(FechaUTC(), default=ahora, onupdate=ahora, nullable=False)
+
+
 class MensajeEvento(Base):
     __tablename__ = "mensajes_evento"
 

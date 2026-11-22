@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
+from app import coche
 from app.db import get_db
 from app.errores import ErrorApi
 from app.inscripciones import (
@@ -185,3 +186,44 @@ def marcar_asistencia(
         raise ErrorApi(409, "inscripcion_sin_plaza", "La inscripción ha cambiado a la vez: vuelve a intentarlo")
     db.commit()
     return _respuesta(db, inscripcion)
+
+
+class CocheRespuesta(BaseModel):
+    """components/schemas/CocheRespuesta de openapi.yaml."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    usuario_id: str | None = None
+    acepta: bool
+
+
+@router.post("/eventos/{id}/coche")
+def responder_coche(
+    id: str,
+    datos: CocheRespuesta,
+    background_tasks: BackgroundTasks,
+    quien: Quien = Depends(quien_llama),
+    db: Session = Depends(get_db),
+):
+    """Compartir coche (app/coche.py): el vecino dice si quiere ir juntos con los de su pueblo."""
+    if quien.usuario is not None and not quien.interno:
+        usuario = quien.usuario
+        if datos.usuario_id is not None and datos.usuario_id != usuario.id:
+            raise _prohibido("Solo puedes responder por ti")
+    else:
+        if datos.usuario_id is None:
+            raise ErrorApi(422, "falta_usuario_id", "Con X-Internal-Token hay que indicar usuario_id", {"campo": "usuario_id"})
+        usuario = db.get(Usuario, datos.usuario_id) if es_uuid(datos.usuario_id) else None
+        if usuario is None:
+            raise ErrorApi(404, "usuario_no_encontrado", "No existe ese usuario")
+    evento = _evento(db, id)
+    if evento.estado != "publicado" or plan_terminado(evento):
+        raise ErrorApi(409, "coche_no_disponible", "Este plan ya no admite compartir coche")
+    try:
+        cuerpo, avisos = coche.responder(db, evento, usuario, datos.acepta)
+    except coche.CocheNoDisponible:
+        raise ErrorApi(409, "coche_no_disponible",
+                       "Solo para quien está apuntado con plaza y vive en otro pueblo distinto al del plan") from None
+    db.commit()
+    enviar_en_segundo_plano(background_tasks, db, avisos)
+    return cuerpo

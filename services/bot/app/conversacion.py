@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from app import alta, api_cliente, apelacion, avisos, canales, organizador, telegram, vecino
+from app import alta, api_cliente, apelacion, avisos, canales, coche, organizador, telegram, vecino
 from app.agentes import antispam, moderador, extractor, idiomas, intencion, medios, voz
 from app.api_cliente import ApiNoDisponible, ErrorApi
 from app.config import get_settings
@@ -204,6 +204,8 @@ def _responder(msg: MensajeEntrante) -> list[str | Respuesta]:
         return organizador.responder(msg.de, texto)
     if texto and not msg.boton_id and organizador.quiere_modificar(texto):
         return organizador.empezar(msg.de, texto, _usuario(msg.de))
+    if msg.boton_id and t.startswith(("coche:si:", "coche:no:")):  # idea 6: compartir coche
+        return coche.responder(msg.boton_id, _usuario(msg.de))
     if t.startswith("insc:"):
         return vecino.inscribir(msg, msg.boton_id.split(":", 1)[1], _usuario(msg.de))
     if t.startswith("desinsc:"):  # N6b: [Desapuntarme]
