@@ -59,7 +59,7 @@ async def ciclo_de_vida(_app: FastAPI):
     tarea.cancel()
 
 
-app = FastAPI(title="HackeMate bot", version=__version__, lifespan=ciclo_de_vida)
+app = FastAPI(title="Pueblos Unidos bot", version=__version__, lifespan=ciclo_de_vida)
 
 ACUSE = "Recibido 👍 Dame un momento que lo leo…"
 

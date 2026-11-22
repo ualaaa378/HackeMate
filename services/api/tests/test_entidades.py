@@ -3,6 +3,7 @@
 import pytest
 from sqlalchemy import select
 
+from app import entidades
 from app.canales import buscar_publicador_por_contacto
 from app.config import get_settings
 from app.modelos import Evento, Fuente, Publicador, Usuario
@@ -52,7 +53,8 @@ def test_depura_lo_que_ya_estaba_en_la_base(db, monkeypatch):
     planes_amigos = db.scalars(select(Evento.id).where(Evento.publicador_id == AMIGOS_VELEFIQUE)).all()
     fuentes_amigos = db.scalars(select(Fuente.id).where(Fuente.publicador_id == AMIGOS_VELEFIQUE)).all()
     db.get(Publicador, AMIGOS_VELEFIQUE).telegram_id = "999"
-    db.add(Publicador(nombre="Peña nueva", tipo="asociacion", municipio="Velefique", telefono="+34600000999"))
+    pena = Publicador(nombre="Peña nueva", tipo="asociacion", municipio="Velefique", telefono="+34600000999")
+    db.add(pena)
     db.commit()
     assert planes_amigos
     monkeypatch.setenv("SOLO_AYUNTAMIENTOS", "true")
@@ -62,7 +64,9 @@ def test_depura_lo_que_ya_estaba_en_la_base(db, monkeypatch):
         db.commit()
     finally:
         get_settings.cache_clear()
-    assert resumen["entidades_no_ayuntamiento_borradas"] >= 6 and _tipos(db) == {"ayuntamiento"}
+    # Se borran las de los fixtures; la asociación dada de alta por un usuario se queda
+    assert resumen["entidades_no_ayuntamiento_borradas"] == 5 and _tipos(db) == {"ayuntamiento", "asociacion"}
+    assert db.get(Publicador, pena.id) is not None
     db.expire_all()
     assert {db.get(Evento, i).publicador_id for i in planes_amigos} == {AYTO_VELEFIQUE}
     assert {db.get(Fuente, i).publicador_id for i in fuentes_amigos} == {AYTO_VELEFIQUE}
@@ -73,14 +77,36 @@ def test_depura_lo_que_ya_estaba_en_la_base(db, monkeypatch):
     assert buscar_publicador_por_contacto(db, antonio.telefono).id == AYTO_VELEFIQUE
 
 
-def test_el_alta_solo_admite_ayuntamientos(cliente, db, solo_aytos):
+def test_el_alta_admite_asociaciones_pero_no_bares(cliente, db, solo_aytos):
     sembrar(db, ahora=VIERNES)
     db.commit()
-    cuerpo = {"nombre": "Club de Petanca", "tipo": "asociacion", "municipio": "Tahal", "telefono": "+34600000611"}
+    cuerpo = {"nombre": "Bar El Cruce", "tipo": "bar_restaurante", "municipio": "Tahal", "telefono": "+34600000611"}
     _error(cliente.post("/api/v1/publicadores", json=cuerpo, headers=TOKEN), 422, "solo_ayuntamientos")
-    r = cliente.post("/api/v1/publicadores", json=cuerpo | {"nombre": "Ayuntamiento de Tahal", "tipo": "ayuntamiento"},
+    r = cliente.post("/api/v1/publicadores", json=cuerpo | {"nombre": "Club de Petanca", "tipo": "asociacion"},
                      headers=TOKEN)
     assert r.status_code == 201 and r.json()["estado"] == "solicitado"
+    # Al volver a arrancar (seed), la asociación nueva no se borra
+    sembrar(db, ahora=VIERNES, sobrescribir=False)
+    db.commit()
+    assert db.get(Publicador, r.json()["id"]) is not None
+
+
+def test_cada_ayuntamiento_tiene_su_perfil(db, solo_aytos):
+    sembrar(db, ahora=VIERNES)
+    db.commit()
+    aytos = db.scalars(select(Publicador).where(Publicador.tipo == "ayuntamiento")).all()
+    assert len(aytos) == 5
+    for ayto in aytos:
+        usuario = db.get(Usuario, ayto.usuario_id)
+        assert usuario.rol == "publicador" and usuario.publicador_id == ayto.id
+    tahal = db.get(Publicador, "7b0d1c52-3f7e-4c41-9a51-0f2a9c1e0a06")
+    assert tahal.usuario_id == entidades.id_perfil(tahal.id) == "5a5e0000-0000-4000-8000-000000000106"
+    assert db.get(Publicador, AYTO_VELEFIQUE).usuario_id == ANTONIO  # Velefique ya tenía a Antonio
+    perfiles = db.query(Usuario).filter(Usuario.id.like("5a5e0000-0000-4000-8000-0000000001%")).count()
+    assert perfiles >= 3  # los que no heredan el usuario de una entidad borrada
+    sembrar(db, ahora=VIERNES, sobrescribir=False)  # repetible
+    db.commit()
+    assert db.query(Usuario).filter(Usuario.id.like("5a5e0000-0000-4000-8000-0000000001%")).count() == perfiles
 
 
 def test_alta_desde_la_web_con_el_telefono_de_la_cuenta(cliente, db, solo_aytos):

@@ -11,7 +11,7 @@ export interface AccesoAdmin {
   /** true si se trabaja con mocks: no hay API o no deja entrar sin cuenta (DEMO_MODE). */
   demo: boolean;
   /** Entra sin cuenta con el usuario de la demo de ese rol (la asociación; la moderación, solo sin API). */
-  entrarDemo: (rol: RolAdmin) => Promise<void>;
+  entrarDemo: (rol: RolAdmin, usuarioId?: string) => Promise<void>;
   /** Moderación del ayuntamiento con usuario y contraseña (POST /auth/admin). */
   entrarAdmin: (usuario: string, contrasena: string) => Promise<ResultadoAcceso>;
   salir: () => void;

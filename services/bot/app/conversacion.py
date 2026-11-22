@@ -35,7 +35,7 @@ NOMBRES = {
     "precio_eur": "💶", "plazas_totales": "👥",
 }
 AYUDA = (
-    "¡Hola! Soy el asistente de HackeMate 👋\n"
+    "¡Hola! Soy el asistente de Pueblos Unidos 👋\n"
     "🔎 ¿Buscas planes? Pregúntame «¿qué hay este finde?» o «¿qué hay en Senés?». También vale una nota de voz.\n"
     "❤️ Dime qué te gusta («me gustan las rutas») y te aviso cuando haya algo.\n"
     "📣 ¿Organizas algo? Mándame el texto, *una foto del cartel* o *una nota de voz* y preparo la ficha.\n"

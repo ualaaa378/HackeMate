@@ -17,21 +17,22 @@ import {
 } from '@ionic/react';
 import { useState } from 'react';
 
-import { ErrorApi, MUNICIPIOS, altaAyuntamiento } from '../api/client';
+import { ErrorApi, MUNICIPIOS, altaAyuntamiento as altaEntidad } from '../api/client';
 import type { PublicadorCrear } from '../api/types';
 import { useSesion } from '../cuenta/sesion';
 import { dniValido } from '../utils/dni';
 import { leerEdad } from '../utils/edad';
 
 /**
- * Alta de un ayuntamiento desde la web o el APK (solo ayuntamientos, decisión del 22/11). Queda «solicitado» hasta
- * que la moderación lo aprueba en Panel → Entidades. El teléfono es el de la cuenta: la API no acepta otro.
+ * Alta de una asociación desde la web o el APK (22/11 09:35: los ayuntamientos ya vienen dados de alta con su perfil).
+ * Queda «solicitada» hasta que la moderación la aprueba en el panel. El teléfono es el de la cuenta: la API no acepta
+ * otro.
  */
-const AltaAyuntamiento: React.FC = () => {
+const AltaAsociacion: React.FC = () => {
   const { usuario, conCuenta } = useSesion();
   const [f, setF] = useState({
     municipio: MUNICIPIOS[0],
-    nombre: `Ayuntamiento de ${MUNICIPIOS[0]}`,
+    nombre: '',
     email: '',
     responsable: '',
     dni: '',
@@ -44,7 +45,7 @@ const AltaAyuntamiento: React.FC = () => {
   const cambiar = (campo: keyof typeof f) => (valor: string) => setF((x) => ({ ...x, [campo]: valor }));
 
   const validar = (): string | null => {
-    if (f.nombre.trim().length < 2) return 'Escribe el nombre del ayuntamiento.';
+    if (f.nombre.trim().length < 2) return 'Escribe el nombre de la asociación.';
     if (f.responsable.trim().split(/\s+/).length < 2)
       return 'Escribe el nombre y al menos un apellido del responsable.';
     if (!dniValido(f.dni)) return 'Ese DNI o NIE no es válido: revisa los números y la letra.';
@@ -59,15 +60,15 @@ const AltaAyuntamiento: React.FC = () => {
     const fallo = validar();
     setError(fallo);
     if (fallo) return;
-    conCuenta('Para dar de alta tu ayuntamiento necesitas una cuenta con tu teléfono.', async (u) => {
+    conCuenta('Para dar de alta tu asociación necesitas una cuenta con tu teléfono.', async (u) => {
       if (!u.telefono) {
-        setError('Tu cuenta no tiene teléfono. Entra con tu número para poder dar de alta el ayuntamiento.');
+        setError('Tu cuenta no tiene teléfono. Entra con tu número para poder dar de alta la asociación.');
         return;
       }
       const edad = leerEdad(f.edad);
       const datos: PublicadorCrear = {
         nombre: f.nombre.trim(),
-        tipo: 'ayuntamiento',
+        tipo: 'asociacion',
         municipio: f.municipio,
         telefono: u.telefono,
         email: f.email.trim() || null,
@@ -80,12 +81,12 @@ const AltaAyuntamiento: React.FC = () => {
       };
       setEnviando(true);
       try {
-        setHecho(await altaAyuntamiento(datos));
+        setHecho(await altaEntidad(datos));
       } catch (e) {
         setError(
           e instanceof ErrorApi
             ? e.code === 'publicador_ya_existe'
-              ? 'Tu teléfono ya tiene una entidad dada de alta. Entra en la zona del ayuntamiento.'
+              ? 'Tu teléfono ya tiene una entidad dada de alta. Entra en la zona de tu entidad desde tu perfil.'
               : e.message
             : 'No hemos podido enviarlo. Inténtalo en un momento.',
         );
@@ -102,7 +103,7 @@ const AltaAyuntamiento: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/perfil" text="Volver" />
           </IonButtons>
-          <IonTitle>🏛️ Dar de alta un ayuntamiento</IonTitle>
+          <IonTitle>🤝 Dar de alta como asociación</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding contenido-lectura">
@@ -111,8 +112,8 @@ const AltaAyuntamiento: React.FC = () => {
             <IonCardContent>
               <h2 className="titulo-caja">✅ Solicitud enviada</h2>
               <p>
-                <strong>{f.nombre}</strong> queda pendiente de que la moderación lo revise. Te avisaremos en cuanto esté
-                aprobado; desde entonces podrás publicar los planes del pueblo.
+                <strong>{f.nombre}</strong> queda pendiente de que la moderación la revise. Te avisaremos en cuanto esté
+                aprobada; desde entonces podrás publicar vuestros planes.
               </p>
               {hecho.demo && (
                 <p>
@@ -128,8 +129,8 @@ const AltaAyuntamiento: React.FC = () => {
           <IonCard>
             <IonCardContent>
               <p>
-                Solo los ayuntamientos publican en nombre del pueblo. Pedimos los datos de la persona responsable para
-                comprobar quién está detrás: solo los ve la moderación.
+                Las asociaciones del pueblo pueden publicar sus planes; el ayuntamiento los revisa antes de que salgan.
+                Pedimos los datos de la persona responsable para comprobar quién está detrás: solo los ve la moderación.
                 {usuario?.telefono && (
                   <>
                     {' '}
@@ -142,14 +143,7 @@ const AltaAyuntamiento: React.FC = () => {
                 labelPlacement="stacked"
                 fill="outline"
                 value={f.municipio}
-                onIonChange={(e) => {
-                  const m = String(e.detail.value);
-                  setF((x) => ({
-                    ...x,
-                    municipio: m,
-                    nombre: x.nombre.startsWith('Ayuntamiento de ') ? `Ayuntamiento de ${m}` : x.nombre,
-                  }));
-                }}
+                onIonChange={(e) => cambiar('municipio')(String(e.detail.value))}
               >
                 {MUNICIPIOS.map((m) => (
                   <IonSelectOption key={m} value={m}>
@@ -158,7 +152,7 @@ const AltaAyuntamiento: React.FC = () => {
                 ))}
               </IonSelect>
               <IonInput
-                label="Nombre del ayuntamiento"
+                label="Nombre de la asociación"
                 labelPlacement="stacked"
                 fill="outline"
                 value={f.nombre}
@@ -166,7 +160,7 @@ const AltaAyuntamiento: React.FC = () => {
                 onIonInput={(e) => cambiar('nombre')(e.detail.value ?? '')}
               />
               <IonInput
-                label="Correo del ayuntamiento (opcional)"
+                label="Correo de la asociación (opcional)"
                 labelPlacement="stacked"
                 fill="outline"
                 type="email"
@@ -225,4 +219,4 @@ const AltaAyuntamiento: React.FC = () => {
   );
 };
 
-export default AltaAyuntamiento;
+export default AltaAsociacion;

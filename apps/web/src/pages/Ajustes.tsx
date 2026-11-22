@@ -55,8 +55,8 @@ const Ajustes: React.FC = () => {
           <IonCardContent>
             <h2 className="titulo-caja">Dirección del servidor</h2>
             <p>
-              Pega aquí la dirección pública de HackeMate (por ejemplo <code>https://algo.trycloudflare.com</code>). La
-              app la recuerda en este móvil.
+              Pega aquí la dirección pública de Pueblos Unidos (por ejemplo <code>https://algo.trycloudflare.com</code>
+              ). La app la recuerda en este móvil.
             </p>
             <p>
               Ahora:{' '}
@@ -79,7 +79,8 @@ const Ajustes: React.FC = () => {
             {estado === 'invalida' && <p role="alert">Eso no parece una dirección web.</p>}
             {estado === 'mal' && (
               <p role="alert">
-                No responde HackeMate en esa dirección. Revisa que esté bien copiada y que el servidor esté encendido.
+                No responde Pueblos Unidos en esa dirección. Revisa que esté bien copiada y que el servidor esté
+                encendido.
               </p>
             )}
             <IonButton expand="block" onClick={guardar} disabled={estado === 'probando' || !texto.trim()}>

@@ -224,3 +224,24 @@ def test_mis_eventos_excluye_eventos_no_visibles(api, db):
     db.commit()
     r = api.get("/api/v1/usuarios/me/ics", headers=_bearer(JOSE))
     assert [v["UID"] for v in componentes(desplegar(r.text))] == [f"{RUTA}@hackemate"]
+
+
+def test_agenda_para_suscribirse_desde_google_calendar(cliente, db):
+    sembrar(db)
+    db.commit()
+    r = cliente.get("/api/v1/agenda.ics")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/calendar")
+    assert r.headers["content-disposition"].startswith("inline")
+    lineas = desplegar(r.text)
+    assert "X-WR-CALNAME:Pueblos Unidos · 5 pueblos de Almería" in lineas
+    publicados = db.query(Evento).filter(Evento.estado == "publicado").count()
+    eventos = componentes(lineas)
+    assert 0 < len(eventos) <= publicados + db.query(Evento).filter(Evento.estado == "cancelado").count()
+    # Por pueblo
+    r = cliente.get("/api/v1/agenda.ics", params={"municipio": "Tahal"})
+    tahal = componentes(desplegar(r.text))
+    assert "X-WR-CALNAME:Pueblos Unidos · Tahal" in desplegar(r.text)
+    assert len(tahal) < len(eventos)
+    # Nada en revisión ni borradores
+    ocultos = {e.id for e in db.query(Evento).filter(Evento.estado.in_(("en_revision", "borrador"))).all()}
+    assert not any(any(i in c.get("UID", "") for i in ocultos) for c in eventos)

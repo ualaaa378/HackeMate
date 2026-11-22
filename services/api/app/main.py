@@ -74,7 +74,7 @@ async def ciclo_de_vida(_: FastAPI):
                 await tarea
 
 
-app = FastAPI(title="HackeMate api", version=__version__, lifespan=ciclo_de_vida)
+app = FastAPI(title="Pueblos Unidos api", version=__version__, lifespan=ciclo_de_vida)
 errores.registrar(app)
 
 

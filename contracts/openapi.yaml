@@ -544,6 +544,29 @@ paths:
               schema: { type: string }
         "404": { $ref: "#/components/responses/Error" }
 
+  /api/v1/agenda.ics:
+    get:
+      tags: [calendario]
+      summary: Agenda pública para suscribirse desde Google Calendar, Apple u Outlook
+      description: |
+        Feed iCalendar con los planes publicados (y los cancelados, para que el calendario los tache) que acaban
+        desde hace 7 días en adelante. Mismo formato que `/eventos/{id}/ics`. Pensado para suscribirse por URL
+        (Google Calendar → «Desde URL»): el calendario lo vuelve a leer solo cada pocas horas.
+      security: [{}]
+      x-implementado: true
+      parameters:
+        - name: municipio
+          in: query
+          required: false
+          description: Solo los planes de ese pueblo
+          schema: { type: string }
+      responses:
+        "200":
+          description: Archivo .ics
+          content:
+            text/calendar:
+              schema: { type: string }
+
   /api/v1/usuarios/me/ics:
     get:
       tags: [calendario]

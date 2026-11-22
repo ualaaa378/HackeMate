@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, selectinload
 
+from app import entidades
 from app.config import get_settings
 from app.db import get_db
 from app.confianza import normalizar_dni, reglas_nivel_2_que_faltan, tiene_datos_responsable
@@ -120,8 +121,8 @@ def crear_publicador(datos: PublicadorCrear, background_tasks: BackgroundTasks, 
                            "verificado", {"campo": "telefono"})
         if datos.telefono != quien.usuario.telefono:
             raise ErrorApi(403, "prohibido", "Solo puedes dar de alta una entidad con el teléfono de tu cuenta")
-    if get_settings().solo_ayuntamientos and datos.tipo != "ayuntamiento":
-        raise ErrorApi(422, "solo_ayuntamientos", "Por ahora solo se pueden dar de alta ayuntamientos",
+    if get_settings().solo_ayuntamientos and datos.tipo not in entidades.TIPOS_ALTA:
+        raise ErrorApi(422, "solo_ayuntamientos", "Por ahora solo se pueden dar de alta asociaciones y ayuntamientos",
                        {"campo": "tipo"})
     if db.get(Municipio, datos.municipio) is None:
         raise ErrorApi(
@@ -224,7 +225,7 @@ def aprobar_publicador(
             else "el moderador revisará tus planes antes de publicarlos"
         )
         texto = (
-            f"¡Bienvenido! {publicador.nombre} ya puede publicar en HackeMate: {modo}. "
+            f"¡Bienvenido! {publicador.nombre} ya puede publicar en Pueblos Unidos: {modo}. "
             "Mándanos el cartel, el post o un audio y lo preparamos."
         )
     else:

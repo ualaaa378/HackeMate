@@ -4,7 +4,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 // que se guarda en Ajustes (la URL pública del túnel). CORS de la API ya admite ese origen.
 const config: CapacitorConfig = {
   appId: 'es.hackemate.app',
-  appName: 'HackeMate',
+  appName: 'Pueblos Unidos',
   webDir: 'dist',
   android: {
     // Permite probar contra un servidor http:// de la red local además del túnel https://.

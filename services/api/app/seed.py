@@ -231,7 +231,8 @@ def sembrar(db: Session, directorio: Path | None = None, ahora: datetime | None 
 
     if get_settings().solo_ayuntamientos:
         db.flush()
-        resumen["entidades_no_ayuntamiento_borradas"] = entidades.depurar(db)
+        resumen["entidades_no_ayuntamiento_borradas"] = entidades.depurar(db, list(remapeo))
+        resumen["perfiles_ayuntamiento_creados"] = entidades.perfiles_ayuntamientos(db)
 
     # N6: plazas libres a partir de las inscripciones de la base, no de los números de los fixtures
     db.flush()

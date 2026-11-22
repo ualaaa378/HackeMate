@@ -989,6 +989,50 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/agenda.ics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Agenda pública para suscribirse desde Google Calendar, Apple u Outlook
+     * @description Feed iCalendar con los planes publicados (y los cancelados, para que el calendario los tache) que acaban
+     *     desde hace 7 días en adelante. Mismo formato que `/eventos/{id}/ics`. Pensado para suscribirse por URL
+     *     (Google Calendar → «Desde URL»): el calendario lo vuelve a leer solo cada pocas horas.
+     */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Solo los planes de ese pueblo */
+          municipio?: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Archivo .ics */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'text/calendar': string;
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/usuarios/me/ics': {
     parameters: {
       query?: never;
@@ -1069,6 +1113,56 @@ export interface paths {
     };
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/buscar': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Buscador con IA (RAG): «¿qué hay este finde para niños cerca de Senés?» → respuesta breve con los planes
+     * @description La API recupera los planes `publicado` que no han terminado más parecidos a la pregunta: filtros por reglas
+     *     (fechas, pueblo, tipo, gratis, niños), más parecido por embeddings (que pide a `bot POST /ai/embeddings`) y
+     *     más palabras clave. Le pasa a `bot POST /ai/responder-agenda` solo esos planes (`PlanContexto`) y valida que
+     *     la respuesta cite solo planes recuperados: los `evento_ids` que no estén entre ellos se descartan.
+     *     Si el bot no responde, responde con una plantilla y los mismos planes (`modo: palabras`).
+     *     Nunca devuelve un plan que no exista. No guarda nada.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['BusquedaIA'];
+        };
+      };
+      responses: {
+        /** @description Respuesta para la persona y los planes en que se basa */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['RespuestaBusqueda'];
+          };
+        };
+        /** @description 422 `validacion` (pregunta de menos de 3 o más de 300 caracteres, o limite fuera de 1-8) */
+        422: components['responses']['Error'];
+      };
+    };
     delete?: never;
     options?: never;
     head?: never;
@@ -2926,6 +3020,127 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/ai/embeddings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * (RAG) Textos → vectores para buscar planes por parecido
+     * @description La llama la API para indexar los planes (`tipo: documento`) y para la pregunta del buscador (`tipo: consulta`).
+     *     Cadena de proveedores: Gemini `gemini-embedding-001` (dimensión 768) y, si falla, NVIDIA `nemotron-3.5-embed-1b`.
+     *     Solo se comparan vectores del mismo `modelo`: si cambia, la API vuelve a indexar.
+     *     Sin proveedor disponible responde 503 y la API sigue buscando sin embeddings (reglas y palabras clave).
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            textos: string[];
+            /**
+             * @default documento
+             * @enum {unknown}
+             */
+            tipo?: 'documento' | 'consulta';
+          };
+        };
+      };
+      responses: {
+        /** @description Un vector por texto, en el mismo orden */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              /** @description Modelo que generó los vectores (p. ej. gemini-embedding-001) */
+              modelo: string;
+              dimension: number;
+              vectores: number[][];
+            };
+          };
+        };
+        /** @description 401 `token_interno_invalido` */
+        401: components['responses']['Error'];
+        /** @description 503: ningún proveedor de embeddings disponible (la API sigue sin embeddings) */
+        503: components['responses']['Error'];
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/ai/responder-agenda': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * (RAG) Responde una pregunta sobre la agenda usando solo los planes que recibe
+     * @description La llama la API (`POST /api/v1/buscar`) con los planes recuperados. Respuesta breve (2–4 frases) en español
+     *     sencillo, solo con los planes recibidos: no inventa planes, fechas ni precios. `evento_ids` solo puede contener
+     *     ids de `planes` (la API lo comprueba igualmente). Con `planes` vacío dice que no hay nada que encaje.
+     *     Sin IA, respuesta por plantilla y `proveedor_ia: reglas`.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            pregunta: string;
+            planes: components['schemas']['PlanContexto'][];
+            /**
+             * Format: date-time
+             * @description Fecha y hora de referencia para «este finde», «mañana»…
+             */
+            hoy?: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Respuesta */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              respuesta: string;
+              /** @description Planes que nombra la respuesta (solo ids de `planes`) */
+              evento_ids: string[];
+              proveedor_ia: string;
+            };
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3292,6 +3507,62 @@ export interface components {
       basado_en: components['schemas']['ParticipacionPlan'][];
       /** @description Quién propuso (p. ej. freellm:…, nim:…, reglas) */
       proveedor_ia: string;
+    };
+    /** @description RAG: cuerpo de POST /api/v1/buscar */
+    BusquedaIA: {
+      pregunta: string;
+      /**
+       * @description Máximo de planes en `items`
+       * @default 6
+       */
+      limite: number;
+    };
+    /** @description RAG: plan recuperado que la API pasa a bot POST /ai/responder-agenda (sin datos privados) */
+    PlanContexto: {
+      /** Format: uuid */
+      evento_id: string;
+      titulo: string;
+      categoria: components['schemas']['Categoria'];
+      municipio: string;
+      lugar?: string | null;
+      /** Format: date-time */
+      fecha_inicio: string;
+      /** Format: date-time */
+      fecha_fin?: string | null;
+      precio_eur?: number | null;
+      es_gratuito?: boolean;
+      /** @description null sin aforo */
+      plazas_libres?: number | null;
+      descripcion?: string | null;
+    };
+    /** @description RAG: respuesta de POST /api/v1/buscar */
+    RespuestaBusqueda: {
+      /** @description Texto para la persona */
+      respuesta: string;
+      /** @description Los planes citados primero, luego el resto de recuperados hasta `limite` */
+      items: components['schemas']['evento'][];
+      /** @description evento_id de los planes que nombra la respuesta */
+      citados: string[];
+      /** @description Cuántos planes se pasaron como contexto («Basado en N planes») */
+      recuperados: number;
+      /** @description Quién respondió (p. ej. nim:…, gemini:…, reglas) */
+      proveedor_ia: string;
+      /**
+       * @description `rag` = respuesta generada por IA con citas validadas; `palabras` = sin IA, plantilla
+       * @enum {unknown}
+       */
+      modo: 'rag' | 'palabras';
+      /** @description Lo que se entendió de la pregunta */
+      filtros?: {
+        /** Format: date-time */
+        desde?: string | null;
+        /** Format: date-time */
+        hasta?: string | null;
+        municipio?: string | null;
+        categorias?: components['schemas']['Categoria'][];
+        gratis?: boolean;
+        ninos?: boolean;
+      };
     };
     /** @description Lo que devuelve `bot GET /metrics` (services/bot/app/main.py). Schema abierto. */
     MetricasBot: {

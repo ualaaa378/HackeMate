@@ -318,6 +318,17 @@ export function urlIcs(eventoId: string): string {
   return `${API_URL}/api/v1/eventos/${eventoId}/ics`;
 }
 
+/** Feed de la agenda para suscribirse (GET /agenda.ics), en URL absoluta: Google Calendar lo lee desde fuera. */
+export function urlAgendaIcs(municipio?: string): string {
+  const ruta = `${API_URL}/api/v1/agenda.ics${municipio ? `?municipio=${encodeURIComponent(municipio)}` : ''}`;
+  return new URL(ruta, window.location.href).href;
+}
+
+/** Enlace que abre Google Calendar con la suscripción ya preparada («Añadir calendario»). */
+export function enlaceGoogleCalendar(urlIcs: string): string {
+  return `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(urlIcs.replace(/^https?:/, 'webcal:'))}`;
+}
+
 // ---------- cuenta ----------
 // La cuenta se crea verificando el móvil con un código que llega por el canal de mensajería (VITE_CANAL).
 // La ruta del contrato se llama /auth/whatsapp/* por historia; la web la usa con los dos canales.
@@ -402,7 +413,7 @@ export async function proponerEvento(datos: EventoCrear, ayuntamiento: DatosAyun
   return esperar(p);
 }
 
-// ---------- Alta de un ayuntamiento (solo ayuntamientos, 22/11) ----------
+// ---------- Alta de una entidad (asociación; los ayuntamientos ya vienen dados de alta, 22/11) ----------
 // La API exige sesión real y que el teléfono sea el de la cuenta. En modo demo no se envía nada.
 export async function altaAyuntamiento(datos: PublicadorCrear): Promise<{ id: string; demo: boolean }> {
   if (USAR_MOCKS || !token || token === 'demo') return esperar({ id: crypto.randomUUID(), demo: true });

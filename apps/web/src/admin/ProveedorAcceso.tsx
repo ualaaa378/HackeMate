@@ -41,8 +41,8 @@ const ProveedorAcceso: React.FC<{ children: React.ReactNode }> = ({ children }) 
     };
     const base = {
       // Primero con la API (POST /auth/demo): así la bandeja, el panel y los planes son los de verdad.
-      entrarDemo: async (r: RolAdmin) => {
-        const token = await entrarDemo(r);
+      entrarDemo: async (r: RolAdmin, usuarioId?: string) => {
+        const token = await entrarDemo(r, usuarioId);
         if (token) {
           guardar(null);
           sesion.entrar(token);

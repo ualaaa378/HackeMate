@@ -28,6 +28,7 @@ import ParaTi from '../components/ParaTi';
 import RecuerdosAgenda from '../components/RecuerdosAgenda';
 import SelectorLetra from '../components/SelectorLetra';
 import Sugeridos from '../components/Sugeridos';
+import SuscribirCalendario from '../components/SuscribirCalendario';
 import TarjetaEvento from '../components/TarjetaEvento';
 import TusPlanes from '../components/TusPlanes';
 import { useSesion } from '../cuenta/sesion';
@@ -176,6 +177,8 @@ const Agenda: React.FC = () => {
         onCategoria={setCategoria}
       />
 
+      <SuscribirCalendario municipio={municipio} />
+
       {cargando && (
         <div className="centrado">
           <IonSpinner aria-label="Cargando" />
@@ -212,13 +215,19 @@ const Agenda: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar color="secondary">
-          <IonTitle>
+        <IonToolbar color="secondary" className="cabecera-marca">
+          <IonTitle className="titulo-marca">
             <Marca onInicio={irAlInicio} />
           </IonTitle>
           <IonButtons slot="end">
             {grande && <SelectorLetra compacto />}
-            <IonButton routerLink="/proponer" fill="outline" className="boton-proponer" aria-label="Proponer un plan">
+            <IonButton
+              routerLink="/proponer"
+              fill="solid"
+              shape="round"
+              className="boton-proponer"
+              aria-label="Proponer un plan"
+            >
               <IonIcon slot="start" icon={addCircleOutline} aria-hidden="true" />
               <span className="texto-boton">Proponer</span>
             </IonButton>

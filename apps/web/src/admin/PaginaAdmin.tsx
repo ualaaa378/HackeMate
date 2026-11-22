@@ -14,6 +14,7 @@ import {
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
+import { PERFILES_AYUNTAMIENTO } from '../api/admin';
 import { NOMBRE_CANAL } from '../canal';
 import { LogoInicio } from '../components/Marca';
 import SelectorLetra from '../components/SelectorLetra';
@@ -130,9 +131,9 @@ const Puerta: React.FC<{ rolActual: RolAdmin | null }> = ({ rolActual }) => {
   const { entrarDemo } = useAcceso();
   const { abrirCuenta } = useSesion();
   const [entrando, setEntrando] = useState(false);
-  const entrar = (r: RolAdmin) => {
+  const entrar = (r: RolAdmin, usuarioId?: string) => {
     setEntrando(true);
-    void entrarDemo(r).finally(() => setEntrando(false));
+    void entrarDemo(r, usuarioId).finally(() => setEntrando(false));
   };
   return (
     <IonCard className="puerta-admin">
@@ -144,18 +145,26 @@ const Puerta: React.FC<{ rolActual: RolAdmin | null }> = ({ rolActual }) => {
           <>
             <h2 className="titulo-caja">Zona del ayuntamiento</h2>
             <p>
-              Aquí se revisan los planes que llegan por {NOMBRE_CANAL} o la web, se aprueban los ayuntamientos que piden
+              Aquí se revisan los planes que llegan por {NOMBRE_CANAL} o la web, se aprueban las asociaciones que piden
               publicar y se ven las cifras de la agenda.
             </p>
             <AccesoModeracion />
-            <p className="nota-demo">Ayuntamientos: entra con tu móvil.</p>
+            <p className="nota-demo">Asociaciones: entra con tu móvil.</p>
             <IonButton expand="block" fill="outline" onClick={abrirCuenta}>
               Entrar con mi móvil
             </IonButton>
-            <p className="nota-demo">Para la demo, entra sin cuenta como ayuntamiento:</p>
-            <IonButton expand="block" fill="outline" disabled={entrando} onClick={() => entrar('publicador')}>
-              🏛️ Ayuntamiento (Ayto. de Velefique)
-            </IonButton>
+            <p className="nota-demo">Ayuntamientos: cada uno ya tiene su perfil.</p>
+            {PERFILES_AYUNTAMIENTO.map((p) => (
+              <IonButton
+                key={p.usuarioId}
+                expand="block"
+                fill="outline"
+                disabled={entrando}
+                onClick={() => entrar('publicador', p.usuarioId)}
+              >
+                🏛️ {p.nombre}
+              </IonButton>
+            ))}
             <IonButton expand="block" fill="clear" routerLink="/agenda">
               Volver a la agenda
             </IonButton>
