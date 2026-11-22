@@ -11,7 +11,7 @@ La API está completa (todas las rutas del contrato), el bot de `develop` es com
 3. **Smoke test:** `scripts/smoke_test.sh` → «SMOKE TEST EN VERDE». Si falla: `docker compose --env-file .env -f infra/docker-compose.yml logs api` y avisar a Benas con el error.
 4. **Guion sin móvil:** `docker compose --env-file .env -f infra/docker-compose.yml exec bot python - < scripts/simular_chat.py`, o `python scripts/simular_chat.py` desde fuera (usa `localhost:8001`). Se compara con la tabla de §4.
 5. **Guion con Telegram:** registrar el webhook con la URL del túnel (§3, opción B) y hacer los siete pasos del guion desde el móvil, con la web abierta en `http://localhost:8080`, y el panel con `DEMO_MODE=true`.
-6. **Apuntar cada fallo** en `README.md` § «Pendiente entre flujos», bajo el flujo que lo tiene que arreglar (la API es del flujo A, el bot del B y la web del C), con el paso del guion y lo que se esperaba.
+6. **Apuntar cada fallo** en `docs/TECNICO.md` § «Pendiente entre flujos», bajo el flujo que lo tiene que arreglar (la API es del flujo A, el bot del B y la web del C), con el paso del guion y lo que se esperaba.
 7. Entre ensayos: `scripts/demo_reset.sh` deja los datos como al principio en 1–2 s.
 
 Mientras tanto, **sin Docker**, Benas puede repetir la prueba local de §3 (opción A) después de cada cambio de la API.
@@ -31,7 +31,7 @@ git fetch origin
 git merge origin/develop        # después de que Benas mergee la PR de Flujo-A
 ```
 
-No hay cambios incompatibles en el contrato: todo lo nuevo son campos o rutas opcionales (lista en `README.md` § «Pendiente entre flujos» → «Hecho»).
+No hay cambios incompatibles en el contrato: todo lo nuevo son campos o rutas opcionales (lista en `docs/TECNICO.md` § «Pendiente entre flujos» → «Hecho»).
 
 ## 2. Pruebas automáticas (cada uno en su carpeta)
 

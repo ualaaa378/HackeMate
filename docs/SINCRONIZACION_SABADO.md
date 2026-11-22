@@ -1,7 +1,7 @@
 # Propuesta de sincronización · sábado 21/11
 
 > Propuesta del flujo A (Benas), 09:45. **Es para revisarla entre los tres**: lo que no os encaje se cambia aquí mismo, por PR o comentándolo en el grupo.
-> Cómo probar y qué salió en la primera prueba: [`PRUEBAS_V1.md`](PRUEBAS_V1.md). Reparto de tareas al momento: `README.md` § «🔗 Pendiente entre flujos».
+> Cómo probar y qué salió en la primera prueba: [`PRUEBAS_V1.md`](PRUEBAS_V1.md). Reparto de tareas al momento: `docs/TECNICO.md` § «🔗 Pendiente entre flujos».
 
 ## 1. Dónde estamos
 
@@ -23,14 +23,14 @@
 
 ## 3. Cómo trabajamos hoy (reglas cortas)
 
-1. **Fallos:** se apuntan en `README.md` § «Pendiente entre flujos», bajo el flujo que los arregla, con este formato:
+1. **Fallos:** se apuntan en `docs/TECNICO.md` § «Pendiente entre flujos», bajo el flujo que los arregla, con este formato:
    `- [paso N] Qué hice → qué esperaba → qué pasó (error o captura) · quién lo vio · hora`
    Si bloquea la demo, además se avisa en el grupo.
 2. **Ramas:** cada uno en la suya (`Flujo-A`, `Flujo-B`, ramas de Adán) → **PR a `develop`**. Cambios pequeños y frecuentes; los arreglos, con `fix(...)`.
 3. **Merge:** quien abre la PR la mergea en cuanto pasan sus tests y no toca la carpeta de otro. Si toca contratos (`contract-change`) o el compose, otro del equipo la mira antes. En los checkpoints el orden es **A → B → C**.
 4. **Sincronizar:** `git pull origin develop` (o integrarlo en tu rama) **cada vez que alguien avise de un merge**, y como mínimo cada hora.
 5. **`.env`:** nunca se sube. `INTERNAL_TOKEN` es el mismo para todos. Las claves van por privado. Resumen en `PRUEBAS_V1.md` § «Los `.env` del equipo».
-6. **Si algo bloquea más de 20 minutos, se recorta** (lo dice `CLAUDE.md`). Antes de recortar algo del guion, se pregunta en el grupo.
+6. **Si algo bloquea más de 20 minutos, se recorta** (regla del equipo). Antes de recortar algo del guion, se pregunta en el grupo.
 
 ## 4. Plan del día (ajustado al cronograma)
 

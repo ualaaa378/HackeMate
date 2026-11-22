@@ -27,7 +27,7 @@
 - Enviar los avisos que pide la `api` con `POST /notify`.
 - Registrar los tokens de cada llamada a la IA (`POST /api/v1/metrics/tokens`) para el criterio «coste en tokens».
 
-**No hace** (reglas de `CLAUDE.md`):
+**No hace** (reglas de `docs/TECNICO.md`):
 - No guarda datos de negocio ni decide estados: eso es de la `api` (Flujo A). La IA propone y la `api` decide.
 - No tiene pantallas: eso es de la `web` (Flujo C). La web puede usar `POST /dev/mensaje` como simulador de chat.
 
