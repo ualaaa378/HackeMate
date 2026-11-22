@@ -499,3 +499,17 @@ def test_cuerpo_de_mas_de_4_mb_413(api):
     mediano = json.dumps({**NUEVO, "descripcion": "x" * (3 * 1024 * 1024)})
     r = api.post("/api/v1/eventos", content=mediano, headers={**TOKEN, "Content-Type": "application/json"})
     assert r.status_code == 201
+
+
+def test_el_ayuntamiento_crea_un_plan_con_sus_datos_propios(api, db):
+    """22/11: desde el panel, el ayuntamiento manda los mínimos de «Proponer» y sus datos (área, espacio, accesible)."""
+    datos = {"responsable": "Antonio García", "telefono": "+34600000101", "entidad": "ayuntamiento",
+             "publico": "todos", "necesidades": [], "seguro_rc": "si", "area": "Cultura",
+             "espacio_reservado": True, "accesible": False}
+    cuerpo = {k: v for k, v in NUEVO.items() if k not in ("datos_ayuntamiento", "frase_portada")}
+    r = api.post("/api/v1/eventos", json={**cuerpo, "datos_ayuntamiento": datos},
+                 headers=_bearer(ANTONIO_PUBLICADOR, "publicador"))
+    assert r.status_code == 201, r.text
+    _valida(EVENTO, r.json())
+    assert r.json()["datos_ayuntamiento"] == datos
+    assert db.get(Evento, r.json()["id"]).datos_ayuntamiento["area"] == "Cultura"

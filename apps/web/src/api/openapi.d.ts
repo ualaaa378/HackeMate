@@ -3168,8 +3168,11 @@ export interface components {
     DatosAyuntamiento: {
       responsable?: string;
       telefono?: string;
-      /** @enum {unknown} */
-      entidad?: 'particular' | 'asociacion' | 'comercio' | 'otra';
+      /**
+       * @description `ayuntamiento` cuando lo crea el propio ayuntamiento desde el panel (22/11)
+       * @enum {unknown}
+       */
+      entidad?: 'particular' | 'asociacion' | 'comercio' | 'otra' | 'ayuntamiento';
       entidad_nombre?: string | null;
       /** @enum {unknown} */
       publico?: 'todos' | 'infantil' | 'adultos' | 'mayores';
@@ -3179,6 +3182,12 @@ export interface components {
       /** @enum {unknown} */
       seguro_rc?: 'si' | 'no' | 'nose';
       observaciones?: string | null;
+      /** @description Solo ayuntamientos: concejalía o área que lo organiza (Cultura, Deportes, Fiestas…) */
+      area?: string | null;
+      /** @description Solo ayuntamientos: el espacio municipal ya está reservado para ese día */
+      espacio_reservado?: boolean | null;
+      /** @description Solo ayuntamientos: el lugar es accesible para personas con movilidad reducida */
+      accesible?: boolean | null;
     } | null;
     CaidaSimulada: {
       /** @description true = todas las IAs «fallan» y el bot sigue solo con reglas */
@@ -3385,10 +3394,10 @@ export interface components {
         /** @description Teléfono de contacto del responsable (texto libre) */
         telefono?: string;
         /**
-         * @description Quién organiza
+         * @description Quién organiza (`ayuntamiento`: lo crea el propio ayuntamiento desde el panel)
          * @enum {unknown}
          */
-        entidad?: 'particular' | 'asociacion' | 'comercio' | 'otra';
+        entidad?: 'particular' | 'asociacion' | 'comercio' | 'otra' | 'ayuntamiento';
         entidad_nombre?: string | null;
         /**
          * @description Público al que va dirigido
@@ -3405,6 +3414,12 @@ export interface components {
          */
         seguro_rc?: 'si' | 'no' | 'nose';
         observaciones?: string | null;
+        /** @description Solo ayuntamientos: concejalía o área que lo organiza */
+        area?: string | null;
+        /** @description Solo ayuntamientos: el espacio municipal ya está reservado */
+        espacio_reservado?: boolean | null;
+        /** @description Solo ayuntamientos: accesible para personas con movilidad reducida */
+        accesible?: boolean | null;
       } | null;
       origen: {
         /** @enum {unknown} */

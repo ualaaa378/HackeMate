@@ -144,8 +144,8 @@ const Puerta: React.FC<{ rolActual: RolAdmin | null }> = ({ rolActual }) => {
           <>
             <h2 className="titulo-caja">Zona del ayuntamiento</h2>
             <p>
-              Aquí se revisan los planes que llegan por {NOMBRE_CANAL} o la web, se aprueban los ayuntamientos que piden publicar y se ven
-              las cifras de la agenda.
+              Aquí se revisan los planes que llegan por {NOMBRE_CANAL} o la web, se aprueban los ayuntamientos que piden
+              publicar y se ven las cifras de la agenda.
             </p>
             <AccesoModeracion />
             <p className="nota-demo">Ayuntamientos: entra con tu móvil.</p>

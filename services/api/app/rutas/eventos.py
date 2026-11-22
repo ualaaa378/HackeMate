@@ -61,7 +61,7 @@ class DatosAyuntamiento(BaseModel):
 
     responsable: Annotated[str, Field(max_length=120)] = None
     telefono: Annotated[str, Field(max_length=20)] = None
-    entidad: Literal["particular", "asociacion", "comercio", "otra"] = None
+    entidad: Literal["particular", "asociacion", "comercio", "otra", "ayuntamiento"] = None
     entidad_nombre: Annotated[str, Field(max_length=120)] | None = None
     publico: Literal["todos", "infantil", "adultos", "mayores"] = None
     necesidades: list[
@@ -69,6 +69,10 @@ class DatosAyuntamiento(BaseModel):
     ] = None
     seguro_rc: Literal["si", "no", "nose"] = None
     observaciones: Annotated[str, Field(max_length=1000)] | None = None
+    # Solo ayuntamientos (plan creado desde el panel, 22/11)
+    area: Annotated[str, Field(max_length=120)] | None = None
+    espacio_reservado: bool | None = None
+    accesible: bool | None = None
 
 
 class EventoCrear(BaseModel):
