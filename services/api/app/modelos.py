@@ -253,6 +253,16 @@ class CocheCompartido(Base):
     actualizado_en: Mapped[datetime] = mapped_column(FechaUTC(), default=ahora, onupdate=ahora, nullable=False)
 
 
+class MeGusta(Base):
+    """«Me gusta» de un vecino con cuenta en un plan (uno por usuario y plan)."""
+
+    __tablename__ = "me_gusta"
+
+    evento_id: Mapped[str] = mapped_column(ForeignKey("eventos.id", ondelete="CASCADE"), primary_key=True)
+    usuario_id: Mapped[str] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True)
+    creado_en: Mapped[datetime] = _creado()
+
+
 class MensajeEvento(Base):
     __tablename__ = "mensajes_evento"
 

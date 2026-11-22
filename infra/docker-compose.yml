@@ -112,6 +112,9 @@ services:
         condition: service_started
     ports:
       - "8080:8080"
+    # APK que se descarga desde Mi perfil: copiar el .apk a descargas/pueblos-unidos.apk (no se sube a git)
+    volumes:
+      - ../descargas:/usr/share/nginx/descargas:ro
     restart: unless-stopped
     # Ningún proceso del contenedor puede ganar privilegios (setuid/sudo) aunque alguien entre en él
     security_opt: ["no-new-privileges:true"]

@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { actualizarPerfil } from '../api/client';
 import type { Categoria, Usuario } from '../api/types';
 import { CONTACTO_CANAL, ENLACE_CANAL, NOMBRE_CANAL } from '../canal';
+import DescargarApk from '../components/DescargarApk';
 import { LogoInicio } from '../components/Marca';
 import SelectorGustos from '../components/SelectorGustos';
 import SelectorLetra from '../components/SelectorLetra';
@@ -129,6 +130,7 @@ const Perfil: React.FC = () => {
             </IonCardContent>
           </IonCard>
         )}
+        <DescargarApk />
         <IonCard>
           <IonCardContent>
             <h2 className="titulo-caja">Usarlo solo con {NOMBRE_CANAL}</h2>

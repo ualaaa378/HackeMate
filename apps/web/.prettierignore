@@ -3,3 +3,4 @@
 # Gradle's build output.
 android/
 ios/
+src/vendor/

@@ -445,6 +445,48 @@ paths:
         "409": { $ref: "#/components/responses/Error", description: "409 `coche_no_disponible` (no está apuntado con plaza, vive en el pueblo del plan o el plan ya no está publicado)" }
         "422": { $ref: "#/components/responses/Error", description: "422 `falta_usuario_id` o `validacion`" }
 
+  /api/v1/eventos/{id}/me-gusta:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [eventos]
+      summary: Cuántos «me gusta» tiene el plan y si el usuario de la sesión ya le ha dado (sin sesión, mio=false)
+      security: [{}, { bearer: [] }]
+      x-implementado: true
+      responses:
+        "200":
+          description: Estado del «me gusta»
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeGustaEstado" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
+    put:
+      tags: [eventos]
+      summary: Dar «me gusta» al plan (solo con cuenta; repetirlo no suma otra vez)
+      security: [{ bearer: [] }]
+      x-implementado: true
+      responses:
+        "200":
+          description: Estado del «me gusta» tras darlo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeGustaEstado" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
+    delete:
+      tags: [eventos]
+      summary: Quitar el «me gusta» del usuario de la sesión
+      security: [{ bearer: [] }]
+      x-implementado: true
+      responses:
+        "200":
+          description: Estado del «me gusta» tras quitarlo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeGustaEstado" }
+        "401": { $ref: "#/components/responses/Error", description: "401 `no_autenticado`" }
+        "404": { $ref: "#/components/responses/Error", description: "404 `evento_no_encontrado`" }
+
   /api/v1/eventos/{id}/mensajes:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -1897,6 +1939,12 @@ components:
           additionalProperties: true
         confirmado_por: { enum: [whatsapp, web, telegram] }
 
+    MeGustaEstado:
+      type: object
+      required: [total, mio]
+      properties:
+        total: { type: integer, minimum: 0, description: Número de «me gusta» del plan }
+        mio: { type: boolean, description: Si el usuario de la sesión ya le ha dado }
     CocheRespuesta:
       type: object
       additionalProperties: false

@@ -4,4007 +4,4084 @@
  */
 
 export interface paths {
-  '/health': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Estado del servicio (api, bot y web) */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description OK */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['Health'];
-          };
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/municipios': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Los 5 pueblos con coordenadas */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Lista de municipios */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['Municipio'][];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/choques': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Choque de fechas. Planes publicados el mismo día a 20 km o menos del pueblo (el mismo pueblo cuenta) y, si hay alguno, hasta 3 días libres del mismo tipo (laborable o fin de semana) a la misma hora. Lo usa el bot al confirmar un plan: la IA elige y redacta la propuesta y quien crea el plan decide. */
-    get: {
-      parameters: {
-        query: {
-          fecha_inicio: string;
-          municipio: string;
-          /** @description El propio plan (para no chocar consigo mismo) */
-          excluir?: string;
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Choques y días libres */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              choques: {
-                /** Format: uuid */
-                evento_id: string;
-                titulo: string;
-                municipio: string;
-                /** Format: date-time */
-                fecha_inicio: string;
-                distancia_km: number;
-              }[];
-              alternativas: string[];
+        /** Estado del servicio (api, bot y web) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
             };
-          };
-        };
-        /** @description 422 `validacion` (fecha sin zona o mal escrita) o `municipio_no_encontrado` */
-        422: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/lugares': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Información permanente de los pueblos (rutas, sitios, comercios, alojamientos, servicios) */
-    get: {
-      parameters: {
-        query?: {
-          municipio?: string;
-          tipo?: 'ruta' | 'sitio_interes' | 'comercio' | 'alojamiento' | 'servicio';
-          lat?: number;
-          lon?: number;
-          radio_km?: number;
-          page?: components['parameters']['Page'];
-          size?: components['parameters']['Size'];
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Página de lugares */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['PaginaLugares'];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/lugares/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    /** Ficha de un lugar */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Lugar */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['lugar'];
-          };
-        };
-        404: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/eventos': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Agenda y mapa. Público solo ve `publicado`.
-     * @description Sin sesión, el público ve `publicado` (por defecto) y también puede pedir `estado=finalizado`
-     *     (planes ya pasados, para la pestaña «Recuerdos»). Los demás estados solo los ven el moderador
-     *     y el publicador (sus eventos). `datos_ayuntamiento` nunca aparece en esta lista pública.
-     */
-    get: {
-      parameters: {
-        query?: {
-          municipio?: string;
-          categoria?: components['schemas']['Categoria'];
-          desde?: string;
-          hasta?: string;
-          lat?: number;
-          lon?: number;
-          radio_km?: number;
-          /** @description Texto libre en título y descripción */
-          q?: string;
-          /** @description Por defecto `publicado`. Sin sesión también se admite `finalizado` (planes pasados, «Recuerdos»). Los demás estados, solo moderador y publicador (sus eventos). */
-          estado?: components['schemas']['EstadoEvento'];
-          publicador_id?: string;
-          /**
-           * @description P5a, «Mis planes propuestos» (opcional). Id del usuario: los planes que propuso (`propuesto_por_id`) o los de sus
-           *     entidades, en todos los estados salvo `borrador` (o solo en `estado`, si se manda), los más recientes primero.
-           *     Solo para el propio usuario, un moderador o el servicio interno (el bot); para otro, la lista sale vacía.
-           */
-          organizador_id?: string;
-          page?: components['parameters']['Page'];
-          size?: components['parameters']['Size'];
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Página de eventos */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['PaginaEventos'];
-          };
-        };
-        422: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    /** Crear evento a mano (publicador o moderador) */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['EventoCrear'];
-        };
-      };
-      responses: {
-        /** @description Creado */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['evento'];
-          };
-        };
-        401: components['responses']['Error'];
-        403: components['responses']['Error'];
-        /** @description 422 `validacion` o `imagen_invalida` (imagen_url no es URL http(s) ni data URL de imagen, o pasa de ~1,5 MB) */
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/eventos/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    /**
-     * Ficha del evento
-     * @description `datos_ayuntamiento` solo aparece si quien pide es el organizador del evento o un moderador (con sesión bearer).
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Evento */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['evento'];
-          };
-        };
-        404: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Editar evento. Si cambia `fecha_inicio`, avisa a todos los inscritos (`cambio_evento`) y fija un anuncio. */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['EventoEditar'];
-        };
-      };
-      responses: {
-        /** @description Evento actualizado */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['evento'];
-          };
-        };
-        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
-        401: components['responses']['Error'];
-        /** @description 403 `prohibido` (solo el organizador del evento o un moderador) */
-        403: components['responses']['Error'];
-        /** @description 404 `evento_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 422 `validacion`, `fechas_invalidas` (fecha_fin anterior a fecha_inicio) o `imagen_invalida` (imagen_url no es URL http(s) ni data URL de imagen, o pasa de ~1,5 MB) */
-        422: components['responses']['Error'];
-      };
-    };
-    trace?: never;
-  };
-  '/api/v1/eventos/importar': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * El bot entrega una ExtraccionEvento + origen. Crea el evento en `pendiente_confirmacion`.
-     * @description Si ya existe un evento con el mismo `origen.url`, devuelve ese (`duplicado = true`) y no crea otro.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['ImportarEvento'];
-        };
-      };
-      responses: {
-        /** @description Ya existía (mismo origen.url) */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['ResultadoImportacion'];
-          };
-        };
-        /** @description Evento creado */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['ResultadoImportacion'];
-          };
-        };
-        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
-        401: components['responses']['Error'];
-        /** @description 403 `publicador_pausado` o `publicador_rechazado` (la solicitud del publicador fue rechazada) */
-        403: components['responses']['Error'];
-        /** @description 422 `validacion`, `no_es_evento`, `publicador_no_encontrado` o `municipio_no_encontrado` */
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/eventos/{id}/confirmar': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** El publicador completa lo que falta y confirma. Pasa a moderación (`en_revision` o `publicado` según nivel). */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['ConfirmarEvento'];
-        };
-      };
-      responses: {
-        /** @description Evento tras la moderación automática */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['ResultadoImportacion'];
-          };
-        };
-        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
-        401: components['responses']['Error'];
-        /** @description 403 `publicador_pausado` o `publicador_rechazado` */
-        403: components['responses']['Error'];
-        /** @description 404 `evento_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 409 `estado_invalido` (el evento no está en `pendiente_confirmacion`) */
-        409: components['responses']['Error'];
-        /** @description 422 `faltan_campos` (details.faltan), `validacion`, `municipio_no_encontrado` o `fechas_invalidas` */
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/eventos/{id}/apelacion': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * P3a: el organizador pide que se revise otra vez un plan rechazado (una sola vez)
-     * @description Solo quien propuso el plan: el responsable de su publicador o el vecino que lo propuso (con su sesión), o el
-     *     bot en su nombre (`X-Internal-Token` + `usuario_id`). Solo si el plan está `rechazado` y **una vez**: el
-     *     plan vuelve a `en_revision`, a la bandeja, con el motivo «Apelación: {motivo}» y guarda `apelacion` en el
-     *     evento. El moderador decide con los botones de siempre; un segundo rechazo es definitivo (no se puede
-     *     volver a apelar). El aviso de rechazo al publicador lleva `evento_id`, para que el bot ponga [Apelar].
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** @description Por qué debería publicarse */
-            motivo: string;
-            /**
-             * Format: uuid
-             * @description Obligatorio con X-Internal-Token (el bot): quién apela
-             */
-            usuario_id?: string;
-          };
-        };
-      };
-      responses: {
-        /** @description El plan vuelve a la bandeja */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['evento'];
-          };
-        };
-        /** @description 401 `no_autenticado` */
-        401: components['responses']['Error'];
-        /** @description 403 `prohibido` (no es quien propuso el plan) */
-        403: components['responses']['Error'];
-        /** @description 404 `evento_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 409 `estado_invalido` (no está rechazado) o `apelacion_usada` (ya apeló una vez) */
-        409: components['responses']['Error'];
-        /** @description 422 `validacion` (motivo de menos de 10 o más de 500 caracteres) */
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/eventos/{id}/inscripciones': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    /** Lista de inscritos (solo organizador y moderador) */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Inscripciones */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['inscripcion'][];
-          };
-        };
-        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
-        401: components['responses']['Error'];
-        /** @description 403 `prohibido` (solo el organizador del evento o un moderador) */
-        403: components['responses']['Error'];
-        /** @description 404 `evento_no_encontrado` */
-        404: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    /** Apuntarse. Si no hay plazas, queda en `lista_espera`. Si el plan ya ha terminado, 409 `evento_finalizado`. */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          'application/json': components['schemas']['InscripcionCrear'];
-        };
-      };
-      responses: {
-        /** @description Inscripción */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['inscripcion'];
-          };
-        };
-        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
-        401: components['responses']['Error'];
-        /** @description 403 `prohibido` (con sesión solo puedes inscribirte a ti mismo) */
-        403: components['responses']['Error'];
-        /** @description 404 `evento_no_encontrado` o `usuario_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 409 `ya_inscrito` (details.inscripcion_id), `evento_no_inscribible` (el evento no está publicado) o `evento_terminado` */
-        409: components['responses']['Error'];
-        /** @description 422 `falta_usuario_id` (con X-Internal-Token hay que indicar usuario_id) o `validacion` */
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/eventos/{id}/inscripciones/{insc_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-        insc_id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /** Cancelar. El primero de la lista de espera sube a `confirmada` y se le avisa. */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-          insc_id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Inscripción cancelada */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['inscripcion'];
-          };
-        };
-        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
-        401: components['responses']['Error'];
-        /** @description 403 `prohibido` (solo quien se apuntó, el organizador o un moderador) */
-        403: components['responses']['Error'];
-        /** @description 404 `evento_no_encontrado` o `inscripcion_no_encontrada` */
-        404: components['responses']['Error'];
-        /** @description 409 `inscripcion_cerrada` (ya se marcó la asistencia) */
-        409: components['responses']['Error'];
-      };
-    };
-    options?: never;
-    head?: never;
-    /** Marcar asistencia (organizador o moderador) */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-          insc_id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** @enum {unknown} */
-            estado: 'asistio' | 'no_asistio';
-          };
-        };
-      };
-      responses: {
-        /** @description Inscripción */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['inscripcion'];
-          };
-        };
-        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
-        401: components['responses']['Error'];
-        /** @description 403 `prohibido` (solo el organizador del evento o un moderador) */
-        403: components['responses']['Error'];
-        /** @description 404 `evento_no_encontrado` o `inscripcion_no_encontrada` */
-        404: components['responses']['Error'];
-        /** @description 409 `inscripcion_sin_plaza` (solo se marca la asistencia de quien tenía plaza) */
-        409: components['responses']['Error'];
-        /** @description 422 `validacion` */
-        422: components['responses']['Error'];
-      };
-    };
-    trace?: never;
-  };
-  '/api/v1/eventos/{id}/coche': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Compartir coche. El vecino (apuntado con plaza a un plan de otro pueblo) dice si quiere ir con los de su pueblo. Con un sí, si otro vecino del mismo pueblo ya dijo que sí, se avisa a los dos con el contacto. Nunca se pasa el contacto de quien no ha dicho que sí. */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['CocheRespuesta'];
-        };
-      };
-      responses: {
-        /** @description Respuesta guardada */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** @enum {unknown} */
-              respuesta: 'si' | 'no';
-              /** @description Contacto de los vecinos del mismo pueblo que ya dijeron que sí («Nombre (+34…)») */
-              companeros: string[];
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Health"];
+                    };
+                };
             };
-          };
         };
-        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` */
-        401: components['responses']['Error'];
-        /** @description 403 `prohibido` (con sesión solo respondes por ti) */
-        403: components['responses']['Error'];
-        /** @description 404 `evento_no_encontrado` o `usuario_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 409 `coche_no_disponible` (no está apuntado con plaza, vive en el pueblo del plan o el plan ya no está publicado) */
-        409: components['responses']['Error'];
-        /** @description 422 `falta_usuario_id` o `validacion` */
-        422: components['responses']['Error'];
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/eventos/{id}/mensajes': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    /** Chat del evento. Anuncios fijados primero. Nunca expone teléfonos. */
-    get: {
-      parameters: {
-        query?: {
-          page?: components['parameters']['Page'];
-          size?: components['parameters']['Size'];
+    "/api/v1/municipios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Mensajes */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['PaginaMensajes'];
-          };
-        };
-        /** @description 401 `token_invalido` o `token_caducado` (se envió una sesión no válida; sin sesión es público) */
-        401: components['responses']['Error'];
-        /** @description 404 `evento_no_encontrado` */
-        404: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    /** Publicar mensaje. Pasa por `bot /ai/spam`; si es pregunta, `bot /ai/responder-ficha`. Con el plan terminado solo se admiten comentarios (si no, 409 `evento_finalizado`). */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['MensajeCrear'];
-        };
-      };
-      responses: {
-        /** @description Mensaje (y respuesta de la IA si la hubo) */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              mensaje: components['schemas']['mensaje_evento'];
-              respuesta_ia?: components['schemas']['mensaje_evento'] | null;
+        /** Los 5 pueblos con coordenadas */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
             };
-          };
-        };
-        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
-        401: components['responses']['Error'];
-        /** @description 403 `prohibido` (escribir en nombre de otro, o un anuncio sin ser organizador ni moderador) o `usuario_silenciado` (el organizador o un moderador le ha silenciado en el chat de este evento) */
-        403: components['responses']['Error'];
-        /** @description 404 `evento_no_encontrado` o `usuario_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 409 `chat_cerrado` (el evento no admite mensajes por su estado; details.estado) */
-        409: components['responses']['Error'];
-        /** @description 422 `mensaje_spam` (details.score_spam y details.motivo), `falta_usuario_id`, `mensaje_no_encontrado` (en_respuesta_a no es de este evento) o `validacion` */
-        422: components['responses']['Error'];
-        /** @description 429 `demasiados_mensajes`: más de 8 mensajes por minuto de la misma persona (salvo organizador y moderadores); details.reintentar_en_s */
-        429: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/eventos/{id}/mensajes/{msg_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-        msg_id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Fijar u ocultar (organizador o moderador) */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-          msg_id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            fijado?: boolean;
-            oculto?: boolean;
-            /** @description Solo organizador o moderador: el autor no puede volver a escribir en el chat de este evento */
-            silenciar_autor?: boolean;
-          };
-        };
-      };
-      responses: {
-        /** @description Mensaje */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['mensaje_evento'];
-          };
-        };
-        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
-        401: components['responses']['Error'];
-        /** @description 403 `prohibido` (solo el organizador o un moderador fijan, ocultan o silencian; el autor solo puede ocultar su propio mensaje) */
-        403: components['responses']['Error'];
-        /** @description 404 `evento_no_encontrado` o `mensaje_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 409 `no_silenciable` (con `silenciar_autor: true`, el autor es el organizador del evento o un moderador, o el mensaje no tiene autor, como las respuestas de la IA) */
-        409: components['responses']['Error'];
-        /** @description 422 `validacion` */
-        422: components['responses']['Error'];
-      };
-    };
-    trace?: never;
-  };
-  '/api/v1/eventos/{id}/ics': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    /**
-     * Evento en formato iCalendar (zona Europe/Madrid)
-     * @description Las fechas (`DTSTART`, `DTEND`, `DTSTAMP`) van en UTC con sufijo `Z`: equivalen a la hora de Europe/Madrid
-     *     del evento y cada calendario las muestra en su zona local. Excepción: los eventos con la etiqueta
-     *     `sin_hora` van de día completo (`VALUE=DATE`, con la fecha de Madrid). Sin `fecha_fin`, dura 2 horas.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Archivo .ics */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'text/calendar': string;
-          };
-        };
-        404: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/agenda.ics': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Agenda pública para suscribirse desde Google Calendar, Apple u Outlook
-     * @description Feed iCalendar con los planes publicados (y los cancelados, para que el calendario los tache) que acaban
-     *     desde hace 7 días en adelante. Mismo formato que `/eventos/{id}/ics`. Pensado para suscribirse por URL
-     *     (Google Calendar → «Desde URL»): el calendario lo vuelve a leer solo cada pocas horas.
-     */
-    get: {
-      parameters: {
-        query?: {
-          /** @description Solo los planes de ese pueblo */
-          municipio?: string;
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Archivo .ics */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'text/calendar': string;
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/usuarios/me/ics': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Todos los eventos en los que el usuario está confirmado */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Archivo .ics */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'text/calendar': string;
-          };
-        };
-        401: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/recomendaciones': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Eventos recomendados con motivo legible */
-    get: {
-      parameters: {
-        query: {
-          usuario_id: string;
-          limite?: number;
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Recomendaciones ordenadas por puntuación */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              items: components['schemas']['Recomendacion'][];
+            requestBody?: never;
+            responses: {
+                /** @description Lista de municipios */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Municipio"][];
+                    };
+                };
             };
-          };
         };
-        /** @description 401 `no_autenticado` (sin sesión ni X-Internal-Token), `token_invalido` o `token_caducado` */
-        401: components['responses']['Error'];
-        /** @description 403 `prohibido` (solo puedes ver tus propias recomendaciones, salvo moderador) */
-        403: components['responses']['Error'];
-        /** @description 404 `usuario_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 422 `validacion` (usuario_id no es UUID o limite fuera de 1-20) */
-        422: components['responses']['Error'];
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/buscar': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Buscador con IA (RAG): «¿qué hay este finde para niños cerca de Senés?» → respuesta breve con los planes
-     * @description La API recupera los planes `publicado` que no han terminado más parecidos a la pregunta: filtros por reglas
-     *     (fechas, pueblo, tipo, gratis, niños), más parecido por embeddings (que pide a `bot POST /ai/embeddings`) y
-     *     más palabras clave. Le pasa a `bot POST /ai/responder-agenda` solo esos planes (`PlanContexto`) y valida que
-     *     la respuesta cite solo planes recuperados: los `evento_ids` que no estén entre ellos se descartan.
-     *     Si el bot no responde, responde con una plantilla y los mismos planes (`modo: palabras`).
-     *     Nunca devuelve un plan que no exista. No guarda nada.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['BusquedaIA'];
+    "/api/v1/choques": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-      responses: {
-        /** @description Respuesta para la persona y los planes en que se basa */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['RespuestaBusqueda'];
-          };
-        };
-        /** @description 422 `validacion` (pregunta de menos de 3 o más de 300 caracteres, o limite fuera de 1-8) */
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/moderacion/pendientes': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Bandeja del moderador (eventos en revisión y publicadores por aprobar), con motivo */
-    get: {
-      parameters: {
-        query?: {
-          page?: components['parameters']['Page'];
-          size?: components['parameters']['Size'];
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Pendientes */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['PaginaPendientes'];
-          };
-        };
-        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
-        401: components['responses']['Error'];
-        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
-        403: components['responses']['Error'];
-        /** @description 422 `validacion` (page o size fuera de rango) */
-        422: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/moderacion/{id}/decision': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID del evento */
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Aprobar, rechazar, retirar o restaurar un evento */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          /** @description ID del evento */
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['Decision'];
-        };
-      };
-      responses: {
-        /** @description Evento tras la decisión */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['evento'];
-          };
-        };
-        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
-        401: components['responses']['Error'];
-        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
-        403: components['responses']['Error'];
-        /** @description 404 `evento_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 409 `estado_invalido` (la decisión no vale para el estado actual, p. ej. otro moderador ya decidió; details.estado y details.decision) */
-        409: components['responses']['Error'];
-        /** @description 422 `validacion` */
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/publicadores': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Lista de publicadores
-     * @description `responsable` y `actividad` solo aparecen con sesión de moderador.
-     */
-    get: {
-      parameters: {
-        query?: {
-          estado?: 'solicitado' | 'whatsapp_verificado' | 'aprobado' | 'rechazado' | 'pausado';
-          municipio?: string;
-          page?: components['parameters']['Page'];
-          size?: components['parameters']['Size'];
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Página de publicadores */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['PaginaPublicadores'];
-          };
-        };
-      };
-    };
-    put?: never;
-    /** Solicitar ser publicador (queda en `solicitado` hasta verificar el WhatsApp) */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['PublicadorCrear'];
-        };
-      };
-      responses: {
-        /** @description Publicador */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['publicador'];
-          };
-        };
-        /** @description 401 `no_autenticado` (ni X-Internal-Token válido ni sesión) */
-        401: components['responses']['Error'];
-        /** @description 403 `prohibido` (con sesión, el teléfono tiene que ser el de tu cuenta) */
-        403: components['responses']['Error'];
-        /** @description 409 `publicador_ya_existe` (ya hay un publicador con ese teléfono; details.publicador_id) */
-        409: components['responses']['Error'];
-        /** @description 422 `validacion`, `municipio_no_encontrado`, `falta_telefono` (la cuenta no tiene teléfono) o `solo_ayuntamientos` (con SOLO_AYUNTAMIENTOS=true, por defecto, solo se admite `tipo: ayuntamiento`) */
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/publicadores/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    /**
-     * Ficha del publicador
-     * @description `responsable` y `actividad` solo aparecen con sesión de moderador.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Publicador */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['publicador'];
-          };
-        };
-        404: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/publicadores/{id}/aprobar': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * El moderador aprueba (o rechaza) la entidad
-     * @description También sirve para cambiar `nivel_confianza` de un publicador que ya está `aprobado` (con `aprobar: true`):
-     *     la web lo usa para pasarlo a publicación automática (nivel 2) o devolverlo a publicación a mano (nivel 0).
-     *     Solo hay dos modos (ver `enums.md`): el nivel 1 está obsoleto, se acepta por compatibilidad y se guarda como 0.
-     *     En un publicador ya aprobado, si no se envía `nivel_confianza`, el nivel no cambia.
-     *
-     *     Pasar a nivel 2 exige las reglas de `apps/web/src/admin/confianza.ts`, calculadas por la API:
-     *     - responsable identificado: `responsable` con `dni` y `residencia` y `identidad_verificada = true`;
-     *     - al menos 3 planes aprobados en los últimos 60 días (`actividad.planes_60_dias >= 3`);
-     *     - ningún plan rechazado en los últimos 60 días (`actividad.rechazados_60_dias = 0`);
-     *     - algún plan aprobado en los últimos 90 días (`actividad.ultimo_plan`).
-     *     Si falta alguna, 409 `reglas_confianza_no_cumplidas` con `details.faltan` = lista de las que fallan
-     *     (`identidad_verificada`, `planes_60_dias`, `rechazados_60_dias`, `ultimo_plan`). Pasar a mano (0) no exige nada.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          'application/json': {
-            /** @default true */
-            aprobar?: boolean;
-            /**
-             * @default 0
-             * @enum {unknown}
-             */
-            nivel_confianza?: 0 | 1 | 2;
-            motivo?: string | null;
-          };
-        };
-      };
-      responses: {
-        /** @description Publicador */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['publicador'];
-          };
-        };
-        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
-        401: components['responses']['Error'];
-        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
-        403: components['responses']['Error'];
-        /** @description 404 `publicador_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 409 `estado_invalido` (el publicador no está pendiente de aprobación ni aprobado, o se intenta rechazar uno ya aprobado; details.estado) o `reglas_confianza_no_cumplidas` (nivel 2 sin cumplir las reglas; details.faltan) */
-        409: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/publicadores/{id}/verificar-identidad': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * El moderador marca como comprobados el DNI y la residencia del responsable
-     * @description Pone `responsable.identidad_verificada` (por defecto `true`). Es uno de los requisitos para el nivel 2.
-     *     Desmarcarla no baja el nivel por sí sola: para eso, `POST /publicadores/{id}/aprobar` con otro nivel.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          'application/json': {
-            /** @default true */
-            identidad_verificada?: boolean;
-          };
-        };
-      };
-      responses: {
-        /** @description Publicador (con `responsable` actualizado) */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['publicador'];
-          };
-        };
-        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
-        401: components['responses']['Error'];
-        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
-        403: components['responses']['Error'];
-        /** @description 404 `publicador_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 409 `sin_datos_responsable` (el publicador no tiene responsable con dni y residencia) */
-        409: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/publicadores/{id}/pausar': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Pausar (o reactivar) un publicador o solo sus automatizaciones */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** @enum {unknown} */
-            que: 'publicador' | 'automatizaciones';
-            pausado: boolean;
-          };
-        };
-      };
-      responses: {
-        /** @description Publicador */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['publicador'];
-          };
-        };
-        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
-        401: components['responses']['Error'];
-        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
-        403: components['responses']['Error'];
-        /** @description 404 `publicador_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 409 `estado_invalido` (solo se pausa o reactiva un publicador aprobado; details.estado) */
-        409: components['responses']['Error'];
-        /** @description 422 `validacion` */
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/publicadores/{id}/fuentes': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Conectar una fuente (Facebook, Instagram, web) que el bot vigila */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** @enum {unknown} */
-            canal: 'facebook' | 'instagram' | 'web_externa';
-            url: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Publicador con la fuente añadida */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['publicador'];
-          };
-        };
-        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
-        401: components['responses']['Error'];
-        403: components['responses']['Error'];
-        /** @description 404 `publicador_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 409 `fuente_ya_existe` (details.publicador_id) o `estado_invalido` (el publicador está rechazado) */
-        409: components['responses']['Error'];
-        /** @description 422 `validacion` */
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/auth/google': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Valida el id_token de Google y devuelve un JWT propio con rol */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            id_token: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Sesión */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['Token'];
-          };
-        };
-        /** @description 401 `token_google_invalido` o `email_no_verificado` */
-        401: components['responses']['Error'];
-        /** @description 503 `google_no_configurado` (falta GOOGLE_CLIENT_ID) o `google_no_disponible` */
-        503: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/auth/whatsapp/codigo': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Envía un código de un solo uso por WhatsApp (vía bot /notify) */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            telefono: components['schemas']['Telefono'];
-          };
-        };
-      };
-      responses: {
-        /** @description Código enviado */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              enviado: boolean;
-              /** Format: date-time */
-              expira_en: string;
+        /** Choque de fechas. Planes publicados el mismo día a 20 km o menos del pueblo (el mismo pueblo cuenta) y, si hay alguno, hasta 3 días libres del mismo tipo (laborable o fin de semana) a la misma hora. Lo usa el bot al confirmar un plan: la IA elige y redacta la propuesta y quien crea el plan decide. */
+        get: {
+            parameters: {
+                query: {
+                    fecha_inicio: string;
+                    municipio: string;
+                    /** @description El propio plan (para no chocar consigo mismo) */
+                    excluir?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
             };
-          };
-        };
-        /** @description 429 `demasiados_codigos` (details.maximo_por_hora) */
-        429: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/auth/whatsapp/verificar': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Verifica el código. Marca el WhatsApp como verificado y devuelve sesión. */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            telefono: components['schemas']['Telefono'];
-            codigo: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Sesión */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['Token'];
-          };
-        };
-        /** @description 401 `codigo_invalido` (incorrecto o caducado) */
-        401: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/auth/admin': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Acceso de la moderación del ayuntamiento con usuario y contraseña
-     * @description Comprueba `usuario` y `contrasena` contra `ADMIN_USUARIO` y `ADMIN_CONTRASENA` del `.env` (provisional para
-     *     la demo: `admin` / `1234`; cambiarla en la máquina de la demo) y devuelve la sesión del moderador más antiguo.
-     *     Funciona con y sin `DEMO_MODE`. La web lo pide para entrar en la pestaña de administración (`/admin`).
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            usuario: string;
-            contrasena: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Sesión de moderador */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['Token'];
-          };
-        };
-        /** @description 401 `credenciales_invalidas` (no dice cuál de los dos falla) */
-        401: components['responses']['Error'];
-        /** @description 422 `validacion` */
-        422: components['responses']['Error'];
-        /** @description 429 `demasiados_intentos`: 5 fallos desde la misma IP (o 30 en total) en 10 minutos; `details.reintentar_en_s` */
-        429: components['responses']['Error'];
-        /** @description 503 `sin_moderador` (no hay ningún usuario moderador) */
-        503: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/auth/demo': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Solo en modo demo (DEMO_MODE=true): sesión como un usuario o rol sin login
-     * @description Existe solo si la API arranca con `DEMO_MODE=true` (por defecto `false`); si no, responde 404.
-     *     Sirve para que el panel y la app entren en la demo como la moderadora o como una vecina sin cuentas
-     *     de Google. Con `usuario_id` da la sesión de ese usuario; con `rol`, la del usuario más antiguo con ese rol.
-     *     Nunca da sesión de moderador (403 `demo_sin_moderador`): la moderación entra con `POST /auth/admin`.
-     *     Nunca se activa fuera de la presentación.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            usuario_id?: string;
-            /** @enum {unknown} */
-            rol?: 'vecino' | 'publicador' | 'moderador';
-          };
-        };
-      };
-      responses: {
-        /** @description Sesión */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['Token'];
-          };
-        };
-        /** @description 403 `demo_sin_moderador` */
-        403: components['responses']['Error'];
-        404: components['responses']['Error'];
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/usuarios': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Alta de usuario (el bot la usa la primera vez que escribe un teléfono nuevo) */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['UsuarioCrear'];
-        };
-      };
-      responses: {
-        /** @description Usuario */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['usuario'];
-          };
-        };
-        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
-        401: components['responses']['Error'];
-        /** @description 409 `usuario_ya_existe` (details.usuario_id) */
-        409: components['responses']['Error'];
-        /** @description 422 `validacion` o `municipio_no_encontrado` */
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/usuarios/by-phone/{e164}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        e164: components['schemas']['Telefono'];
-      };
-      cookie?: never;
-    };
-    /** Identidad a partir del teléfono (solo servicios internos) */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          e164: components['schemas']['Telefono'];
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Usuario */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['usuario'];
-          };
-        };
-        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
-        401: components['responses']['Error'];
-        /** @description 404 `usuario_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 422 `telefono_invalido` (no está en formato E.164) */
-        422: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/usuarios/by-contacto/{contacto}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description +34… (WhatsApp; el + puede ir como %2B) o tg:<chat_id> (Telegram) */
-        contacto: components['schemas']['Contacto'];
-      };
-      cookie?: never;
-    };
-    /**
-     * Identidad a partir del contacto en cualquier canal (solo servicios internos)
-     * @description `by-phone` sigue igual. Errores: 404 `usuario_no_encontrado`, 422 `contacto_invalido`.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          /** @description +34… (WhatsApp; el + puede ir como %2B) o tg:<chat_id> (Telegram) */
-          contacto: components['schemas']['Contacto'];
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Usuario */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['usuario'];
-          };
-        };
-        401: components['responses']['Error'];
-        404: components['responses']['Error'];
-        422: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/usuarios/vincular': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Vincula el contacto de un canal con el teléfono (crea el usuario si no existe)
-     * @description Si no hay usuario con ese teléfono lo crea (201); si lo hay, le asigna el id del canal (200).
-     *     Si hay un publicador con ese teléfono, también se le asigna.
-     *     Errores: 409 `contacto_en_uso` (el contacto ya es de otra persona), 422 `contacto_invalido`.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['UsuarioVincular'];
-        };
-      };
-      responses: {
-        /** @description Usuario existente, ya vinculado */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['usuario'];
-          };
-        };
-        /** @description Usuario creado y vinculado */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['usuario'];
-          };
-        };
-        401: components['responses']['Error'];
-        409: components['responses']['Error'];
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/usuarios/me': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Perfil del usuario autenticado */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Usuario */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['usuario'];
-          };
-        };
-        401: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Editar preferencias (gustos, pueblo, formato de aviso…) */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['UsuarioEditar'];
-        };
-      };
-      responses: {
-        /** @description Usuario */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['usuario'];
-          };
-        };
-        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` */
-        401: components['responses']['Error'];
-        /** @description 409 `telefono_en_uso` (ese teléfono ya es de otro usuario) */
-        409: components['responses']['Error'];
-        /** @description 422 `validacion` o `municipio_no_encontrado` */
-        422: components['responses']['Error'];
-      };
-    };
-    trace?: never;
-  };
-  '/api/v1/usuarios/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components['parameters']['Id'];
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Editar las preferencias de un usuario desde el bot (gustos, pueblo, formato de aviso…)
-     * @description Igual que `PATCH /usuarios/me`, pero para servicios internos: el bot guarda lo que la vecina le dice
-     *     por chat («me gustan las rutas», «avísame con audios»). Solo cambia los campos que se envían.
-     *     `/usuarios/me` sigue igual (su ruta es fija y no choca con `{id}`, que es un UUID).
-     */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: components['parameters']['Id'];
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['UsuarioEditar'];
-        };
-      };
-      responses: {
-        /** @description Usuario */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['usuario'];
-          };
-        };
-        /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
-        401: components['responses']['Error'];
-        /** @description 404 `usuario_no_encontrado` */
-        404: components['responses']['Error'];
-        /** @description 409 `telefono_en_uso` (ese teléfono ya es de otro usuario) */
-        409: components['responses']['Error'];
-        /** @description 422 `validacion` o `municipio_no_encontrado` */
-        422: components['responses']['Error'];
-      };
-    };
-    trace?: never;
-  };
-  '/api/v1/estadisticas': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Datos del panel (actividades, importadas solas, asistencia, ocupación, solapamientos, tokens) */
-    get: {
-      parameters: {
-        query?: {
-          desde?: string;
-          hasta?: string;
-          municipio?: string;
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Estadísticas */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['Estadisticas'];
-          };
-        };
-        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión de moderador ni X-Internal-Token) */
-        401: components['responses']['Error'];
-        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
-        403: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/metrics/tokens': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** El bot registra cada llamada a la IA (criterio «coste en tokens») */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['MetricaTokens'];
-        };
-      };
-      responses: {
-        /** @description Registrado */
-        202: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/admin/bot/metricas': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Cifras del bot para el panel de robustez (tokens por proveedor, últimas llamadas, cola, caída simulada)
-     * @description La API llama a `bot GET /metrics` con su `X-Internal-Token` y devuelve el JSON tal cual, para no poner
-     *     el token interno en el navegador.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Métricas del bot */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['MetricasBot'];
-          };
-        };
-        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
-        401: components['responses']['Error'];
-        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
-        403: components['responses']['Error'];
-        /** @description 502 `bot_no_disponible` (el bot respondió con error; details.status) */
-        502: components['responses']['Error'];
-        /** @description 503 `bot_no_disponible` (el bot no responde) */
-        503: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/admin/bot/simular-caida': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Activa o desactiva la caída simulada de la IA en el bot (demo de robustez)
-     * @description La API reenvía el cuerpo a `bot POST /admin/simular-caida` con su `X-Internal-Token` y devuelve lo que
-     *     responde el bot. Con la caída activa, el bot sigue funcionando solo con reglas.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['CaidaSimulada'];
-        };
-      };
-      responses: {
-        /** @description Estado de la caída simulada tras el cambio */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['CaidaSimulada'];
-          };
-        };
-        /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
-        401: components['responses']['Error'];
-        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
-        403: components['responses']['Error'];
-        /** @description 422 `validacion` */
-        422: components['responses']['Error'];
-        /** @description 502 `bot_no_disponible` (el bot respondió con error; details.status) */
-        502: components['responses']['Error'];
-        /** @description 503 `bot_no_disponible` (el bot no responde) */
-        503: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/admin/sugerencias': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * N7: la IA propone planes nuevos a partir de los que tuvieron mucha participación
-     * @description La API elige los planes con más participación (ocupación, inscritos, lista de espera, asistencias y
-     *     preguntas en el chat; publicados o finalizados) y se los pasa a `bot POST /ai/sugerir-eventos` (N8), que propone
-     *     de 1 a 3 planes nuevos («repetir la Ruta Solidaria en primavera: se llenó y hubo 6 en lista de espera»);
-     *     sus `propuestas` son los `items` de la respuesta.
-     *     Si el bot no responde, la API propone por reglas (repetir el de más participación) y `proveedor_ia` vale
-     *     `reglas`: nunca falla por la IA. No guarda nada: cada llamada calcula de nuevo. «Descartar» lo hace la web.
-     *     La IA propone y una persona decide: nada se publica sin pasar por la bandeja.
-     */
-    get: {
-      parameters: {
-        query?: {
-          /** @description Solo planes de ese pueblo */
-          municipio?: string;
-          limite?: number;
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Propuestas y los planes en que se basan */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['Sugerencias'];
-          };
-        };
-        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` */
-        401: components['responses']['Error'];
-        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
-        403: components['responses']['Error'];
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/admin/sugerencias/borrador': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * N7: [Crear borrador] convierte una propuesta en un plan que espera en la bandeja
-     * @description Crea el evento en `en_revision` con motivo «Propuesto por la IA a partir de …»: el moderador lo revisa,
-     *     ajusta la fecha y lo que haga falta (`PATCH /eventos/{id}`) y lo aprueba (`POST /moderacion/{id}/decision`).
-     *     Al aprobarlo se avisa a los interesados como a cualquier plan nuevo (A10).
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['BorradorSugerencia'];
-        };
-      };
-      responses: {
-        /** @description Evento creado en la bandeja */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['evento'];
-          };
-        };
-        /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` */
-        401: components['responses']['Error'];
-        /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
-        403: components['responses']['Error'];
-        /** @description 422 `validacion` o `municipio_no_encontrado` */
-        422: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/webhook/twilio': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Entrada de WhatsApp (Twilio). Responde TwiML con acuse inmediato. */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/x-www-form-urlencoded': {
-            From?: string;
-            Body?: string;
-            NumMedia?: number;
-            MediaUrl0?: string;
-            MediaContentType0?: string;
-            Latitude?: number;
-            Longitude?: number;
-          };
-        };
-      };
-      responses: {
-        /** @description TwiML */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/xml': string;
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/webhook/telegram': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Entrada de Telegram (Update de la Bot API). El usuario es `tg:<chat_id>`.
-     * @description Telegram envía la cabecera `X-Telegram-Bot-Api-Secret-Token` con el secreto registrado en setWebhook.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: {
-          'X-Telegram-Bot-Api-Secret-Token'?: string;
-        };
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': Record<string, never>;
-        };
-      };
-      responses: {
-        /** @description Recibido (se procesa en segundo plano) */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/webhook/meta': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Verificación del webhook de WhatsApp Cloud API (Meta) con `hub.challenge` */
-    get: {
-      parameters: {
-        query?: {
-          'hub.mode'?: string;
-          'hub.verify_token'?: string;
-          'hub.challenge'?: string;
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Devuelve `hub.challenge` */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'text/plain': string;
-          };
-        };
-      };
-    };
-    put?: never;
-    /** Entrada de WhatsApp Cloud API (Meta). Firma en la cabecera `X-Hub-Signature-256`. */
-    post: {
-      parameters: {
-        query?: never;
-        header?: {
-          'X-Hub-Signature-256'?: string;
-        };
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': Record<string, never>;
-        };
-      };
-      responses: {
-        /** @description Recibido (se procesa en segundo plano) */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/dev/mensaje': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Simulador de chat (web o tests). Devuelve lo que contestaría el bot. */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** @description Contacto del remitente: +34… o tg:<chat_id> */
-            de: string;
-            texto: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Respuestas del bot */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              respuestas: unknown[];
+            requestBody?: never;
+            responses: {
+                /** @description Choques y días libres */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            choques: {
+                                /** Format: uuid */
+                                evento_id: string;
+                                titulo: string;
+                                municipio: string;
+                                /** Format: date-time */
+                                fecha_inicio: string;
+                                distancia_km: number;
+                            }[];
+                            alternativas: string[];
+                        };
+                    };
+                };
+                /** @description 422 `validacion` (fecha sin zona o mal escrita) o `municipio_no_encontrado` */
+                422: components["responses"]["Error"];
             };
-          };
         };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/notify': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * La api pide enviar un aviso
-     * @description Va a `contacto` si viene (p. ej. `tg:<chat_id>`) y si no a `telefono`. En WhatsApp, fuera de la ventana
-     *     de 24 h, se usa `plantilla` + `parametros`; los demás canales envían `texto`.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['notificacion'];
+    "/api/v1/lugares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-      responses: {
-        /** @description Enviado */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              enviado: boolean;
+        /** Información permanente de los pueblos (rutas, sitios, comercios, alojamientos, servicios) */
+        get: {
+            parameters: {
+                query?: {
+                    municipio?: string;
+                    tipo?: "ruta" | "sitio_interes" | "comercio" | "alojamiento" | "servicio";
+                    lat?: number;
+                    lon?: number;
+                    radio_km?: number;
+                    page?: components["parameters"]["Page"];
+                    size?: components["parameters"]["Size"];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
             };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/ai/extraer': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Texto → ExtraccionEvento */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            texto: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Extracción */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['extraccion_evento'];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/ai/spam': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Puntuación de spam de un texto (evento o mensaje del chat) */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            texto: string;
-            /** @enum {unknown} */
-            contexto?: 'evento' | 'mensaje';
-            /** Format: uuid */
-            publicador_id?: string | null;
-          };
-        };
-      };
-      responses: {
-        /** @description Resultado */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              score_spam: number;
-              es_spam: boolean;
-              motivo?: string | null;
-              proveedor_ia?: string;
-              /**
-               * @description (N9, opcional) Qué es: `spam` (publicidad ajena, apuestas, cadenas, enlaces sospechosos) o
-               *     `fraude` (pide pago por adelantado, Bizum o datos bancarios, precios irreales, suplanta a un
-               *     ayuntamiento o asociación…). `ninguno` si es legítimo. `es_spam` es true en los dos casos, así
-               *     que quien no lea este campo sigue funcionando igual. El moderador ve el tipo en el motivo.
-               * @enum {unknown}
-               */
-              tipo?: 'ninguno' | 'spam' | 'fraude';
+            requestBody?: never;
+            responses: {
+                /** @description Página de lugares */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaginaLugares"];
+                    };
+                };
             };
-          };
         };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/ai/responder-ficha': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Responde una pregunta usando solo la ficha del evento */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            evento: components['schemas']['evento'];
-            pregunta: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Respuesta */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** @description false = no está en la ficha */
-              puede_responder: boolean;
-              respuesta?: string | null;
-              proveedor_ia?: string;
+    "/api/v1/lugares/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
             };
-          };
+            cookie?: never;
         };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/ai/sugerir-eventos': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * (N8) Propone planes nuevos a partir de los que más participación tuvieron
-     * @description La llama la API (N7) con los planes con más participación (ocupación, inscritos, lista de espera, preguntas
-     *     en el chat). Devuelve de 1 a `maximo` propuestas para los administradores, que deciden si crean el borrador.
-     *     La IA solo propone y no inventa datos: cada propuesta dice en qué planes se basa (`basado_en`) y por qué.
-     *     IA con FreeLLM primero; sin IA, propuestas por reglas (repetir el plan que más se llenó).
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            planes: {
-              /** Format: uuid */
-              evento_id?: string;
-              titulo: string;
-              categoria: components['schemas']['Categoria'];
-              municipio: string;
-              /** Format: date-time */
-              fecha_inicio: string;
-              plazas_totales?: number | null;
-              inscritos: number;
-              /** @default 0 */
-              lista_espera?: number;
-              /** @default 0 */
-              preguntas_chat?: number;
-            }[];
-            /** @default 3 */
-            maximo?: number;
-          };
-        };
-      };
-      responses: {
-        /** @description Propuestas (puede venir vacía si nada destaca) */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              propuestas: {
-                titulo: string;
-                categoria: components['schemas']['Categoria'];
-                municipio: string;
-                /** @description Texto libre: «primavera», «mayo de 2027», «el próximo puente» */
-                fecha_aproximada?: string | null;
-                /** @description Por qué, con datos de los planes recibidos (se llenó, 6 en lista de espera…) */
-                motivo: string;
-                /** @description evento_id de los planes en que se basa */
-                basado_en?: string[];
-              }[];
-              proveedor_ia?: string;
+        /** Ficha de un lugar */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
             };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/ai/preferencias': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** «Me gustan las rutas» → gustos estructurados */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            texto: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Preferencias */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              gustos?: components['schemas']['Categoria'][];
-              etiquetas_interes?: string[];
-              municipio?: string | null;
-              /** @enum {unknown} */
-              formato_aviso?: 'texto' | 'audio';
+            requestBody?: never;
+            responses: {
+                /** @description Lugar */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["lugar"];
+                    };
+                };
+                404: components["responses"]["Error"];
             };
-          };
         };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/ai/embeddings': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * (RAG) Textos → vectores para buscar planes por parecido
-     * @description La llama la API para indexar los planes (`tipo: documento`) y para la pregunta del buscador (`tipo: consulta`).
-     *     Cadena de proveedores: Gemini `gemini-embedding-001` (dimensión 768) y, si falla, NVIDIA `nemotron-3.5-embed-1b`.
-     *     Solo se comparan vectores del mismo `modelo`: si cambia, la API vuelve a indexar.
-     *     Sin proveedor disponible responde 503 y la API sigue buscando sin embeddings (reglas y palabras clave).
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            textos: string[];
-            /**
-             * @default documento
-             * @enum {unknown}
-             */
-            tipo?: 'documento' | 'consulta';
-          };
+    "/api/v1/eventos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-      responses: {
-        /** @description Un vector por texto, en el mismo orden */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** @description Modelo que generó los vectores (p. ej. gemini-embedding-001) */
-              modelo: string;
-              dimension: number;
-              vectores: number[][];
+        /**
+         * Agenda y mapa. Público solo ve `publicado`.
+         * @description Sin sesión, el público ve `publicado` (por defecto) y también puede pedir `estado=finalizado`
+         *     (planes ya pasados, para la pestaña «Recuerdos»). Los demás estados solo los ven el moderador
+         *     y el publicador (sus eventos). `datos_ayuntamiento` nunca aparece en esta lista pública.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    municipio?: string;
+                    categoria?: components["schemas"]["Categoria"];
+                    desde?: string;
+                    hasta?: string;
+                    lat?: number;
+                    lon?: number;
+                    radio_km?: number;
+                    /** @description Texto libre en título y descripción */
+                    q?: string;
+                    /** @description Por defecto `publicado`. Sin sesión también se admite `finalizado` (planes pasados, «Recuerdos»). Los demás estados, solo moderador y publicador (sus eventos). */
+                    estado?: components["schemas"]["EstadoEvento"];
+                    publicador_id?: string;
+                    /**
+                     * @description P5a, «Mis planes propuestos» (opcional). Id del usuario: los planes que propuso (`propuesto_por_id`) o los de sus
+                     *     entidades, en todos los estados salvo `borrador` (o solo en `estado`, si se manda), los más recientes primero.
+                     *     Solo para el propio usuario, un moderador o el servicio interno (el bot); para otro, la lista sale vacía.
+                     */
+                    organizador_id?: string;
+                    page?: components["parameters"]["Page"];
+                    size?: components["parameters"]["Size"];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
             };
-          };
-        };
-        /** @description 401 `token_interno_invalido` */
-        401: components['responses']['Error'];
-        /** @description 503: ningún proveedor de embeddings disponible (la API sigue sin embeddings) */
-        503: components['responses']['Error'];
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/ai/responder-agenda': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * (RAG) Responde una pregunta sobre la agenda usando solo los planes que recibe
-     * @description La llama la API (`POST /api/v1/buscar`) con los planes recuperados. Respuesta breve (2–4 frases) en español
-     *     sencillo, solo con los planes recibidos: no inventa planes, fechas ni precios. `evento_ids` solo puede contener
-     *     ids de `planes` (la API lo comprueba igualmente). Con `planes` vacío dice que no hay nada que encaje.
-     *     Sin IA, respuesta por plantilla y `proveedor_ia: reglas`.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            pregunta: string;
-            planes: components['schemas']['PlanContexto'][];
-            /**
-             * Format: date-time
-             * @description Fecha y hora de referencia para «este finde», «mañana»…
-             */
-            hoy?: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Respuesta */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              respuesta: string;
-              /** @description Planes que nombra la respuesta (solo ids de `planes`) */
-              evento_ids: string[];
-              proveedor_ia: string;
+            requestBody?: never;
+            responses: {
+                /** @description Página de eventos */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaginaEventos"];
+                    };
+                };
+                422: components["responses"]["Error"];
             };
-          };
         };
-      };
+        put?: never;
+        /** Crear evento a mano (publicador o moderador) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["EventoCrear"];
+                };
+            };
+            responses: {
+                /** @description Creado */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["evento"];
+                    };
+                };
+                401: components["responses"]["Error"];
+                403: components["responses"]["Error"];
+                /** @description 422 `validacion` o `imagen_invalida` (imagen_url no es URL http(s) ni data URL de imagen, o pasa de ~1,5 MB) */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/api/v1/eventos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Ficha del evento
+         * @description `datos_ayuntamiento` solo aparece si quien pide es el organizador del evento o un moderador (con sesión bearer).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Evento */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["evento"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Editar evento. Si cambia `fecha_inicio`, avisa a todos los inscritos (`cambio_evento`) y fija un anuncio. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["EventoEditar"];
+                };
+            };
+            responses: {
+                /** @description Evento actualizado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["evento"];
+                    };
+                };
+                /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
+                401: components["responses"]["Error"];
+                /** @description 403 `prohibido` (solo el organizador del evento o un moderador) */
+                403: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 422 `validacion`, `fechas_invalidas` (fecha_fin anterior a fecha_inicio) o `imagen_invalida` (imagen_url no es URL http(s) ni data URL de imagen, o pasa de ~1,5 MB) */
+                422: components["responses"]["Error"];
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/eventos/importar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * El bot entrega una ExtraccionEvento + origen. Crea el evento en `pendiente_confirmacion`.
+         * @description Si ya existe un evento con el mismo `origen.url`, devuelve ese (`duplicado = true`) y no crea otro.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ImportarEvento"];
+                };
+            };
+            responses: {
+                /** @description Ya existía (mismo origen.url) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResultadoImportacion"];
+                    };
+                };
+                /** @description Evento creado */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResultadoImportacion"];
+                    };
+                };
+                /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+                401: components["responses"]["Error"];
+                /** @description 403 `publicador_pausado` o `publicador_rechazado` (la solicitud del publicador fue rechazada) */
+                403: components["responses"]["Error"];
+                /** @description 422 `validacion`, `no_es_evento`, `publicador_no_encontrado` o `municipio_no_encontrado` */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/eventos/{id}/confirmar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** El publicador completa lo que falta y confirma. Pasa a moderación (`en_revision` o `publicado` según nivel). */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ConfirmarEvento"];
+                };
+            };
+            responses: {
+                /** @description Evento tras la moderación automática */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResultadoImportacion"];
+                    };
+                };
+                /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+                401: components["responses"]["Error"];
+                /** @description 403 `publicador_pausado` o `publicador_rechazado` */
+                403: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 409 `estado_invalido` (el evento no está en `pendiente_confirmacion`) */
+                409: components["responses"]["Error"];
+                /** @description 422 `faltan_campos` (details.faltan), `validacion`, `municipio_no_encontrado` o `fechas_invalidas` */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/eventos/{id}/apelacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * P3a: el organizador pide que se revise otra vez un plan rechazado (una sola vez)
+         * @description Solo quien propuso el plan: el responsable de su publicador o el vecino que lo propuso (con su sesión), o el
+         *     bot en su nombre (`X-Internal-Token` + `usuario_id`). Solo si el plan está `rechazado` y **una vez**: el
+         *     plan vuelve a `en_revision`, a la bandeja, con el motivo «Apelación: {motivo}» y guarda `apelacion` en el
+         *     evento. El moderador decide con los botones de siempre; un segundo rechazo es definitivo (no se puede
+         *     volver a apelar). El aviso de rechazo al publicador lleva `evento_id`, para que el bot ponga [Apelar].
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @description Por qué debería publicarse */
+                        motivo: string;
+                        /**
+                         * Format: uuid
+                         * @description Obligatorio con X-Internal-Token (el bot): quién apela
+                         */
+                        usuario_id?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description El plan vuelve a la bandeja */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["evento"];
+                    };
+                };
+                /** @description 401 `no_autenticado` */
+                401: components["responses"]["Error"];
+                /** @description 403 `prohibido` (no es quien propuso el plan) */
+                403: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 409 `estado_invalido` (no está rechazado) o `apelacion_usada` (ya apeló una vez) */
+                409: components["responses"]["Error"];
+                /** @description 422 `validacion` (motivo de menos de 10 o más de 500 caracteres) */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/eventos/{id}/inscripciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Lista de inscritos (solo organizador y moderador) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Inscripciones */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["inscripcion"][];
+                    };
+                };
+                /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
+                401: components["responses"]["Error"];
+                /** @description 403 `prohibido` (solo el organizador del evento o un moderador) */
+                403: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` */
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        /** Apuntarse. Si no hay plazas, queda en `lista_espera`. Si el plan ya ha terminado, 409 `evento_finalizado`. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["InscripcionCrear"];
+                };
+            };
+            responses: {
+                /** @description Inscripción */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["inscripcion"];
+                    };
+                };
+                /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
+                401: components["responses"]["Error"];
+                /** @description 403 `prohibido` (con sesión solo puedes inscribirte a ti mismo) */
+                403: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` o `usuario_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 409 `ya_inscrito` (details.inscripcion_id), `evento_no_inscribible` (el evento no está publicado) o `evento_terminado` */
+                409: components["responses"]["Error"];
+                /** @description 422 `falta_usuario_id` (con X-Internal-Token hay que indicar usuario_id) o `validacion` */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/eventos/{id}/inscripciones/{insc_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+                insc_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Cancelar. El primero de la lista de espera sube a `confirmada` y se le avisa. */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                    insc_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Inscripción cancelada */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["inscripcion"];
+                    };
+                };
+                /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
+                401: components["responses"]["Error"];
+                /** @description 403 `prohibido` (solo quien se apuntó, el organizador o un moderador) */
+                403: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` o `inscripcion_no_encontrada` */
+                404: components["responses"]["Error"];
+                /** @description 409 `inscripcion_cerrada` (ya se marcó la asistencia) */
+                409: components["responses"]["Error"];
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Marcar asistencia (organizador o moderador) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                    insc_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {unknown} */
+                        estado: "asistio" | "no_asistio";
+                    };
+                };
+            };
+            responses: {
+                /** @description Inscripción */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["inscripcion"];
+                    };
+                };
+                /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
+                401: components["responses"]["Error"];
+                /** @description 403 `prohibido` (solo el organizador del evento o un moderador) */
+                403: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` o `inscripcion_no_encontrada` */
+                404: components["responses"]["Error"];
+                /** @description 409 `inscripcion_sin_plaza` (solo se marca la asistencia de quien tenía plaza) */
+                409: components["responses"]["Error"];
+                /** @description 422 `validacion` */
+                422: components["responses"]["Error"];
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/eventos/{id}/coche": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Compartir coche. El vecino (apuntado con plaza a un plan de otro pueblo) dice si quiere ir con los de su pueblo. Con un sí, si otro vecino del mismo pueblo ya dijo que sí, se avisa a los dos con el contacto. Nunca se pasa el contacto de quien no ha dicho que sí. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CocheRespuesta"];
+                };
+            };
+            responses: {
+                /** @description Respuesta guardada */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {unknown} */
+                            respuesta: "si" | "no";
+                            /** @description Contacto de los vecinos del mismo pueblo que ya dijeron que sí («Nombre (+34…)») */
+                            companeros: string[];
+                        };
+                    };
+                };
+                /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` */
+                401: components["responses"]["Error"];
+                /** @description 403 `prohibido` (con sesión solo respondes por ti) */
+                403: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` o `usuario_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 409 `coche_no_disponible` (no está apuntado con plaza, vive en el pueblo del plan o el plan ya no está publicado) */
+                409: components["responses"]["Error"];
+                /** @description 422 `falta_usuario_id` o `validacion` */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/eventos/{id}/me-gusta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Cuántos «me gusta» tiene el plan y si el usuario de la sesión ya le ha dado (sin sesión, mio=false) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Estado del «me gusta» */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MeGustaEstado"];
+                    };
+                };
+                /** @description 404 `evento_no_encontrado` */
+                404: components["responses"]["Error"];
+            };
+        };
+        /** Dar «me gusta» al plan (solo con cuenta; repetirlo no suma otra vez) */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Estado del «me gusta» tras darlo */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MeGustaEstado"];
+                    };
+                };
+                /** @description 401 `no_autenticado` */
+                401: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` */
+                404: components["responses"]["Error"];
+            };
+        };
+        post?: never;
+        /** Quitar el «me gusta» del usuario de la sesión */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Estado del «me gusta» tras quitarlo */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MeGustaEstado"];
+                    };
+                };
+                /** @description 401 `no_autenticado` */
+                401: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` */
+                404: components["responses"]["Error"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/eventos/{id}/mensajes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Chat del evento. Anuncios fijados primero. Nunca expone teléfonos. */
+        get: {
+            parameters: {
+                query?: {
+                    page?: components["parameters"]["Page"];
+                    size?: components["parameters"]["Size"];
+                };
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Mensajes */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaginaMensajes"];
+                    };
+                };
+                /** @description 401 `token_invalido` o `token_caducado` (se envió una sesión no válida; sin sesión es público) */
+                401: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` */
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        /** Publicar mensaje. Pasa por `bot /ai/spam`; si es pregunta, `bot /ai/responder-ficha`. Con el plan terminado solo se admiten comentarios (si no, 409 `evento_finalizado`). */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MensajeCrear"];
+                };
+            };
+            responses: {
+                /** @description Mensaje (y respuesta de la IA si la hubo) */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            mensaje: components["schemas"]["mensaje_evento"];
+                            respuesta_ia?: components["schemas"]["mensaje_evento"] | null;
+                        };
+                    };
+                };
+                /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
+                401: components["responses"]["Error"];
+                /** @description 403 `prohibido` (escribir en nombre de otro, o un anuncio sin ser organizador ni moderador) o `usuario_silenciado` (el organizador o un moderador le ha silenciado en el chat de este evento) */
+                403: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` o `usuario_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 409 `chat_cerrado` (el evento no admite mensajes por su estado; details.estado) */
+                409: components["responses"]["Error"];
+                /** @description 422 `mensaje_spam` (details.score_spam y details.motivo), `falta_usuario_id`, `mensaje_no_encontrado` (en_respuesta_a no es de este evento) o `validacion` */
+                422: components["responses"]["Error"];
+                /** @description 429 `demasiados_mensajes`: más de 8 mensajes por minuto de la misma persona (salvo organizador y moderadores); details.reintentar_en_s */
+                429: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/eventos/{id}/mensajes/{msg_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+                msg_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Fijar u ocultar (organizador o moderador) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                    msg_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        fijado?: boolean;
+                        oculto?: boolean;
+                        /** @description Solo organizador o moderador: el autor no puede volver a escribir en el chat de este evento */
+                        silenciar_autor?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Mensaje */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["mensaje_evento"];
+                    };
+                };
+                /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión ni X-Internal-Token, o sesión no válida) */
+                401: components["responses"]["Error"];
+                /** @description 403 `prohibido` (solo el organizador o un moderador fijan, ocultan o silencian; el autor solo puede ocultar su propio mensaje) */
+                403: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` o `mensaje_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 409 `no_silenciable` (con `silenciar_autor: true`, el autor es el organizador del evento o un moderador, o el mensaje no tiene autor, como las respuestas de la IA) */
+                409: components["responses"]["Error"];
+                /** @description 422 `validacion` */
+                422: components["responses"]["Error"];
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/eventos/{id}/ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Evento en formato iCalendar (zona Europe/Madrid)
+         * @description Las fechas (`DTSTART`, `DTEND`, `DTSTAMP`) van en UTC con sufijo `Z`: equivalen a la hora de Europe/Madrid
+         *     del evento y cada calendario las muestra en su zona local. Excepción: los eventos con la etiqueta
+         *     `sin_hora` van de día completo (`VALUE=DATE`, con la fecha de Madrid). Sin `fecha_fin`, dura 2 horas.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Archivo .ics */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/calendar": string;
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agenda.ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Agenda pública para suscribirse desde Google Calendar, Apple u Outlook
+         * @description Feed iCalendar con los planes publicados (y los cancelados, para que el calendario los tache) que acaban
+         *     desde hace 7 días en adelante. Mismo formato que `/eventos/{id}/ics`. Pensado para suscribirse por URL
+         *     (Google Calendar → «Desde URL»): el calendario lo vuelve a leer solo cada pocas horas.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Solo los planes de ese pueblo */
+                    municipio?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Archivo .ics */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/calendar": string;
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/usuarios/me/ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Todos los eventos en los que el usuario está confirmado */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Archivo .ics */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/calendar": string;
+                    };
+                };
+                401: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recomendaciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Eventos recomendados con motivo legible */
+        get: {
+            parameters: {
+                query: {
+                    usuario_id: string;
+                    limite?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Recomendaciones ordenadas por puntuación */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["Recomendacion"][];
+                        };
+                    };
+                };
+                /** @description 401 `no_autenticado` (sin sesión ni X-Internal-Token), `token_invalido` o `token_caducado` */
+                401: components["responses"]["Error"];
+                /** @description 403 `prohibido` (solo puedes ver tus propias recomendaciones, salvo moderador) */
+                403: components["responses"]["Error"];
+                /** @description 404 `usuario_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 422 `validacion` (usuario_id no es UUID o limite fuera de 1-20) */
+                422: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/buscar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Buscador con IA (RAG): «¿qué hay este finde para niños cerca de Senés?» → respuesta breve con los planes
+         * @description La API recupera los planes `publicado` que no han terminado más parecidos a la pregunta: filtros por reglas
+         *     (fechas, pueblo, tipo, gratis, niños), más parecido por embeddings (que pide a `bot POST /ai/embeddings`) y
+         *     más palabras clave. Le pasa a `bot POST /ai/responder-agenda` solo esos planes (`PlanContexto`) y valida que
+         *     la respuesta cite solo planes recuperados: los `evento_ids` que no estén entre ellos se descartan.
+         *     Si el bot no responde, responde con una plantilla y los mismos planes (`modo: palabras`).
+         *     Nunca devuelve un plan que no exista. No guarda nada.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BusquedaIA"];
+                };
+            };
+            responses: {
+                /** @description Respuesta para la persona y los planes en que se basa */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RespuestaBusqueda"];
+                    };
+                };
+                /** @description 422 `validacion` (pregunta de menos de 3 o más de 300 caracteres, o limite fuera de 1-8) */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/moderacion/pendientes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bandeja del moderador (eventos en revisión y publicadores por aprobar), con motivo */
+        get: {
+            parameters: {
+                query?: {
+                    page?: components["parameters"]["Page"];
+                    size?: components["parameters"]["Size"];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Pendientes */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaginaPendientes"];
+                    };
+                };
+                /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+                401: components["responses"]["Error"];
+                /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+                403: components["responses"]["Error"];
+                /** @description 422 `validacion` (page o size fuera de rango) */
+                422: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/moderacion/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID del evento */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Aprobar, rechazar, retirar o restaurar un evento */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description ID del evento */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["Decision"];
+                };
+            };
+            responses: {
+                /** @description Evento tras la decisión */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["evento"];
+                    };
+                };
+                /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+                401: components["responses"]["Error"];
+                /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+                403: components["responses"]["Error"];
+                /** @description 404 `evento_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 409 `estado_invalido` (la decisión no vale para el estado actual, p. ej. otro moderador ya decidió; details.estado y details.decision) */
+                409: components["responses"]["Error"];
+                /** @description 422 `validacion` */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/publicadores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lista de publicadores
+         * @description `responsable` y `actividad` solo aparecen con sesión de moderador.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    estado?: "solicitado" | "whatsapp_verificado" | "aprobado" | "rechazado" | "pausado";
+                    municipio?: string;
+                    page?: components["parameters"]["Page"];
+                    size?: components["parameters"]["Size"];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Página de publicadores */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaginaPublicadores"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Solicitar ser publicador (queda en `solicitado` hasta verificar el WhatsApp) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PublicadorCrear"];
+                };
+            };
+            responses: {
+                /** @description Publicador */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["publicador"];
+                    };
+                };
+                /** @description 401 `no_autenticado` (ni X-Internal-Token válido ni sesión) */
+                401: components["responses"]["Error"];
+                /** @description 403 `prohibido` (con sesión, el teléfono tiene que ser el de tu cuenta) */
+                403: components["responses"]["Error"];
+                /** @description 409 `publicador_ya_existe` (ya hay un publicador con ese teléfono; details.publicador_id) */
+                409: components["responses"]["Error"];
+                /** @description 422 `validacion`, `municipio_no_encontrado`, `falta_telefono` (la cuenta no tiene teléfono) o `solo_ayuntamientos` (con SOLO_AYUNTAMIENTOS=true, por defecto, solo se admite `tipo: ayuntamiento`) */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/publicadores/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Ficha del publicador
+         * @description `responsable` y `actividad` solo aparecen con sesión de moderador.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Publicador */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["publicador"];
+                    };
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/publicadores/{id}/aprobar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * El moderador aprueba (o rechaza) la entidad
+         * @description También sirve para cambiar `nivel_confianza` de un publicador que ya está `aprobado` (con `aprobar: true`):
+         *     la web lo usa para pasarlo a publicación automática (nivel 2) o devolverlo a publicación a mano (nivel 0).
+         *     Solo hay dos modos (ver `enums.md`): el nivel 1 está obsoleto, se acepta por compatibilidad y se guarda como 0.
+         *     En un publicador ya aprobado, si no se envía `nivel_confianza`, el nivel no cambia.
+         *
+         *     Pasar a nivel 2 exige las reglas de `apps/web/src/admin/confianza.ts`, calculadas por la API:
+         *     - responsable identificado: `responsable` con `dni` y `residencia` y `identidad_verificada = true`;
+         *     - al menos 3 planes aprobados en los últimos 60 días (`actividad.planes_60_dias >= 3`);
+         *     - ningún plan rechazado en los últimos 60 días (`actividad.rechazados_60_dias = 0`);
+         *     - algún plan aprobado en los últimos 90 días (`actividad.ultimo_plan`).
+         *     Si falta alguna, 409 `reglas_confianza_no_cumplidas` con `details.faltan` = lista de las que fallan
+         *     (`identidad_verificada`, `planes_60_dias`, `rechazados_60_dias`, `ultimo_plan`). Pasar a mano (0) no exige nada.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @default true */
+                        aprobar?: boolean;
+                        /**
+                         * @default 0
+                         * @enum {unknown}
+                         */
+                        nivel_confianza?: 0 | 1 | 2;
+                        motivo?: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Publicador */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["publicador"];
+                    };
+                };
+                /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+                401: components["responses"]["Error"];
+                /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+                403: components["responses"]["Error"];
+                /** @description 404 `publicador_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 409 `estado_invalido` (el publicador no está pendiente de aprobación ni aprobado, o se intenta rechazar uno ya aprobado; details.estado) o `reglas_confianza_no_cumplidas` (nivel 2 sin cumplir las reglas; details.faltan) */
+                409: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/publicadores/{id}/verificar-identidad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * El moderador marca como comprobados el DNI y la residencia del responsable
+         * @description Pone `responsable.identidad_verificada` (por defecto `true`). Es uno de los requisitos para el nivel 2.
+         *     Desmarcarla no baja el nivel por sí sola: para eso, `POST /publicadores/{id}/aprobar` con otro nivel.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @default true */
+                        identidad_verificada?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Publicador (con `responsable` actualizado) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["publicador"];
+                    };
+                };
+                /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+                401: components["responses"]["Error"];
+                /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+                403: components["responses"]["Error"];
+                /** @description 404 `publicador_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 409 `sin_datos_responsable` (el publicador no tiene responsable con dni y residencia) */
+                409: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/publicadores/{id}/pausar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pausar (o reactivar) un publicador o solo sus automatizaciones */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {unknown} */
+                        que: "publicador" | "automatizaciones";
+                        pausado: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Publicador */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["publicador"];
+                    };
+                };
+                /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+                401: components["responses"]["Error"];
+                /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+                403: components["responses"]["Error"];
+                /** @description 404 `publicador_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 409 `estado_invalido` (solo se pausa o reactiva un publicador aprobado; details.estado) */
+                409: components["responses"]["Error"];
+                /** @description 422 `validacion` */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/publicadores/{id}/fuentes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Conectar una fuente (Facebook, Instagram, web) que el bot vigila */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {unknown} */
+                        canal: "facebook" | "instagram" | "web_externa";
+                        url: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Publicador con la fuente añadida */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["publicador"];
+                    };
+                };
+                /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+                401: components["responses"]["Error"];
+                403: components["responses"]["Error"];
+                /** @description 404 `publicador_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 409 `fuente_ya_existe` (details.publicador_id) o `estado_invalido` (el publicador está rechazado) */
+                409: components["responses"]["Error"];
+                /** @description 422 `validacion` */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Valida el id_token de Google y devuelve un JWT propio con rol */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        id_token: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Sesión */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Token"];
+                    };
+                };
+                /** @description 401 `token_google_invalido` o `email_no_verificado` */
+                401: components["responses"]["Error"];
+                /** @description 503 `google_no_configurado` (falta GOOGLE_CLIENT_ID) o `google_no_disponible` */
+                503: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/whatsapp/codigo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Envía un código de un solo uso por WhatsApp (vía bot /notify) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        telefono: components["schemas"]["Telefono"];
+                    };
+                };
+            };
+            responses: {
+                /** @description Código enviado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            enviado: boolean;
+                            /** Format: date-time */
+                            expira_en: string;
+                        };
+                    };
+                };
+                /** @description 429 `demasiados_codigos` (details.maximo_por_hora) */
+                429: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/whatsapp/verificar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verifica el código. Marca el WhatsApp como verificado y devuelve sesión. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        telefono: components["schemas"]["Telefono"];
+                        codigo: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Sesión */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Token"];
+                    };
+                };
+                /** @description 401 `codigo_invalido` (incorrecto o caducado) */
+                401: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Acceso de la moderación del ayuntamiento con usuario y contraseña
+         * @description Comprueba `usuario` y `contrasena` contra `ADMIN_USUARIO` y `ADMIN_CONTRASENA` del `.env` (provisional para
+         *     la demo: `admin` / `1234`; cambiarla en la máquina de la demo) y devuelve la sesión del moderador más antiguo.
+         *     Funciona con y sin `DEMO_MODE`. La web lo pide para entrar en la pestaña de administración (`/admin`).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        usuario: string;
+                        contrasena: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Sesión de moderador */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Token"];
+                    };
+                };
+                /** @description 401 `credenciales_invalidas` (no dice cuál de los dos falla) */
+                401: components["responses"]["Error"];
+                /** @description 422 `validacion` */
+                422: components["responses"]["Error"];
+                /** @description 429 `demasiados_intentos`: 5 fallos desde la misma IP (o 30 en total) en 10 minutos; `details.reintentar_en_s` */
+                429: components["responses"]["Error"];
+                /** @description 503 `sin_moderador` (no hay ningún usuario moderador) */
+                503: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Solo en modo demo (DEMO_MODE=true): sesión como un usuario o rol sin login
+         * @description Existe solo si la API arranca con `DEMO_MODE=true` (por defecto `false`); si no, responde 404.
+         *     Sirve para que el panel y la app entren en la demo como la moderadora o como una vecina sin cuentas
+         *     de Google. Con `usuario_id` da la sesión de ese usuario; con `rol`, la del usuario más antiguo con ese rol.
+         *     Nunca da sesión de moderador (403 `demo_sin_moderador`): la moderación entra con `POST /auth/admin`.
+         *     Nunca se activa fuera de la presentación.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        usuario_id?: string;
+                        /** @enum {unknown} */
+                        rol?: "vecino" | "publicador" | "moderador";
+                    };
+                };
+            };
+            responses: {
+                /** @description Sesión */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Token"];
+                    };
+                };
+                /** @description 403 `demo_sin_moderador` */
+                403: components["responses"]["Error"];
+                404: components["responses"]["Error"];
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/usuarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Alta de usuario (el bot la usa la primera vez que escribe un teléfono nuevo) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UsuarioCrear"];
+                };
+            };
+            responses: {
+                /** @description Usuario */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["usuario"];
+                    };
+                };
+                /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+                401: components["responses"]["Error"];
+                /** @description 409 `usuario_ya_existe` (details.usuario_id) */
+                409: components["responses"]["Error"];
+                /** @description 422 `validacion` o `municipio_no_encontrado` */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/usuarios/by-phone/{e164}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                e164: components["schemas"]["Telefono"];
+            };
+            cookie?: never;
+        };
+        /** Identidad a partir del teléfono (solo servicios internos) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    e164: components["schemas"]["Telefono"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Usuario */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["usuario"];
+                    };
+                };
+                /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+                401: components["responses"]["Error"];
+                /** @description 404 `usuario_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 422 `telefono_invalido` (no está en formato E.164) */
+                422: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/usuarios/by-contacto/{contacto}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description +34… (WhatsApp; el + puede ir como %2B) o tg:<chat_id> (Telegram) */
+                contacto: components["schemas"]["Contacto"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Identidad a partir del contacto en cualquier canal (solo servicios internos)
+         * @description `by-phone` sigue igual. Errores: 404 `usuario_no_encontrado`, 422 `contacto_invalido`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description +34… (WhatsApp; el + puede ir como %2B) o tg:<chat_id> (Telegram) */
+                    contacto: components["schemas"]["Contacto"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Usuario */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["usuario"];
+                    };
+                };
+                401: components["responses"]["Error"];
+                404: components["responses"]["Error"];
+                422: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/usuarios/vincular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vincula el contacto de un canal con el teléfono (crea el usuario si no existe)
+         * @description Si no hay usuario con ese teléfono lo crea (201); si lo hay, le asigna el id del canal (200).
+         *     Si hay un publicador con ese teléfono, también se le asigna.
+         *     Errores: 409 `contacto_en_uso` (el contacto ya es de otra persona), 422 `contacto_invalido`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UsuarioVincular"];
+                };
+            };
+            responses: {
+                /** @description Usuario existente, ya vinculado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["usuario"];
+                    };
+                };
+                /** @description Usuario creado y vinculado */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["usuario"];
+                    };
+                };
+                401: components["responses"]["Error"];
+                409: components["responses"]["Error"];
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/usuarios/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Perfil del usuario autenticado */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Usuario */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["usuario"];
+                    };
+                };
+                401: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Editar preferencias (gustos, pueblo, formato de aviso…) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UsuarioEditar"];
+                };
+            };
+            responses: {
+                /** @description Usuario */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["usuario"];
+                    };
+                };
+                /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` */
+                401: components["responses"]["Error"];
+                /** @description 409 `telefono_en_uso` (ese teléfono ya es de otro usuario) */
+                409: components["responses"]["Error"];
+                /** @description 422 `validacion` o `municipio_no_encontrado` */
+                422: components["responses"]["Error"];
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/usuarios/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Editar las preferencias de un usuario desde el bot (gustos, pueblo, formato de aviso…)
+         * @description Igual que `PATCH /usuarios/me`, pero para servicios internos: el bot guarda lo que la vecina le dice
+         *     por chat («me gustan las rutas», «avísame con audios»). Solo cambia los campos que se envían.
+         *     `/usuarios/me` sigue igual (su ruta es fija y no choca con `{id}`, que es un UUID).
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UsuarioEditar"];
+                };
+            };
+            responses: {
+                /** @description Usuario */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["usuario"];
+                    };
+                };
+                /** @description 401 `token_interno_invalido` (falta X-Internal-Token o no es correcto) */
+                401: components["responses"]["Error"];
+                /** @description 404 `usuario_no_encontrado` */
+                404: components["responses"]["Error"];
+                /** @description 409 `telefono_en_uso` (ese teléfono ya es de otro usuario) */
+                409: components["responses"]["Error"];
+                /** @description 422 `validacion` o `municipio_no_encontrado` */
+                422: components["responses"]["Error"];
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/estadisticas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Datos del panel (actividades, importadas solas, asistencia, ocupación, solapamientos, tokens) */
+        get: {
+            parameters: {
+                query?: {
+                    desde?: string;
+                    hasta?: string;
+                    municipio?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Estadísticas */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Estadisticas"];
+                    };
+                };
+                /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` (sin sesión de moderador ni X-Internal-Token) */
+                401: components["responses"]["Error"];
+                /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+                403: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/metrics/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** El bot registra cada llamada a la IA (criterio «coste en tokens») */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MetricaTokens"];
+                };
+            };
+            responses: {
+                /** @description Registrado */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/bot/metricas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cifras del bot para el panel de robustez (tokens por proveedor, últimas llamadas, cola, caída simulada)
+         * @description La API llama a `bot GET /metrics` con su `X-Internal-Token` y devuelve el JSON tal cual, para no poner
+         *     el token interno en el navegador.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Métricas del bot */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MetricasBot"];
+                    };
+                };
+                /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+                401: components["responses"]["Error"];
+                /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+                403: components["responses"]["Error"];
+                /** @description 502 `bot_no_disponible` (el bot respondió con error; details.status) */
+                502: components["responses"]["Error"];
+                /** @description 503 `bot_no_disponible` (el bot no responde) */
+                503: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/bot/simular-caida": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activa o desactiva la caída simulada de la IA en el bot (demo de robustez)
+         * @description La API reenvía el cuerpo a `bot POST /admin/simular-caida` con su `X-Internal-Token` y devuelve lo que
+         *     responde el bot. Con la caída activa, el bot sigue funcionando solo con reglas.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CaidaSimulada"];
+                };
+            };
+            responses: {
+                /** @description Estado de la caída simulada tras el cambio */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CaidaSimulada"];
+                    };
+                };
+                /** @description 401 `no_autenticado` (sin sesión de moderador ni X-Internal-Token), `token_invalido` o `token_caducado` */
+                401: components["responses"]["Error"];
+                /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+                403: components["responses"]["Error"];
+                /** @description 422 `validacion` */
+                422: components["responses"]["Error"];
+                /** @description 502 `bot_no_disponible` (el bot respondió con error; details.status) */
+                502: components["responses"]["Error"];
+                /** @description 503 `bot_no_disponible` (el bot no responde) */
+                503: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sugerencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * N7: la IA propone planes nuevos a partir de los que tuvieron mucha participación
+         * @description La API elige los planes con más participación (ocupación, inscritos, lista de espera, asistencias y
+         *     preguntas en el chat; publicados o finalizados) y se los pasa a `bot POST /ai/sugerir-eventos` (N8), que propone
+         *     de 1 a 3 planes nuevos («repetir la Ruta Solidaria en primavera: se llenó y hubo 6 en lista de espera»);
+         *     sus `propuestas` son los `items` de la respuesta.
+         *     Si el bot no responde, la API propone por reglas (repetir el de más participación) y `proveedor_ia` vale
+         *     `reglas`: nunca falla por la IA. No guarda nada: cada llamada calcula de nuevo. «Descartar» lo hace la web.
+         *     La IA propone y una persona decide: nada se publica sin pasar por la bandeja.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Solo planes de ese pueblo */
+                    municipio?: string;
+                    limite?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Propuestas y los planes en que se basan */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Sugerencias"];
+                    };
+                };
+                /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` */
+                401: components["responses"]["Error"];
+                /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+                403: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sugerencias/borrador": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * N7: [Crear borrador] convierte una propuesta en un plan que espera en la bandeja
+         * @description Crea el evento en `en_revision` con motivo «Propuesto por la IA a partir de …»: el moderador lo revisa,
+         *     ajusta la fecha y lo que haga falta (`PATCH /eventos/{id}`) y lo aprueba (`POST /moderacion/{id}/decision`).
+         *     Al aprobarlo se avisa a los interesados como a cualquier plan nuevo (A10).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BorradorSugerencia"];
+                };
+            };
+            responses: {
+                /** @description Evento creado en la bandeja */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["evento"];
+                    };
+                };
+                /** @description 401 `no_autenticado`, `token_invalido` o `token_caducado` */
+                401: components["responses"]["Error"];
+                /** @description 403 `rol_insuficiente` (la sesión no es de un moderador) */
+                403: components["responses"]["Error"];
+                /** @description 422 `validacion` o `municipio_no_encontrado` */
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhook/twilio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Entrada de WhatsApp (Twilio). Responde TwiML con acuse inmediato. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/x-www-form-urlencoded": {
+                        From?: string;
+                        Body?: string;
+                        NumMedia?: number;
+                        MediaUrl0?: string;
+                        MediaContentType0?: string;
+                        Latitude?: number;
+                        Longitude?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description TwiML */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/xml": string;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhook/telegram": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Entrada de Telegram (Update de la Bot API). El usuario es `tg:<chat_id>`.
+         * @description Telegram envía la cabecera `X-Telegram-Bot-Api-Secret-Token` con el secreto registrado en setWebhook.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    "X-Telegram-Bot-Api-Secret-Token"?: string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description Recibido (se procesa en segundo plano) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhook/meta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verificación del webhook de WhatsApp Cloud API (Meta) con `hub.challenge` */
+        get: {
+            parameters: {
+                query?: {
+                    "hub.mode"?: string;
+                    "hub.verify_token"?: string;
+                    "hub.challenge"?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Devuelve `hub.challenge` */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": string;
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Entrada de WhatsApp Cloud API (Meta). Firma en la cabecera `X-Hub-Signature-256`. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    "X-Hub-Signature-256"?: string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description Recibido (se procesa en segundo plano) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/mensaje": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Simulador de chat (web o tests). Devuelve lo que contestaría el bot. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @description Contacto del remitente: +34… o tg:<chat_id> */
+                        de: string;
+                        texto: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Respuestas del bot */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            respuestas: unknown[];
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * La api pide enviar un aviso
+         * @description Va a `contacto` si viene (p. ej. `tg:<chat_id>`) y si no a `telefono`. En WhatsApp, fuera de la ventana
+         *     de 24 h, se usa `plantilla` + `parametros`; los demás canales envían `texto`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["notificacion"];
+                };
+            };
+            responses: {
+                /** @description Enviado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            enviado: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/extraer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Texto → ExtraccionEvento */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        texto: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Extracción */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["extraccion_evento"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/spam": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Puntuación de spam de un texto (evento o mensaje del chat) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        texto: string;
+                        /** @enum {unknown} */
+                        contexto?: "evento" | "mensaje";
+                        /** Format: uuid */
+                        publicador_id?: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Resultado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            score_spam: number;
+                            es_spam: boolean;
+                            motivo?: string | null;
+                            proveedor_ia?: string;
+                            /**
+                             * @description (N9, opcional) Qué es: `spam` (publicidad ajena, apuestas, cadenas, enlaces sospechosos) o
+                             *     `fraude` (pide pago por adelantado, Bizum o datos bancarios, precios irreales, suplanta a un
+                             *     ayuntamiento o asociación…). `ninguno` si es legítimo. `es_spam` es true en los dos casos, así
+                             *     que quien no lea este campo sigue funcionando igual. El moderador ve el tipo en el motivo.
+                             * @enum {unknown}
+                             */
+                            tipo?: "ninguno" | "spam" | "fraude";
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/responder-ficha": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Responde una pregunta usando solo la ficha del evento */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        evento: components["schemas"]["evento"];
+                        pregunta: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Respuesta */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description false = no está en la ficha */
+                            puede_responder: boolean;
+                            respuesta?: string | null;
+                            proveedor_ia?: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/sugerir-eventos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * (N8) Propone planes nuevos a partir de los que más participación tuvieron
+         * @description La llama la API (N7) con los planes con más participación (ocupación, inscritos, lista de espera, preguntas
+         *     en el chat). Devuelve de 1 a `maximo` propuestas para los administradores, que deciden si crean el borrador.
+         *     La IA solo propone y no inventa datos: cada propuesta dice en qué planes se basa (`basado_en`) y por qué.
+         *     IA con FreeLLM primero; sin IA, propuestas por reglas (repetir el plan que más se llenó).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        planes: {
+                            /** Format: uuid */
+                            evento_id?: string;
+                            titulo: string;
+                            categoria: components["schemas"]["Categoria"];
+                            municipio: string;
+                            /** Format: date-time */
+                            fecha_inicio: string;
+                            plazas_totales?: number | null;
+                            inscritos: number;
+                            /** @default 0 */
+                            lista_espera?: number;
+                            /** @default 0 */
+                            preguntas_chat?: number;
+                        }[];
+                        /** @default 3 */
+                        maximo?: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Propuestas (puede venir vacía si nada destaca) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            propuestas: {
+                                titulo: string;
+                                categoria: components["schemas"]["Categoria"];
+                                municipio: string;
+                                /** @description Texto libre: «primavera», «mayo de 2027», «el próximo puente» */
+                                fecha_aproximada?: string | null;
+                                /** @description Por qué, con datos de los planes recibidos (se llenó, 6 en lista de espera…) */
+                                motivo: string;
+                                /** @description evento_id de los planes en que se basa */
+                                basado_en?: string[];
+                            }[];
+                            proveedor_ia?: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/preferencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** «Me gustan las rutas» → gustos estructurados */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        texto: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Preferencias */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            gustos?: components["schemas"]["Categoria"][];
+                            etiquetas_interes?: string[];
+                            municipio?: string | null;
+                            /** @enum {unknown} */
+                            formato_aviso?: "texto" | "audio";
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/embeddings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * (RAG) Textos → vectores para buscar planes por parecido
+         * @description La llama la API para indexar los planes (`tipo: documento`) y para la pregunta del buscador (`tipo: consulta`).
+         *     Cadena de proveedores: Gemini `gemini-embedding-001` (dimensión 768) y, si falla, NVIDIA `nemotron-3.5-embed-1b`.
+         *     Solo se comparan vectores del mismo `modelo`: si cambia, la API vuelve a indexar.
+         *     Sin proveedor disponible responde 503 y la API sigue buscando sin embeddings (reglas y palabras clave).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        textos: string[];
+                        /**
+                         * @default documento
+                         * @enum {unknown}
+                         */
+                        tipo?: "documento" | "consulta";
+                    };
+                };
+            };
+            responses: {
+                /** @description Un vector por texto, en el mismo orden */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Modelo que generó los vectores (p. ej. gemini-embedding-001) */
+                            modelo: string;
+                            dimension: number;
+                            vectores: number[][];
+                        };
+                    };
+                };
+                /** @description 401 `token_interno_invalido` */
+                401: components["responses"]["Error"];
+                /** @description 503: ningún proveedor de embeddings disponible (la API sigue sin embeddings) */
+                503: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/responder-agenda": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * (RAG) Responde una pregunta sobre la agenda usando solo los planes que recibe
+         * @description La llama la API (`POST /api/v1/buscar`) con los planes recuperados. Respuesta breve (2–4 frases) en español
+         *     sencillo, solo con los planes recibidos: no inventa planes, fechas ni precios. `evento_ids` solo puede contener
+         *     ids de `planes` (la API lo comprueba igualmente). Con `planes` vacío dice que no hay nada que encaje.
+         *     Sin IA, respuesta por plantilla y `proveedor_ia: reglas`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        pregunta: string;
+                        planes: components["schemas"]["PlanContexto"][];
+                        /**
+                         * Format: date-time
+                         * @description Fecha y hora de referencia para «este finde», «mañana»…
+                         */
+                        hoy?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Respuesta */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            respuesta: string;
+                            /** @description Planes que nombra la respuesta (solo ids de `planes`) */
+                            evento_ids: string[];
+                            proveedor_ia: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    Health: {
-      /** @constant */
-      status: 'ok';
-      version: string;
-    };
-    Error: {
-      error: {
-        /**
-         * @example evento_no_encontrado
-         * @example publicador_pausado
-         * @example sin_plazas
-         * @example evento_finalizado
-         * @example sin_permiso
-         * @example token_interno_invalido
-         * @example no_encontrado
-         * @example bot_no_disponible
-         * @example reglas_confianza_no_cumplidas
-         */
-        code: string;
-        message: string;
-        details?: Record<string, never>;
-      };
-    };
-    /** @description E.164, p. ej. +34600000000 */
-    Telefono: string;
-    /**
-     * @description Dirección de contacto de un canal de mensajería: E.164 (+34600000000) = WhatsApp; `tg:<chat_id>` = Telegram.
-     *     En la API, services/api/app/canales.py: añadir un canal es una entrada en su registro y una columna.
-     * @example +34600000201
-     * @example tg:123456789
-     */
-    Contacto: string;
-    /** @enum {unknown} */
-    Categoria: 'deportiva' | 'cultural' | 'fiestas' | 'gastronomia' | 'ludica' | 'comercio';
-    /** @enum {unknown} */
-    EstadoEvento:
-      | 'borrador'
-      | 'pendiente_confirmacion'
-      | 'en_revision'
-      | 'publicado'
-      | 'rechazado'
-      | 'cancelado'
-      | 'finalizado'
-      | 'archivado';
-    Municipio: {
-      nombre: string;
-      lat: number;
-      lon: number;
-    };
-    Pagina: {
-      items: unknown[];
-      total: number;
-      page: number;
-      size: number;
-    };
-    PaginaEventos: components['schemas']['Pagina'] & {
-      items?: components['schemas']['evento'][];
-    };
-    PaginaLugares: components['schemas']['Pagina'] & {
-      items?: components['schemas']['lugar'][];
-    };
-    PaginaMensajes: components['schemas']['Pagina'] & {
-      items?: components['schemas']['mensaje_evento'][];
-    };
-    PaginaPublicadores: components['schemas']['Pagina'] & {
-      items?: components['schemas']['publicador'][];
-    };
-    PaginaPendientes: components['schemas']['Pagina'] & {
-      items?: components['schemas']['Pendiente'][];
-    };
-    Pendiente: {
-      /** @enum {unknown} */
-      tipo: 'evento' | 'publicador';
-      motivo: string;
-      score_spam?: number | null;
-      evento?: components['schemas']['evento'];
-      publicador?: components['schemas']['publicador'];
-    };
-    EventoCrear: {
-      titulo: string;
-      descripcion?: string;
-      categoria: components['schemas']['Categoria'];
-      etiquetas?: string[];
-      municipio: string;
-      lugar?: string | null;
-      /** @description Si falta */
-      lat?: number | null;
-      lon?: number | null;
-      /** Format: date-time */
-      fecha_inicio: string;
-      /** Format: date-time */
-      fecha_fin?: string | null;
-      precio_eur?: number | null;
-      es_gratuito?: boolean;
-      plazas_totales?: number | null;
-      /** @description URL http(s) o data URL de imagen (data:image/webp;base64,…) de hasta ~1,5 MB; si no, 422 imagen_invalida */
-      imagen_url?: string | null;
-      /** @description Frase corta y pública para la portada del carrusel. Si llega vacía, la API puede pedírsela al bot */
-      frase_portada?: string | null;
-      datos_ayuntamiento?: components['schemas']['DatosAyuntamiento'];
-      /** Format: uuid */
-      publicador_id?: string | null;
-    };
-    /** @description Todos los campos de EventoCrear son opcionales. `estado` solo lo cambia el moderador o el publicador para cancelar. */
-    EventoEditar: {
-      titulo?: string;
-      descripcion?: string;
-      categoria?: components['schemas']['Categoria'];
-      etiquetas?: string[];
-      lugar?: string | null;
-      lat?: number | null;
-      lon?: number | null;
-      /** Format: date-time */
-      fecha_inicio?: string;
-      /** Format: date-time */
-      fecha_fin?: string | null;
-      precio_eur?: number | null;
-      es_gratuito?: boolean;
-      plazas_totales?: number | null;
-      /** @description URL http(s) o data URL de imagen (data:image/webp;base64,…) de hasta ~1,5 MB; si no, 422 imagen_invalida */
-      imagen_url?: string | null;
-      /** @description Frase corta y pública para la portada del carrusel. Si llega vacía, la API puede pedírsela al bot */
-      frase_portada?: string | null;
-      datos_ayuntamiento?: components['schemas']['DatosAyuntamiento'];
-      /** @enum {unknown} */
-      estado?: 'cancelado' | 'archivado';
-    };
-    Origen: {
-      /** @enum {unknown} */
-      canal: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual' | 'telegram';
-      url?: string | null;
-      importado_auto: boolean;
-    };
-    /**
-     * @description Hace falta `contacto_publicador`, `telefono_publicador` o `publicador_id` (o un origen.url de una fuente conocida).
-     *     El publicador se busca por la fuente (origen.url), luego por `publicador_id` y luego por el contacto del remitente
-     *     en su canal (teléfono o `telegram_id`; en Telegram, también por el teléfono del usuario vinculado).
-     */
-    ImportarEvento: {
-      extraccion: components['schemas']['extraccion_evento'];
-      contacto_publicador?: components['schemas']['Contacto'];
-      /**
-       * @description E.164. Compatibilidad: la API también acepta aquí `tg:<chat_id>` (lo que envía hoy el bot de Telegram);
-       *     lo nuevo debe ir en `contacto_publicador`.
-       */
-      telefono_publicador?: components['schemas']['Telefono'];
-      /** Format: uuid */
-      publicador_id?: string | null;
-      origen: components['schemas']['Origen'];
-    };
-    ResultadoImportacion: {
-      evento: components['schemas']['evento'];
-      faltan: string[];
-      /** @description true = mismo origen.url */
-      duplicado: boolean;
-      /**
-       * Format: uuid
-       * @description Evento parecido (título + fecha + municipio)
-       */
-      posible_duplicado_de?: string | null;
-    };
-    ConfirmarEvento: {
-      /** @description Valores que faltaban o que el publicador corrige (mismos nombres que EventoCrear, incluida `frase_portada`) */
-      campos?: {
-        [key: string]: unknown;
-      };
-      /** @enum {unknown} */
-      confirmado_por?: 'whatsapp' | 'web' | 'telegram';
-    };
-    CocheRespuesta: {
-      /**
-       * Format: uuid
-       * @description Obligatorio con X-Internal-Token (el bot responde por el vecino)
-       */
-      usuario_id?: string;
-      acepta: boolean;
-    };
-    InscripcionCrear: {
-      /**
-       * Format: uuid
-       * @description Solo con X-Internal-Token (el bot inscribe en nombre del vecino)
-       */
-      usuario_id?: string;
-      /** @default 1 */
-      plazas: number;
-      /** @enum {unknown} */
-      canal?: 'whatsapp' | 'web' | 'telegram';
-    };
-    MensajeCrear: {
-      texto: string;
-      /**
-       * @default comentario
-       * @enum {unknown}
-       */
-      tipo: 'pregunta' | 'comentario' | 'anuncio';
-      /** Format: uuid */
-      en_respuesta_a?: string | null;
-      /** @description Foto del plan, solo en comentarios de planes ya pasados y solo de inscritos o de la organización (si no, 403 sin_permiso). URL o data URL de imagen */
-      imagen_url?: string | null;
-      /**
-       * Format: uuid
-       * @description Solo con X-Internal-Token
-       */
-      usuario_id?: string;
-    };
-    Recomendacion: {
-      evento: components['schemas']['evento'];
-      puntuacion: number;
-      /** @example Te gusta el senderismo, está a 4 km y quedan 8 plazas */
-      motivo: string;
-      distancia_km?: number | null;
-    };
-    Decision: {
-      /**
-       * @description `aprobar` y `rechazar` desde `en_revision`; `retirar` desde `publicado` (pasa a `archivado`); `restaurar` desde `rechazado` (vuelve a `en_revision`, a la bandeja, sin avisar al publicador).
-       * @enum {unknown}
-       */
-      decision: 'aprobar' | 'rechazar' | 'retirar' | 'restaurar';
-      /** @description Motivo que se guarda en el evento y se manda al publicador. En `retirar` es opcional (por defecto «Retirado por moderación»). */
-      motivo?: string | null;
-    };
-    PublicadorCrear: {
-      nombre: string;
-      /** @enum {unknown} */
-      tipo: 'asociacion' | 'ayuntamiento' | 'bar_restaurante' | 'comercio' | 'otro';
-      municipio: string;
-      descripcion?: string | null;
-      telefono: components['schemas']['Telefono'];
-      /** Format: email */
-      email?: string | null;
-      /**
-       * @description PRIVADO (dato personal). Responsable de la entidad, lo pide el bot en el alta. Se guarda lo mínimo y solo
-       *     lo ven los moderadores. `identidad_verificada` no se envía aquí (si llega, se ignora): la marca el
-       *     moderador con `POST /publicadores/{id}/verificar-identidad`. Sin estos datos nunca podrá llegar al nivel 2.
-       */
-      responsable?: {
-        nombre?: string;
-        /** @description DNI o NIE */
-        dni?: string;
-        /** @description Pueblo o dirección donde vive */
-        residencia?: string;
-        /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
-        edad?: number | null;
-      } | null;
-    };
-    UsuarioCrear: {
-      telefono: components['schemas']['Telefono'];
-      nombre?: string;
-      municipio?: string | null;
-      /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
-      edad?: number | null;
-    };
-    /** @description Vincula el contacto de un canal (p. ej. Telegram tras «Compartir mi número») con el teléfono. */
-    UsuarioVincular: {
-      telefono: components['schemas']['Telefono'];
-      contacto: components['schemas']['Contacto'];
-      /** @description Solo se usa si se crea el usuario */
-      nombre?: string;
-      /** @description Solo se usa si se crea el usuario */
-      municipio?: string | null;
-      /** @description P4a. Solo se usa si se crea el usuario. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
-      edad?: number | null;
-    };
-    UsuarioEditar: {
-      nombre?: string;
-      municipio?: string | null;
-      lat?: number | null;
-      lon?: number | null;
-      gustos?: components['schemas']['Categoria'][];
-      etiquetas_interes?: string[];
-      /** @enum {unknown} */
-      formato_aviso?: 'texto' | 'audio';
-      acepta_avisos?: boolean;
-      radio_km?: number | null;
-      telefono?: components['schemas']['Telefono'];
-      /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
-      edad?: number | null;
-    };
-    Token: {
-      access_token: string;
-      /** @constant */
-      token_type: 'bearer';
-      usuario: components['schemas']['usuario'];
-    };
-    /**
-     * @description PRIVADO. Datos de la propuesta para el ayuntamiento (evento.datos_ayuntamiento): solo los ven el organizador
-     *     del evento y los moderadores. Mismos nombres que DatosAyuntamiento de apps/web/src/api/types.ts
-     *     (si la web manda además `frase_portada` aquí, la API la ignora; va en EventoCrear.frase_portada).
-     */
-    DatosAyuntamiento: {
-      responsable?: string;
-      telefono?: string;
-      /**
-       * @description `ayuntamiento` cuando lo crea el propio ayuntamiento desde el panel (22/11)
-       * @enum {unknown}
-       */
-      entidad?: 'particular' | 'asociacion' | 'comercio' | 'otra' | 'ayuntamiento';
-      entidad_nombre?: string | null;
-      /** @enum {unknown} */
-      publico?: 'todos' | 'infantil' | 'adultos' | 'mayores';
-      necesidades?: (
-        'espacio' | 'calle' | 'material' | 'luz' | 'musica' | 'comida' | 'seguridad' | 'limpieza' | 'difusion'
-      )[];
-      /** @enum {unknown} */
-      seguro_rc?: 'si' | 'no' | 'nose';
-      observaciones?: string | null;
-      /** @description Solo ayuntamientos: concejalía o área que lo organiza (Cultura, Deportes, Fiestas…) */
-      area?: string | null;
-      /** @description Solo ayuntamientos: el espacio municipal ya está reservado para ese día */
-      espacio_reservado?: boolean | null;
-      /** @description Solo ayuntamientos: el lugar es accesible para personas con movilidad reducida */
-      accesible?: boolean | null;
-    } | null;
-    CaidaSimulada: {
-      /** @description true = todas las IAs «fallan» y el bot sigue solo con reglas */
-      activa: boolean;
-    };
-    /** @description N7/N8: cifras de participación de un plan (publicado o finalizado) para proponer otros */
-    ParticipacionPlan: {
-      /** Format: uuid */
-      evento_id: string;
-      titulo: string;
-      categoria: components['schemas']['Categoria'];
-      municipio: string;
-      /** Format: date-time */
-      fecha_inicio: string;
-      estado?: components['schemas']['EstadoEvento'];
-      plazas_totales?: number | null;
-      /** @description Personas (suma de plazas) confirmadas o que asistieron */
-      inscritos: number;
-      lista_espera: number;
-      asistencias?: number;
-      /** @description plazas ocupadas / plazas_totales (en los planes ya hechos incluye a quien se apuntó fuera de la plataforma; nunca menos que inscritos / plazas_totales); null sin aforo */
-      ocupacion?: number | null;
-      /** @description Mensajes de tipo pregunta en el chat del evento */
-      preguntas_chat: number;
-    };
-    /** @description N7: plan nuevo propuesto por la IA (una de las `propuestas` de bot POST /ai/sugerir-eventos). Una persona decide si se crea */
-    SugerenciaPlan: {
-      titulo: string;
-      descripcion?: string | null;
-      categoria: components['schemas']['Categoria'];
-      municipio: string;
-      /** @description Texto libre: «primavera», «mayo de 2027», «el próximo puente» */
-      fecha_aproximada?: string | null;
-      /** @description Por qué, con cifras reales de los planes de basado_en */
-      motivo: string;
-      /** @description evento_id de los planes que la justifican */
-      basado_en?: string[];
-    };
-    /** @description N7: [Crear borrador]. La propuesta tal cual más la fecha que elige el moderador */
-    BorradorSugerencia: components['schemas']['SugerenciaPlan'] & {
-      /** Format: date-time */
-      fecha_inicio: string;
-    };
-    /** @description N7: respuesta de GET /admin/sugerencias */
-    Sugerencias: {
-      items: components['schemas']['SugerenciaPlan'][];
-      /** @description Los planes con más participación que se pasaron a la IA */
-      basado_en: components['schemas']['ParticipacionPlan'][];
-      /** @description Quién propuso (p. ej. freellm:…, nim:…, reglas) */
-      proveedor_ia: string;
-    };
-    /** @description RAG: cuerpo de POST /api/v1/buscar */
-    BusquedaIA: {
-      pregunta: string;
-      /**
-       * @description Máximo de planes en `items`
-       * @default 6
-       */
-      limite: number;
-    };
-    /** @description RAG: plan recuperado que la API pasa a bot POST /ai/responder-agenda (sin datos privados) */
-    PlanContexto: {
-      /** Format: uuid */
-      evento_id: string;
-      titulo: string;
-      categoria: components['schemas']['Categoria'];
-      municipio: string;
-      lugar?: string | null;
-      /** Format: date-time */
-      fecha_inicio: string;
-      /** Format: date-time */
-      fecha_fin?: string | null;
-      precio_eur?: number | null;
-      es_gratuito?: boolean;
-      /** @description null sin aforo */
-      plazas_libres?: number | null;
-      descripcion?: string | null;
-    };
-    /** @description RAG: respuesta de POST /api/v1/buscar */
-    RespuestaBusqueda: {
-      /** @description Texto para la persona */
-      respuesta: string;
-      /** @description Los planes citados primero, luego el resto de recuperados hasta `limite` */
-      items: components['schemas']['evento'][];
-      /** @description evento_id de los planes que nombra la respuesta */
-      citados: string[];
-      /** @description Cuántos planes se pasaron como contexto («Basado en N planes») */
-      recuperados: number;
-      /** @description Quién respondió (p. ej. nim:…, gemini:…, reglas) */
-      proveedor_ia: string;
-      /**
-       * @description `rag` = respuesta generada por IA con citas validadas; `palabras` = sin IA, plantilla
-       * @enum {unknown}
-       */
-      modo: 'rag' | 'palabras';
-      /** @description Lo que se entendió de la pregunta */
-      filtros?: {
-        /** Format: date-time */
-        desde?: string | null;
-        /** Format: date-time */
-        hasta?: string | null;
-        municipio?: string | null;
-        categorias?: components['schemas']['Categoria'][];
-        gratis?: boolean;
-        ninos?: boolean;
-      };
-    };
-    /** @description Lo que devuelve `bot GET /metrics` (services/bot/app/main.py). Schema abierto. */
-    MetricasBot: {
-      /** @description Acumulado por proveedor de IA */
-      totales?: {
-        [key: string]: {
-          llamadas?: number;
-          /** @description Tokens de entrada */
-          entrada?: number;
-          /** @description Tokens de salida */
-          salida?: number;
-          fallos?: number;
+    schemas: {
+        Health: {
+            /** @constant */
+            status: "ok";
+            version: string;
         };
-      };
-      /** @description Últimas llamadas a la IA (hasta 20) */
-      ultimas?: components['schemas']['MetricaTokens'][];
-      /** @description Peticiones a la API pendientes en la cola del bot */
-      eventos_en_cola?: number;
-      caida_simulada?: boolean;
-    } & {
-      [key: string]: unknown;
-    };
-    /** @description Lo que ya envía services/bot/app/metrics.py */
-    MetricaTokens: {
-      proveedor: string;
-      modelo?: string;
-      tarea: string;
-      tokens_entrada: number;
-      tokens_salida: number;
-      latencia_ms?: number;
-      ok?: boolean;
-      /** @description Epoch en segundos */
-      ts?: number;
-    };
-    Estadisticas: {
-      periodo?: {
-        /** Format: date-time */
-        desde?: string | null;
-        /** Format: date-time */
-        hasta?: string | null;
-      };
-      actividades?: number;
-      /** @description Porcentaje en escala 0-100 */
-      pct_importadas_auto?: number;
-      inscripciones?: number;
-      asistencias?: number;
-      /** @description Ocupación media por categoría, fracción en escala 0-1 (no porcentaje) */
-      ocupacion_por_categoria?: {
-        [key: string]: number;
-      };
-      /** @description Porcentaje en escala 0-100 */
-      pct_otro_pueblo?: number;
-      solapamientos?: {
-        /** Format: uuid */
-        evento_a?: string;
-        /** Format: uuid */
-        evento_b?: string;
-        motivo?: string;
-      }[];
-      tokens?: {
-        por_proveedor?: {
-          [key: string]: {
-            llamadas?: number;
-            entrada?: number;
-            salida?: number;
-            coste_eur?: number;
-          };
+        Error: {
+            error: {
+                /**
+                 * @example evento_no_encontrado
+                 * @example publicador_pausado
+                 * @example sin_plazas
+                 * @example evento_finalizado
+                 * @example sin_permiso
+                 * @example token_interno_invalido
+                 * @example no_encontrado
+                 * @example bot_no_disponible
+                 * @example reglas_confianza_no_cumplidas
+                 */
+                code: string;
+                message: string;
+                details?: Record<string, never>;
+            };
         };
-        coste_total_eur?: number;
-      };
-    };
-    /**
-     * Lugar
-     * @description Información permanente de un pueblo (rutas, sitios que ver, comercios, alojamientos y servicios). No tiene fecha: los planes con fecha son Evento.
-     */
-    lugar: {
-      /** Format: uuid */
-      id: string;
-      nombre: string;
-      /** @enum {unknown} */
-      tipo: 'ruta' | 'sitio_interes' | 'comercio' | 'alojamiento' | 'servicio';
-      municipio: string;
-      descripcion?: string | null;
-      direccion?: string | null;
-      telefono?: string | null;
-      web?: string | null;
-      lat: number;
-      lon: number;
-      /** @description false si se usan las coordenadas del pueblo */
-      coordenadas_exactas?: boolean;
-      ruta?: {
+        /** @description E.164, p. ej. +34600000000 */
+        Telefono: string;
+        /**
+         * @description Dirección de contacto de un canal de mensajería: E.164 (+34600000000) = WhatsApp; `tg:<chat_id>` = Telegram.
+         *     En la API, services/api/app/canales.py: añadir un canal es una entrada en su registro y una columna.
+         * @example +34600000201
+         * @example tg:123456789
+         */
+        Contacto: string;
         /** @enum {unknown} */
-        modalidad?: 'senderismo' | 'btt' | 'ciclismo' | 'paseo';
-        distancia_km?: number | null;
-        desnivel_m?: number | null;
-        dificultad?: string | null;
-        duracion?: string | null;
-        salida?: string | null;
-      } | null;
-      fuentes: string[];
-    };
-    /** Evento */
-    evento: {
-      /** Format: uuid */
-      id: string;
-      titulo: string;
-      descripcion?: string;
-      /** @enum {unknown} */
-      categoria: 'deportiva' | 'cultural' | 'fiestas' | 'gastronomia' | 'ludica' | 'comercio';
-      etiquetas?: string[];
-      municipio: string;
-      lugar?: string | null;
-      lat: number;
-      lon: number;
-      /** Format: date-time */
-      fecha_inicio: string;
-      /** Format: date-time */
-      fecha_fin?: string | null;
-      precio_eur?: number | null;
-      es_gratuito: boolean;
-      plazas_totales?: number | null;
-      plazas_libres?: number | null;
-      /**
-       * @description Personas apuntadas (inscripciones confirmadas). Lo calcula la API; en los fixtures empieza en 0.
-       * @default 0
-       */
-      inscritos: number;
-      /** @enum {unknown} */
-      estado:
-        | 'borrador'
-        | 'pendiente_confirmacion'
-        | 'en_revision'
-        | 'publicado'
-        | 'rechazado'
-        | 'cancelado'
-        | 'finalizado'
-        | 'archivado';
-      /** Format: uuid */
-      publicador_id?: string | null;
-      /**
-       * Format: uuid
-       * @description P5a: usuario que propuso el plan (vecino o miembro de una asociación); es su dueño aunque no tenga publicador. Null en lo importado sin remitente y en lo que crea el moderador.
-       */
-      propuesto_por_id?: string | null;
-      publicador_nombre?: string | null;
-      /** @description Foto o cartel del plan: URL http(s) o data URL de imagen (p. ej. data:image/webp;base64,…) de hasta ~1,5 MB. Si se pasa o no es una imagen, 422 imagen_invalida. */
-      imagen_url?: string | null;
-      /** @description Frase corta y pública bajo la foto del carrusel de Inicio. La escribe quien publica; si llega vacía, la API puede pedírsela al bot. */
-      frase_portada?: string | null;
-      /** @description PRIVADO. Datos de la propuesta que solo ven el organizador del evento y los moderadores. La API nunca los devuelve en rutas públicas ni sin sesión, tampoco con X-Internal-Token (no llegan al bot ni a la IA): en esos casos el campo no aparece. Mismos nombres que DatosAyuntamiento de apps/web/src/api/types.ts. */
-      datos_ayuntamiento?: {
-        /** @description Persona responsable del plan */
-        responsable?: string;
-        /** @description Teléfono de contacto del responsable (texto libre) */
-        telefono?: string;
-        /**
-         * @description Quién organiza (`ayuntamiento`: lo crea el propio ayuntamiento desde el panel)
-         * @enum {unknown}
-         */
-        entidad?: 'particular' | 'asociacion' | 'comercio' | 'otra' | 'ayuntamiento';
-        entidad_nombre?: string | null;
-        /**
-         * @description Público al que va dirigido
-         * @enum {unknown}
-         */
-        publico?: 'todos' | 'infantil' | 'adultos' | 'mayores';
-        /** @description Lo que se pide al ayuntamiento */
-        necesidades?: (
-          'espacio' | 'calle' | 'material' | 'luz' | 'musica' | 'comida' | 'seguridad' | 'limpieza' | 'difusion'
-        )[];
-        /**
-         * @description ¿Tiene seguro de responsabilidad civil?
-         * @enum {unknown}
-         */
-        seguro_rc?: 'si' | 'no' | 'nose';
-        observaciones?: string | null;
-        /** @description Solo ayuntamientos: concejalía o área que lo organiza */
-        area?: string | null;
-        /** @description Solo ayuntamientos: el espacio municipal ya está reservado */
-        espacio_reservado?: boolean | null;
-        /** @description Solo ayuntamientos: accesible para personas con movilidad reducida */
-        accesible?: boolean | null;
-      } | null;
-      origen: {
+        Categoria: "deportiva" | "cultural" | "fiestas" | "gastronomia" | "ludica" | "comercio";
         /** @enum {unknown} */
-        canal: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual' | 'telegram';
-        url?: string | null;
-        importado_auto: boolean;
-      };
-      moderacion?: {
-        motivo?: string | null;
-        score_spam?: number | null;
-        revisado_por?: string | null;
-      };
-      /** @description P3a. La apelación del organizador tras un rechazo (POST /eventos/{id}/apelacion). Solo hay una por plan; null si no ha apelado */
-      readonly apelacion?: {
-        motivo: string;
-        /** Format: date-time */
-        creada_en: string;
-      } | null;
-      /** Format: date-time */
-      creado_en?: string;
-      /** Format: date-time */
-      actualizado_en?: string;
-    };
-    /**
-     * ExtraccionEvento
-     * @description Lo que devuelve la IA del bot al leer un post, cartel o audio. La API lo recibe en POST /eventos/importar.
-     */
-    extraccion_evento: {
-      /** @description Un campo por cada dato del evento (titulo, descripcion, categoria, municipio, lugar, fecha_inicio, fecha_fin, precio_eur, es_gratuito, plazas_totales). */
-      campos: {
-        [key: string]: {
-          valor: unknown;
-          /** @enum {unknown} */
-          confianza: 'alta' | 'media' | 'baja' | 'falta';
+        EstadoEvento: "borrador" | "pendiente_confirmacion" | "en_revision" | "publicado" | "rechazado" | "cancelado" | "finalizado" | "archivado";
+        Municipio: {
+            nombre: string;
+            lat: number;
+            lon: number;
         };
-      };
-      faltan: string[];
-      es_evento: boolean;
-      proveedor_ia: string;
-      tokens?: {
-        entrada?: number;
-        salida?: number;
-      };
-    };
-    /** Inscripcion */
-    inscripcion: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      evento_id: string;
-      /** Format: uuid */
-      usuario_id: string;
-      /** @description Solo lo ven organizador y moderador */
-      usuario_nombre?: string | null;
-      /** @enum {unknown} */
-      estado: 'confirmada' | 'lista_espera' | 'cancelada' | 'asistio' | 'no_asistio';
-      /** @description Solo si estado = lista_espera */
-      posicion_espera?: number | null;
-      /** @default 1 */
-      plazas: number;
-      /** @enum {unknown} */
-      canal?: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual' | 'telegram';
-      /** Format: date-time */
-      creado_en?: string;
-      /** Format: date-time */
-      actualizado_en?: string;
-    };
-    /**
-     * MensajeEvento
-     * @description Mensaje del chat (tablón) de un evento. Nunca incluye números de teléfono.
-     */
-    mensaje_evento: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      evento_id: string;
-      /**
-       * Format: uuid
-       * @description null si lo escribe la IA
-       */
-      autor_id?: string | null;
-      autor_nombre: string;
-      /** @enum {unknown} */
-      autor_rol: 'vecino' | 'publicador' | 'moderador' | 'ia';
-      /** @enum {unknown} */
-      tipo: 'pregunta' | 'respuesta' | 'anuncio' | 'comentario';
-      texto: string;
-      /** Format: uuid */
-      en_respuesta_a?: string | null;
-      /** @description Foto adjunta a un comentario de un plan ya pasado. Solo pueden subirla quienes se inscribieron o la organización. URL o data URL de imagen */
-      imagen_url?: string | null;
-      fijado?: boolean;
-      oculto?: boolean;
-      respondido_por_ia?: boolean;
-      score_spam?: number | null;
-      /** Format: date-time */
-      creado_en: string;
-    };
-    /**
-     * Publicador
-     * @description Entidad que publica eventos (asociación, bar, ayuntamiento…).
-     */
-    publicador: {
-      /** Format: uuid */
-      id: string;
-      nombre: string;
-      /** @enum {unknown} */
-      tipo: 'asociacion' | 'ayuntamiento' | 'bar_restaurante' | 'comercio' | 'otro';
-      municipio: string;
-      descripcion?: string | null;
-      telefono?: string | null;
-      /** Format: email */
-      email?: string | null;
-      /** @description chat_id de Telegram (contacto tg:<chat_id>). Solo para servicios internos */
-      telegram_id?: string | null;
-      /** @enum {unknown} */
-      estado: 'solicitado' | 'whatsapp_verificado' | 'aprobado' | 'rechazado' | 'pausado';
-      /**
-       * @description Modo de publicación: 0 = a mano (todo pasa por el moderador) · 2 = automática (solo la da un moderador, con reglas). 1 está obsoleto: la API ya no lo asigna (ver enums.md)
-       * @enum {unknown}
-       */
-      nivel_confianza: 0 | 1 | 2;
-      /** @description Eventos aprobados (acumulado, para estadísticas). Ya no sube de nivel solo */
-      aprobaciones?: number;
-      automatizaciones_pausadas?: boolean;
-      categorias_habituales?: ('deportiva' | 'cultural' | 'fiestas' | 'gastronomia' | 'ludica' | 'comercio')[];
-      fuentes?: {
-        /** Format: uuid */
-        id: string;
-        /** @enum {unknown} */
-        canal: 'whatsapp' | 'web' | 'panel' | 'facebook' | 'instagram' | 'web_externa' | 'manual' | 'telegram';
-        url: string;
-        activa?: boolean;
-      }[];
-      /**
-       * Format: uuid
-       * @description Usuario responsable
-       */
-      usuario_id?: string | null;
-      /** @description PRIVADO (dato personal). Responsable de la entidad. Solo se devuelve con sesión de moderador (bearer): nunca en rutas públicas, a otros usuarios ni con X-Internal-Token (en esos casos el campo no aparece). Se envía al dar de alta (PublicadorCrear.responsable). Mismos nombres que DatosResponsable de apps/web/src/api/types.ts. */
-      responsable?: {
-        nombre: string;
-        /** @description DNI o NIE. La web lo enseña oculto salvo los 4 últimos caracteres */
-        dni: string;
-        /** @description Pueblo o dirección donde vive */
-        residencia: string;
-        /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
-        edad?: number | null;
-        /** @description Un moderador ha comprobado el DNI y la residencia (POST /publicadores/{id}/verificar-identidad) */
-        identidad_verificada: boolean;
-      } | null;
-      /** @description Actividad reciente. La calcula la API (no se envía). Solo con sesión de moderador, igual que responsable. Mismos nombres que ActividadPublicador de apps/web/src/api/types.ts. */
-      readonly actividad?: {
-        /** @description Planes aprobados (publicados) en los últimos 60 días */
-        planes_60_dias: number;
-        /** @description Planes rechazados en los últimos 60 días */
-        rechazados_60_dias: number;
+        Pagina: {
+            items: unknown[];
+            total: number;
+            page: number;
+            size: number;
+        };
+        PaginaEventos: components["schemas"]["Pagina"] & {
+            items?: components["schemas"]["evento"][];
+        };
+        PaginaLugares: components["schemas"]["Pagina"] & {
+            items?: components["schemas"]["lugar"][];
+        };
+        PaginaMensajes: components["schemas"]["Pagina"] & {
+            items?: components["schemas"]["mensaje_evento"][];
+        };
+        PaginaPublicadores: components["schemas"]["Pagina"] & {
+            items?: components["schemas"]["publicador"][];
+        };
+        PaginaPendientes: components["schemas"]["Pagina"] & {
+            items?: components["schemas"]["Pendiente"][];
+        };
+        Pendiente: {
+            /** @enum {unknown} */
+            tipo: "evento" | "publicador";
+            motivo: string;
+            score_spam?: number | null;
+            evento?: components["schemas"]["evento"];
+            publicador?: components["schemas"]["publicador"];
+        };
+        EventoCrear: {
+            titulo: string;
+            descripcion?: string;
+            categoria: components["schemas"]["Categoria"];
+            etiquetas?: string[];
+            municipio: string;
+            lugar?: string | null;
+            /** @description Si falta */
+            lat?: number | null;
+            lon?: number | null;
+            /** Format: date-time */
+            fecha_inicio: string;
+            /** Format: date-time */
+            fecha_fin?: string | null;
+            precio_eur?: number | null;
+            es_gratuito?: boolean;
+            plazas_totales?: number | null;
+            /** @description URL http(s) o data URL de imagen (data:image/webp;base64,…) de hasta ~1,5 MB; si no, 422 imagen_invalida */
+            imagen_url?: string | null;
+            /** @description Frase corta y pública para la portada del carrusel. Si llega vacía, la API puede pedírsela al bot */
+            frase_portada?: string | null;
+            datos_ayuntamiento?: components["schemas"]["DatosAyuntamiento"];
+            /** Format: uuid */
+            publicador_id?: string | null;
+        };
+        /** @description Todos los campos de EventoCrear son opcionales. `estado` solo lo cambia el moderador o el publicador para cancelar. */
+        EventoEditar: {
+            titulo?: string;
+            descripcion?: string;
+            categoria?: components["schemas"]["Categoria"];
+            etiquetas?: string[];
+            lugar?: string | null;
+            lat?: number | null;
+            lon?: number | null;
+            /** Format: date-time */
+            fecha_inicio?: string;
+            /** Format: date-time */
+            fecha_fin?: string | null;
+            precio_eur?: number | null;
+            es_gratuito?: boolean;
+            plazas_totales?: number | null;
+            /** @description URL http(s) o data URL de imagen (data:image/webp;base64,…) de hasta ~1,5 MB; si no, 422 imagen_invalida */
+            imagen_url?: string | null;
+            /** @description Frase corta y pública para la portada del carrusel. Si llega vacía, la API puede pedírsela al bot */
+            frase_portada?: string | null;
+            datos_ayuntamiento?: components["schemas"]["DatosAyuntamiento"];
+            /** @enum {unknown} */
+            estado?: "cancelado" | "archivado";
+        };
+        Origen: {
+            /** @enum {unknown} */
+            canal: "whatsapp" | "web" | "panel" | "facebook" | "instagram" | "web_externa" | "manual" | "telegram";
+            url?: string | null;
+            importado_auto: boolean;
+        };
         /**
-         * Format: date-time
-         * @description Fecha del último plan aprobado; null si no hay ninguno
+         * @description Hace falta `contacto_publicador`, `telefono_publicador` o `publicador_id` (o un origen.url de una fuente conocida).
+         *     El publicador se busca por la fuente (origen.url), luego por `publicador_id` y luego por el contacto del remitente
+         *     en su canal (teléfono o `telegram_id`; en Telegram, también por el teléfono del usuario vinculado).
          */
-        ultimo_plan: string | null;
-      };
-      /** Format: date-time */
-      creado_en?: string;
+        ImportarEvento: {
+            extraccion: components["schemas"]["extraccion_evento"];
+            contacto_publicador?: components["schemas"]["Contacto"];
+            /**
+             * @description E.164. Compatibilidad: la API también acepta aquí `tg:<chat_id>` (lo que envía hoy el bot de Telegram);
+             *     lo nuevo debe ir en `contacto_publicador`.
+             */
+            telefono_publicador?: components["schemas"]["Telefono"];
+            /** Format: uuid */
+            publicador_id?: string | null;
+            origen: components["schemas"]["Origen"];
+        };
+        ResultadoImportacion: {
+            evento: components["schemas"]["evento"];
+            faltan: string[];
+            /** @description true = mismo origen.url */
+            duplicado: boolean;
+            /**
+             * Format: uuid
+             * @description Evento parecido (título + fecha + municipio)
+             */
+            posible_duplicado_de?: string | null;
+        };
+        ConfirmarEvento: {
+            /** @description Valores que faltaban o que el publicador corrige (mismos nombres que EventoCrear, incluida `frase_portada`) */
+            campos?: {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            confirmado_por?: "whatsapp" | "web" | "telegram";
+        };
+        MeGustaEstado: {
+            /** @description Número de «me gusta» del plan */
+            total: number;
+            /** @description Si el usuario de la sesión ya le ha dado */
+            mio: boolean;
+        };
+        CocheRespuesta: {
+            /**
+             * Format: uuid
+             * @description Obligatorio con X-Internal-Token (el bot responde por el vecino)
+             */
+            usuario_id?: string;
+            acepta: boolean;
+        };
+        InscripcionCrear: {
+            /**
+             * Format: uuid
+             * @description Solo con X-Internal-Token (el bot inscribe en nombre del vecino)
+             */
+            usuario_id?: string;
+            /** @default 1 */
+            plazas: number;
+            /** @enum {unknown} */
+            canal?: "whatsapp" | "web" | "telegram";
+        };
+        MensajeCrear: {
+            texto: string;
+            /**
+             * @default comentario
+             * @enum {unknown}
+             */
+            tipo: "pregunta" | "comentario" | "anuncio";
+            /** Format: uuid */
+            en_respuesta_a?: string | null;
+            /** @description Foto del plan, solo en comentarios de planes ya pasados y solo de inscritos o de la organización (si no, 403 sin_permiso). URL o data URL de imagen */
+            imagen_url?: string | null;
+            /**
+             * Format: uuid
+             * @description Solo con X-Internal-Token
+             */
+            usuario_id?: string;
+        };
+        Recomendacion: {
+            evento: components["schemas"]["evento"];
+            puntuacion: number;
+            /** @example Te gusta el senderismo, está a 4 km y quedan 8 plazas */
+            motivo: string;
+            distancia_km?: number | null;
+        };
+        Decision: {
+            /**
+             * @description `aprobar` y `rechazar` desde `en_revision`; `retirar` desde `publicado` (pasa a `archivado`); `restaurar` desde `rechazado` (vuelve a `en_revision`, a la bandeja, sin avisar al publicador).
+             * @enum {unknown}
+             */
+            decision: "aprobar" | "rechazar" | "retirar" | "restaurar";
+            /** @description Motivo que se guarda en el evento y se manda al publicador. En `retirar` es opcional (por defecto «Retirado por moderación»). */
+            motivo?: string | null;
+        };
+        PublicadorCrear: {
+            nombre: string;
+            /** @enum {unknown} */
+            tipo: "asociacion" | "ayuntamiento" | "bar_restaurante" | "comercio" | "otro";
+            municipio: string;
+            descripcion?: string | null;
+            telefono: components["schemas"]["Telefono"];
+            /** Format: email */
+            email?: string | null;
+            /**
+             * @description PRIVADO (dato personal). Responsable de la entidad, lo pide el bot en el alta. Se guarda lo mínimo y solo
+             *     lo ven los moderadores. `identidad_verificada` no se envía aquí (si llega, se ignora): la marca el
+             *     moderador con `POST /publicadores/{id}/verificar-identidad`. Sin estos datos nunca podrá llegar al nivel 2.
+             */
+            responsable?: {
+                nombre?: string;
+                /** @description DNI o NIE */
+                dni?: string;
+                /** @description Pueblo o dirección donde vive */
+                residencia?: string;
+                /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
+                edad?: number | null;
+            } | null;
+        };
+        UsuarioCrear: {
+            telefono: components["schemas"]["Telefono"];
+            nombre?: string;
+            municipio?: string | null;
+            /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
+            edad?: number | null;
+        };
+        /** @description Vincula el contacto de un canal (p. ej. Telegram tras «Compartir mi número») con el teléfono. */
+        UsuarioVincular: {
+            telefono: components["schemas"]["Telefono"];
+            contacto: components["schemas"]["Contacto"];
+            /** @description Solo se usa si se crea el usuario */
+            nombre?: string;
+            /** @description Solo se usa si se crea el usuario */
+            municipio?: string | null;
+            /** @description P4a. Solo se usa si se crea el usuario. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
+            edad?: number | null;
+        };
+        UsuarioEditar: {
+            nombre?: string;
+            municipio?: string | null;
+            lat?: number | null;
+            lon?: number | null;
+            gustos?: components["schemas"]["Categoria"][];
+            etiquetas_interes?: string[];
+            /** @enum {unknown} */
+            formato_aviso?: "texto" | "audio";
+            acepta_avisos?: boolean;
+            radio_km?: number | null;
+            telefono?: components["schemas"]["Telefono"];
+            /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
+            edad?: number | null;
+        };
+        Token: {
+            access_token: string;
+            /** @constant */
+            token_type: "bearer";
+            usuario: components["schemas"]["usuario"];
+        };
+        /**
+         * @description PRIVADO. Datos de la propuesta para el ayuntamiento (evento.datos_ayuntamiento): solo los ven el organizador
+         *     del evento y los moderadores. Mismos nombres que DatosAyuntamiento de apps/web/src/api/types.ts
+         *     (si la web manda además `frase_portada` aquí, la API la ignora; va en EventoCrear.frase_portada).
+         */
+        DatosAyuntamiento: {
+            responsable?: string;
+            telefono?: string;
+            /**
+             * @description `ayuntamiento` cuando lo crea el propio ayuntamiento desde el panel (22/11)
+             * @enum {unknown}
+             */
+            entidad?: "particular" | "asociacion" | "comercio" | "otra" | "ayuntamiento";
+            entidad_nombre?: string | null;
+            /** @enum {unknown} */
+            publico?: "todos" | "infantil" | "adultos" | "mayores";
+            necesidades?: ("espacio" | "calle" | "material" | "luz" | "musica" | "comida" | "seguridad" | "limpieza" | "difusion")[];
+            /** @enum {unknown} */
+            seguro_rc?: "si" | "no" | "nose";
+            observaciones?: string | null;
+            /** @description Solo ayuntamientos: concejalía o área que lo organiza (Cultura, Deportes, Fiestas…) */
+            area?: string | null;
+            /** @description Solo ayuntamientos: el espacio municipal ya está reservado para ese día */
+            espacio_reservado?: boolean | null;
+            /** @description Solo ayuntamientos: el lugar es accesible para personas con movilidad reducida */
+            accesible?: boolean | null;
+        } | null;
+        CaidaSimulada: {
+            /** @description true = todas las IAs «fallan» y el bot sigue solo con reglas */
+            activa: boolean;
+        };
+        /** @description N7/N8: cifras de participación de un plan (publicado o finalizado) para proponer otros */
+        ParticipacionPlan: {
+            /** Format: uuid */
+            evento_id: string;
+            titulo: string;
+            categoria: components["schemas"]["Categoria"];
+            municipio: string;
+            /** Format: date-time */
+            fecha_inicio: string;
+            estado?: components["schemas"]["EstadoEvento"];
+            plazas_totales?: number | null;
+            /** @description Personas (suma de plazas) confirmadas o que asistieron */
+            inscritos: number;
+            lista_espera: number;
+            asistencias?: number;
+            /** @description plazas ocupadas / plazas_totales (en los planes ya hechos incluye a quien se apuntó fuera de la plataforma; nunca menos que inscritos / plazas_totales); null sin aforo */
+            ocupacion?: number | null;
+            /** @description Mensajes de tipo pregunta en el chat del evento */
+            preguntas_chat: number;
+        };
+        /** @description N7: plan nuevo propuesto por la IA (una de las `propuestas` de bot POST /ai/sugerir-eventos). Una persona decide si se crea */
+        SugerenciaPlan: {
+            titulo: string;
+            descripcion?: string | null;
+            categoria: components["schemas"]["Categoria"];
+            municipio: string;
+            /** @description Texto libre: «primavera», «mayo de 2027», «el próximo puente» */
+            fecha_aproximada?: string | null;
+            /** @description Por qué, con cifras reales de los planes de basado_en */
+            motivo: string;
+            /** @description evento_id de los planes que la justifican */
+            basado_en?: string[];
+        };
+        /** @description N7: [Crear borrador]. La propuesta tal cual más la fecha que elige el moderador */
+        BorradorSugerencia: components["schemas"]["SugerenciaPlan"] & {
+            /** Format: date-time */
+            fecha_inicio: string;
+        };
+        /** @description N7: respuesta de GET /admin/sugerencias */
+        Sugerencias: {
+            items: components["schemas"]["SugerenciaPlan"][];
+            /** @description Los planes con más participación que se pasaron a la IA */
+            basado_en: components["schemas"]["ParticipacionPlan"][];
+            /** @description Quién propuso (p. ej. freellm:…, nim:…, reglas) */
+            proveedor_ia: string;
+        };
+        /** @description RAG: cuerpo de POST /api/v1/buscar */
+        BusquedaIA: {
+            pregunta: string;
+            /**
+             * @description Máximo de planes en `items`
+             * @default 6
+             */
+            limite: number;
+        };
+        /** @description RAG: plan recuperado que la API pasa a bot POST /ai/responder-agenda (sin datos privados) */
+        PlanContexto: {
+            /** Format: uuid */
+            evento_id: string;
+            titulo: string;
+            categoria: components["schemas"]["Categoria"];
+            municipio: string;
+            lugar?: string | null;
+            /** Format: date-time */
+            fecha_inicio: string;
+            /** Format: date-time */
+            fecha_fin?: string | null;
+            precio_eur?: number | null;
+            es_gratuito?: boolean;
+            /** @description null sin aforo */
+            plazas_libres?: number | null;
+            descripcion?: string | null;
+        };
+        /** @description RAG: respuesta de POST /api/v1/buscar */
+        RespuestaBusqueda: {
+            /** @description Texto para la persona */
+            respuesta: string;
+            /** @description Los planes citados primero, luego el resto de recuperados hasta `limite` */
+            items: components["schemas"]["evento"][];
+            /** @description evento_id de los planes que nombra la respuesta */
+            citados: string[];
+            /** @description Cuántos planes se pasaron como contexto («Basado en N planes») */
+            recuperados: number;
+            /** @description Quién respondió (p. ej. nim:…, gemini:…, reglas) */
+            proveedor_ia: string;
+            /**
+             * @description `rag` = respuesta generada por IA con citas validadas; `palabras` = sin IA, plantilla
+             * @enum {unknown}
+             */
+            modo: "rag" | "palabras";
+            /** @description Lo que se entendió de la pregunta */
+            filtros?: {
+                /** Format: date-time */
+                desde?: string | null;
+                /** Format: date-time */
+                hasta?: string | null;
+                municipio?: string | null;
+                categorias?: components["schemas"]["Categoria"][];
+                gratis?: boolean;
+                ninos?: boolean;
+            };
+        };
+        /** @description Lo que devuelve `bot GET /metrics` (services/bot/app/main.py). Schema abierto. */
+        MetricasBot: {
+            /** @description Acumulado por proveedor de IA */
+            totales?: {
+                [key: string]: {
+                    llamadas?: number;
+                    /** @description Tokens de entrada */
+                    entrada?: number;
+                    /** @description Tokens de salida */
+                    salida?: number;
+                    fallos?: number;
+                };
+            };
+            /** @description Últimas llamadas a la IA (hasta 20) */
+            ultimas?: components["schemas"]["MetricaTokens"][];
+            /** @description Peticiones a la API pendientes en la cola del bot */
+            eventos_en_cola?: number;
+            caida_simulada?: boolean;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Lo que ya envía services/bot/app/metrics.py */
+        MetricaTokens: {
+            proveedor: string;
+            modelo?: string;
+            tarea: string;
+            tokens_entrada: number;
+            tokens_salida: number;
+            latencia_ms?: number;
+            ok?: boolean;
+            /** @description Epoch en segundos */
+            ts?: number;
+        };
+        Estadisticas: {
+            periodo?: {
+                /** Format: date-time */
+                desde?: string | null;
+                /** Format: date-time */
+                hasta?: string | null;
+            };
+            actividades?: number;
+            /** @description Porcentaje en escala 0-100 */
+            pct_importadas_auto?: number;
+            inscripciones?: number;
+            asistencias?: number;
+            /** @description Ocupación media por categoría, fracción en escala 0-1 (no porcentaje) */
+            ocupacion_por_categoria?: {
+                [key: string]: number;
+            };
+            /** @description Porcentaje en escala 0-100 */
+            pct_otro_pueblo?: number;
+            solapamientos?: {
+                /** Format: uuid */
+                evento_a?: string;
+                /** Format: uuid */
+                evento_b?: string;
+                motivo?: string;
+            }[];
+            tokens?: {
+                por_proveedor?: {
+                    [key: string]: {
+                        llamadas?: number;
+                        entrada?: number;
+                        salida?: number;
+                        coste_eur?: number;
+                    };
+                };
+                coste_total_eur?: number;
+            };
+        };
+        /**
+         * Lugar
+         * @description Información permanente de un pueblo (rutas, sitios que ver, comercios, alojamientos y servicios). No tiene fecha: los planes con fecha son Evento.
+         */
+        lugar: {
+            /** Format: uuid */
+            id: string;
+            nombre: string;
+            /** @enum {unknown} */
+            tipo: "ruta" | "sitio_interes" | "comercio" | "alojamiento" | "servicio";
+            municipio: string;
+            descripcion?: string | null;
+            direccion?: string | null;
+            telefono?: string | null;
+            web?: string | null;
+            lat: number;
+            lon: number;
+            /** @description false si se usan las coordenadas del pueblo */
+            coordenadas_exactas?: boolean;
+            ruta?: {
+                /** @enum {unknown} */
+                modalidad?: "senderismo" | "btt" | "ciclismo" | "paseo";
+                distancia_km?: number | null;
+                desnivel_m?: number | null;
+                dificultad?: string | null;
+                duracion?: string | null;
+                salida?: string | null;
+            } | null;
+            fuentes: string[];
+        };
+        /** Evento */
+        evento: {
+            /** Format: uuid */
+            id: string;
+            titulo: string;
+            descripcion?: string;
+            /** @enum {unknown} */
+            categoria: "deportiva" | "cultural" | "fiestas" | "gastronomia" | "ludica" | "comercio";
+            etiquetas?: string[];
+            municipio: string;
+            lugar?: string | null;
+            lat: number;
+            lon: number;
+            /** Format: date-time */
+            fecha_inicio: string;
+            /** Format: date-time */
+            fecha_fin?: string | null;
+            precio_eur?: number | null;
+            es_gratuito: boolean;
+            plazas_totales?: number | null;
+            plazas_libres?: number | null;
+            /**
+             * @description Personas apuntadas (inscripciones confirmadas). Lo calcula la API; en los fixtures empieza en 0.
+             * @default 0
+             */
+            inscritos: number;
+            /** @enum {unknown} */
+            estado: "borrador" | "pendiente_confirmacion" | "en_revision" | "publicado" | "rechazado" | "cancelado" | "finalizado" | "archivado";
+            /** Format: uuid */
+            publicador_id?: string | null;
+            /**
+             * Format: uuid
+             * @description P5a: usuario que propuso el plan (vecino o miembro de una asociación); es su dueño aunque no tenga publicador. Null en lo importado sin remitente y en lo que crea el moderador.
+             */
+            propuesto_por_id?: string | null;
+            publicador_nombre?: string | null;
+            /** @description Foto o cartel del plan: URL http(s) o data URL de imagen (p. ej. data:image/webp;base64,…) de hasta ~1,5 MB. Si se pasa o no es una imagen, 422 imagen_invalida. */
+            imagen_url?: string | null;
+            /** @description Frase corta y pública bajo la foto del carrusel de Inicio. La escribe quien publica; si llega vacía, la API puede pedírsela al bot. */
+            frase_portada?: string | null;
+            /** @description PRIVADO. Datos de la propuesta que solo ven el organizador del evento y los moderadores. La API nunca los devuelve en rutas públicas ni sin sesión, tampoco con X-Internal-Token (no llegan al bot ni a la IA): en esos casos el campo no aparece. Mismos nombres que DatosAyuntamiento de apps/web/src/api/types.ts. */
+            datos_ayuntamiento?: {
+                /** @description Persona responsable del plan */
+                responsable?: string;
+                /** @description Teléfono de contacto del responsable (texto libre) */
+                telefono?: string;
+                /**
+                 * @description Quién organiza (`ayuntamiento`: lo crea el propio ayuntamiento desde el panel)
+                 * @enum {unknown}
+                 */
+                entidad?: "particular" | "asociacion" | "comercio" | "otra" | "ayuntamiento";
+                entidad_nombre?: string | null;
+                /**
+                 * @description Público al que va dirigido
+                 * @enum {unknown}
+                 */
+                publico?: "todos" | "infantil" | "adultos" | "mayores";
+                /** @description Lo que se pide al ayuntamiento */
+                necesidades?: ("espacio" | "calle" | "material" | "luz" | "musica" | "comida" | "seguridad" | "limpieza" | "difusion")[];
+                /**
+                 * @description ¿Tiene seguro de responsabilidad civil?
+                 * @enum {unknown}
+                 */
+                seguro_rc?: "si" | "no" | "nose";
+                observaciones?: string | null;
+                /** @description Solo ayuntamientos: concejalía o área que lo organiza */
+                area?: string | null;
+                /** @description Solo ayuntamientos: el espacio municipal ya está reservado */
+                espacio_reservado?: boolean | null;
+                /** @description Solo ayuntamientos: accesible para personas con movilidad reducida */
+                accesible?: boolean | null;
+            } | null;
+            origen: {
+                /** @enum {unknown} */
+                canal: "whatsapp" | "web" | "panel" | "facebook" | "instagram" | "web_externa" | "manual" | "telegram";
+                url?: string | null;
+                importado_auto: boolean;
+            };
+            moderacion?: {
+                motivo?: string | null;
+                score_spam?: number | null;
+                revisado_por?: string | null;
+            };
+            /** @description P3a. La apelación del organizador tras un rechazo (POST /eventos/{id}/apelacion). Solo hay una por plan; null si no ha apelado */
+            readonly apelacion?: {
+                motivo: string;
+                /** Format: date-time */
+                creada_en: string;
+            } | null;
+            /** Format: date-time */
+            creado_en?: string;
+            /** Format: date-time */
+            actualizado_en?: string;
+        };
+        /**
+         * ExtraccionEvento
+         * @description Lo que devuelve la IA del bot al leer un post, cartel o audio. La API lo recibe en POST /eventos/importar.
+         */
+        extraccion_evento: {
+            /** @description Un campo por cada dato del evento (titulo, descripcion, categoria, municipio, lugar, fecha_inicio, fecha_fin, precio_eur, es_gratuito, plazas_totales). */
+            campos: {
+                [key: string]: {
+                    valor: unknown;
+                    /** @enum {unknown} */
+                    confianza: "alta" | "media" | "baja" | "falta";
+                };
+            };
+            faltan: string[];
+            es_evento: boolean;
+            proveedor_ia: string;
+            tokens?: {
+                entrada?: number;
+                salida?: number;
+            };
+        };
+        /** Inscripcion */
+        inscripcion: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            evento_id: string;
+            /** Format: uuid */
+            usuario_id: string;
+            /** @description Solo lo ven organizador y moderador */
+            usuario_nombre?: string | null;
+            /** @enum {unknown} */
+            estado: "confirmada" | "lista_espera" | "cancelada" | "asistio" | "no_asistio";
+            /** @description Solo si estado = lista_espera */
+            posicion_espera?: number | null;
+            /** @default 1 */
+            plazas: number;
+            /** @enum {unknown} */
+            canal?: "whatsapp" | "web" | "panel" | "facebook" | "instagram" | "web_externa" | "manual" | "telegram";
+            /** Format: date-time */
+            creado_en?: string;
+            /** Format: date-time */
+            actualizado_en?: string;
+        };
+        /**
+         * MensajeEvento
+         * @description Mensaje del chat (tablón) de un evento. Nunca incluye números de teléfono.
+         */
+        mensaje_evento: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            evento_id: string;
+            /**
+             * Format: uuid
+             * @description null si lo escribe la IA
+             */
+            autor_id?: string | null;
+            autor_nombre: string;
+            /** @enum {unknown} */
+            autor_rol: "vecino" | "publicador" | "moderador" | "ia";
+            /** @enum {unknown} */
+            tipo: "pregunta" | "respuesta" | "anuncio" | "comentario";
+            texto: string;
+            /** Format: uuid */
+            en_respuesta_a?: string | null;
+            /** @description Foto adjunta a un comentario de un plan ya pasado. Solo pueden subirla quienes se inscribieron o la organización. URL o data URL de imagen */
+            imagen_url?: string | null;
+            fijado?: boolean;
+            oculto?: boolean;
+            respondido_por_ia?: boolean;
+            score_spam?: number | null;
+            /** Format: date-time */
+            creado_en: string;
+        };
+        /**
+         * Publicador
+         * @description Entidad que publica eventos (asociación, bar, ayuntamiento…).
+         */
+        publicador: {
+            /** Format: uuid */
+            id: string;
+            nombre: string;
+            /** @enum {unknown} */
+            tipo: "asociacion" | "ayuntamiento" | "bar_restaurante" | "comercio" | "otro";
+            municipio: string;
+            descripcion?: string | null;
+            telefono?: string | null;
+            /** Format: email */
+            email?: string | null;
+            /** @description chat_id de Telegram (contacto tg:<chat_id>). Solo para servicios internos */
+            telegram_id?: string | null;
+            /** @enum {unknown} */
+            estado: "solicitado" | "whatsapp_verificado" | "aprobado" | "rechazado" | "pausado";
+            /**
+             * @description Modo de publicación: 0 = a mano (todo pasa por el moderador) · 2 = automática (solo la da un moderador, con reglas). 1 está obsoleto: la API ya no lo asigna (ver enums.md)
+             * @enum {unknown}
+             */
+            nivel_confianza: 0 | 1 | 2;
+            /** @description Eventos aprobados (acumulado, para estadísticas). Ya no sube de nivel solo */
+            aprobaciones?: number;
+            automatizaciones_pausadas?: boolean;
+            categorias_habituales?: ("deportiva" | "cultural" | "fiestas" | "gastronomia" | "ludica" | "comercio")[];
+            fuentes?: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {unknown} */
+                canal: "whatsapp" | "web" | "panel" | "facebook" | "instagram" | "web_externa" | "manual" | "telegram";
+                url: string;
+                activa?: boolean;
+            }[];
+            /**
+             * Format: uuid
+             * @description Usuario responsable
+             */
+            usuario_id?: string | null;
+            /** @description PRIVADO (dato personal). Responsable de la entidad. Solo se devuelve con sesión de moderador (bearer): nunca en rutas públicas, a otros usuarios ni con X-Internal-Token (en esos casos el campo no aparece). Se envía al dar de alta (PublicadorCrear.responsable). Mismos nombres que DatosResponsable de apps/web/src/api/types.ts. */
+            responsable?: {
+                nombre: string;
+                /** @description DNI o NIE. La web lo enseña oculto salvo los 4 últimos caracteres */
+                dni: string;
+                /** @description Pueblo o dirección donde vive */
+                residencia: string;
+                /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion` */
+                edad?: number | null;
+                /** @description Un moderador ha comprobado el DNI y la residencia (POST /publicadores/{id}/verificar-identidad) */
+                identidad_verificada: boolean;
+            } | null;
+            /** @description Actividad reciente. La calcula la API (no se envía). Solo con sesión de moderador, igual que responsable. Mismos nombres que ActividadPublicador de apps/web/src/api/types.ts. */
+            readonly actividad?: {
+                /** @description Planes aprobados (publicados) en los últimos 60 días */
+                planes_60_dias: number;
+                /** @description Planes rechazados en los últimos 60 días */
+                rechazados_60_dias: number;
+                /**
+                 * Format: date-time
+                 * @description Fecha del último plan aprobado; null si no hay ninguno
+                 */
+                ultimo_plan: string | null;
+            };
+            /** Format: date-time */
+            creado_en?: string;
+        };
+        /**
+         * Usuario
+         * @description Vecino, publicador o moderador. El teléfono solo se devuelve al propio usuario y a los servicios internos.
+         */
+        usuario: {
+            /** Format: uuid */
+            id: string;
+            nombre: string;
+            /** @enum {unknown} */
+            rol: "vecino" | "publicador" | "moderador";
+            /** @description E.164 */
+            telefono?: string | null;
+            whatsapp_verificado?: boolean;
+            /** Format: email */
+            email?: string | null;
+            /** @description chat_id de Telegram (contacto tg:<chat_id>). Solo para servicios internos */
+            telegram_id?: string | null;
+            municipio?: string | null;
+            lat?: number | null;
+            lon?: number | null;
+            gustos?: ("deportiva" | "cultural" | "fiestas" | "gastronomia" | "ludica" | "comercio")[];
+            /** @description Gustos más finos: senderismo, patrimonio… */
+            etiquetas_interes?: string[];
+            /** @enum {unknown} */
+            formato_aviso?: "texto" | "audio";
+            acepta_avisos?: boolean;
+            radio_km?: number | null;
+            /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion`. Los usuarios anteriores quedan en null */
+            edad?: number | null;
+            /** Format: uuid */
+            publicador_id?: string | null;
+            /** Format: date-time */
+            creado_en?: string;
+        };
+        /**
+         * Notificacion
+         * @description Aviso que la API pide enviar al bot con POST /notify. Si el bot está caído, queda en cola (estado_envio = pendiente). Destino: `telefono` (E.164), `contacto` (E.164 o tg:<chat_id>) o los dos; si viene `contacto`, manda.
+         */
+        notificacion: {
+            /** Format: uuid */
+            id?: string;
+            telefono?: string;
+            /** @description Contacto en su canal (E.164 = WhatsApp, tg:<chat_id> = Telegram). Si viene, el bot envía ahí en vez de a `telefono` */
+            contacto?: string;
+            /** @enum {unknown} */
+            tipo: "recomendacion" | "cambio_evento" | "anuncio" | "respuesta" | "moderacion" | "confirmacion";
+            texto: string;
+            /**
+             * @default texto
+             * @enum {unknown}
+             */
+            formato: "texto" | "audio";
+            /** Format: uuid */
+            usuario_id?: string | null;
+            /** Format: uuid */
+            evento_id?: string | null;
+            /** @description Respuestas rápidas sugeridas */
+            botones?: string[];
+            /** @description Plantilla aprobada de WhatsApp para avisos fuera de la ventana de 24 h. Los demás canales la ignoran y envían `texto` */
+            plantilla?: string;
+            /** @description Parámetros de la plantilla, en orden */
+            parametros?: string[];
+            /** @enum {unknown} */
+            estado_envio?: "pendiente" | "enviada" | "fallida";
+            intentos?: number;
+            /** Format: date-time */
+            creado_en?: string;
+        } | unknown | unknown;
     };
-    /**
-     * Usuario
-     * @description Vecino, publicador o moderador. El teléfono solo se devuelve al propio usuario y a los servicios internos.
-     */
-    usuario: {
-      /** Format: uuid */
-      id: string;
-      nombre: string;
-      /** @enum {unknown} */
-      rol: 'vecino' | 'publicador' | 'moderador';
-      /** @description E.164 */
-      telefono?: string | null;
-      whatsapp_verificado?: boolean;
-      /** Format: email */
-      email?: string | null;
-      /** @description chat_id de Telegram (contacto tg:<chat_id>). Solo para servicios internos */
-      telegram_id?: string | null;
-      municipio?: string | null;
-      lat?: number | null;
-      lon?: number | null;
-      gustos?: ('deportiva' | 'cultural' | 'fiestas' | 'gastronomia' | 'ludica' | 'comercio')[];
-      /** @description Gustos más finos: senderismo, patrimonio… */
-      etiquetas_interes?: string[];
-      /** @enum {unknown} */
-      formato_aviso?: 'texto' | 'audio';
-      acepta_avisos?: boolean;
-      radio_km?: number | null;
-      /** @description P4a. Años. Opcional. Menos de 14: 422 `edad_minima` (en España hace falta tener 14 para dar el consentimiento de datos, LOPDGDD art. 7); más de 120: 422 `validacion`. Los usuarios anteriores quedan en null */
-      edad?: number | null;
-      /** Format: uuid */
-      publicador_id?: string | null;
-      /** Format: date-time */
-      creado_en?: string;
+    responses: {
+        /**
+         * @description Error con el formato común. Una ruta que no existe responde 404 con code `no_encontrado` (manejador genérico),
+         *     distinto de los 404 de recurso inexistente (`evento_no_encontrado`, `publicador_no_encontrado`…).
+         */
+        Error: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
     };
-    /**
-     * Notificacion
-     * @description Aviso que la API pide enviar al bot con POST /notify. Si el bot está caído, queda en cola (estado_envio = pendiente). Destino: `telefono` (E.164), `contacto` (E.164 o tg:<chat_id>) o los dos; si viene `contacto`, manda.
-     */
-    notificacion:
-      | {
-          /** Format: uuid */
-          id?: string;
-          telefono?: string;
-          /** @description Contacto en su canal (E.164 = WhatsApp, tg:<chat_id> = Telegram). Si viene, el bot envía ahí en vez de a `telefono` */
-          contacto?: string;
-          /** @enum {unknown} */
-          tipo: 'recomendacion' | 'cambio_evento' | 'anuncio' | 'respuesta' | 'moderacion' | 'confirmacion';
-          texto: string;
-          /**
-           * @default texto
-           * @enum {unknown}
-           */
-          formato: 'texto' | 'audio';
-          /** Format: uuid */
-          usuario_id?: string | null;
-          /** Format: uuid */
-          evento_id?: string | null;
-          /** @description Respuestas rápidas sugeridas */
-          botones?: string[];
-          /** @description Plantilla aprobada de WhatsApp para avisos fuera de la ventana de 24 h. Los demás canales la ignoran y envían `texto` */
-          plantilla?: string;
-          /** @description Parámetros de la plantilla, en orden */
-          parametros?: string[];
-          /** @enum {unknown} */
-          estado_envio?: 'pendiente' | 'enviada' | 'fallida';
-          intentos?: number;
-          /** Format: date-time */
-          creado_en?: string;
-        }
-      | unknown
-      | unknown;
-  };
-  responses: {
-    /**
-     * @description Error con el formato común. Una ruta que no existe responde 404 con code `no_encontrado` (manejador genérico),
-     *     distinto de los 404 de recurso inexistente (`evento_no_encontrado`, `publicador_no_encontrado`…).
-     */
-    Error: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        'application/json': components['schemas']['Error'];
-      };
+    parameters: {
+        Id: string;
+        Page: number;
+        Size: number;
     };
-  };
-  parameters: {
-    Id: string;
-    Page: number;
-    Size: number;
-  };
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;
