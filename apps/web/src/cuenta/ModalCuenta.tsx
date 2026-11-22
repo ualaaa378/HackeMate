@@ -20,6 +20,7 @@ import {
   aE164,
   enModoRespaldo,
   pedirCodigo,
+  setToken,
   verificarCodigo,
 } from '../api/client';
 import type { Categoria, Token } from '../api/types';
@@ -88,6 +89,8 @@ const ModalCuenta: React.FC<Props> = ({ abierto, motivo, onEntrar, onCerrar }) =
     setError(null);
     try {
       const t = await verificarCodigo(tel, codigo.trim());
+      // El perfil se guarda con la sesión recién creada (sin esto, PATCH /usuarios/me iba sin token: 401).
+      setToken(t.access_token);
       const edad = leerEdad(edadTexto);
       let usuario = t.usuario;
       try {
