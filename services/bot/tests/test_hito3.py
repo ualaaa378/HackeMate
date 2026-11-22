@@ -91,10 +91,22 @@ def test_buscar_sin_resultados_en_esas_fechas_mira_mas_adelante(agenda):
     assert "más adelante" in r[0] and "matanza" in r[1]
 
 
-def test_buscar_pone_primero_lo_que_le_gusta(agenda):
+def test_buscar_ordena_por_la_fecha_mas_cercana_y_marca_lo_que_le_gusta(agenda):
+    """Adán (22/11): los planes salen por fecha, el más cercano a hoy primero; lo que le gusta lleva su motivo."""
     vecino.preferencias_locales["+34600000201"] = preferencias.Preferencias(gustos=["cultural"])
+    agenda.agenda = list(reversed(agenda.agenda))  # la API los da desordenados
     r = conversacion.procesar(_msg("¿qué hay este mes?"))
-    assert "Teatro" in r[1] and "Te gusta: cultura" in r[1]
+    assert any("Te gusta: cultura" in (x if isinstance(x, str) else x.texto) for x in r)
+    ordenados = [e["id"] for e in sorted(agenda.agenda, key=lambda e: e["fecha_inicio"])]
+    assert vecino._v("+34600000201").ultimos == ordenados[:3]
+
+
+def test_recomendaciones_tambien_por_fecha(agenda):
+    lejos, cerca = agenda.agenda[3], agenda.agenda[0]
+    agenda.recomendaciones = [{"evento": lejos, "puntuacion": 0.9, "motivo": "a"},
+                              {"evento": cerca, "puntuacion": 0.5, "motivo": "b"}]
+    conversacion.procesar(_msg("recomiéndame algo este mes"))
+    assert vecino._v("+34600000201").ultimos[0] == cerca["id"]
 
 
 def test_cerca_en_telegram_pide_ubicacion_y_luego_busca(agenda):
