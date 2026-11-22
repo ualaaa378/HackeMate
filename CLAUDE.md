@@ -29,7 +29,7 @@ Guion de la demo (lo que TIENE que funcionar): post/audio → ficha · el public
 | `db` | — | A | `pgvector/pgvector:pg16` | 5432 |
 | `tunnel` | — | A | `cloudflare/cloudflared` (HTTPS público para el webhook) | — |
 
-**Nadie edita la carpeta de otro flujo** sin avisar y sin PR. Los stubs de `infra/stubs/` existen solo para que el compose arranque hasta que B y C integren sus servicios en `develop`.
+**Nadie edita la carpeta de otro flujo** sin avisar y sin PR.
 
 ## Reglas de arquitectura (nadie las rompe)
 
