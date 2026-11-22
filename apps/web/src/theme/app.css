@@ -2514,3 +2514,16 @@ ion-toolbar .selector-letra--compacto .selector-letra__btn[aria-pressed='true'] 
   margin-inline-start: 8px;
   font-weight: 700;
 }
+
+/* Alta de asociación: los campos con borde no se pisan entre sí */
+.form-alta ion-input,
+.form-alta ion-select {
+  --background: #fff;
+  margin-top: 18px;
+}
+.form-alta ion-button {
+  margin-top: 20px;
+}
+.form-alta h3 {
+  margin-top: 24px;
+}
