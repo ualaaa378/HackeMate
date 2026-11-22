@@ -17,8 +17,8 @@
   {
     "id": "4d3e0000-0000-4000-8000-000000000002",
     "evento_id": "1e5d0000-0000-4000-8000-000000000001",
-    "autor_id": "5a5e0000-0000-4000-8000-000000000001",
-    "autor_nombre": "Carmen",
+    "autor_id": "5a5e0000-0000-4000-8000-000000000005",
+    "autor_nombre": "José",
     "autor_rol": "vecino",
     "tipo": "pregunta",
     "texto": "¿Hay recorrido corto para ir con mi nieto?",

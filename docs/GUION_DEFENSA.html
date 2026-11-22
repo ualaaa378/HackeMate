@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Defensa técnica HackeMate</title>
+<style>
+:root{
+  --bg:#f7f6f2;--card:#ffffff;--ink:#1d2321;--muted:#5d6763;--line:#e2e0d8;
+  --accent:#1f7a5a;--accent-soft:#e3f2ec;--warn:#a5620c;--warn-soft:#fbefdc;
+  --bad:#a33a2c;--bad-soft:#f8e3df;--chip:#eef0ec;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#141816;--card:#1c211f;--ink:#e7ece9;--muted:#9aa6a1;--line:#2d3532;
+    --accent:#5cc79d;--accent-soft:#1d3329;--warn:#e3a54f;--warn-soft:#3a2d18;
+    --bad:#ef8a7b;--bad-soft:#3d221e;--chip:#262d2a;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:28px 16px 80px}
+header.hero{border-bottom:3px solid var(--accent);padding-bottom:18px;margin-bottom:22px}
+.kicker{color:var(--accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:.8rem}
+h1{font-size:2rem;margin:.2em 0 .15em;line-height:1.15}
+h2{font-size:1.35rem;margin:0 0 .5em;display:flex;gap:.6em;align-items:baseline;flex-wrap:wrap}
+h3{font-size:1.05rem;margin:1.1em 0 .4em}
+p{margin:.45em 0}
+.sub{color:var(--muted)}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0}
+nav.toc a{background:var(--chip);color:var(--ink);text-decoration:none;padding:4px 10px;border-radius:999px;font-size:.85rem}
+nav.toc a:hover{background:var(--accent-soft)}
+section.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:16px 0;break-inside:avoid-page}
+.num{color:var(--accent);font-variant-numeric:tabular-nums}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 12px}
+.pill{font-size:.78rem;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--chip);color:var(--muted)}
+.pill.w{background:var(--accent-soft);color:var(--accent)}
+.pill.t{background:var(--warn-soft);color:var(--warn)}
+.say{border-left:4px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 10px 10px 0;margin:10px 0;font-style:italic}
+.say b{font-style:normal}
+.alert{border-left:4px solid var(--warn);background:var(--warn-soft);padding:10px 14px;border-radius:0 10px 10px 0;margin:10px 0}
+.alert.bad{border-color:var(--bad);background:var(--bad-soft)}
+ul,ol{padding-left:1.25em;margin:.4em 0}
+li{margin:.25em 0}
+table{width:100%;border-collapse:collapse;font-size:.92rem;margin:.6em 0}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.tbl{overflow-x:auto}
+code{background:var(--chip);padding:1px 5px;border-radius:5px;font-size:.88em}
+.steps{counter-reset:s;list-style:none;padding:0}
+.steps>li{counter-increment:s;position:relative;padding:10px 12px 10px 52px;border:1px solid var(--line);border-radius:10px;margin:8px 0}
+.steps>li::before{content:counter(s);position:absolute;left:12px;top:10px;width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--card);display:grid;place-items:center;font-weight:700;font-size:.9rem}
+.steps .who{font-size:.8rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.box{border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.box h3{margin-top:.2em}
+.bar{height:8px;border-radius:4px;background:var(--accent);display:inline-block;vertical-align:middle;margin-right:6px}
+.check li{list-style:none;margin-left:-1.2em}
+.check li::before{content:"☐ ";color:var(--accent)}
+.ok{color:var(--accent);font-weight:700}
+.pend{color:var(--warn);font-weight:700}
+.diagram{width:100%;height:auto;max-width:860px;display:block;margin:8px auto}
+.diagram text{fill:var(--ink);font:13px system-ui,sans-serif}
+.diagram .n{fill:var(--card);stroke:var(--accent);stroke-width:1.6}
+.diagram .ext{fill:var(--chip);stroke:var(--line);stroke-width:1.4}
+.diagram .l{stroke:var(--muted);stroke-width:1.4;fill:none;marker-end:url(#a)}
+.diagram .small{font-size:11px;fill:var(--muted)}
+footer{color:var(--muted);font-size:.85rem;margin-top:30px}
+@media print{
+  body{background:#fff;font-size:12.5px}
+  .wrap{padding:0}
+  nav.toc{display:none}
+  section.card{border-color:#ccc;page-break-inside:avoid}
+  a{color:inherit;text-decoration:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">Hackathon UAL · Reto 1 «Reactiva tu pueblo» · dom 22/11/2026</div>
+  <h1>Guion de la defensa técnica · HackeMate</h1>
+  <p class="sub">Ordenado según la <b>rúbrica oficial del jurado</b>: Bloque I técnico (70 %) y Bloque II visual (30 %). Cada criterio tiene su momento. Al final hay chuletas para las preguntas.</p>
+  <p class="sub">Estado de <code>develop</code> a las 07:15: <b>708 tests de la API</b> y <b>239 del bot</b> en verde. Incluye todo lo fusionado hasta la PR #140.</p>
+  <nav class="toc">
+    <a href="#rubrica">0 · Rúbrica</a><a href="#prep">1 · Preparación</a><a href="#tiempos">Tiempos</a>
+    <a href="#c11">2 · Requisitos (1.1)</a><a href="#c12">3 · Innovación (1.2)</a><a href="#c13">4 · Arquitectura e IA (1.3)</a>
+    <a href="#c14">5 · Eficiencia (1.4)</a><a href="#c15">6 · Seguridad (1.5)</a><a href="#c16">7 · Escalabilidad (1.6)</a>
+    <a href="#b2">8 · Visual (Bloque II)</a><a href="#cierre">9 · Cierre</a><a href="#mejoras">10 · Mejoras</a><a href="#qa">11 · Preguntas</a>
+  </nav>
+</header>
+
+<!-- 0 -->
+<section class="card" id="rubrica">
+  <h2><span class="num">0</span> Cómo nos puntúan</h2>
+  <div class="tbl"><table>
+    <tr><th>Criterio</th><th>Peso</th><th>Qué buscan</th><th>Dónde</th></tr>
+    <tr><td>1.1 Requisitos mínimos y lógica de negocio</td><td><span class="bar" style="width:64px"></span><b>16 %</b></td><td>Todo lo que pide el reto, en vivo y estable</td><td>§2 + demo</td></tr>
+    <tr><td>1.2 Funcionalidades extra e innovación</td><td><span class="bar" style="width:48px"></span><b>12 %</b></td><td>Utilidad real y originalidad</td><td>§3</td></tr>
+    <tr><td>1.3 Arquitectura, APIs e IA</td><td><span class="bar" style="width:42px"></span>10,5 %</td><td>Back-end, BD, sincronización, mapas, IA</td><td>§4</td></tr>
+    <tr><td>1.4 Eficiencia y recursos</td><td><span class="bar" style="width:42px"></span>10,5 %</td><td>Tiempos, consumo, sostenible en el rural</td><td>§5</td></tr>
+    <tr><td>1.5 Seguridad, privacidad y código</td><td><span class="bar" style="width:42px"></span>10,5 %</td><td>Repo limpio, credenciales, roles, moderación</td><td>§6</td></tr>
+    <tr><td>1.6 Escalabilidad y despliegue municipal</td><td><span class="bar" style="width:42px"></span>10,5 %</td><td>Que sirva a todos los pueblos y cueste poco</td><td>§7</td></tr>
+    <tr><td>2.1 Usabilidad y accesibilidad</td><td><span class="bar" style="width:40px"></span>10 %</td><td>Vecinos de cualquier edad y ayuntamiento</td><td>§8</td></tr>
+    <tr><td>2.2 Funcionalidad del front-end</td><td><span class="bar" style="width:40px"></span>10 %</td><td>Fluidez, paneles, mapa, asistente</td><td>§8</td></tr>
+    <tr><td>2.3 Multiplataforma y responsive</td><td><span class="bar" style="width:40px"></span>10 %</td><td>Web, APK, iOS, mensajería; móvil y escritorio</td><td>§8</td></tr>
+  </table></div>
+  <div class="alert"><b>Lo que más pesa es 1.1 y 1.2 (28 % entre los dos): la demo en vivo tiene que salir entera.</b> Los otros siete criterios valen casi lo mismo, así que no se salta ninguno, aunque sea con una frase.</div>
+</section>
+
+<!-- 1 -->
+<section class="card" id="prep">
+  <h2><span class="num">1</span> Preparación (antes de entrar)</h2>
+  <div class="alert bad"><b>Comprobar antes de la defensa.</b> En el README siguen sin marcar <b>T1</b> (prueba completa en la máquina de la demo), <b>T2</b> (reinicio en frío), <b>P4c</b> (Benas), las etiquetas <code>v0.9</code> y <code>v1.0</code> y <b>C7</b> (vídeo de respaldo). <code>main</code> no se ha actualizado desde el principio. Si no está hecho, va antes que el ensayo.</div>
+  <ul class="check">
+    <li>Portátil de Adán con el compose en marcha (<code>up -d</code>) y <b>https://hackemate.rompelab.com</b> respondiendo, también <code>/api/v1/eventos</code>.</li>
+    <li>Tres móviles <b>con datos</b>, no con la wifi de la uni: el de la vecina (Telegram + APK), el del ayuntamiento que publica (Telegram) y uno para el jurado (web).</li>
+    <li><code>/admin</code> abierto en el portátil con la sesión de moderador iniciada.</li>
+    <li>Preparados para mandar al bot: un post de Facebook, un cartel, una nota de voz y un post de <b>fraude</b> («paga por Bizum por adelantado…»).</li>
+    <li>Un plan con <b>pocas plazas</b> y otro el <b>mismo día en un pueblo cercano</b>, para enseñar «quedan pocas plazas» y el choque de fechas.</li>
+    <li>Vídeo de respaldo (C7) abierto en otra pestaña por si falla la red.</li>
+    <li>Papeles: <b>portavoz</b> Adán · <b>móvil de la vecina</b> (audios) · <b>panel del moderador</b> · <b>preguntas técnicas</b>: API (Benas), bot e IA (Francisco), web (Adán).</li>
+  </ul>
+</section>
+
+<!-- tiempos -->
+<section class="card" id="tiempos">
+  <h2>Reparto del tiempo <span class="pill">propuesta para ~10 min; ajustar al tiempo real</span></h2>
+  <div class="tbl"><table>
+    <tr><th>Min</th><th>Bloque</th><th>Quién</th><th>Criterios</th></tr>
+    <tr><td>0:00–0:30</td><td>Apertura: el problema en una frase</td><td>Adán</td><td>1.1</td></tr>
+    <tr><td>0:30–4:30</td><td><b>Demo en vivo, los 7 pasos</b></td><td>Adán narra; móviles y panel en paralelo</td><td>1.1 · 2.x</td></tr>
+    <tr><td>4:30–6:00</td><td>Extras e innovación (IA y automatizaciones)</td><td>Francisco</td><td>1.2</td></tr>
+    <tr><td>6:00–7:30</td><td>Arquitectura e IA con el diagrama</td><td>Francisco / Benas</td><td>1.3</td></tr>
+    <tr><td>7:30–9:00</td><td>Eficiencia, seguridad y escalabilidad (ráfaga)</td><td>Benas / Francisco</td><td>1.4 · 1.5 · 1.6</td></tr>
+    <tr><td>9:00–9:40</td><td>Visual y multiplataforma: escritorio, móvil y APK</td><td>Adán</td><td>2.1 · 2.2 · 2.3</td></tr>
+    <tr><td>9:40–10:00</td><td>Cierre</td><td>Adán</td><td>—</td></tr>
+  </table></div>
+</section>
+
+<!-- 2 -->
+<section class="card" id="c11">
+  <h2><span class="num">2</span> Apertura y requisitos mínimos <span class="pill w">1.1 · 16 %</span></h2>
+  <div class="say">«En los pueblos del interior hay planes, pero nadie se entera: están en un cartel, en un post de Facebook o en el grupo del bar. HackeMate lo junta todo en un solo sitio <b>sin pedir a nadie que aprenda una app nueva</b>. El ayuntamiento manda un mensaje, una foto o un audio al bot, y el vecino recibe el plan que le gusta y se apunta con un botón.»</div>
+  <p><b>Tres puertas sincronizadas</b>, dicho así: <b>bot de mensajería con IA</b>, <b>app web/PWA y APK Android</b> y <b>panel del ayuntamiento</b>. Las tres leen y escriben en la misma API, así que lo que pasa en una se ve al momento en las otras.</p>
+
+  <h3>Demo en vivo · los 7 pasos</h3>
+  <ol class="steps">
+    <li><b>Post o audio → ficha.</b> Reenviamos un post de Facebook o una nota de voz al bot. La IA saca título, fecha, hora, lugar, precio y categoría, y solo pregunta lo que falta.<div class="who">Móvil del ayuntamiento · si hay choque de fechas, sale aquí el aviso con el día libre que propone la IA</div></li>
+    <li><b>El publicador confirma</b> con un botón: «¿Lo publico así?».<div class="who">Móvil del ayuntamiento</div></li>
+    <li><b>Moderación.</b> El moderador aprueba uno en la bandeja y el antispam para otro. Se enseña el chip <b>«⚠️ Posible fraude»</b> con el post del Bizum. Al rechazar, la IA redacta el motivo y el moderador lo revisa antes de enviarlo.<div class="who">Panel /admin o bot del moderador</div></li>
+    <li><b>Recomendación.</b> A la vecina le llega el plan por sus gustos, por cercanía o por su pueblo favorito, con [✋ Apuntarme] [ℹ️ Más info], y se apunta. La plaza se descuenta en la web al momento.<div class="who">Móvil de la vecina + web en el portátil</div></li>
+    <li><b>Chat del evento.</b> Pregunta «¿hay que llevar agua?» y la IA contesta con los datos de la ficha.<div class="who">APK o web</div></li>
+    <li><b>Cambio de hora.</b> El organizador lo cambia («quiero cambiar la hora» en el bot, o «Modificar» en la web). <b>Todos los apuntados reciben el aviso</b> y queda un anuncio fijado en el chat.<div class="who">Móvil del ayuntamiento → móvil de la vecina</div></li>
+    <li><b>Persona mayor, solo con audios.</b> Pregunta por voz y el bot contesta también con una nota de voz.<div class="who">Móvil de la vecina</div></li>
+  </ol>
+
+  <h3>Requisitos que hay que nombrar aunque no se enseñen</h3>
+  <ul>
+    <li><b>Roles:</b> moderador, ayuntamiento publicador, organizador y vecino. Cada uno puede hacerlo todo desde el bot.</li>
+    <li><b>Entidades publicadoras: solo ayuntamientos</b> (E1). El alta se hace con el teléfono verificado y los datos del responsable (el DNI/NIE comprueba la letra y solo lo ve el moderador), y la aprueba el moderador. Los vecinos sin entidad también pueden <b>proponer</b> planes, que pasan por moderación.</li>
+    <li><b>Ingesta automática</b> de los Facebook de los ayuntamientos (Apify), <b>sin duplicados</b>: se guarda el origen y se detectan títulos parecidos. Lo importado <b>siempre pasa por la bandeja</b>.</li>
+    <li><b>Moderación con dos modos</b> por publicador, a mano o automática, y el motivo de cada decisión a la vista.</li>
+    <li><b>Participación:</b> lista de espera que avanza sola, <code>.ics</code> y Google Calendar, desapuntarse y recordatorio 24 h antes.</li>
+    <li><b>Mapa</b> Leaflet + OpenStreetMap con filtro por tipo de plan y por meses (solo los próximos).</li>
+    <li><b>Panel:</b> actividades, % importadas solas, inscripciones y asistencia real, ocupación por tipo de plan, <b>solapamientos entre pueblos</b> y coste de la IA.</li>
+    <li>Desplegado con una <b>URL pública fija</b> (https://hackemate.rompelab.com) y el código en GitHub.</li>
+  </ul>
+</section>
+
+<!-- 3 -->
+<section class="card" id="c12">
+  <h2><span class="num">3</span> Funcionalidades extra e innovación <span class="pill w">1.2 · 12 %</span></h2>
+  <p class="sub">Regla: decir <b>para qué le sirve al pueblo</b>, no solo qué hace. El jurado valora mucho la IA y las automatizaciones, así que este bloque va con ritmo.</p>
+  <div class="grid2">
+    <div class="box"><h3>🤖 IA que ayuda a decidir</h3><ul>
+      <li><b>Antifraude</b>, además del antispam: pagos por adelantado, Bizum, datos bancarios, precios irreales o suplantar al ayuntamiento. Un plan aprobado que se edita para colar un timo <b>vuelve a revisión</b>.</li>
+      <li><b>Asistente del moderador:</b> resume la bandeja («1 posible fraude, 1 apelación…»), sugiere qué hacer con cada plan y redacta un <b>motivo de rechazo amable</b> que la persona revisa.</li>
+      <li><b>Choque de fechas</b>: si el mismo día hay otro plan a 20 km o menos, la IA propone el mejor día libre. <b>Decide quien crea el plan.</b></li>
+      <li><b>Ideas para el ayuntamiento</b>: «las migas se ocuparon al 90 %: otra edición en octubre», con [Crear borrador].</li></ul>
+    </div>
+    <div class="box"><h3>⚙️ Automatizaciones</h3><ul>
+      <li><b>«Quedan pocas plazas»</b>: avisa una sola vez a quien le puede interesar y aún no se ha apuntado.</li>
+      <li><b>Compartir coche</b>: si dos o más vecinos del mismo pueblo van a un plan en otro pueblo, se les propone ir juntos. El contacto solo se pasa <b>si los dos dicen que sí</b>.</li>
+      <li><b>«La radio del pueblo»</b>: el resumen del lunes llega también como nota de voz con tono de locutor.</li>
+      <li>Recordatorio 24 h antes, «¿qué tal fue?» al terminar y resumen semanal por pueblo.</li></ul>
+    </div>
+    <div class="box"><h3>🗣️ Para todo el mundo</h3><ul>
+      <li><b>Buscador en lenguaje natural:</b> «algo con niños el domingo por la tarde cerca de Tahal».</li>
+      <li><b>Traducción automática</b> para visitantes y residentes extranjeros.</li>
+      <li><b>Pueblo favorito:</b> te avisa de los planes de los pueblos a los que sueles ir.</li></ul>
+    </div>
+    <div class="box"><h3>👥 Participación</h3><ul>
+      <li><b>Organizador:</b> «Mis planes propuestos» y «modificar plan» por el bot, también para vecinos.</li>
+      <li><b>Apelaciones:</b> quien ve rechazado su plan puede pedir <b>una</b> revisión, desde la web o con [✍️ Apelar].</li>
+      <li><b>Robustez en directo:</b> «Simular caída de la IA» en el panel. El bot sigue funcionando con reglas.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="card" id="c13">
+  <h2><span class="num">4</span> Arquitectura, APIs e IA <span class="pill w">1.3 · 10,5 %</span></h2>
+  <svg class="diagram" viewBox="0 0 860 300" role="img" aria-label="Diagrama de la arquitectura">
+    <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="color:var(--muted)"/></marker></defs>
+    <rect class="ext" x="10" y="30" width="150" height="54" rx="10"/><text x="85" y="54" text-anchor="middle">Web / PWA / APK</text><text class="small" x="85" y="72" text-anchor="middle">vecinos · ayuntamiento</text>
+    <rect class="ext" x="10" y="200" width="150" height="54" rx="10"/><text x="85" y="224" text-anchor="middle">Telegram</text><text class="small" x="85" y="242" text-anchor="middle">(WhatsApp listo)</text>
+    <rect class="n" x="215" y="105" width="150" height="74" rx="10"/><text x="290" y="132" text-anchor="middle">Cloudflare Tunnel</text><text class="small" x="290" y="150" text-anchor="middle">rompelab.com · HTTP/2</text><text class="small" x="290" y="165" text-anchor="middle">→ nginx (web)</text>
+    <rect class="n" x="430" y="30" width="150" height="54" rx="10"/><text x="505" y="54" text-anchor="middle">api · FastAPI</text><text class="small" x="505" y="72" text-anchor="middle">decide estados</text>
+    <rect class="n" x="430" y="200" width="150" height="54" rx="10"/><text x="505" y="224" text-anchor="middle">bot · FastAPI</text><text class="small" x="505" y="242" text-anchor="middle">canales + IA</text>
+    <rect class="n" x="655" y="30" width="190" height="54" rx="10"/><text x="750" y="54" text-anchor="middle">PostgreSQL + pgvector</text><text class="small" x="750" y="72" text-anchor="middle">Alembic · SQLite en local</text>
+    <rect class="ext" x="655" y="200" width="190" height="54" rx="10"/><text x="750" y="218" text-anchor="middle">IA en cadena</text><text class="small" x="750" y="234" text-anchor="middle">Gemini → NIM → FreeLLM</text><text class="small" x="750" y="248" text-anchor="middle">→ Claude → reglas</text>
+    <path class="l" d="M160,57 L215,125"/><path class="l" d="M160,227 L215,160"/>
+    <path class="l" d="M365,125 L430,62"/><path class="l" d="M365,160 L430,222"/>
+    <path class="l" d="M580,57 L655,57"/><path class="l" d="M580,227 L655,227"/>
+    <path class="l" d="M495,200 L495,84"/><path class="l" d="M515,84 L515,200"/>
+    <text class="small" x="290" y="196" text-anchor="middle">/ · /api/ · /webhook/</text>
+    <text class="small" x="522" y="140">/notify</text><text class="small" x="488" y="140" text-anchor="end">HTTP</text>
+  </svg>
+  <ul>
+    <li><b>Cinco servicios en Docker Compose:</b> <code>api</code> (FastAPI + SQLAlchemy + Alembic), <code>bot</code>, <code>web</code> (Ionic React + nginx), <code>db</code> y <code>tunnel</code>. Se levanta todo con un solo <code>docker compose up</code>.</li>
+    <li><b>Reglas que nadie rompe:</b> solo la API toca la base de datos y decide estados, y solo el bot habla con los canales y con la IA. <b>La IA propone, la API valida y una persona decide lo importante.</b></li>
+    <li><b>Contract-first:</b> <code>contracts/openapi.yaml</code>, JSON Schema y datos de ejemplo. Los tres programamos a la vez contra el contrato, y después del freeze solo se <b>añaden</b> campos opcionales.</li>
+    <li><b>IA con cadena de respaldo:</b> si un proveedor falla, pasa al siguiente sin que el vecino lo note. Las tareas nuevas usan FreeLLM primero, y todas tienen <b>plantilla sin IA</b>.</li>
+    <li><b>Qué hace la IA:</b> ficha a partir de un post, un cartel (visión) o un audio (transcripción), antispam y antifraude, chat con los datos de la ficha, recomendaciones, ideas para el ayuntamiento, choque de fechas, motivos de rechazo, radio del pueblo y voz (texto a audio).</li>
+    <li><b>Sincronización:</b> webhook de Telegram → bot → API. Los avisos salen de la API por <code>POST /notify</code>, con cola si el bot está caído. La web refresca cada pocos segundos.</li>
+    <li><b>Tareas programadas</b> en un solo ciclo: recordatorios, «¿qué tal fue?», resumen semanal, pocas plazas y compartir coche.</li>
+    <li><b>GIS:</b> Leaflet + OpenStreetMap, «cerca de mí» por radio y distancias entre pueblos para los choques.</li>
+    <li><b>Pruebas:</b> <b>708 tests de la API</b> en Docker y <b>239 del bot</b>, todos en verde.</li>
+  </ul>
+</section>
+
+<!-- 5 -->
+<section class="card" id="c14">
+  <h2><span class="num">5</span> Eficiencia y recursos <span class="pill w">1.4 · 10,5 %</span></h2>
+  <ul>
+    <li><b>Reglas antes que IA:</b> la intención, el spam evidente, las fechas y las búsquedas sencillas se resuelven sin gastar tokens. Solo lo dudoso va a la IA.</li>
+    <li><b>Coste medido y a la vista:</b> el panel enseña llamadas, tokens y € por proveedor. <b>0 € en la demo.</b></li>
+    <li><b>Respuesta inmediata:</b> el bot contesta al momento y lo lento (IA, voz de la radio, avisos) va en segundo plano.</li>
+    <li><b>No se pierde nada si algo cae:</b> cola en disco, «circuito abierto» ante un servicio caído y reintentos de avisos. Cada aviso automático se manda <b>una sola vez</b> por persona.</li>
+    <li><b>Ligero para el rural:</b> la PWA guarda solo los estáticos, las imágenes se limitan, las consultas van paginadas y el túnel usa HTTP/2 por TCP 443, que pasa en redes que bloquean UDP.</li>
+    <li>Funciona con mensajes y audios: no hace falta buena cobertura ni un móvil potente.</li>
+  </ul>
+</section>
+
+<!-- 6 -->
+<section class="card" id="c15">
+  <h2><span class="num">6</span> Seguridad, privacidad y calidad del código <span class="pill w">1.5 · 10,5 %</span></h2>
+  <div class="grid2">
+    <div class="box"><h3>Accesos</h3><ul>
+      <li>Roles con JWT. Entre servicios, <code>X-Internal-Token</code> comparado en tiempo constante; nginx lo <b>borra si llega de fuera</b>.</li>
+      <li>La base de datos, la API y el bot solo escuchan en <code>127.0.0.1</code>: desde fuera solo se entra por la web.</li>
+      <li>Moderador con usuario y contraseña, <b>bloqueo tras 5 intentos</b>. El acceso demo nunca da sesión de moderador.</li>
+      <li><b>Webhook de Telegram siempre con secreto</b>: nadie puede hacerse pasar por el moderador con un mensaje falso.</li></ul>
+    </div>
+    <div class="box"><h3>Datos y contenido</h3><ul>
+      <li>Datos mínimos. El DNI/NIE solo lo ve el moderador, y enmascarado en el bot. El teléfono no sale en público y los avisos son <b>opt-in</b>.</li>
+      <li>El coche compartido exige <b>doble consentimiento</b> antes de pasar ningún contacto.</li>
+      <li><b>Edad mínima de 14 años</b> (LOPDGDD art. 7).</li>
+      <li>Antispam y antifraude en planes, chat y ediciones. Límite de 8 mensajes por minuto en el chat. Retirar, pausar y silenciar.</li></ul>
+    </div>
+    <div class="box"><h3>Plataforma</h3><ul>
+      <li>Content-Security-Policy y cabeceras de seguridad en nginx; <code>no-new-privileges</code> en los contenedores.</li>
+      <li>Credenciales solo por variables de entorno. El <code>.env</code> nunca se sube, y la API avisa si se usa una clave de ejemplo.</li></ul>
+    </div>
+    <div class="box"><h3>Código</h3><ul>
+      <li>Monorepo por servicio, ramas por flujo, PR a <code>develop</code> y Conventional Commits.</li>
+      <li>Contratos versionados, migraciones Alembic y tests antes de cada merge.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="card" id="c16">
+  <h2><span class="num">7</span> Escalabilidad y despliegue municipal <span class="pill w">1.6 · 10,5 %</span></h2>
+  <ul>
+    <li><b>Un pueblo más es una fila más</b> en la tabla de municipios. Toda la Mancomunidad cabe en la misma instalación.</li>
+    <li><b>El ayuntamiento se da de alta solo</b>, desde la web («Dar de alta mi ayuntamiento») o por el bot, y lo aprueba el moderador.</li>
+    <li><b>Coste casi cero:</b> Telegram, el túnel de Cloudflare y la IA en planes gratuitos, con reglas de respaldo. Basta un ordenador del ayuntamiento.</li>
+    <li>Las <b>mismas imágenes Docker</b> sirven en la nube (VPS de la Diputación, Render…) sin tocar código.</li>
+    <li><b>WhatsApp listo:</b> el adaptador de Meta está programado y se activa por configuración en cuanto una entidad verifique su negocio. Puede convivir con Telegram.</li>
+    <li><b>Mantenimiento bajo:</b> todo con botones. Lo dudoso cae solo en la bandeja y las tareas son automáticas.</li>
+  </ul>
+</section>
+
+<!-- 8 -->
+<section class="card" id="b2">
+  <h2><span class="num">8</span> Parte visual, front-end y multiplataforma <span class="pill t">Bloque II · 30 %</span></h2>
+  <div class="grid2">
+    <div class="box"><h3>2.1 Usabilidad y accesibilidad</h3><ul>
+      <li>Para <b>personas mayores</b>: todo por voz, con respuestas en audio, botones grandes, selector de tamaño de letra (A A A) y buen contraste.</li>
+      <li>Un camino para cada perfil: vecino, organizador y ayuntamiento.</li>
+      <li>Los gustos y la edad son opcionales: se puede saltar todo.</li></ul>
+    </div>
+    <div class="box"><h3>2.2 Funcionalidad</h3><ul>
+      <li>Agenda con buscador, «Cómo llegar» y el último filtro recordado; mapa por meses y Recuerdos.</li>
+      <li>El bot enseña los planes <b>por fecha, del más cercano al más lejano</b>.</li>
+      <li>Bandeja con contador, chips de fraude y apelación, y la acción recomendada.</li>
+      <li>Panel con ocupación, solapamientos, coste de la IA y el bot en directo. Formulario del ayuntamiento con aviso de choque.</li></ul>
+    </div>
+    <div class="box"><h3>2.3 Multiplataforma</h3><ul>
+      <li>Web/PWA instalable, <b>APK Android</b> (Capacitor) y <b>bot de Telegram</b>, todos con los mismos datos.</li>
+      <li>En escritorio, tres zonas (tus planes, agenda y recuerdos); en el móvil, una columna.</li>
+      <li>En iOS, la PWA se instala desde Safari. WhatsApp está a la espera de Meta.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="card" id="cierre">
+  <h2><span class="num">9</span> Cierre <span class="pill">30 s</span></h2>
+  <div class="say">«HackeMate no pide a los pueblos que cambien sus costumbres: usa el móvil que ya tienen en el bolsillo, la voz para quien no escribe y un panel sencillo para el ayuntamiento. <b>Coste cero</b>, sigue funcionando aunque se caiga la IA y se puede instalar mañana en cualquier pueblo de la Mancomunidad.»</div>
+</section>
+
+<!-- 10 -->
+<section class="card" id="mejoras">
+  <h2><span class="num">10</span> Líneas de mejora y expansión</h2>
+  <div class="tbl"><table>
+    <tr><th>Línea</th><th>Criterio</th><th>Estado</th></tr>
+    <tr><td>Asistente del moderador con IA</td><td>1.2 · 1.5</td><td class="ok">Hecho</td></tr>
+    <tr><td>Aviso «quedan pocas plazas»</td><td>1.2 · 1.4</td><td class="ok">Hecho</td></tr>
+    <tr><td>Choque de fechas entre pueblos con día alternativo propuesto por la IA</td><td>1.2 · 1.6</td><td class="ok">Hecho</td></tr>
+    <tr><td>«La radio del pueblo»: resumen semanal en audio</td><td>1.2 · 2.1</td><td class="ok">Hecho</td></tr>
+    <tr><td>Compartir coche con doble consentimiento</td><td>1.2 · 1.6</td><td class="ok">Hecho</td></tr>
+    <tr><td>Solo ayuntamientos como entidades, con alta propia desde la web</td><td>1.1 · 1.6</td><td class="ok">Hecho</td></tr>
+    <tr><td>Exigir también el <b>lugar</b> al publicar por el bot (en la web ya es obligatorio)</td><td>1.1</td><td class="pend">Pendiente de decidir</td></tr>
+    <tr><td>Activar WhatsApp (Meta Cloud API)</td><td>1.6 · 2.3</td><td>Programado, falta la verificación</td></tr>
+    <tr><td>App nativa de iOS con el mismo proyecto Capacitor</td><td>2.3</td><td>Pendiente</td></tr>
+    <tr><td>Informe mensual para el alcalde redactado por la IA</td><td>1.2 · 1.6</td><td>Propuesta</td></tr>
+    <tr><td>Ingesta de Instagram y de webs municipales</td><td>1.2</td><td>Pendiente</td></tr>
+    <tr><td>Clasificador antispam local (tipo SBERT) para gastar menos tokens</td><td>1.4</td><td>Pendiente</td></tr>
+    <tr><td>Despliegue en la nube de la Diputación con copias de seguridad</td><td>1.6</td><td>Pendiente</td></tr>
+    <tr><td>Rotar todas las claves y la contraseña de moderación</td><td>1.5</td><td>Tras la hackathon</td></tr>
+  </table></div>
+</section>
+
+<!-- 11 -->
+<section class="card" id="qa">
+  <h2><span class="num">11</span> Preguntas que nos pueden hacer</h2>
+  <div class="tbl"><table>
+    <tr><th>Pregunta</th><th>Respuesta corta</th><th>Quién</th></tr>
+    <tr><td>¿Y si se cae la IA?</td><td>Pasa al siguiente proveedor y, si caen todos, a reglas. Lo enseñamos con «Simular caída de la IA».</td><td>Francisco</td></tr>
+    <tr><td>¿Cuánto cuesta?</td><td>0 € en la demo, medido por proveedor en el panel. En producción, unos pocos euros al mes como mucho, y solo si se usa Claude.</td><td>Francisco</td></tr>
+    <tr><td>¿Por qué Telegram y no WhatsApp?</td><td>Meta bloquea el envío hasta verificar un negocio, y no inventamos datos para saltárnoslo. WhatsApp ya está programado y se activa por configuración.</td><td>Francisco</td></tr>
+    <tr><td>¿Cómo evitáis los timos?</td><td>Antifraude con reglas e IA. Lo importado y lo dudoso pasa siempre por una persona, y editar un plan aprobado vuelve a pasar el filtro.</td><td>Francisco</td></tr>
+    <tr><td>¿La IA decide sola?</td><td>No. Propone (ficha, motivo de rechazo, día alternativo) y una persona confirma. Los estados solo los cambia la API.</td><td>Benas</td></tr>
+    <tr><td>¿Protección de datos?</td><td>Datos mínimos, DNI solo para el moderador, avisos con consentimiento, coche con doble sí, edad mínima de 14 años y claves fuera del código.</td><td>Benas</td></tr>
+    <tr><td>¿Por qué solo ayuntamientos?</td><td>Así quien publica es una entidad verificable y se reduce el fraude. Los vecinos pueden proponer planes, que pasan por moderación.</td><td>Adán</td></tr>
+    <tr><td>¿Cómo se añade otro pueblo?</td><td>Con una fila en la tabla de municipios. Su ayuntamiento se da de alta solo desde la web o el bot.</td><td>Benas</td></tr>
+    <tr><td>¿Cómo os coordinasteis tres personas?</td><td>Contrato primero (OpenAPI + JSON Schema), una rama por flujo y PR a develop con tests.</td><td>Adán</td></tr>
+  </table></div>
+</section>
+
+<footer>Fuente: <code>docs/GUION_EXPOSICION.md</code> y el README, actualizado con lo fusionado hasta la PR #140. Para PDF: abrir en el navegador → Imprimir → Guardar como PDF (la hoja de impresión ya está preparada).</footer>
+</div>
+</body>
+</html>

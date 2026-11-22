@@ -335,7 +335,7 @@ Cada flujo tiene su carpeta. **Nadie edita la carpeta de otro** sin avisar (y en
 ### 5.5 Docker (presentación) y despliegue alternativo
 
 - `infra/docker-compose.yml` con los servicios `db` (imagen `pgvector/pgvector:pg16`), `api`, `bot`, `web` (build de Vite servido por nginx) y `tunnel` (`cloudflare/cloudflared`) que da la **URL HTTPS pública** para el webhook de Twilio y para que el jurado abra la web.
-- Arranque: `cp .env.example .env` → rellenar claves → `docker compose -f infra/docker-compose.yml up --build`.
+- Arranque: `cp .env.example .env` → rellenar claves → `docker compose --env-file .env -f infra/docker-compose.yml up --build`.
 - `scripts/demo_reset.sh` deja la base de datos en el estado inicial de la demo (`seed.py`).
 - **Plan B de despliegue** (sin cambiar código): cada servicio tiene su `Dockerfile` → se puede subir tal cual a Render/Railway (api y bot), Vercel/Netlify (web estática) y Supabase/Neon (Postgres con pgvector), cambiando solo variables de entorno.
 

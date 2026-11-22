@@ -1,0 +1,229 @@
+{
+  "descripcion": "Posts públicos de Facebook de las páginas de los pueblos, descargados con scripts/importar_facebook.py (Facebook Posts Scraper). Solo url, página, fecha, texto y texto de las fotos. Se reimportan sin red con --desde-json.",
+  "actualizado_en": "2026-11-21T10:12:23+00:00",
+  "paginas": [
+    "https://www.facebook.com/MonteSionLucainenaDeLasTorres",
+    "https://www.facebook.com/profile.php?id=100064568389094",
+    "https://www.facebook.com/profile.php?id=100064636603636",
+    "https://www.facebook.com/profile.php?id=61551352857893"
+  ],
+  "posts": [
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid02fpUY2mbPTwkuaAmEBfQfgJA3g9u15Qtwin6dpj5j2ptnu4fprFQzLXgT79JCHGUwl&id=100064568389094",
+      "pagina_url": "https://www.facebook.com/profile.php?id=100064568389094",
+      "pagina": "Ayuntamiento de Uleila del Campo",
+      "publicador_id": null,
+      "fecha": "2026-11-16T18:50:16.000Z",
+      "texto": "🍢🍰 ¡ULEILA DEL CAMPO SE VA DE TAPAS… Y DE POSTRES! 🎉\n\n¡Prepara el apetito porque tenemos un sábado de los buenos! 😋\n\n📅 Sábado 28 de noviembre\n📍 Uleila del Campo\n\nLlega nuestra RUTA DE LA TAPA Y EL POSTRE, una jornada para disfrutar de la gastronomía, la música y el mejor ambiente. 🥳\n\n🍽️ Desde las 12:00 h, recorre nuestros establecimientos, prueba sus especialidades y elige tu tapa y tu postre favoritos.\n\n🚌 ¡MINIBÚS GRATUITO! Para que puedas recorrer todos los establecimientos sin preocuparte por los desplazamientos.\n\n🎸 A las 16:00 h, música en directo en La Placeta.\n\n🎧 ¡Y después seguimos la fiesta con DJ!\n\n🏆 ¡TÚ DECIDES QUIÉN GANA!\nConsigue tu Tapaporte, reúne al menos 4 sellos de establecimientos diferentes entre tapas y postres y vota por tus favoritos.\n\n🎁 ¡Además, participarás en un sorteo de regalos!\n\n🗳️ 18:00 h: Cierre de la urna en La Placeta.\n\n🏆 19:00 h: Anunciaremos los ganadores de la Mejor Tapa y el Mejor Postre de Uleila del Campo 2026.\n\n❤️ Una oportunidad perfecta para disfrutar de nuestro pueblo, apoyar a nuestros establecimientos y pasar un día estupendo en compañía.\n\n¡Ven con hambre, que de la diversión nos encargamos nosotros! 😜🍷\n\nOrganiza: Ayuntamiento de Uleila del Campo\n\n#UleilaDelCampo #RutaDeLaTapa #RutaDelPostre #Almería #Gastronomía FiestaEnUleila ComercioLocal",
+      "texto_fotos": [
+        "May be an image of cake, potpie and text"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid0SXnF3mL1PncLzMFS3rSrDSyURpMg24gYM13hPzZFpQhFkRjJJG185XsPGtk2rRecl&id=61551352857893",
+      "pagina_url": "https://www.facebook.com/profile.php?id=61551352857893",
+      "pagina": "Ayuntamiento de Senés",
+      "publicador_id": null,
+      "fecha": "2026-11-16T12:08:58.000Z",
+      "texto": "🌊 SALITRE | SESIÓN DE CUENTOS PARA ADULTOS\n\n🎙️ Disfruta de una sesión de narración oral con Paula Mandarina, un viaje por las historias, costumbres y tradiciones de nuestra tierra mediterránea.\n\n🎸 Carlos López – Guitarra\n🎻 Gastón García – Violín\n\n📅 21 de noviembre\n🕣 20:30 h\n📍 Salón Cultural de Senés\n\n🔞 Actividad exclusiva para adultos.\n\n✨ Organiza el Ayuntamiento de Senés en colaboración con la Diputación de Almería.\n\n¡Os esperamos! ❤️",
+      "texto_fotos": [
+        "May be an image of trumpet, violin, clarinet and text"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid02McjytpDAkeGsZq3Bd6dxf8Kt74xUjV762dxrxosJ9zZ85Ho4mWeYAxbk1dS2VVJJl&id=100064636603636",
+      "pagina_url": "https://www.facebook.com/profile.php?id=100064636603636",
+      "pagina": "Ayuntamiento de Lucainena de las Torres",
+      "publicador_id": null,
+      "fecha": "2026-11-13T12:01:05.000Z",
+      "texto": "MERIENDA DEL PENSIONISTA \n\n🗓️ 21 de Noviembre \n\n🕡 18:30h\n\nSalón Cultural",
+      "texto_fotos": [
+        "May be an image of text"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid02v1vJNtJ5NMndAEpWh1vVyDJbEXbjaQMy28XdY9CXA35kQCGJwWS9gL7SRrWsQUAil&id=100064568389094",
+      "pagina_url": "https://www.facebook.com/profile.php?id=100064568389094",
+      "pagina": "Ayuntamiento de Uleila del Campo",
+      "publicador_id": null,
+      "fecha": "2026-11-12T07:09:30.000Z",
+      "texto": "Ya es una realidad y no vamos a parar hasta tener nuestro complejo deportivo terminado, en estos momentos se está trabajando en el campo de fútbol 7, y seguiremos con mejoras en los vestuarios, barbacoas, petanca, cerramientos, parque de calistenia, pergolas, biosaludables,,,,,,,,",
+      "texto_fotos": [
+        "May be an image of monument"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid027DB6cy6PxioDrtff9JtiMfJATbaXpsYrM4NM8SfKLMaha2GapmhwRkwFYxzBTCuZl&id=100064636603636",
+      "pagina_url": "https://www.facebook.com/profile.php?id=100064636603636",
+      "pagina": "Ayuntamiento de Lucainena de las Torres",
+      "publicador_id": null,
+      "fecha": "2026-11-11T08:35:43.000Z",
+      "texto": "ESCUELA MUNICIPAL DE IDIOMAS \n============================\nReunion informativa inglés español y para ciclos.\nProgramación por niveles según edad . Mayores o niños . \nPróximo sábado día 14/11/2026\nLugar : Salon cultural \nHora : 12 de la mañana",
+      "texto_fotos": [
+        "May be an image of text"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid02JPmq6cTuYhf9gwMrbRbBV1w37tJbgu6SKW8CMZytHHnDVaVJ989HoG8MAbzVBUqil&id=100064568389094",
+      "pagina_url": "https://www.facebook.com/profile.php?id=100064568389094",
+      "pagina": "Ayuntamiento de Uleila del Campo",
+      "publicador_id": null,
+      "fecha": "2026-11-11T07:29:48.000Z",
+      "texto": "Atención! Se aproxima una tarde de risas abundantes, el próximo Sábado día 21 de Noviembre a las 18:30 en el Teatro Municipal podremos disfrutar de esta obra de teatro  super graciosa ( se ve de una burra ) interpretada por la Asociación de Mujeres de Benizalon, no faltéis!",
+      "texto_fotos": [
+        "May be an image of text"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/MonteSionLucainenaDeLasTorres/posts/pfbid02eWaGyv42FGXYDeTMyzUts6QZ5wFkvMhyyeZzZa891ais2m64bCvqvBnXC6NEU7U7l",
+      "pagina_url": "https://www.facebook.com/MonteSionLucainenaDeLasTorres",
+      "pagina": "MonteSionLucainenaDeLasTorres",
+      "publicador_id": null,
+      "fecha": "2026-11-09T10:56:49.000Z",
+      "texto": "Las Refajonas con la Santísima Virgen de Monte-Sión.",
+      "texto_fotos": [
+        "No photo description available."
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid04RyvWHeJxQbCEsagtcpC9Tasuk7vKwMgZZ48HjAC7pgzKS3ybZvwDH3gviSCmTa1l&id=100064568389094",
+      "pagina_url": "https://www.facebook.com/profile.php?id=100064568389094",
+      "pagina": "Ayuntamiento de Uleila del Campo",
+      "publicador_id": null,
+      "fecha": "2026-11-07T16:00:48.000Z",
+      "texto": "Hola a todos! Seguimos mejorando las instalaciones de nuestras calles, esta vez le ha tocado una remodelación completa a la Calle Prim, se van a instalar todas las tuberías  nuevas de abastecimiento, saneamiento y por supuesto la pavimentación.",
+      "texto_fotos": [
+        "No photo description available.",
+        "No photo description available.",
+        "No photo description available."
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid02Mj5N6Zz6bsnTtNBC8HsVMTy1TUBtX3r2pqHyfGPpQRyyb3hwesYuSEW5yGESfoC7l&id=100064636603636",
+      "pagina_url": "https://www.facebook.com/profile.php?id=100064636603636",
+      "pagina": "Ayuntamiento de Lucainena de las Torres",
+      "publicador_id": null,
+      "fecha": "2026-11-06T14:26:33.000Z",
+      "texto": "Esta semana nuestros peques juegan en casa!!! 💪🏼",
+      "texto_fotos": []
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid02i9nbKsi9iQ8EbvCQpJnSUm2sXngn174UKXjnrcKnzeTzZgCiEBXWit9i2nZjA1HWl&id=100064568389094",
+      "pagina_url": "https://www.facebook.com/profile.php?id=100064568389094",
+      "pagina": "Ayuntamiento de Uleila del Campo",
+      "publicador_id": null,
+      "fecha": "2026-11-06T11:41:11.000Z",
+      "texto": "Hola, desde el Ayuntamiento apoyamos a nuestro equipo de Fútbol Senior, y vosotros!!                                    \n\nYa están aquí las equipaciones para la temporada 2026/2027.🔥⚽\n\n¡Queremos que toda nuestra afición luzca nuestros colores!💪🏻\n\n👕 Precio: 22 € cada camiseta.\n\n📌 IMPORTANTE:\n\nLas camisetas NO se pueden personalizar con nombre ni número.\n\n🤝 DESCUENTO EXCLUSIVO PARA NUESTROS PATROCINADORES, como agradecimiento por su apoyo y compromiso con el club. ¡Gracias por seguir formando parte de esta familia!\n\n📲 Haz tu pedido por WhatsApp: 606 57 56 48\n\n🗓️Plazo para realizar los pedidos: hasta el 8 de noviembre a las 22:00 h.\n\n¡No te quedes sin la tuya!\n\n💙¡JUNTOS UNA TEMPORADA MÁS!🤍",
+      "texto_fotos": [
+        "May be an image of text"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid0374eyHwKp7XhoE9o1abU3fENPQNTJDKaRBnkBnRMtFggLPtumnMqXJ3e9W9DoPzo5l&id=100064568389094",
+      "pagina_url": "https://www.facebook.com/profile.php?id=100064568389094",
+      "pagina": "Ayuntamiento de Uleila del Campo",
+      "publicador_id": null,
+      "fecha": "2026-11-05T11:02:12.000Z",
+      "texto": "🏆 ¡RETO CONSEGUIDO!\n\nEl Ayuntamiento de Uleila del Campo quiere agradecer a todos los participantes su implicación, esfuerzo y compromiso en este reto.\n\nGracias a vuestra participación, hemos alcanzado este gran logro, demostrando una vez más la importancia de la colaboración y el espíritu de comunidad.\n\n¡Esta victoria es de todos!\n\n¡Enhorabuena y gracias por formar parte de este éxito! 👏 \n\nAyuntamiento de Uleila del Campo\nDeportes Diputación de Almería",
+      "texto_fotos": [
+        "May be an image of one or more people and text",
+        "May be an image of text"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/reel/1864385718093678/",
+      "pagina_url": "https://www.facebook.com/MonteSionLucainenaDeLasTorres",
+      "pagina": "MonteSionLucainenaDeLasTorres",
+      "publicador_id": null,
+      "fecha": "2026-11-04T12:25:24.000Z",
+      "texto": "Con elegancia avanzaba la Reina de las Flores, la Santísima Virgen de Monte-Sión, por la calle Real, arropada por sus devotos y acompañada por los solemnes sones de «Amarguras», de Manuel Font de Anta.\n\nPor unos instantes, el tiempo pareció detenerse y aquella calle nos envolvió mágicamente en una estampa de ensueño, de esas que emocionan, estremecen y quedan para siempre en el recuerdo. 💚\n\n🎺: Banda Música Santa Cecilia de Sorbas",
+      "texto_fotos": []
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid0k4JrCCQEeyx2zx1J9aqAFPaEDwSdeSEXfYEGySfKB5YpXtFSvVZQp25DLKmgzsRxl&id=100064568389094",
+      "pagina_url": "https://www.facebook.com/profile.php?id=100064568389094",
+      "pagina": "Ayuntamiento de Uleila del Campo",
+      "publicador_id": null,
+      "fecha": "2026-11-02T12:06:35.000Z",
+      "texto": "Seguimos sustituyendo tuberías de agua de consumo en nuestro Pueblo, otro año más conseguimos minimizar las averías y mejorar la calidad del servicio, esta vez le ha tocado a la Calle Olivarico.",
+      "texto_fotos": [
+        "No photo description available.",
+        "No photo description available."
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid0DGwa6yzdfu6nDwTVPd5jTTyFGFuxem7J9TWRo9A31L17LZdaZ5Bam9BZqxBhjF5Ul&id=61551352857893",
+      "pagina_url": "https://www.facebook.com/profile.php?id=61551352857893",
+      "pagina": "Ayuntamiento de Senés",
+      "publicador_id": null,
+      "fecha": "2026-11-01T11:43:40.000Z",
+      "texto": "🎃👻 ¡HOY SÍ, HALLOWEEN EN SENÉS! 🕸️🦇\n\nTras la cancelación de las actividades previstas para ayer, 31 de octubre, con motivo de los tres días de luto oficial decretados a nivel nacional, ¡hoy retomamos nuestra celebración de Halloween!\n\n😱 ¡Esta noche os esperamos para disfrutar de nuestro PASAJE DEL TERROR!\n\n📅 Hoy, domingo 1 de noviembre\n🕗 20:00 h\n📍 Punto de encuentro: Plaza Felipe VI\n\n🧟‍♂️🕷️ ¡Preparad vuestros disfraces y las ganas de pasar una noche terroríficamente divertida!\n\n🎃 ¡Os esperamos a todos!",
+      "texto_fotos": []
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid02oay46msizEyQXsYKFjq1xPLxQ6EHnRxvab5CqottbHECLgo7gLZsUWUwMD3ecRvUl&id=100064568389094",
+      "pagina_url": "https://www.facebook.com/profile.php?id=100064568389094",
+      "pagina": "Ayuntamiento de Uleila del Campo",
+      "publicador_id": null,
+      "fecha": "2026-10-29T14:01:51.000Z",
+      "texto": "🎃 COMUNICADO | APLAZAMIENTO DE HALLOWEEN EN ULEILA DEL CAMPO 🖤\n\nDesde el Ayuntamiento de Uleila del Campo queremos comunicar a todos nuestros vecinos y vecinas que la celebración de Halloween, prevista para el sábado 31 de octubre, queda aplazada al lunes 2 de noviembre, a las 18:00 horas.\n\n🖤 Como todos sabemos, nuestro país atraviesa unos días de tristeza tras el trágico accidente ferroviario. Debido al luto nacional decretado, durante estos días no se pueden celebrar los actos festivos previstos en la vía pública.\n\nAdemás, el 1 de noviembre celebramos el Día de Todos los Santos, una fecha muy especial para muchas familias de nuestro pueblo, dedicada al recuerdo, al respeto y a honrar la memoria de nuestros seres queridos que ya no están con nosotros.\n\nPor todo ello, creemos que lo más adecuado es trasladar nuestra celebración al lunes 2 de noviembre, respetando tanto los días de luto como nuestras tradiciones y sentimientos.\n\n🎃 Queremos que nuestros pequeños y mayores puedan disfrutar de Halloween con la misma ilusión con la que lo hemos preparado, pero también entendemos que hay momentos para celebrar y momentos para acompañar, recordar y mostrar respeto.\n\n📅 NUEVA FECHA: LUNES 2 DE NOVIEMBRE\n🕕 HORA: 18:00 H\n📍 SALIDA: PUERTA DEL AYUNTAMIENTO\n\n❤️ Agradecemos de corazón vuestra comprensión y esperamos que nos acompañéis en esta nueva fecha.\n\nPorque celebrar nuestras tradiciones también significa saber respetar los momentos importantes.\n\nUn abrazo a todos nuestros vecinos y vecinas.",
+      "texto_fotos": [
+        "May be an image of text"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid02zGBv38rxgWk2BfWiyWsukNiszv4L4Bvw45DDMNu7CzrguvVh9GhbzveGLaKJyrTbl&id=61551352857893",
+      "pagina_url": "https://www.facebook.com/profile.php?id=61551352857893",
+      "pagina": "Ayuntamiento de Senés",
+      "publicador_id": null,
+      "fecha": "2026-10-29T00:12:03.000Z",
+      "texto": "📣 COMUNICADO OFICIAL | CANCELACIÓN DE ACTIVIDADES DE HALLOWEEN\n\nDesde el Ayuntamiento de Senés informamos de que todas las actividades de Halloween previstas para el sábado 31 de octubre quedan canceladas, con motivo de los tres días de luto oficial decretados por el Gobierno de España, del 29 al 31 de octubre, tras el trágico accidente ferroviario ocurrido en Urda (Toledo).\n\nDesde nuestro Ayuntamiento queremos trasladar nuestras más sinceras condolencias a las familias y seres queridos de las víctimas, así como todo nuestro apoyo a las personas afectadas.\n\n🖤 Senés se une al dolor de las familias en estos difíciles momentos.\n\nAgradecemos la comprensión de todos nuestros vecinos.",
+      "texto_fotos": []
+    },
+    {
+      "url": "https://www.facebook.com/MonteSionLucainenaDeLasTorres/posts/pfbid0MJPsckg6NyHbAswbfJUNFM61tmcjPBVe5irLHMwJJmw8yYkoSVmjHvNBzai1PYpMl",
+      "pagina_url": "https://www.facebook.com/MonteSionLucainenaDeLasTorres",
+      "pagina": "MonteSionLucainenaDeLasTorres",
+      "publicador_id": null,
+      "fecha": "2026-10-28T11:54:52.000Z",
+      "texto": "🎄✨ ¡𝗣𝗥𝗘𝗦𝗘𝗡𝗧𝗔𝗠𝗢𝗦 𝗨𝗡𝗔 𝗡𝗢𝗩𝗘𝗗𝗔𝗗 𝗠𝗨𝗬 𝗘𝗦𝗣𝗘𝗖𝗜𝗔𝗟! ✨🎄\n\n🎉 ¡La Navidad se va acercando y lo hace cargada de ilusión! Por eso, os presentamos la 𝗡𝗨𝗘𝗩𝗔 𝗟𝗔𝗧𝗔 𝗺𝗼𝗱𝗲𝗹𝗼 «𝗖𝗢𝗦𝗧𝗨𝗥𝗘𝗥𝗢, 𝗟𝗔 𝗗𝗘 𝗧𝗢𝗗𝗔 𝗟𝗔 𝗩𝗜𝗗𝗔» dedicada a la Santísima Virgen de Monte-Sión, Excelsa Patrona de Lucainena de las Torres. 💚\n📏 Medida: 19x5 cm.\n\n⚠️ 𝗘𝗗𝗜𝗖𝗜Ó𝗡 𝗟𝗜𝗠𝗜𝗧𝗔𝗗𝗔 · 𝗦𝗢𝗟𝗢 𝗡𝗔𝗩𝗜𝗗𝗔𝗗 𝟮𝟬𝟮𝟲\n\n🎨 Este año, como novedad, apostamos por un precioso diseño de lata redonda, con una estética inspirada en la cerámica pintada a mano, que convierte esta pieza en un recuerdo muy especial de nuestra Patrona.\n\nUna pieza creada con mucho cariño para quienes sienten una devoción especial por nuestra Virgen y desean tener en casa un detalle único.\n\n🎁 Ideal para regalar y sorprender de una forma muy especial. Puedes adquirirla vacía, rellena de deliciosos mantecados de Estepa o utilizarla como una bonita caja para guardar ese regalo tan especial. ✨\n\n💚 ¡Esperamos que os guste tanto como a nosotros! \n\n💶 Para más información, ponte en contacto con nosotros.\n\n🗓️ 𝗙𝗘𝗖𝗛𝗔 𝗟Í𝗠𝗜𝗧𝗘 𝗣𝗔𝗥𝗔 𝗥𝗘𝗔𝗟𝗜𝗭𝗔𝗥 𝗘𝗡𝗖𝗔𝗥𝗚𝗢𝗦: 𝗹𝘂𝗻𝗲𝘀 𝟮 𝗱𝗲 𝗻𝗼𝘃𝗶𝗲𝗺𝗯𝗿𝗲 𝗱𝗲 𝟮𝟬𝟮𝟲.\n\n😍 ¡No te quedes sin la tuya!",
+      "texto_fotos": [
+        "May be an image of text"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid02WLGvtxsvBMGnhH3z3JBJu7MdTANFWhAwYJfjm4bULBtFg9JN75APUefAwCNVxvuMl&id=61551352857893",
+      "pagina_url": "https://www.facebook.com/profile.php?id=61551352857893",
+      "pagina": "Ayuntamiento de Senés",
+      "publicador_id": null,
+      "fecha": "2026-10-28T00:13:48.000Z",
+      "texto": "🤸‍♀️🎯 ¡VOLVEMOS A JUGAR COMO ANTES EN SENÉS! 🪢\n\nEste domingo tenemos una cita con nuestros juegos y deportes tradicionales, una oportunidad perfecta para disfrutar, divertirnos y mantener vivas nuestras tradiciones. 😍👏\n\n📅 Domingo 1 de noviembre\n🕦 De 11:30 h a 13:30 h\n📍 Plaza Felipe VI – Senés\n\nUna actividad dentro de los Juegos Deportivos Provinciales 2026-2027, impulsada por la Diputación de Almería.\n\n❤️ ¡Os esperamos para pasar una mañana llena de juegos y diversión!",
+      "texto_fotos": [
+        "May be an image of one or more people, people playing soccer, people playing football and text"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid02RxucnmtnMot3JXqAaFvoLv4r5UhQ8BizKXQnVShGe5vdeNizEEQN63upV2aLofMrl&id=61551352857893",
+      "pagina_url": "https://www.facebook.com/profile.php?id=61551352857893",
+      "pagina": "Ayuntamiento de Senés",
+      "publicador_id": null,
+      "fecha": "2026-10-27T12:22:06.000Z",
+      "texto": "📸✨ ¡TALLER DE FOTOGRAFÍA EN SENÉS! ✨📸\n\n¿Te gusta hacer fotos y quieres aprender a sacarles el máximo partido? 📱🤳\n\nDesde el Punto Vuela de Senés te invitamos a participar en nuestro Taller de Fotografía, una actividad para aprender, descubrir y disfrutar de la fotografía de una forma práctica y divertida.\n\n📅 Fecha: 12 de noviembre\n🕛 Hora: 12:00 h\n📍 Lugar: Punto Vuela de Senés\n👥 Dirigido a: ¡Todos los públicos!\n\n🌟 ¡Anímate a participar!",
+      "texto_fotos": [
+        "May be an image of text"
+      ]
+    },
+    {
+      "url": "https://www.facebook.com/permalink.php?story_fbid=pfbid0EBh1S7AsurxfM1fRudLGukuWjnJZsstXNaqY54oyrzSRJscgbo6UySCtnkWtehwDl&id=100064568389094",
+      "pagina_url": "https://www.facebook.com/profile.php?id=100064568389094",
+      "pagina": "Ayuntamiento de Uleila del Campo",
+      "publicador_id": null,
+      "fecha": "2026-10-25T05:01:40.000Z",
+      "texto": "El próximo Sábado día 31 de de Octubre!\n\n🎃👻 ¡HALLOWEEN LLEGA A ULEILA DEL CAMPO! 🕷️🦇\n\n¡Prepara tu disfraz más terrorífico y ven a disfrutar de una tarde llena de diversión, misterio y muchas sorpresas! 🧙‍♀️💀\n\nDesde el Ayuntamiento de Uleila del Campo os invitamos a celebrar Halloween con una jornada pensada para pequeños y mayores. 🧡\n\n🚶‍♀️ PASACALLES DE HALLOWEEN\n🕕 18:00 horas\n📍 Salida desde la puerta del Ayuntamiento.\n\nRecorreremos nuestras calles hasta llegar a La Placeta, donde celebraremos un divertido…\n\n🏆 ¡GRAN CONCURSO DE DISFRACES! 🏆\n\n🎃 3 premios al mejor disfraz infantil.\n\n🧛 3 premios al mejor disfraz de adulto.\n\n👻 3 premios al mejor disfraz grupal o en pareja.\n\n🎁✨ ¡Y ATENCIÓN! HABRÁ SORPRESAS PARA TODOS LOS PARTICIPANTES! ✨🎁\n\nAsí que reúne a tu familia, amigos o pareja, saca tu lado más creativo y ven a pasar una tarde monstruosamente divertida.\n\n🕸️ ¡En Uleila del Campo, Halloween se vive a lo grande!\n\n🎃👻 ¡OS ESPERAMOS A TODOS!\n\n#HalloweenUleilaDelCampo #UleilaDelCampo #Halloween2026 #ConcursoDeDisfraces #PasacallesHalloween AyuntamientoDeUleilaDelCampo",
+      "texto_fotos": [
+        "May be an image of text"
+      ]
+    }
+  ],
+  "ultima_descarga": "2026-11-21T10:12:23"
+}

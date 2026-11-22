@@ -4,3 +4,7 @@ pydantic==2.14.4
 pydantic-settings==2.16.3
 httpx==0.28.1
 tzdata==2026.6
+sqlalchemy==2.1.9
+alembic==1.20.1
+# Driver de PostgreSQL (Docker, Neon/Supabase). En Windows se desarrolla con SQLite.
+psycopg[binary]==3.3.9; sys_platform != "win32"

@@ -1,0 +1,92 @@
+/* Paleta de Adán (21/11 19:50): arena #D8A082, ocre #CDA46E, oliva #A7BF6C, salvia #5DAD7B y petróleo #368F94.
+   Ninguno de los cinco aguanta texto blanco encima (2,0–3,8:1), así que se usan tal cual en adornos y fondos
+   y, para texto y botones, versiones oscuras del mismo tono. Contraste con blanco entre paréntesis (WCAG AA ≥ 4,5). */
+:root {
+  --hm-paleta-arena: #d8a082;
+  --hm-paleta-ocre: #cda46e;
+  --hm-paleta-oliva: #a7bf6c;
+  --hm-paleta-salvia: #5dad7b;
+  --hm-paleta-petroleo: #368f94;
+  /* Franja con los cinco colores bajo la cabecera y en los adornos */
+  --hm-franja: linear-gradient(
+    90deg,
+    var(--hm-paleta-arena) 0 20%,
+    var(--hm-paleta-ocre) 20% 40%,
+    var(--hm-paleta-oliva) 40% 60%,
+    var(--hm-paleta-salvia) 60% 80%,
+    var(--hm-paleta-petroleo) 80% 100%
+  );
+
+  --hm-petroleo-oscuro: #1b4749; /* cabecera, pie y títulos (10,3:1) */
+  --hm-petroleo: #246063; /* color de marca e información (7,2:1) */
+  --hm-petroleo-claro: #e3eff0;
+  --hm-verde: #316143; /* salvia oscuro: «apuntado», éxito (7,2:1) */
+  --hm-verde-claro: #e8f4ed; /* salvia muy claro: fondos suaves */
+  --hm-terracota: #9b5530; /* arena oscuro: acciones principales, apuntarse, proponer (5,6:1) */
+  --hm-terracota-oscuro: #844929; /* pulsado y texto terracota pequeño (7,1:1) */
+  --hm-terracota-claro: #faf2ee;
+  --hm-oliva-claro: #f3f6ea;
+  --hm-fondo: #fcf9f1; /* crema, el mismo del icono de la APK */
+  --hm-texto: #2a2420; /* 14,6:1 sobre el fondo */
+  --hm-texto-suave: #574a40; /* 8,1:1 sobre el fondo */
+  --hm-borde: #e6dccb;
+  --hm-foco: #ffbf47;
+  --hm-radio: 10px;
+  --hm-hueco: 14px;
+  --hm-toque: 56px; /* tamaño mínimo de cualquier botón o zona táctil */
+
+  --ion-font-family: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --ion-background-color: var(--hm-fondo);
+  --ion-background-color-rgb: 252, 249, 241;
+  --ion-text-color: var(--hm-texto);
+  --ion-text-color-rgb: 42, 36, 32;
+  --ion-toolbar-background: var(--hm-petroleo-oscuro);
+  --ion-item-background: #ffffff;
+  --ion-card-background: #ffffff;
+  --ion-tab-bar-background: #ffffff;
+  --ion-tab-bar-color: var(--hm-texto-suave);
+  --ion-tab-bar-color-selected: var(--hm-terracota-oscuro);
+
+  /* primary = terracota (botones de acción); secondary = petróleo oscuro (cabeceras); tertiary = petróleo (información) */
+  --ion-color-primary: #9b5530;
+  --ion-color-primary-rgb: 155, 85, 48;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #844929;
+  --ion-color-primary-tint: #a56645;
+
+  --ion-color-secondary: #1b4749;
+  --ion-color-secondary-rgb: 27, 71, 73;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #183e40;
+  --ion-color-secondary-tint: #32595b;
+
+  --ion-color-tertiary: #246063;
+  --ion-color-tertiary-rgb: 36, 96, 99;
+  --ion-color-tertiary-contrast: #ffffff;
+  --ion-color-tertiary-contrast-rgb: 255, 255, 255;
+  --ion-color-tertiary-shade: #205457;
+  --ion-color-tertiary-tint: #3a7073;
+
+  --ion-color-success: #316143;
+  --ion-color-success-rgb: 49, 97, 67;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: #2b553b;
+  --ion-color-success-tint: #467156;
+
+  --ion-color-medium: #574a40;
+  --ion-color-medium-rgb: 87, 74, 64;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-contrast-rgb: 255, 255, 255;
+  --ion-color-medium-shade: #4d4138;
+  --ion-color-medium-tint: #685c53;
+
+  --ion-color-light: #f3f6ea;
+  --ion-color-light-rgb: 243, 246, 234;
+  --ion-color-light-contrast: #2a2420;
+  --ion-color-light-contrast-rgb: 42, 36, 32;
+  --ion-color-light-shade: #d6d8ce;
+  --ion-color-light-tint: #f4f7ec;
+}

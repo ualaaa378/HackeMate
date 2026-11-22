@@ -8,7 +8,9 @@ Recopilado el 20/11/2026. Todo dato de `eventos.json` y `lugares.json` sale de u
 |---|---|
 | `eventos.json` | 22 eventos reales (cumple `schemas/evento.json`). Los usa la app como mock. |
 | `lugares.json` | 35 lugares permanentes: rutas, sitios que ver, comercios, alojamientos y servicios (cumple `schemas/lugar.json`, nuevo). |
-| `eventos_demo.json` | Los 8 eventos inventados de antes, por si algún flujo los necesita para la demo. No son reales. |
+| `eventos_demo.json` | 10 eventos inventados para la demo. No son reales. Los 8 primeros están publicados; los 2 últimos están `en_revision` para que la bandeja del moderador no salga vacía (un taller de la Asociación Juvenil de Tahal, publicador nuevo de nivel 0, y un post de apuestas de Bar La Plaza parado por el antispam). |
+| `eventos_pasados.json` | 8 actividades inventadas ya celebradas (agosto-noviembre de 2026, estado `finalizado`, con aforo) para el panel de estadísticas (H4.3). No son reales. El seed las carga siempre (no salen en la agenda). Incluyen dos solapamientos de demo: «Cine de verano en Uleila del Campo» coincide con la verbena de Senés (fiestas) y el torneo de petanca de Tahal con los juegos tradicionales de Uleila (misma categoría y hora). |
+| `inscripciones_pasadas.json` | 17 inscripciones de esas actividades con su asistencia (`asistio`/`no_asistio`, una `cancelada`). Carmen no tiene ninguna, para no alterar su recomendación del paso 4 de la demo. |
 
 ## Cómo están clasificados
 

@@ -68,7 +68,7 @@ Cada hito termina en un checkpoint de equipo (CP) de `PLAN.md`. Al terminar un h
 - [~] H0.3 `infra/docker-compose.yml` con `db` (pgvector/pg16), `api`, `bot`, `web`, `tunnel`. Un `/health` mínimo en `api` (y stubs vacíos para `bot` y `web` si los otros aún no han empezado). *(Escrito; falta validarlo con Docker en otra máquina.)*
 - [x] H0.4 `.env.example` con todas las variables conocidas (`DATABASE_URL`, `INTERNAL_TOKEN`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `BOT_URL`, `API_URL`, claves IA, Twilio…).
 - [x] H0.5 Con B y C: `contracts/openapi.yaml` v1, `schemas/*.json` (evento, extraccion_evento, usuario, publicador, inscripcion, mensaje_evento, notificacion), `enums.md`, `fixtures/*.json`.
-- [~] H0.6 Commit `chore: esqueleto` y `contract: v1` en `develop`. *(Commits hechos en `Flujo-A`; falta push y PR a `develop`.)*
+- [x] H0.6 Commit `chore: esqueleto` y `contract: v1` en `develop`. *(En `develop` por la PR #3; la PR #4 añadió la lectura pública provisional desde fixtures, `errores.py` y CORS.)*
 
 #### Cómo probar H0 (lo hace otra persona del equipo con Docker; el portátil de Benas no puede ejecutarlo)
 
@@ -86,16 +86,16 @@ cd services/api
 python -m venv .venv
 source .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
 pip install -r requirements-dev.txt
-python -m pytest -q                # esperado: 23 passed
+python -m pytest -q                # esperado: 32 passed
 deactivate && cd ../..
 ```
 
 **3. Arrancar todo con Docker en limpio:**
 ```bash
 cp .env.example .env               # Windows: copy .env.example .env  (no hace falta rellenar claves para H0)
-docker compose -f infra/docker-compose.yml down -v
-docker compose -f infra/docker-compose.yml up --build -d
-docker compose -f infra/docker-compose.yml ps   # db "healthy"; api, bot, web y tunnel "running"
+docker compose --env-file .env -f infra/docker-compose.yml down -v
+docker compose --env-file .env -f infra/docker-compose.yml up --build -d
+docker compose --env-file .env -f infra/docker-compose.yml ps   # db "healthy"; api, bot, web y tunnel "running"
 ```
 
 **4. Comprobar cada servicio:**
@@ -103,7 +103,7 @@ docker compose -f infra/docker-compose.yml ps   # db "healthy"; api, bot, web y 
 curl localhost:8000/health   # api        → {"status":"ok","version":"0.0.1"}
 curl localhost:8001/health   # bot (stub) → {"status":"ok","version":"0.0.0-stub"}
 curl localhost:8080/health   # web (stub) → {"status":"ok","version":"0.0.0-stub"}
-docker compose -f infra/docker-compose.yml logs tunnel | grep trycloudflare   # una URL https://…trycloudflare.com
+docker compose --env-file .env -f infra/docker-compose.yml logs tunnel | grep trycloudflare   # una URL https://…trycloudflare.com
 ```
 
 **5. Comprobar que no hay claves en el repositorio:**
@@ -111,16 +111,16 @@ docker compose -f infra/docker-compose.yml logs tunnel | grep trycloudflare   # 
 git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esperado: sin resultados
 ```
 
-**6. Apagar:** `docker compose -f infra/docker-compose.yml down -v`
+**6. Apagar:** `docker compose --env-file .env -f infra/docker-compose.yml down -v`
 
 **7. Informar del resultado:**
 - Todo bien → en `docs/PROGRESO.md`, CP0, cambiar la línea del compose de `[~]` a `[x]` y avisar a Benas.
-- Algo falla → apuntarlo en «Bloqueos» de `docs/PROGRESO.md` con el paso, el comando y el error (por ejemplo, `docker compose -f infra/docker-compose.yml logs api`), y avisar a Benas.
+- Algo falla → apuntarlo en «Bloqueos» de `docs/PROGRESO.md` con el paso, el comando y el error (por ejemplo, `docker compose --env-file .env -f infra/docker-compose.yml logs api`), y avisar a Benas.
 
 **Alcance de los fixtures en H0:** solo datos base válidos contra los schemas (5 municipios, publicadores, usuarios, eventos publicados, la extracción de la Ruta Solidaria, inscripciones, mensajes y notificaciones). Los escenarios de moderación y antispam no entran en H0: se definen en H2 junto con su lógica.
 
 **Criterios de aceptación**
-- ✅ `docker compose -f infra/docker-compose.yml up --build` arranca sin errores en una máquina limpia.
+- ✅ `docker compose --env-file .env -f infra/docker-compose.yml up --build` arranca sin errores en una máquina limpia.
 - ✅ `curl localhost:8000/health` devuelve `{"status":"ok","version":"…"}`.
 - ✅ Los 7 schemas existen y **todos los fixtures validan** contra ellos (un test `jsonschema` lo comprueba).
 - ✅ Cada endpoint de la tabla de `PLAN.md` §5.2 aparece en `openapi.yaml`, aunque sea sin implementar.
@@ -130,13 +130,26 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 ### H1 · Datos y CRUD básico (vie 18:30 → 23:30 · CP1 · `v0.1`)
 
 **Tareas**
-- [ ] H1.1 Modelos SQLAlchemy y migración inicial con Alembic (eventos, publicadores, fuentes, usuarios, preferencias, inscripciones, mensajes, métricas).
-- [ ] H1.2 Formato común de error y paginación (middleware/utilidades).
-- [ ] H1.3 `GET /eventos` con filtros: `municipio`, `categoria`, `desde`, `hasta`, `lat`+`lon`+`radio_km` (haversine). `GET/POST/PATCH /eventos/{id}`.
-- [ ] H1.4 CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`, `PATCH /usuarios/me`.
-- [ ] H1.5 Protección entre servicios con `X-Internal-Token`.
-- [ ] H1.6 `scripts/seed.py`: Lucainena de las Torres, Senés, Velefique, Uleila del Campo y Tahal con coordenadas; 3–4 publicadores (Amigos de Velefique, Bar La Plaza…); 15–25 eventos realistas de las 6 categorías repartidos en las próximas 2 semanas, incluida la **II Ruta Solidaria** del guion.
+- [x] H1.1 Modelos SQLAlchemy y migración inicial con Alembic (eventos, publicadores, fuentes, usuarios, preferencias, inscripciones, mensajes, métricas).
+- [x] H1.2 Formato común de error y paginación (middleware/utilidades).
+- [x] H1.3 `GET /eventos` con filtros: `municipio`, `categoria`, `desde`, `hasta`, `lat`+`lon`+`radio_km` (haversine). `GET/POST/PATCH /eventos/{id}`.
+- [x] H1.4 CRUD de publicadores y usuarios, `GET /usuarios/by-phone/{e164}`. *(`GET/PATCH /usuarios/me` se mueve a H3.1, con el login.)*
+- [x] H1.5 Protección entre servicios con `X-Internal-Token`.
+- [x] H1.6 `scripts/seed.py`: Lucainena de las Torres, Senés, Velefique, Uleila del Campo y Tahal con coordenadas; 3–4 publicadores (Amigos de Velefique, Bar La Plaza…); 15–25 eventos realistas de las 6 categorías repartidos en las próximas 2 semanas, incluida la **II Ruta Solidaria** del guion.
 - [ ] H1.7 Sync a las 21:00 con B y C (10 min).
+
+#### Entregables de H1 (se avanza uno a uno; al terminar cada uno se explica y se pide permiso para seguir)
+
+| # | Entregable | Tareas | Cómo se comprueba |
+|---|---|---|---|
+| E1.0 | **Entorno listo para base de datos.** SQLAlchemy y Alembic funcionando en el portátil de Benas (Windows bloquea las extensiones compiladas: se instala la versión en Python puro) y añadidos a `requirements.txt` (+ `psycopg[binary]` para PostgreSQL en Docker). | — | `import sqlalchemy` funciona y los 32 tests siguen en verde |
+| E1.1 | **Modelo de datos y migración inicial.** Tablas de municipios, lugares, publicadores, fuentes, usuarios, eventos, inscripciones, mensajes, notificaciones y métricas de tokens. Funciona igual en SQLite y PostgreSQL. | H1.1 | Test: `alembic upgrade head` sobre una base vacía crea todas las tablas |
+| E1.2 | **Piezas comunes.** Conexión a la base de datos por petición, paginación `{items,total,page,size}` reutilizable y protección `X-Internal-Token` para las rutas internas. | H1.2, H1.5 | Tests: sin token → 401 con el formato de error; con token → pasa |
+| E1.3 | **Datos de la demo (`scripts/seed.py`).** Carga los 5 pueblos, los lugares, los publicadores, los usuarios (Carmen de Senés incluida) y los eventos reales + de demo, con la II Ruta Solidaria. Se puede ejecutar varias veces sin duplicar. | H1.6 | Test: base vacía → seed → conteos esperados; repetir no duplica |
+| E1.4 | **Eventos desde la base de datos.** `GET /eventos` (filtros por pueblo, categoría, fechas, texto y radio), ficha, `POST` y `PATCH`. Municipios y lugares también salen de la base. Se retira la lectura provisional desde fixtures. | H1.3 | Tests: filtro por radio desde Senés, 404 con formato, respuestas que validan contra `evento.json` |
+| E1.5 | **Publicadores y usuarios.** Listar, ver y crear publicadores; alta de usuario; `GET /usuarios/by-phone/{e164}` para el bot. (`GET/PATCH /usuarios/me` pasa entero a H3, junto con el login y el JWT.) | H1.4 | Tests de cada ruta, incluidos 401/404/409 |
+| E1.6 | **Importación mínima para el CP1.** `POST /eventos/importar` crea el evento en `pendiente_confirmacion` desde lo que envía el bot (adelanto de H2.1, sin duplicados ni moderación). | (H2.1) | Test con el fixture de la Ruta Solidaria: crea el evento y devuelve `faltan` |
+| E1.7 | **Cierre de H1.** `PROGRESO.md` al día, `x-implementado: true` en `openapi.yaml`, compose revisado, PR `Flujo-A` → `develop` y etiqueta `v0.1` (con permiso). | — | Criterios de aceptación de abajo |
 
 **Criterios de aceptación**
 - ✅ `alembic upgrade head` sobre una base vacía crea todas las tablas sin errores.
@@ -150,13 +163,13 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 ### H2 · Del post a la agenda: ingesta y moderación (sáb 08:00 → 13:00 · CP2 · `v0.2`)
 
 **Tareas**
-- [ ] H2.1 `POST /eventos/importar`: recibe `ExtraccionEvento` + origen, la asocia al publicador (fuente → publicador → WhatsApp), crea el evento en `pendiente_confirmacion` y devuelve los campos que faltan.
-- [ ] H2.2 Detección de duplicados: mismo `origen.url` → devuelve el existente; si no, similitud de título + fecha + municipio por encima de un umbral → se marca como posible duplicado.
-- [ ] H2.3 `POST /eventos/{id}/confirmar` con los campos completados → pasa a moderación.
-- [ ] H2.4 Niveles de confianza: nivel 0 todo a `en_revision`; nivel 1 pasa si es «lo habitual» (misma categoría que publicaciones ya aprobadas y `score_spam` bajo); nivel 2 pasa salvo spam alto. Subida de nivel automática tras N aprobaciones (N configurable, p. ej. 3).
-- [ ] H2.5 `GET /moderacion/pendientes` (con `motivo`) y `POST /moderacion/{id}/decision` (aprobar, rechazar, retirar). Pausar publicador y pausar automatizaciones.
-- [ ] H2.6 Alta de publicador: `POST /publicadores` → `POST /auth/whatsapp/codigo` + `/verificar` → `POST /publicadores/{id}/aprobar` → `POST /publicadores/{id}/fuentes`. El moderador recibe aviso vía `/notify`.
-- [ ] H2.7 Seed con un publicador de nivel 2 (Bar La Plaza, «Menú del domingo») y uno de nivel 0 para la demo del antispam.
+- [x] H2.1 `POST /eventos/importar`: recibe `ExtraccionEvento` + origen, la asocia al publicador (fuente → publicador → WhatsApp), crea el evento en `pendiente_confirmacion` y devuelve los campos que faltan.
+- [x] H2.2 Detección de duplicados: mismo `origen.url` → devuelve el existente; si no, similitud de título + fecha + municipio por encima de un umbral → se marca como posible duplicado.
+- [x] H2.3 `POST /eventos/{id}/confirmar` con los campos completados → pasa a moderación.
+- [x] H2.4 Niveles de confianza: nivel 0 todo a `en_revision`; nivel 1 pasa si es «lo habitual» (misma categoría que publicaciones ya aprobadas y `score_spam` bajo); nivel 2 pasa salvo spam alto. Subida de nivel automática tras N aprobaciones (N configurable, p. ej. 3). **Cambiado el 21/11 (decisión del equipo):** solo dos modos, a mano (0) y automática (2); sin nivel 1 ni subida automática (migración 0008).
+- [x] H2.5 `GET /moderacion/pendientes` (con `motivo`) y `POST /moderacion/{id}/decision` (aprobar, rechazar, retirar). Pausar publicador y pausar automatizaciones.
+- [x] H2.6 Alta de publicador: `POST /publicadores` → `POST /auth/whatsapp/codigo` + `/verificar` → `POST /publicadores/{id}/aprobar` → `POST /publicadores/{id}/fuentes`. El moderador recibe aviso vía `/notify`.
+- [x] H2.7 Seed con un publicador de nivel 2 (Bar La Plaza, «Menú del domingo») y uno de nivel 0 para la demo del antispam.
 
 **Criterios de aceptación**
 - ✅ Importar el fixture de la Ruta Solidaria crea un evento `pendiente_confirmacion` y la respuesta lista `faltan: ["plazas_totales","lugar"]`.
@@ -171,12 +184,12 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 ### H3 · La vecina: participación (sáb 14:00 → 19:00 · CP3 · `v0.3` + contratos v2 congelados)
 
 **Tareas**
-- [ ] H3.1 Login con Google: `POST /auth/google` valida el `id_token` y devuelve un JWT propio con `rol`. Login por WhatsApp con código (reutiliza H2.6). Dependencias de FastAPI para exigir rol.
-- [ ] H3.2 Inscripciones: `POST /eventos/{id}/inscripciones` y `DELETE …/{insc_id}`. Si no hay plazas → `lista_espera`. Al cancelar, el primero de la lista sube a `confirmada` y se le avisa vía `/notify`. Control de concurrencia (transacción con bloqueo de fila) para no vender la misma plaza dos veces.
-- [ ] H3.3 `.ics`: `GET /eventos/{id}/ics` y `GET /usuarios/me/ics` (librería `ics` o generación a mano, zona `Europe/Madrid`).
-- [ ] H3.4 Chat del evento: `GET/POST /eventos/{id}/mensajes`, anuncios fijados, ocultar, silenciar, con los permisos de la tabla de la diapositiva 17. Sin teléfonos en las respuestas. Antes de publicar un mensaje, llamada a `bot /ai/spam`; si es una pregunta, `bot /ai/responder-ficha`.
-- [ ] H3.5 `PATCH /eventos/{id}` con cambio de `fecha_inicio` → `/notify` a **todos** los inscritos (tipo `cambio_evento`) + anuncio fijado automático en el chat.
-- [ ] H3.6 Recomendador `GET /recomendaciones?usuario_id=`: puntuación = gustos + distancia (haversine) + fecha y plazas libres + historial (+ embeddings si da tiempo). Cada resultado lleva un `motivo` legible («te gusta el senderismo y quedan plazas»).
+- [x] H3.1 Login con Google: `POST /auth/google` valida el `id_token` y devuelve un JWT propio con `rol`. Login por WhatsApp con código (reutiliza H2.6). Dependencias de FastAPI para exigir rol. `GET/PATCH /usuarios/me` (viene de H1.4).
+- [x] H3.2 Inscripciones: `POST /eventos/{id}/inscripciones` y `DELETE …/{insc_id}`. Si no hay plazas → `lista_espera`. Al cancelar, el primero de la lista sube a `confirmada` y se le avisa vía `/notify`. Control de concurrencia (transacción con bloqueo de fila) para no vender la misma plaza dos veces.
+- [x] H3.3 `.ics`: `GET /eventos/{id}/ics` y `GET /usuarios/me/ics` (librería `ics` o generación a mano, zona `Europe/Madrid`).
+- [x] H3.4 Chat del evento: `GET/POST /eventos/{id}/mensajes`, anuncios fijados, ocultar, silenciar, con los permisos de la tabla de la diapositiva 17. Sin teléfonos en las respuestas. Antes de publicar un mensaje, llamada a `bot /ai/spam`; si es una pregunta, `bot /ai/responder-ficha`.
+- [x] H3.5 `PATCH /eventos/{id}` con cambio de `fecha_inicio` → `/notify` a **todos** los inscritos (tipo `cambio_evento`) + anuncio fijado automático en el chat.
+- [x] H3.6 Recomendador `GET /recomendaciones?usuario_id=`: puntuación = gustos + distancia (haversine) + fecha y plazas libres + historial (+ embeddings si da tiempo). Cada resultado lleva un `motivo` legible («te gusta el senderismo y quedan plazas»).
 - [ ] H3.7 Congelar contratos v2 con B y C.
 
 **Criterios de aceptación**
@@ -193,11 +206,11 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 ### H4 · Criterios del jurado (sáb 20:00 → dom 00:00 · CP4 · `v0.9` feature freeze)
 
 **Tareas**
-- [ ] H4.1 `GET /estadisticas`: actividades del periodo, % importadas solas, inscripciones vs asistencia, ocupación por categoría, % de gente de otro pueblo, **solapamientos** entre pueblos (mismo día y franja, misma categoría o eventos grandes).
-- [ ] H4.2 `POST /metrics/tokens` (B registra cada llamada) y acumulados de tokens y euros por proveedor en `/estadisticas`.
-- [ ] H4.3 Marcar asistencia (`asistio`/`no_asistio`) para que el panel tenga datos reales; seed con eventos pasados para que las gráficas no salgan vacías.
+- [x] H4.1 `GET /estadisticas`: actividades del periodo, % importadas solas, inscripciones vs asistencia, ocupación por categoría, % de gente de otro pueblo, **solapamientos** entre pueblos (mismo día y franja, misma categoría o eventos grandes).
+- [x] H4.2 `POST /metrics/tokens` (B registra cada llamada) y acumulados de tokens y euros por proveedor en `/estadisticas`.
+- [x] H4.3 Marcar asistencia (`asistio`/`no_asistio`) para que el panel tenga datos reales; seed con eventos pasados para que las gráficas no salgan vacías.
 - [ ] H4.4 URL pública estable: túnel de Cloudflare funcionando para el jurado. **Opcional:** despliegue alternativo en Render/Railway + Neon/Supabase.
-- [ ] H4.5 Revisión de robustez: la API arranca aunque `bot` esté caído; si `/notify` falla, la notificación queda en cola (tabla) y se reintenta.
+- [x] H4.5 Revisión de robustez: la API arranca aunque `bot` esté caído; si `/notify` falla, la notificación queda en cola (tabla) y se reintenta.
 
 **Criterios de aceptación**
 - ✅ `/estadisticas` devuelve cifras coherentes con el seed y detecta al menos un solapamiento de demo («Cine de verano en Uleila coincide con fiestas»).
@@ -210,9 +223,9 @@ git grep -nE "sk-ant-|AIza[0-9A-Za-z_-]{20}|AC[0-9a-f]{32}|-----BEGIN"   # esper
 
 **Tareas**
 - [ ] H5.1 Arreglar lo que salga del smoke test y de los ensayos.
-- [ ] H5.2 `scripts/demo_reset.sh` deja la base de datos en el estado inicial de la demo en menos de 1 minuto.
+- [x] H5.2 `scripts/demo_reset.sh` deja la base de datos en el estado inicial de la demo en menos de 1 minuto.
 - [ ] H5.3 Prueba E2E en **otro portátil**: clonar, `cp .env.example .env`, rellenar claves, `docker compose up --build`, guion de la demo 2 veces.
-- [ ] H5.4 Sección de backend en el README: arranque en 3 comandos, arquitectura, variables.
+- [x] H5.4 Sección de backend en el README: arranque en 3 comandos, arquitectura, variables.
 - [ ] H5.5 Merge `develop` → `main`, etiqueta `v1.0`, smoke test sobre `main`.
 
 **Criterios de aceptación**

@@ -1,4 +1,6 @@
-# Arranque: cp .env.example .env  →  docker compose -f infra/docker-compose.yml up --build
+# Arranque (desde la raíz del repo): cp .env.example .env  →  docker compose --env-file .env -f infra/docker-compose.yml up --build
+# El «--env-file .env» hace falta: sin él, Docker busca el .env de las variables ${…} en infra/ y no en la raíz, y
+# FREELLM_URL_DOCKER, VITE_*, WEB_URL y POSTGRES_* se quedan con su valor por defecto (env_file solo llega a los contenedores).
 # Puertos fijos (PLAN.md §5.3): api 8000 · bot 8001 · web 8080 · db 5432
 
 name: hackemate
@@ -16,9 +18,13 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hackemate}
       POSTGRES_DB: ${POSTGRES_DB:-hackemate}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Solo en este ordenador (PUERTOS_IP en .env): nadie de la wifi entra en la BD, la API o el bot directamente.
+      - "${PUERTOS_IP:-127.0.0.1}:${DB_PORT:-5432}:5432"
     volumes:
+      # Los datos de la demo y lo que hace la gente viven aquí: sobreviven a down/up y a reinicios.
+      # Solo se borran con «down -v» o con scripts/demo_reset.sh: no usarlos en mitad de la demo.
       - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -32,36 +38,129 @@ services:
       # Dentro de Docker siempre contra el contenedor db (el .env puede traer la URL de SQLite de Windows)
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hackemate}:${POSTGRES_PASSWORD:-hackemate}@db:5432/${POSTGRES_DB:-hackemate}
       BOT_URL: http://bot:8001
+      FIXTURES_DIR: /srv/contracts/fixtures
+    volumes:
+      # Fixtures que carga el seed al arrancar (app.seed hace también alembic upgrade head)
+      - ../contracts:/srv/contracts:ro
     ports:
-      - "8000:8000"
+      - "${PUERTOS_IP:-127.0.0.1}:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # Sin depends_on de bot: la api arranca aunque el bot esté caído (las notificaciones quedan en cola)
     depends_on:
       db:
         condition: service_healthy
+    # Si se cae, vuelve sola. Al arrancar, el seed solo añade lo que falte (--solo-nuevos en el Dockerfile):
+    # un reinicio no deshace lo que han hecho las personas.
+    restart: unless-stopped
+    # Ningún proceso del contenedor puede ganar privilegios (setuid/sudo) aunque alguien entre en él
+    security_opt: ["no-new-privileges:true"]
 
   bot:
     <<: *env
-    # Stub hasta que services/bot (Flujo B) esté en develop. Al integrarlo: build: ../services/bot
-    build: ./stubs/bot
+    # Bot de WhatsApp/Telegram (Flujo B). El stub de infra/stubs/bot ya no se usa; se conserva
+    # solo por si hubiera que volver a él (build: ./stubs/bot).
+    build: ../services/bot
     environment:
+      # Dentro de Docker, siempre contra el nombre del servicio (el .env puede traer valores de Windows)
       API_URL: http://api:8000
+      # El proxy FreeLLM corre en el equipo anfitrión: 127.0.0.1 del .env no sirve dentro del contenedor
+      FREELLM_URL: ${FREELLM_URL_DOCKER:-http://host.docker.internal:31415/v1}
+      WEB_URL: ${WEB_URL:-http://localhost:8080}
+      # Cola de peticiones a la api cuando está caída: en un volumen para que sobreviva a recrear el bot
+      # (scripts/url_publica.py lo recrea cada vez que cambia la URL del túnel)
+      COLA_PATH: /srv/data/cola_pendiente.json
+      # INTERNAL_TOKEN, CANAL, TELEGRAM_*, META_*, TWILIO_*, LLM_*, GEMINI_*, FREELLM_*,
+      # ANTHROPIC_*, CLAUDE_* y ZONA_HORARIA llegan del ../.env (env_file)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - bot_data:/srv/data
     ports:
-      - "8001:8001"
+      - "${PUERTOS_IP:-127.0.0.1}:8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    # Sin depends_on de api: el bot arranca aunque la api esté caída
+    restart: unless-stopped
+    # Ningún proceso del contenedor puede ganar privilegios (setuid/sudo) aunque alguien entre en él
+    security_opt: ["no-new-privileges:true"]
 
   web:
-    # Stub hasta que apps/web (Flujo C) tenga Dockerfile en develop. Al integrarlo: build: ../apps/web
-    build: ./stubs/web
+    # App Ionic (Flujo C) y puerta de entrada pública: su nginx sirve la web en /, pasa /api/ a
+    # api:8000 y /webhook/ a bot:8001 (apps/web/nginx.conf). VITE_API_URL se incrusta en el build:
+    # «/» = la API en el mismo dominio, así funciona en localhost:8080 y en la URL del túnel.
+    build:
+      context: ../apps/web
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/}
+        VITE_USE_MOCKS: ${VITE_USE_MOCKS:-false}
+        VITE_CANAL: ${VITE_CANAL:-telegram}
+    # service_started (no healthy): la web arranca aunque api o bot fallen (nginx resuelve
+    # sus nombres en cada petición y solo esas rutas dan 502; la web vuelve a los mocks)
+    depends_on:
+      api:
+        condition: service_started
+      bot:
+        condition: service_started
     ports:
       - "8080:8080"
+    # APK que se descarga desde Mi perfil: copiar el .apk a descargas/pueblos-unidos.apk (no se sube a git)
+    volumes:
+      - ../descargas:/usr/share/nginx/descargas:ro
+    restart: unless-stopped
+    # Ningún proceso del contenedor puede ganar privilegios (setuid/sudo) aunque alguien entre en él
+    security_opt: ["no-new-privileges:true"]
 
   tunnel:
-    # Túnel rápido de Cloudflare hacia el bot (webhook de Twilio). La URL https sale en:
-    #   docker compose -f infra/docker-compose.yml logs tunnel
-    # Con CLOUDFLARE_TUNNEL_TOKEN se podrá usar un túnel con nombre estable (H4.4).
+    # Túnel rápido de Cloudflare (sin cuenta, decisión D3) hacia la web: una sola URL pública
+    # https://<algo>.trycloudflare.com para todo. / → web, /api/ → api, /webhook/ → bot
+    # (Telegram entra por {PUBLIC_URL}/webhook/telegram, igual que antes).
+    # La URL cambia cada vez que se reinicia el túnel. Sale en:
+    #   docker compose --env-file .env -f infra/docker-compose.yml logs tunnel
+    # y hay que pasarla a PUBLIC_URL y WEB_URL del .env y volver a registrar el webhook (script de F1).
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate --url http://bot:8001
+    # Con CLOUDFLARE_TUNNEL_TOKEN en el .env (solo en la máquina de la demo): túnel con nombre y URL FIJA
+    # (p. ej. https://hackemate.rompelab.com, el «Public hostname» apunta a http://web:8080 en el panel de
+    # Cloudflare); PUBLIC_URL y WEB_URL del .env van con esa URL y url_publica.py ya no hace falta.
+    # Sin token: túnel rápido como antes. http2 (TCP 443): por si la red bloquea QUIC (UDP).
+    command: tunnel --no-autoupdate --protocol http2 ${CLOUDFLARE_TUNNEL_TOKEN:+run --token} ${CLOUDFLARE_TUNNEL_TOKEN:---url http://web:8080}
     restart: unless-stopped
     depends_on:
-      - bot
+      web:
+        condition: service_started
+
+  ingesta:
+    <<: *env
+    # Revisión diaria de las páginas de Facebook de los pueblos (A2, scripts/importar_facebook.py):
+    # solo los posts nuevos → bot /ai/extraer → api importar/confirmar. APAGADA por defecto porque gasta
+    # crédito de Apify (FB_SCRAPER_TOKEN en el .env de la máquina de la demo). Para encenderla:
+    #   docker compose --env-file .env -f infra/docker-compose.yml --profile ingesta up -d ingesta
+    profiles: ["ingesta"]
+    image: python:3.12-slim
+    # Solo usa la biblioteca estándar: no hace falta construir imagen.
+    command: ["python", "/srv/scripts/importar_facebook.py", "--cada", "24",
+              "--api-url", "http://api:8000", "--bot-url", "http://bot:8001"]
+    environment:
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ../scripts:/srv/scripts:ro
+      # Escribe contracts/fixtures/facebook_posts.json (los posts que son planes, para --desde-json)
+      - ../contracts:/srv/contracts
+    depends_on:
+      api:
+        condition: service_healthy
+      bot:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   db_data:
+  bot_data:

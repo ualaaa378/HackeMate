@@ -1,0 +1,41 @@
+# FreeLLMAPI en Docker: el proxy gratuito de IA que usa el bot (Flujo B), replicable en cualquier máquina.
+# Se levanta aparte del compose principal (infra/, Flujo A):
+#   cd services/bot/freellmapi
+#   docker compose up -d
+# Instrucciones completas y seguridad: README.md de esta carpeta.
+# Basado en el docker-compose.yml oficial de github.com/tashfeenahmed/freellmapi (sin el perfil de autoupdate).
+
+name: hackemate-freellmapi
+
+services:
+  freellmapi:
+    image: ghcr.io/tashfeenahmed/freellmapi:latest
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # Claves de los proveedores y modelos desde un archivo: se aplica en cada arranque (idempotente)
+      FREEAPI_CONFIG_PATH: /config/freellmapi.config.json
+    # Solo desde esta máquina por defecto: FreeLLMAPI es de un solo usuario y no debe salir a internet.
+    # Con HOST_BIND=0.0.0.0 en .env se puede usar desde la red local (solo en una red de confianza).
+    ports:
+      - "${HOST_BIND:-127.0.0.1}:${PORT:-3001}:3001"
+    volumes:
+      # Base de datos (claves cifradas con ENCRYPTION_KEY, estadísticas, ajustes)
+      - freellmapi-data:/app/server/data
+      # Archivo con las claves en claro: no se sube a git (ver .gitignore)
+      - ./freellmapi.config.json:/config/freellmapi.config.json:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/ping').then((r) => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1));"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+volumes:
+  freellmapi-data:

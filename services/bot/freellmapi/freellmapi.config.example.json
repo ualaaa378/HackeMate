@@ -1,0 +1,13 @@
+{
+  "admin": { "email": "admin@hackemate.local", "password": "CAMBIA-ESTA-CONTRASENA" },
+  "keys": [
+    { "platform": "google", "key": "PEGA-AQUI-TU-CLAVE-DE-GOOGLE-AI-STUDIO", "label": "Gemini", "enabled": true },
+    { "platform": "groq", "key": "PEGA-AQUI-TU-CLAVE-DE-GROQ", "label": "Groq", "enabled": true },
+    { "platform": "openrouter", "key": "PEGA-AQUI-TU-CLAVE-DE-OPENROUTER", "label": "OpenRouter", "enabled": true },
+    { "platform": "nvidia", "key": "PEGA-AQUI-TU-CLAVE-DE-NVIDIA-NIM", "label": "Nvidia", "enabled": true },
+    { "platform": "zhipu", "key": "PEGA-AQUI-TU-CLAVE-DE-ZAI", "label": "Z.ai", "enabled": true },
+    { "platform": "unorouter", "key": "PEGA-AQUI-TU-CLAVE-DE-UNOROUTER", "label": "UnoRouter", "enabled": true },
+    { "platform": "electronhub", "key": "PEGA-AQUI-TU-CLAVE-DE-ELECTRONHUB", "label": "ElectronHub", "enabled": true }
+  ],
+  "routing": { "strategy": "balanced" }
+}
